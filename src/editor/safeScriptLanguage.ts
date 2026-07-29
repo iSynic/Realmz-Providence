@@ -24,14 +24,42 @@ type Token = { text: string; column: number };
 type OperationSpec = {
   capability: string;
   names: readonly string[];
+  optionalNames?: readonly string[];
   result: string;
   fixed?: Record<string, string>;
   yields?: boolean;
 };
 
-const OPERATION_SPECS = {
-  read_state: { capability: "core.state.read", names: ["scope", "name", "ownerId"], result: "dynamic" },
-  write_state: { capability: "core.state.write", names: ["scope", "name", "value", "ownerId"], result: "void" },
+type CatalogOperation = {
+  id: string;
+  roles: string[];
+  yields: boolean;
+  mutates: boolean;
+  parameters: Record<string, string | undefined>;
+  result: string;
+  editor?: { sourceName?: string };
+};
+
+type CatalogTypeDefinition = {
+  id: string;
+  fields: Record<string, string>;
+};
+
+const CATALOG_OPERATION_ROWS =
+  SCENARIO_API_CATALOG_JSON.operations as CatalogOperation[];
+const CATALOG_TYPE_FIELDS = new Map<RemakeScriptValueType, Record<string, RemakeScriptValueType | "unknown">>(
+  (SCENARIO_API_CATALOG_JSON.types as unknown as CatalogTypeDefinition[]).map((definition) => [
+    scriptTypeForCatalogType(definition.id) as RemakeScriptValueType,
+    Object.fromEntries(Object.entries(definition.fields).map(([name, type]) => [
+      name,
+      scriptTypeForCatalogType(type)
+    ]))
+  ])
+);
+
+const BASE_OPERATION_SPECS: Record<string, OperationSpec> = {
+  read_state: { capability: "core.state.read", names: ["scope", "name"], optionalNames: ["ownerId"], result: "dynamic" },
+  write_state: { capability: "core.state.write", names: ["scope", "name", "value"], optionalNames: ["ownerId"], result: "void" },
   read_quest: { capability: "core.state.read", names: ["id"], result: "int", fixed: { scope: "quest" } },
   write_quest: { capability: "core.state.write", names: ["id", "value"], result: "void", fixed: { scope: "quest" } },
   read_variable: { capability: "core.state.read", names: ["name"], result: "dynamic", fixed: { scope: "campaign" } },
@@ -44,32 +72,45 @@ const OPERATION_SPECS = {
   show_text: { capability: "core.presentation.text", names: ["text"], result: "void", yields: true },
   choose: { capability: "core.presentation.choice", names: ["prompt", "options"], result: "int", yields: true },
   show_picture: { capability: "core.presentation.picture", names: ["pictureId"], result: "void", yields: true },
-  play_sound: { capability: "core.presentation.sound", names: ["soundId"], result: "void", yields: true },
+  play_sound: { capability: "core.presentation.sound", names: ["soundId"], optionalNames: ["wait"], result: "void", yields: true },
   teleport: { capability: "core.map.teleport", names: ["levelType", "levelIndex", "x", "y"], result: "void", yields: true },
   set_map_tile: { capability: "core.map.set-tile", names: ["levelType", "levelIndex", "x", "y", "tile"], result: "void", yields: true },
-  advance_time: { capability: "core.map.advance-time", names: ["seconds"], result: "void", yields: true },
-  take_wealth: { capability: "core.inventory.take-wealth", names: ["gold"], result: "bool", yields: true },
-  party_has_item: { capability: "core.inventory.has-item", names: ["itemId"], result: "bool", yields: true },
+  advance_time: { capability: "core.map.advance-time", names: ["seconds"], result: "time-snapshot", yields: true },
+  take_wealth: { capability: "core.inventory.take-wealth", names: ["gold"], optionalNames: ["gems", "jewelry", "showWarning"], result: "bool", yields: true },
+  party_has_item: { capability: "core.inventory.has-item", names: ["itemId"], optionalNames: ["minimumCharges"], result: "bool", yields: true },
   give_treasure: { capability: "core.inventory.give-treasure", names: ["treasureId"], result: "void", yields: true },
   party_has_condition: { capability: "core.character.party-condition", names: ["conditionIndex"], result: "bool", yields: true },
-  change_health: { capability: "core.character.change-health", names: ["amount"], result: "void", yields: true },
-  give_experience: { capability: "core.character.give-experience", names: ["amount"], result: "void", yields: true },
-  start_encounter: { capability: "core.encounter.start", names: ["encounterKind", "encounterId"], result: "void", yields: true },
+  change_health: { capability: "core.character.change-health", names: ["amount"], optionalNames: ["canKill"], result: "void", yields: true },
+  give_experience: { capability: "core.character.give-experience", names: ["amount"], optionalNames: ["selectedOnly"], result: "void", yields: true },
+  start_encounter: { capability: "core.encounter.start", names: ["encounterKind", "encounterId"], result: "int", yields: true },
   start_battle: { capability: "core.encounter.start-battle", names: ["battleId"], result: "void", yields: true },
   apply_damage: { capability: "core.combat.damage", names: ["targetId", "amount", "damageType"], result: "int", yields: true },
   apply_healing: { capability: "core.combat.heal", names: ["targetId", "amount"], result: "int", yields: true },
   roll: { capability: "core.rng.roll", names: ["maximum"], result: "int" }
-} as const satisfies Record<string, OperationSpec>;
+};
+
+const OPERATION_SPECS: Record<string, OperationSpec> = {
+  ...BASE_OPERATION_SPECS,
+  ...Object.fromEntries(CATALOG_OPERATION_ROWS.map((operation) => {
+    const required: string[] = [];
+    const optional: string[] = [];
+    for (const [name, type] of Object.entries(operation.parameters)) {
+      (String(type).endsWith("?") ? optional : required).push(name);
+    }
+    const sourceName = operation.editor?.sourceName
+      ?? operation.id.replace(/^core\./, "").replace(/[.-]/g, "_");
+    return [sourceName, {
+      capability: operation.id,
+      names: required,
+      ...(optional.length > 0 ? { optionalNames: optional } : {}),
+      result: scriptTypeForCatalogType(operation.result),
+      yields: operation.yields
+    } satisfies OperationSpec];
+  }))
+};
 
 const CATALOG_OPERATIONS = new Map(
-  (SCENARIO_API_CATALOG_JSON.operations as Array<{
-    id: string;
-    roles: string[];
-    yields: boolean;
-    mutates: boolean;
-    parameters: Record<string, string | undefined>;
-    result: string;
-  }>).map((operation) => [operation.id, operation])
+  CATALOG_OPERATION_ROWS.map((operation) => [operation.id, operation])
 );
 
 const CATALOG_ROLES = new Map(
@@ -80,7 +121,7 @@ const CATALOG_ROLES = new Map(
   }>).map((role) => [role.id, role])
 );
 
-type OperationName = keyof typeof OPERATION_SPECS;
+type OperationName = string;
 
 export function parseSafeScript(
   source: string,
@@ -384,14 +425,26 @@ class BlockParser {
     if (Boolean(spec.yields) !== awaited) {
       this.diagnostics.push(at(line, spec.yields ? `'${name}' must be awaited.` : `'${name}' does not yield and cannot be awaited.`));
     }
-    if (args.length !== spec.names.length) {
-      this.diagnostics.push(at(line, `'${name}' expects ${spec.names.length} argument(s).`));
+    const optionalNames = spec.optionalNames ?? [];
+    const parameterNames = [...spec.names, ...optionalNames];
+    if (args.length < spec.names.length || args.length > parameterNames.length) {
+      const expected = optionalNames.length
+        ? `${spec.names.length} to ${parameterNames.length}`
+        : String(spec.names.length);
+      this.diagnostics.push(at(line, `'${name}' expects ${expected} argument(s).`));
     }
     this.capabilities.add(spec.capability);
     return {
       kind: "operation",
       capability: spec.capability,
-      arguments: { ...("fixed" in spec ? spec.fixed : {}), ...Object.fromEntries(spec.names.map((key, index) => [key, args[index]])) },
+      arguments: {
+        ...("fixed" in spec ? spec.fixed : {}),
+        ...Object.fromEntries(
+          parameterNames
+            .slice(0, args.length)
+            .map((key, index) => [key, args[index]])
+        )
+      },
       result
     };
   }
@@ -660,23 +713,7 @@ function validateSafeTypes(
     }
     if (node.kind === "member") {
       const objectType = infer(node.object, report);
-      const fields: Record<string, Record<string, RemakeScriptValueType>> = {
-        "location-snapshot": { levelType: "string", levelIndex: "int", x: "int", y: "int" },
-        "time-snapshot": { day: "int", hour: "int", minute: "int", second: "int", totalSeconds: "int" },
-        "wealth-snapshot": { gold: "int", gems: "int", jewelry: "int", pooledGold: "int" },
-        "character-snapshot": {
-          id: "string",
-          name: "string",
-          level: "int",
-          health: "int",
-          maximumHealth: "int",
-          spellPoints: "int",
-          maximumSpellPoints: "int",
-          alive: "bool"
-        },
-        "combat-snapshot": { active: "bool", round: "int", combatants: "character-snapshot-array" }
-      };
-      const valueType = fields[objectType]?.[String(node.member)];
+      const valueType = CATALOG_TYPE_FIELDS.get(objectType as RemakeScriptValueType)?.[String(node.member)];
       if (!valueType && objectType !== "unknown") report(`'${String(node.member)}' is not a field on ${objectType}.`);
       return valueType ?? "unknown";
     }
@@ -839,7 +876,9 @@ function printStatements(statements: JsonNode[], depth: number): string {
       const name = operationNameForStatement(statement);
       const spec: OperationSpec | undefined = OPERATION_SPECS[name as OperationName];
       const catalog = CATALOG_OPERATIONS.get(String(statement.capability));
-      const names = spec?.names ?? Object.keys(catalog?.parameters ?? {});
+      const names = spec
+        ? [...spec.names, ...(spec.optionalNames ?? [])]
+        : Object.keys(catalog?.parameters ?? {});
       const args = names
         .filter((key) => (statement.arguments as JsonNode)?.[key] !== undefined)
         .map((key) => printExpression((statement.arguments as JsonNode)?.[key]))
@@ -885,6 +924,7 @@ function parseType(value: string): RemakeScriptValueType {
     LocationSnapshot: "location-snapshot",
     TimeSnapshot: "time-snapshot",
     WealthSnapshot: "wealth-snapshot",
+    CharacterSnapshot: "character-snapshot",
     CharacterSnapshotArray: "character-snapshot-array",
     "Array[CharacterSnapshot]": "character-snapshot-array",
     CombatSnapshot: "combat-snapshot",
@@ -905,6 +945,7 @@ function printType(value: string) {
     "location-snapshot": "LocationSnapshot",
     "time-snapshot": "TimeSnapshot",
     "wealth-snapshot": "WealthSnapshot",
+    "character-snapshot": "CharacterSnapshot",
     "character-snapshot-array": "Array[CharacterSnapshot]",
     "combat-snapshot": "CombatSnapshot",
     "action-outcome": "ActionOutcome",
@@ -929,12 +970,22 @@ function scriptTypeForCatalogType(value: string | undefined): RemakeScriptValueT
     int: "int",
     float: "float",
     string: "string",
+    "bool-array": "bool-array",
+    "int-array": "int-array",
+    "float-array": "float-array",
     "string-array": "string-array",
     LocationSnapshot: "location-snapshot",
     TimeSnapshot: "time-snapshot",
     WealthSnapshot: "wealth-snapshot",
+    CharacterSnapshot: "character-snapshot",
     "CharacterSnapshot-array": "character-snapshot-array",
     CombatSnapshot: "combat-snapshot",
+    ActionOutcome: "action-outcome",
+    EncounterOutcome: "encounter-outcome",
+    EffectOutcome: "effect-outcome",
+    ItemOutcome: "item-outcome",
+    MonsterDecision: "monster-decision",
+    RuleModifier: "rule-modifier",
     variant: "unknown",
     object: "unknown"
   };

@@ -14,7 +14,7 @@ Runs from an AP or XAP action position.
 - Stable ID: `action`
 - Context: `ActionContext`
 - Result: `ActionOutcome`
-- Hooks: `run`
+- Runtime hooks: `run`
 - May yield: yes
 
 Action behavior may continue, halt, call, replace, or return through the central interpreter.
@@ -31,7 +31,7 @@ Adds behavior to an encounter boundary.
 - Stable ID: `encounter`
 - Context: `EncounterContext`
 - Result: `EncounterOutcome`
-- Hooks: `enter`, `option`, `result`, `complete`
+- Runtime hooks: `enter`, `option`, `result`, `complete`
 - May yield: yes
 
 Attach behavior to the encounter, a selected option or result, or the completion boundary.
@@ -48,10 +48,10 @@ Validates, casts, applies, ticks, or expires a scenario spell.
 - Stable ID: `spell`
 - Context: `SpellContext`
 - Result: `EffectOutcome`
-- Hooks: `validate`, `cast`, `effect`, `tick`, `expire`
+- Runtime hooks: `validate`, `cast`, `effect`, `tick`, `expire`
 - May yield: yes
 
-Validation is pure; effect hooks route combat and presentation through typed ports.
+Validation is pure; cast and effect hooks route combat and presentation through typed ports. An applied effect may declare a bounded duration and round, movement, or scenario-time interval; the runtime then dispatches tick and expiration hooks from serializable effect state.
 
 ```gdscript
 func apply_spell() -> EffectOutcome:
@@ -65,10 +65,10 @@ Adds behavior to an item definition or instance boundary.
 - Stable ID: `item`
 - Context: `ItemContext`
 - Result: `ItemOutcome`
-- Hooks: `use-field`, `use-combat`, `equip`, `unequip`, `attack`, `defense`, `passive`
+- Runtime hooks: `use-field`, `use-combat`, `equip`, `unequip`, `attack`, `defense`, `passive`
 - May yield: yes
 
-Item-instance state remains attached to the stable item instance rather than a copied dictionary.
+Field and combat use may yield. Equipment, attack, defense, and passive hooks are pure; they may reject an equipment transition or return bounded numeric modifiers. Item-instance state remains attached to the stable item instance rather than a copied dictionary.
 
 ```gdscript
 func use_item() -> ItemOutcome:
@@ -82,7 +82,7 @@ Chooses one validated action from an immutable combat snapshot.
 - Stable ID: `monster-ai`
 - Context: `MonsterAiContext`
 - Result: `MonsterDecision`
-- Hooks: `decide`
+- Runtime hooks: `decide`
 - May yield: no
 
 AI cannot mutate combat directly or retain live Godot objects.
@@ -99,7 +99,7 @@ Observes stable campaign and gameplay lifecycle boundaries.
 - Stable ID: `lifecycle`
 - Context: `LifecycleContext`
 - Result: `void`
-- Hooks: `campaign-start`, `campaign-resume`, `campaign-complete`, `map-enter`, `map-leave`, `party-moved`, `rest-start`, `rest-complete`, `time-advanced`, `battle-start`, `battle-complete`, `character-defeated`, `party-defeated`
+- Runtime hooks: `campaign-start`, `campaign-resume`, `campaign-complete`, `map-enter`, `map-leave`, `party-moved`, `rest-start`, `rest-complete`, `time-advanced`, `battle-start`, `battle-complete`, `character-defeated`, `party-defeated`
 - May yield: yes
 
 Lifecycle hooks receive a typed event and execute in deterministic binding order.
@@ -116,7 +116,7 @@ Returns a bounded modifier for a named gameplay calculation.
 - Stable ID: `rule-modifier`
 - Context: `RuleEvent`
 - Result: `RuleModifier`
-- Hooks: `attack-chance`, `damage`, `healing`, `spell-cost`, `movement-cost`, `fatigue`, `experience`, `loot`, `encounter-chance`, `rest-recovery`, `time-advance`, `condition-resistance`
+- Runtime hooks: `attack-chance`, `damage`, `healing`, `spell-cost`, `movement-cost`, `fatigue`, `experience`, `loot`, `encounter-chance`, `rest-recovery`, `time-advance`, `condition-resistance`
 - May yield: no
 
 Modifiers run after the selected gameplay profile and built-in providers, then pass through domain clamping.
@@ -133,8 +133,8 @@ Provides reusable typed logic called by entry behavior or migrations.
 - Stable ID: `helper`
 - Context: `none`
 - Result: `declared`
-- Hooks: none
-- May yield: no
+- Runtime hooks: none
+- May yield: yes
 
 Helpers cannot recurse and participate in the shared call-depth and execution budgets.
 
@@ -285,6 +285,210 @@ Timed encounters and condition progression run at the same boundaries as native 
 await advance_time(3600)
 ```
 
+#### Redraw Map
+
+Clears temporary presentation and redraws the active map.
+
+- Stable ID: `core.map.redraw`
+- Port: `core.map`
+- Parameters: none
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+Use this after pictures or authored map changes when the map should become visible immediately.
+
+```gdscript
+await map_redraw()
+```
+
+#### Set Action Point Chance
+
+Changes an authored AP or XAP activation percentage.
+
+- Stable ID: `core.map.trigger-chance`
+- Port: `core.map`
+- Parameters: `levelType: string`, `levelIndex: int`, `triggerId: int`, `percent: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The change is stored in campaign state and survives save and load.
+
+```gdscript
+await map_trigger_chance("land", 0, 17, 0)
+```
+
+#### Set Camping Permission
+
+Allows or prevents camping through the active map rules.
+
+- Stable ID: `core.map.camping`
+- Port: `core.map`
+- Parameters: `allowed: bool`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The HUD and rest controls update through the normal camping boundary.
+
+```gdscript
+await map_camping(false)
+```
+
+#### Set Map Darkness
+
+Changes the authored darkness level for a land or dungeon map.
+
+- Stable ID: `core.map.darkness`
+- Port: `core.map`
+- Parameters: `levelType: string`, `levelIndex: int`, `darkness: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The map mutation is saved and the active view is refreshed when applicable.
+
+```gdscript
+await map_darkness("dungeon", 2, 3)
+```
+
+#### Give Player Map
+
+Adds an authored map or note to the party.
+
+- Stable ID: `core.map.give-player-map`
+- Port: `core.map`
+- Parameters: `mapId: int`, `display: bool?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Providence supplies a player-map picker; display optionally opens it immediately.
+
+```gdscript
+await map_give_player_map(2, true)
+```
+
+#### Move Party by Offset
+
+Moves the party relative to its current map position.
+
+- Stable ID: `core.map.shift-party`
+- Port: `core.map`
+- Parameters: `dx: int`, `dy: int`
+- Result: `LocationSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The destination uses the normal map transition and boundary validation path and is saved in campaign state.
+
+```gdscript
+var location: LocationSnapshot = await map_shift_party(1, 0)
+```
+
+#### Face Party
+
+Faces the party north, east, south, or west.
+
+- Stable ID: `core.map.view-direction`
+- Port: `core.map`
+- Parameters: `heading: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Providence presents the stable headings 1 through 4 as named directions and Remake redraws the active view.
+
+```gdscript
+await map_view_direction(1)
+```
+
+#### Set Map View Options
+
+Changes compass visibility or access to the full overhead map.
+
+- Stable ID: `core.map.view-mode`
+- Port: `core.map`
+- Parameters: `compassEnabled: bool?`, `fullMap: bool?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Omitted options retain their current values; the chosen view state is included in saves.
+
+```gdscript
+await map_view_mode(true, false)
+```
+
+#### Change Land Appearance
+
+Changes the tileset identity and optional darkness of an authored land level.
+
+- Stable ID: `core.map.land-look`
+- Port: `core.map`
+- Parameters: `levelIndex: int`, `landLook: int`, `darkness: int?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Only packaged land looks may be selected; tile projection and saved map overrides remain owned by Map.
+
+```gdscript
+await map_land_look(0, 3, 0)
+```
+
+#### Configure Random Encounter Area
+
+Changes the encounter chance and optional battle range for an authored random rectangle.
+
+- Stable ID: `core.map.random-rectangle`
+- Port: `core.map`
+- Parameters: `levelType: string`, `levelIndex: int`, `rectangleIndex: int`, `percent: int`, `firstBattleId: int?`, `lastBattleId: int?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The original bounds and scheduling data are preserved unless separately authored, and the override survives save and load.
+
+```gdscript
+await map_random_rectangle("land", 0, 2, 15, 4, 7)
+```
+
+#### Set Sailing State
+
+Places the exploring party in or out of its campaign boat state.
+
+- Stable ID: `core.map.sailing`
+- Port: `core.map`
+- Parameters: `enabled: bool`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The normal exploration icon and movement state are refreshed immediately.
+
+```gdscript
+var sailing: bool = await map_sailing(true)
+```
+
+#### Move Party Back
+
+Moves the party one tile opposite a supplied entry direction.
+
+- Stable ID: `core.map.retreat`
+- Port: `core.map`
+- Parameters: `dx: int`, `dy: int`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Providence presents the entry direction by name; a zero or invalid direction returns false without inventing movement.
+
+```gdscript
+var moved: bool = await map_retreat(0, 1)
+```
+
 ### Inventory and Economy
 
 #### Party Wealth
@@ -355,6 +559,142 @@ The normal loot interface and item-instance materialization are used.
 await give_treasure(reward)
 ```
 
+#### Drop All Party Items
+
+Removes every carried party item and returns the number removed.
+
+- Stable ID: `core.inventory.drop-items`
+- Port: `core.inventory`
+- Parameters: none
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Item instances are removed through the inventory API so equipment and load stay consistent.
+
+```gdscript
+var removed: int = await inventory_drop_items()
+```
+
+#### Open Shop
+
+Loads an authored shop and optionally opens it immediately.
+
+- Stable ID: `core.inventory.open-shop`
+- Port: `core.inventory`
+- Parameters: `shopId: int`, `openImmediately: bool?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Scenario item identities, saved shop mutations, and normal purchase rules remain active.
+
+```gdscript
+await inventory_open_shop(3, true)
+```
+
+#### Open Temple Services
+
+Enables temple services at the supplied price percentage.
+
+- Stable ID: `core.inventory.temple`
+- Port: `core.inventory`
+- Parameters: `costPercent: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The active inventory and character rule providers still validate each service.
+
+```gdscript
+await inventory_temple(100)
+```
+
+#### Enable Banking
+
+Enables the normal banking interface for the current location.
+
+- Stable ID: `core.inventory.banking`
+- Port: `core.inventory`
+- Parameters: none
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+This grants access through Remake's existing money and storage UI.
+
+```gdscript
+await inventory_banking()
+```
+
+#### Clear Party Currency
+
+Clears gold, gems, or jewelry from the party or selected characters.
+
+- Stable ID: `core.inventory.clear-currency`
+- Port: `core.inventory`
+- Parameters: `currency: int`, `selectedOnly: bool?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Currency uses the friendly Providence selector; the stored value is the stable zero-based currency index.
+
+```gdscript
+var removed: int = await inventory_clear_currency(0, false)
+```
+
+#### Alter Party Items
+
+Removes, recharges, or replaces matching scenario item instances.
+
+- Stable ID: `core.inventory.alter-item`
+- Port: `core.inventory`
+- Parameters: `itemId: int`, `action: string`, `maximum: int?`, `chargeDelta: int?`, `replacementItemId: int?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Action is remove, charges, or replace; equipped items follow the normal unequip and validation path.
+
+```gdscript
+var changed: int = await inventory_alter_item(key, "remove", 1)
+```
+
+#### Store or Restore Equipment
+
+Captures party equipment or restores the previously captured set.
+
+- Stable ID: `core.inventory.store-equipment`
+- Port: `core.inventory`
+- Parameters: `capture: bool`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The storage snapshot is owned by the Inventory port and included in saves.
+
+```gdscript
+await inventory_store_equipment(true)
+```
+
+#### Change Shop Stock
+
+Changes matching item quantities and optional inflation in an authored shop.
+
+- Stable ID: `core.inventory.change-shop`
+- Port: `core.inventory`
+- Parameters: `shopId: int`, `itemId: int`, `quantityDelta: int`, `inflationDelta: int?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The effective shop is persisted even if its UI has not been opened yet; loaded shops update immediately.
+
+```gdscript
+var slots: int = await inventory_change_shop(3, rope, -1, 0)
+```
+
 ### Party and Characters
 
 #### Party Members
@@ -393,19 +733,19 @@ var healthy: bool = not await party_condition(diseased)
 
 #### Change Party Health
 
-Heals or damages the party through the character rules.
+Heals or damages the party or the current character selection through the character rules.
 
 - Stable ID: `core.character.change-health`
 - Port: `core.character`
-- Parameters: `amount: int`, `canKill: bool?`
+- Parameters: `amount: int`, `canKill: bool?`, `targetMode: string?`
 - Result: `void`
 - Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`
 - Behavior: yielding; mutates validated state
 
-Death and recovery lifecycle events are generated by the normal character path.
+Target mode may be party or selected; death and recovery lifecycle events use the normal character path.
 
 ```gdscript
-await change_party_health(-5, false)
+await change_health(-5, false, "selected")
 ```
 
 #### Give Experience
@@ -423,6 +763,244 @@ Level progression and presentation stay owned by the character port.
 
 ```gdscript
 await give_experience(500)
+```
+
+#### Change Party Fatigue
+
+Adds a signed amount to party fatigue through the active rules.
+
+- Stable ID: `core.character.fatigue`
+- Port: `core.character`
+- Parameters: `amount: float`
+- Result: `float`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The result is clamped by the selected character and map-time providers.
+
+```gdscript
+var fatigue: float = await character_fatigue(5.0)
+```
+
+#### Party Has Ally
+
+Tests whether the party currently has the selected authored monster as an ally.
+
+- Stable ID: `core.character.has-ally`
+- Port: `core.character`
+- Parameters: `monsterId: int`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `rule-modifier`, `helper`
+- Behavior: yielding; query/presentation only
+
+The check uses the saved Classic monster identity rather than display-name guessing.
+
+```gdscript
+var joined: bool = await character_has_ally(vodalian)
+```
+
+#### Add Party Ally
+
+Creates an authored monster as a persistent party ally.
+
+- Stable ID: `core.character.add-ally`
+- Port: `core.character`
+- Parameters: `monsterId: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The monster record and scenario-specific image identity are resolved from the active package.
+
+```gdscript
+await character_add_ally(vodalian)
+```
+
+#### Remove Party Ally
+
+Removes every matching authored ally from the party.
+
+- Stable ID: `core.character.remove-ally`
+- Port: `core.character`
+- Parameters: `monsterId: int`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Selection state and the party HUD are updated with the ally list.
+
+```gdscript
+var removed: int = await character_remove_ally(vodalian)
+```
+
+#### Remove Experience
+
+Removes experience from the party or current selected characters.
+
+- Stable ID: `core.character.remove-experience`
+- Port: `core.character`
+- Parameters: `amount: int`, `selectedOnly: bool?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Experience never falls below the character progression floor.
+
+```gdscript
+var removed: int = await character_remove_experience(100, true)
+```
+
+#### Apply Character Condition
+
+Applies or clears a Classic-compatible condition on party members.
+
+- Stable ID: `core.character.condition`
+- Port: `core.character`
+- Parameters: `targetMode: string`, `conditionIndex: int`, `duration: int`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Target mode is party, selected, or living; condition duration uses the normal condition clock.
+
+```gdscript
+var affected: int = await character_condition("party", diseased, 8)
+```
+
+#### Ask Player to Pick Characters
+
+Opens the party picker and stores the resulting character selection.
+
+- Stable ID: `core.character.pick`
+- Port: `core.character`
+- Parameters: `count: int`, `allowDead: bool?`, `invert: bool?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Later selected-character operations consume this explicit saved selection.
+
+```gdscript
+var selected: int = await character_pick(1)
+```
+
+#### Check Character Ability
+
+Picks one living character and performs an attribute or special-ability check.
+
+- Stable ID: `core.character.ability-check`
+- Port: `core.character`
+- Parameters: `checkType: string`, `checkIndex: int`, `modifier: int?`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+Providence supplies named attributes and abilities while preserving the stable source index.
+
+```gdscript
+var passed: bool = await character_ability_check("attribute", strength, 0)
+```
+
+#### Level Selected Characters
+
+Advances the currently selected characters through normal progression.
+
+- Stable ID: `core.character.level-selected`
+- Port: `core.character`
+- Parameters: none
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Classic or Samuel character providers still own the actual level-up calculations.
+
+```gdscript
+var leveled: int = await character_level_selected()
+```
+
+#### Check Party Property
+
+Tests party level, camp or boat state, selection, race, caste, or gender.
+
+- Stable ID: `core.character.party-misc`
+- Port: `core.character`
+- Parameters: `selector: string`, `value: int?`, `selectedOnly: bool?`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `rule-modifier`, `helper`
+- Behavior: yielding; query/presentation only
+
+Providence presents selector-specific controls and hides fields that do not apply.
+
+```gdscript
+var aboard: bool = await character_party_misc("in_boat")
+```
+
+#### Change Selected Character Stat
+
+Changes a supported stat on the currently selected characters.
+
+- Stable ID: `core.character.change-stat`
+- Port: `core.character`
+- Parameters: `stat: string`, `amount: int`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Providence offers named choices for actions, movement, damage, spell points, health, defense, accuracy, resistance, hand-to-hand, and prestige.
+
+```gdscript
+var changed: int = await character_change_stat("movement", 2)
+```
+
+#### Select Characters by Identity
+
+Replaces the current character selection using race, caste, gender, or authored identity groups.
+
+- Stable ID: `core.character.select-identity`
+- Port: `core.character`
+- Parameters: `selector: string`, `value: int`, `livingOnly: bool?`, `group: int?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Race and caste controls use the scenario's named rule tables while keeping stable numeric identity values.
+
+```gdscript
+var selected: int = await character_select_identity("race", orc, true)
+```
+
+#### Select Characters by Property
+
+Replaces the current selection using movement, items, equipment, conditions, saves, or other bounded character properties.
+
+- Stable ID: `core.character.select-property`
+- Port: `core.character`
+- Parameters: `selector: string`, `value: int?`, `candidateMode: string?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Providence changes the value picker to match the chosen property and Remake validates the resulting selection.
+
+```gdscript
+var selected: int = await character_select_property("movement_below", 10, "party")
+```
+
+#### Filter Characters by Ability Check
+
+Runs an attribute or special-ability check over a bounded party set and stores the matching characters.
+
+- Stable ID: `core.character.filter-ability`
+- Port: `core.character`
+- Parameters: `checkType: string`, `checkIndex: int`, `modifier: int?`, `candidateMode: string?`, `selectOnFailure: bool?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Candidate mode is party, alive, or selected; authors may retain successes or failures for later effects.
+
+```gdscript
+var selected: int = await character_filter_ability("special", acrobatics, 30, "party", false)
 ```
 
 ### Presentation
@@ -493,6 +1071,57 @@ Wait behavior is explicit rather than encoded in the sign of an author-entered n
 
 ```gdscript
 await play_sound(portal_sound, true)
+```
+
+#### Show Scrolling Text
+
+Shows a packaged scrolling-text resource.
+
+- Stable ID: `core.presentation.scrolling-text`
+- Port: `core.presentation`
+- Parameters: `resourceId: int`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The operation waits until the player closes the scrolling-text presentation.
+
+```gdscript
+await presentation_scrolling_text(4)
+```
+
+#### Wait for Acknowledgement
+
+Waits at an explicit player acknowledgement boundary.
+
+- Stable ID: `core.presentation.wait`
+- Port: `core.presentation`
+- Parameters: `prompt: string?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+Presentation rules may shorten authored waits while preserving the continuation boundary.
+
+```gdscript
+await presentation_wait("Click to continue")
+```
+
+#### Play Music
+
+Plays a packaged track or a configured Remake music category.
+
+- Stable ID: `core.presentation.music`
+- Port: `core.presentation`
+- Parameters: `musicType: string`, `trackName: string?`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+A track name takes precedence; otherwise Remake resolves the selected music category.
+
+```gdscript
+await presentation_music("Town")
 ```
 
 ### Encounters
@@ -582,4 +1211,193 @@ Healing cannot revive a target unless the behavior uses an explicit revival oper
 
 ```gdscript
 var healed: int = await heal(target, 8)
+```
+
+#### Cast Authored Spell
+
+Resolves an authored or stock spell against the party or selected characters.
+
+- Stable ID: `core.character.cast-spell`
+- Port: `core.character`
+- Parameters: `spellId: int`, `power: int`, `targetMode: string`, `saveAdjustment: int?`, `forceAffect: bool?`
+- Result: `int`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Spell bindings, validation, effects, saves, and presentation run through the normal spell path.
+
+```gdscript
+var affected: int = await character_cast_spell(disease, 4, "party")
+```
+
+#### Combat Has Monster
+
+Tests the active battle for a Classic monster-name identity.
+
+- Stable ID: `core.combat.has-monster`
+- Port: `core.combat`
+- Parameters: `monsterNameId: int`
+- Result: `bool`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The check does not confuse scenario-local images or duplicate display names.
+
+```gdscript
+var present: bool = await combat_has_monster(vampire_bat)
+```
+
+#### Destroy Combat Monsters
+
+Removes matching monsters from the active battle.
+
+- Stable ID: `core.combat.destroy-monsters`
+- Port: `core.combat`
+- Parameters: `monsterNameId: int`, `maximum: int?`, `includeAllFactions: bool?`
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The result is bounded by maximum and runs through normal combatant cleanup.
+
+```gdscript
+var removed: int = await combat_destroy_monsters(skeleton, 4)
+```
+
+#### Rout Combat Monsters
+
+Forces matching monsters to surrender or flee under combat morale rules.
+
+- Stable ID: `core.combat.rout-monsters`
+- Port: `core.combat`
+- Parameters: `monsterNameId: int`, `maximum: int?`, `surrenderPercent: int?`
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The selected gameplay profile may disable Classic morale behavior.
+
+```gdscript
+var routed: int = await combat_rout_monsters(goblin, 6, 50)
+```
+
+#### Spawn Combat Monsters
+
+Spawns authored monsters near the active combat actor.
+
+- Stable ID: `core.combat.spawn-monsters`
+- Port: `core.combat`
+- Parameters: `monsterId: int`, `count: int`, `radius: int?`, `faction: int?`
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Monster identity, scenario art, placement validation, and combat limits remain owned by Combat.
+
+```gdscript
+var spawned: int = await combat_spawn_monsters(guardian, 2)
+```
+
+#### Revive Combatants
+
+Revives eligible defeated combatants through the Classic revival behavior.
+
+- Stable ID: `core.combat.revive`
+- Port: `core.combat`
+- Parameters: none
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The active combat snapshot determines eligible targets and placement.
+
+```gdscript
+var revived: int = await combat_revive()
+```
+
+#### Set Priest Turning
+
+Enables or disables priest turning for the current campaign state.
+
+- Stable ID: `core.combat.priest-turning`
+- Port: `core.combat`
+- Parameters: `enabled: bool`
+- Result: `void`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+The state is saved and the normal combat presentation announces the change.
+
+```gdscript
+await combat_priest_turning(false)
+```
+
+#### End Battle
+
+Ends the active battle with a validated outcome and reward mode.
+
+- Stable ID: `core.combat.end-battle`
+- Port: `core.combat`
+- Parameters: `outcome: string`, `rewardMode: string?`
+- Result: `void`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Use won, lost, escaped, or aborted; normal battle cleanup and lifecycle hooks still run.
+
+```gdscript
+await combat_end_battle("won", "normal")
+```
+
+#### Fumble Active Combatant
+
+Makes the active combatant drop its current melee weapon when combat rules permit it.
+
+- Stable ID: `core.combat.fumble`
+- Port: `core.combat`
+- Parameters: `message: string?`, `soundId: int?`
+- Result: `bool`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Player weapons enter the bounded battle fumble queue; monster weapons are removed through the same combat cleanup path.
+
+```gdscript
+var dropped: bool = await combat_fumble("The weapon slips free!")
+```
+
+#### Change Combat Monsters
+
+Changes the faction or scenario icon of matching allies or monsters in the active battle.
+
+- Stable ID: `core.combat.change-monsters`
+- Port: `core.combat`
+- Parameters: `monsterNameId: int`, `targetType: string`, `maximum: int`, `faction: int?`, `iconId: int?`
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Target type is ally or monster. Providence supplies authored monster and icon pickers and Remake validates the bounded match count.
+
+```gdscript
+var changed: int = await combat_change_monsters(goblin, "monster", 4, 1)
+```
+
+### Lifecycle and Rules
+
+#### Complete Campaign
+
+Marks the current campaign complete and dispatches its one-time campaign-complete lifecycle hook.
+
+- Stable ID: `core.lifecycle.complete-campaign`
+- Port: `core.persistence`
+- Parameters: `ending: string?`
+- Result: `bool`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; mutates validated state
+
+Use only at an authored finale. Ordinary AP returns and battle victories do not complete a campaign; completion state is saved and repeated calls are idempotent.
+
+```gdscript
+var completed: bool = await lifecycle_complete_campaign("victory")
 ```

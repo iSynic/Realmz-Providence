@@ -1,5 +1,11 @@
 import { REMAKE_EXTENSION_CATALOG } from "./generated/remakeExtensionCatalog";
-import { Project } from "./types";
+import SCENARIO_API_CATALOG_JSON from "../../schemas/remake-scenario-capabilities.v2.json";
+import {
+  Project,
+  RemakeBehaviorDefinition,
+  RemakeBehaviorRole,
+  RemakeScriptValueType
+} from "./types";
 
 type JsonSchema = {
   type?: string;
@@ -15,6 +21,28 @@ type JsonSchema = {
 type CatalogEntry = string | {
   id: string;
   parametersSchema?: JsonSchema;
+};
+
+type ScenarioCatalogRole = {
+  id: RemakeBehaviorRole;
+  resultType: string;
+  hooks: string[];
+  runtimeHooks?: string[];
+  allowsYield: boolean;
+  pureHooks?: string[];
+};
+
+type ScenarioCatalogOperation = {
+  id: string;
+  roles: RemakeBehaviorRole[];
+  yields: boolean;
+  mutates: boolean;
+};
+
+const SCENARIO_API_CATALOG = SCENARIO_API_CATALOG_JSON as {
+  apiVersion: number;
+  roles: ScenarioCatalogRole[];
+  operations: ScenarioCatalogOperation[];
 };
 
 export function validateRemakeRuntime(project: Project): string[] {
@@ -119,6 +147,8 @@ export function validateRemakeRuntime(project: Project): string[] {
     }
   }
 
+  validateBehaviors(project, errors);
+
   return errors;
 }
 
@@ -147,6 +177,161 @@ function requireOwner(
 
 function isNamespaced(value: string) {
   return /^[a-z0-9][a-z0-9-]*(\.[a-z0-9][a-z0-9-]*)+$/.test(value);
+}
+
+function validateBehaviors(project: Project, errors: string[]) {
+  const roles = new Map(
+    SCENARIO_API_CATALOG.roles.map((role) => [role.id, role])
+  );
+  const operations = new Map(
+    SCENARIO_API_CATALOG.operations.map((operation) => [operation.id, operation])
+  );
+  const behaviors = new Map<string, RemakeBehaviorDefinition>();
+  for (const behavior of project.remakeRuntime.behaviors) {
+    const context = `Scenario behavior '${behavior.id || behavior.name}'`;
+    if (!behavior.id || behaviors.has(behavior.id)) {
+      errors.push(`${context} has a missing or duplicate stable ID.`);
+      continue;
+    }
+    behaviors.set(behavior.id, behavior);
+    if (behavior.apiVersion !== SCENARIO_API_CATALOG.apiVersion) {
+      errors.push(
+        `${context} uses Scenario API ${behavior.apiVersion}; `
+        + `this Providence build provides API ${SCENARIO_API_CATALOG.apiVersion}.`
+      );
+    }
+    const roleId = behavior.kind === "helper" ? "helper" : behavior.role;
+    const role = roles.get(roleId);
+    if (!role) {
+      errors.push(`${context} uses unavailable role '${roleId}'.`);
+      continue;
+    }
+    const runtimeHooks = role.runtimeHooks ?? role.hooks;
+    if (behavior.kind === "entry" && !runtimeHooks.includes(behavior.hook)) {
+      errors.push(
+        `${context} hook '${behavior.hook}' is not connected to a runtime boundary `
+        + `for role '${roleId}'.`
+      );
+    }
+    if (behavior.kind === "helper" && behavior.hook) {
+      errors.push(`${context} is a helper and cannot declare hook '${behavior.hook}'.`);
+    }
+    const expectedReturnType = roleReturnType(role.resultType);
+    if (behavior.kind === "entry" && behavior.returnType !== expectedReturnType) {
+      errors.push(
+        `${context} role '${roleId}' must return '${expectedReturnType}', `
+        + `not '${behavior.returnType}'.`
+      );
+    }
+    const pure = (role.pureHooks ?? []).some(
+      (hook) => hook === "*" || hook === behavior.hook
+    );
+    const seenCapabilities = new Set<string>();
+    for (const capability of behavior.requestedCapabilities) {
+      if (seenCapabilities.has(capability)) {
+        errors.push(`${context} requests capability '${capability}' more than once.`);
+        continue;
+      }
+      seenCapabilities.add(capability);
+      const operation = operations.get(capability);
+      if (!operation) {
+        errors.push(`${context} requests unavailable capability '${capability}'.`);
+        continue;
+      }
+      if (!operation.roles.includes(roleId)) {
+        errors.push(
+          `${context} cannot use capability '${capability}' from role '${roleId}'.`
+        );
+      }
+      if (operation.yields && !role.allowsYield) {
+        errors.push(
+          `${context} role '${roleId}' cannot use yielding capability '${capability}'.`
+        );
+      }
+      if (pure && (operation.yields || operation.mutates)) {
+        errors.push(
+          `${context} pure hook '${behavior.hook}' cannot yield or mutate state.`
+        );
+      }
+    }
+  }
+
+  const bindingIds = new Set<string>();
+  for (const binding of project.remakeRuntime.behaviorBindings) {
+    const context = `Scenario behavior binding '${binding.id || binding.behaviorId}'`;
+    if (!binding.id || bindingIds.has(binding.id)) {
+      errors.push(`${context} has a missing or duplicate stable ID.`);
+      continue;
+    }
+    bindingIds.add(binding.id);
+    const behavior = behaviors.get(binding.behaviorId);
+    if (!behavior) {
+      errors.push(`${context} references unavailable behavior '${binding.behaviorId}'.`);
+      continue;
+    }
+    if (binding.role !== behavior.role || binding.hook !== behavior.hook) {
+      errors.push(
+        `${context} role and hook must match behavior '${binding.behaviorId}'.`
+      );
+    }
+    const role = roles.get(binding.role);
+    const runtimeHooks = role?.runtimeHooks ?? role?.hooks ?? [];
+    if (!runtimeHooks.includes(binding.hook)) {
+      errors.push(
+        `${context} hook '${binding.hook}' is not connected to a runtime boundary `
+        + `for role '${binding.role}'.`
+      );
+    }
+    const targetError = validateBehaviorTarget(project, binding.targetKind, binding.recordId);
+    if (targetError) errors.push(`${context} ${targetError}`);
+    const parameterNames = new Set(behavior.parameters.map((parameter) => parameter.name));
+    for (const parameter of behavior.parameters) {
+      if (!(parameter.name in binding.arguments)) {
+        errors.push(
+          `${context} requires an argument binding for '${parameter.name}'.`
+        );
+      }
+    }
+    for (const name of Object.keys(binding.arguments)) {
+      if (!parameterNames.has(name)) {
+        errors.push(`${context} maps unknown argument '${name}'.`);
+      }
+    }
+  }
+}
+
+function roleReturnType(resultType: string): RemakeScriptValueType {
+  const resultTypes: Record<string, RemakeScriptValueType> = {
+    ActionOutcome: "action-outcome",
+    EncounterOutcome: "encounter-outcome",
+    EffectOutcome: "effect-outcome",
+    ItemOutcome: "item-outcome",
+    MonsterDecision: "monster-decision",
+    RuleModifier: "rule-modifier",
+    void: "void"
+  };
+  return resultTypes[resultType] ?? "void";
+}
+
+function validateBehaviorTarget(
+  project: Project,
+  targetKind: string,
+  recordId: string
+): string | null {
+  const exists = targetKind === "trigger"
+    ? project.triggers.some((record) => record.id === recordId)
+    : targetKind === "simpleEncounter"
+      ? project.simpleEncounters.some((record) => String(record.id) === recordId)
+        : targetKind === "complexEncounter"
+          ? project.complexEncounters.some((record) => String(record.id) === recordId)
+          : targetKind === "spell"
+          ? project.spellOverrides.some((record) => String(record.id) === recordId)
+          : targetKind === "item"
+            ? project.scenarioItems.some((record) => String(record.id) === recordId)
+            : targetKind === "monster"
+              ? project.monsters.some((record) => String(record.id) === recordId)
+              : targetKind === "lifecycle" || targetKind === "rule";
+  return exists ? null : `references unavailable ${targetKind} record '${recordId}'.`;
 }
 
 function validateSchema(

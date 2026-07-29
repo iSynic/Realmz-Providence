@@ -122,6 +122,15 @@ export { defaultGlobalMacroHooks };
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateAuthoringTarget") return { ...project, authoringTarget: command.target };
   if (command.kind === "updateRemakeRuntime") return { ...project, remakeRuntime: command.runtime };
+  if (command.kind === "updateRemakePreviewProfiles") {
+    return {
+      ...project,
+      editorMetadata: {
+        ...project.editorMetadata,
+        remakePreviewProfiles: command.profiles
+      }
+    };
+  }
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
   if (command.kind === "setLandCellSecretState") return setLandCellSecretState(project, command);
   if (command.kind === "updateDungeonCellFlags") return updateDungeonCellFlags(project, command);

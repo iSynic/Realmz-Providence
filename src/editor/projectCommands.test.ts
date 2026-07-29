@@ -556,6 +556,39 @@ describe("project command facade", () => {
     });
     expect(next.editorMetadata.removedScenarioResources).toEqual([{ resourceType: "PICT", resourceId: 170 }]);
   });
+
+  it("stores Remake preview profiles as authoring-only editor metadata", () => {
+    const project = createBrowserProject("Preview Profiles");
+    const profiles = [{
+      id: "profile.city-captain",
+      name: "City captain deadline",
+      gameplayProfile: "core.classic",
+      gold: 500,
+      gems: 0,
+      jewelry: 0,
+      totalSeconds: 2 * 24 * 60 * 60,
+      rngSeed: 42,
+      questFlags: [{ id: 17, value: 1 }],
+      party: [{
+        slot: 0,
+        name: "Cindred",
+        health: 33,
+        maximumHealth: 33,
+        spellPoints: 0,
+        maximumSpellPoints: 0,
+        itemIds: [900]
+      }],
+      assertions: [{ path: "wealth.gold", operator: "equals" as const, value: "0" }]
+    }];
+    const next = applyProjectCommand(project, {
+      kind: "updateRemakePreviewProfiles",
+      label: "Save preview profile",
+      profiles
+    });
+
+    expect(next.editorMetadata.remakePreviewProfiles).toEqual(profiles);
+    expect(next.remakeRuntime).toEqual(project.remakeRuntime);
+  });
 });
 
 function semanticResourceEntity(id: string, source: string, resourceId: number) {

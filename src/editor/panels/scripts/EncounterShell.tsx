@@ -9,7 +9,7 @@ import type {
   RealmzTargetRecordKind,
   SelectedEntity
 } from "../../types";
-import { CollapsibleSection } from "../../ui";
+import { CollapsibleSection, FormField } from "../../ui";
 import { selectEntityFromId } from "../../utils";
 import {
   buildEncounterDecisionSources,
@@ -103,6 +103,7 @@ export function EncounterShell({
     }
   };
   const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
   const rogueRecord = recordKind === "complex" && thiefSuccess !== undefined
     ? project.thiefEncounters?.find((candidate) => candidate.id === thiefSuccess)
     : undefined;
@@ -178,6 +179,7 @@ export function EncounterShell({
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   useEffect(() => {
     setSelectedResultIndex(null);
+    setSelectedOptionIndex(0);
     setPromptEditorOpen(false);
     setCopyPanelOpen(false);
   }, [id, recordKind]);
@@ -269,6 +271,33 @@ export function EncounterShell({
           recordLabel={`${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${id}`}
           onApplyCommand={onApplyCommand}
         />
+        <div className="contextual-behavior-hook-card">
+          <FormField
+            label="Encounter option behavior"
+            hint="Choose the player-facing option whose behavior you want to attach."
+          >
+            <select
+              value={selectedOptionIndex}
+              onChange={(event) => setSelectedOptionIndex(Number(event.currentTarget.value))}
+            >
+              {Array.from({ length: recordKind === "simple" ? 4 : 8 }, (_, slot) => (
+                <option key={slot} value={slot}>
+                  {`Option ${slot + 1}${texts[slot] ? ` · ${texts[slot]}` : ""}`}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <ContextualBehaviorCard
+            project={project}
+            role="encounter"
+            hook="option"
+            targetKind={encounterRecordType}
+            recordId={String(id)}
+            recordLabel={`${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${id}, option ${selectedOptionIndex + 1}`}
+            slot={selectedOptionIndex}
+            onApplyCommand={onApplyCommand}
+          />
+        </div>
         {selectedResultIndex != null ? (
           <ContextualBehaviorCard
             project={project}

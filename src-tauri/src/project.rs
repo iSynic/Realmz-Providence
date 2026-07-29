@@ -480,6 +480,70 @@ pub struct EditorMetadata {
     pub quest_context_sources: Vec<QuestContextSource>,
     #[serde(default)]
     pub removed_scenario_resources: Vec<RemovedScenarioResource>,
+    #[serde(default)]
+    pub remake_preview_profiles: Vec<RemakePreviewProfile>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewProfile {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub gold: i64,
+    #[serde(default)]
+    pub gems: i64,
+    #[serde(default)]
+    pub jewelry: i64,
+    #[serde(default)]
+    pub total_seconds: i64,
+    #[serde(default = "default_preview_rng_seed")]
+    pub rng_seed: i64,
+    #[serde(default = "default_preview_gameplay_profile")]
+    pub gameplay_profile: String,
+    #[serde(default)]
+    pub quest_flags: Vec<RemakePreviewQuestFlag>,
+    #[serde(default)]
+    pub party: Vec<RemakePreviewPartyMember>,
+    #[serde(default)]
+    pub assertions: Vec<RemakePreviewAssertion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewQuestFlag {
+    pub id: i32,
+    pub value: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewPartyMember {
+    pub slot: usize,
+    #[serde(default)]
+    pub name: String,
+    pub health: Option<i32>,
+    pub maximum_health: Option<i32>,
+    pub spell_points: Option<i32>,
+    pub maximum_spell_points: Option<i32>,
+    #[serde(default)]
+    pub item_ids: Vec<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewAssertion {
+    pub path: String,
+    pub operator: String,
+    pub value: String,
+}
+
+fn default_preview_rng_seed() -> i64 {
+    1
+}
+
+fn default_preview_gameplay_profile() -> String {
+    "core.classic".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -526,6 +526,42 @@ export type EditorMetadata = {
   questThreads: QuestThread[];
   questContextSources: QuestContextSource[];
   removedScenarioResources: RemovedScenarioResource[];
+  remakePreviewProfiles: RemakePreviewProfile[];
+};
+
+export type RemakePreviewQuestFlag = {
+  id: number;
+  value: number;
+};
+
+export type RemakePreviewPartyMember = {
+  slot: number;
+  name: string;
+  health: number | null;
+  maximumHealth: number | null;
+  spellPoints: number | null;
+  maximumSpellPoints: number | null;
+  itemIds: number[];
+};
+
+export type RemakePreviewAssertion = {
+  path: string;
+  operator: "equals" | "not-equals" | "at-least" | "at-most";
+  value: string;
+};
+
+export type RemakePreviewProfile = {
+  id: string;
+  name: string;
+  gold: number;
+  gems: number;
+  jewelry: number;
+  totalSeconds: number;
+  rngSeed: number;
+  gameplayProfile: string;
+  questFlags: RemakePreviewQuestFlag[];
+  party: RemakePreviewPartyMember[];
+  assertions: RemakePreviewAssertion[];
 };
 
 export type RemovedScenarioResource = {
@@ -681,6 +717,7 @@ export type LandCellSecretState = "normal" | "hidden" | "revealed";
 export type ProjectCommand =
   | { kind: "updateAuthoringTarget"; label: string; target: AuthoringTarget }
   | { kind: "updateRemakeRuntime"; label: string; runtime: RemakeRuntime }
+  | { kind: "updateRemakePreviewProfiles"; label: string; profiles: RemakePreviewProfile[] }
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | {
       kind: "updateDungeonCellFlags";

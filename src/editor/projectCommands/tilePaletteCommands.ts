@@ -70,7 +70,8 @@ export function normalizedEditorMetadata(project: Project): Project["editorMetad
     mapStamps: normalizeMapStamps(project.editorMetadata?.mapStamps ?? []),
     questThreads: normalizeQuestThreads(project.editorMetadata?.questThreads ?? []),
     questContextSources: normalizeQuestContextSources(project.editorMetadata?.questContextSources ?? []),
-    removedScenarioResources: normalizeRemovedScenarioResources(project.editorMetadata?.removedScenarioResources ?? [])
+    removedScenarioResources: normalizeRemovedScenarioResources(project.editorMetadata?.removedScenarioResources ?? []),
+    remakePreviewProfiles: project.editorMetadata?.remakePreviewProfiles ?? []
   };
 }
 

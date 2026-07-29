@@ -54,14 +54,16 @@ Every entry behavior has one role and hook. The role controls its input context,
 | --- | --- | --- |
 | Action | `run` | Continue, halt, call, replace, or return |
 | Encounter | `enter`, `option`, `result`, `complete` | Continue, resolve, repeat, close, or branch |
-| Spell | `validate`, `cast`, `effect`, `tick`, `expire` | Applied, no effect, or invalid |
-| Item | `use-field`, `use-combat`, `equip`, `unequip`, `attack`, `defense`, `passive` | Used, rejected, or no effect |
-| Monster AI | `decision` | Attack, cast, move, flee, wait, or use item |
-| Lifecycle | campaign, map, movement, rest, time, battle, character, and party events | Completion |
+| Spell | `validate`, `cast`, `effect` | Applied, no effect, or invalid |
+| Item | `use-field`, `use-combat` | Used, rejected, or no effect |
+| Monster AI | `decide` | Attack, cast, move, flee, wait, or use item |
+| Lifecycle | campaign start/resume, map, movement, rest, time, battle, character, and party events | Completion |
 | Rule modifier | a named calculation family | Additive, multiplicative, minimum, or maximum changes |
-| Helper | `call` | Its declared typed value |
+| Helper | no hook; called by another behavior | Its declared typed value |
 
 Validation and rule-modifier hooks are pure. They cannot yield or mutate state. Other roles may yield only through operations whose API entry says they yield.
+
+The generated API reference distinguishes runtime-connected hooks from reserved hooks. Providence will not export a behavior attached to a reserved hook. Spell duration tick/expiration, item equip/unequip/attack/defense/passive, and campaign completion are reserved for later runtime seams rather than silently accepted as no-ops.
 
 ### Action Points and XAPs
 
@@ -79,7 +81,7 @@ Use the contextual card on the selected encounter result instead of manually com
 
 Spell validation is pure. Cast and effect behavior run through the Character and Combat ports. An attached custom implementation owns that spell resolution; ordinary Classic or shared-data spells continue through the established spell implementation.
 
-Use separate helpers for reusable targeting or effect calculations. Duration tick and expiration hooks use the same explicit behavior state, so a saved game never depends on a live coroutine or Godot object.
+Use separate helpers for reusable targeting or effect calculations. Duration tick and expiration hooks are reserved in the catalog but are not authorable until Remake has a single native duration-event owner. Store explicit duration state now; do not depend on a live coroutine or Godot object.
 
 ### Items
 
@@ -95,7 +97,7 @@ Do not mutate combat from an AI decision. Return the decision; use spell or item
 
 ### Lifecycle
 
-Lifecycle hooks cover campaign start/resume/completion, map entry/leave, party movement, rest, time advancement, battle start/completion, character defeat, and party defeat. Current Remake dispatch includes campaign start/resume, map entry, and time advancement through the shared event queue. Additional native boundaries use the same `emit_lifecycle_event` contract.
+Lifecycle hooks currently cover campaign start/resume, map entry/leave, party movement, rest start/completion, time advancement, battle start/completion, character defeat, and party defeat. They all use the same serialized event queue. Campaign completion is reserved until Remake has an explicit, authoritative completion boundary.
 
 Lifecycle behavior is ordered by binding priority and stable binding ID.
 
@@ -303,7 +305,7 @@ Use a time-advanced lifecycle behavior, inspect the deterministic scenario calen
 
 ### Custom spell and status effect
 
-Use pure validation, cast presentation, effect application, and tick/expire hooks. Store duration in combat or character state. Damage, healing, effects, spawning, and animation go through their catalog operations.
+Use pure validation, cast presentation, and effect application. Store duration in combat or character state. Damage, healing, effects, spawning, and animation go through their catalog operations. Tick/expire bindings remain unavailable until Remake exposes the authoritative duration-event boundary.
 
 ### Combat and field item use
 

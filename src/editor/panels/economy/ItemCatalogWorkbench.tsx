@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
-import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
+import {
+  ContextualBehaviorHookCard,
+  type ContextualBehaviorHookOption
+} from "../../components/ContextualBehaviorCard";
 import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
@@ -29,6 +32,15 @@ import {
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
+export const ITEM_BEHAVIOR_HOOKS = [
+  { id: "use-field", label: "Use in Field", description: "Runs when the item is used outside combat." },
+  { id: "use-combat", label: "Use in Combat", description: "Runs when the item is used during combat." },
+  { id: "equip", label: "Equip", description: "Pure hook that may allow or reject equipping this item." },
+  { id: "unequip", label: "Unequip", description: "Pure hook that may allow or reject removing this item." },
+  { id: "attack", label: "Attack", description: "Pure hook that modifies this weapon's accuracy or damage." },
+  { id: "defense", label: "Defense", description: "Pure hook that modifies incoming accuracy or damage while equipped." },
+  { id: "passive", label: "Passive", description: "Pure hook that modifies a named character statistic while equipped." }
+] as const satisfies readonly ContextualBehaviorHookOption[];
 
 export function ItemCatalogWorkbench({
   project,
@@ -250,22 +262,13 @@ function ItemDetailPanel({
           <span>All custom item slots are currently in use.</span>
         )}
       </div>
-      <ContextualBehaviorCard
+      <ContextualBehaviorHookCard
         project={project}
         role="item"
-        hook="use-field"
+        hooks={ITEM_BEHAVIOR_HOOKS}
         targetKind="item"
         recordId={String(option.value)}
-        recordLabel={`${option.label.replace(/\s+\(-?\d+\)$/, "")} field use`}
-        onApplyCommand={onApplyCommand}
-      />
-      <ContextualBehaviorCard
-        project={project}
-        role="item"
-        hook="use-combat"
-        targetKind="item"
-        recordId={String(option.value)}
-        recordLabel={`${option.label.replace(/\s+\(-?\d+\)$/, "")} combat use`}
+        recordLabel={option.label.replace(/\s+\(-?\d+\)$/, "")}
         onApplyCommand={onApplyCommand}
       />
       {!customEditable && (

@@ -337,7 +337,7 @@ expect(project.raceOverrides.length === 1, `Expected one race override, found ${
 expect(project.casteOverrides.length === 1, `Expected one caste override, found ${project.casteOverrides.length}`);
 assertOwnershipRules(project, "Canonical project", true);
 assertNoFreshRuleCompatibilityBytes(project, "Canonical project");
-expect(project.schemaVersion === 7, `Canonical project must use schema v7, found v${project.schemaVersion}`);
+expect(project.schemaVersion === 8, `Canonical project must use schema v8, found v${project.schemaVersion}`);
 expect(project.remakeRuntime.recommendedGameplayProfile === "core.classic", "Canonical project must recommend the Classic gameplay profile");
 expect(project.remakeRuntime.requiredExtensions.length === 0, "Ordinary Classic projects must not require Remake extensions");
 expect(project.remakeRuntime.semanticActions.length === 0, "Ordinary Classic projects must not gain semantic actions");
@@ -1543,7 +1543,7 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(manifest.format === "realmz-remake-scenario", "Remake export has the wrong format identity");
   expect(manifest.formatVersion === 3, `Remake export has unsupported format version ${manifest.formatVersion}`);
   expect(manifest.campaignKind === "classic-compiled" && manifest.compatibilityProfile === "realmz-7.1", "Remake export has the wrong compatibility profile");
-  expect(manifest.producer.projectSchemaVersion === 7 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
+  expect(manifest.producer.projectSchemaVersion === 8 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
   expect(manifest.files.runtime === "runtime.json", "Remake export lost the required runtime document path");
   expect(manifest.start.levelType === "land" && manifest.start.levelIndex === 0 && manifest.start.x === 10 && manifest.start.y === 12, "Remake export has the wrong canonical start");
 

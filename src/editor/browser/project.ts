@@ -111,7 +111,7 @@ export function createBrowserProject(projectName: string): Project {
     ruleNames: defaultRuleNames(),
     assets: [],
     assetCatalog: { tilesets: [] },
-    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [] },
+    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [], remakePreviewProfiles: [] },
     records: { counts: {}, alignments: [] },
     diagnostics: [],
     semanticSchema: emptySemanticSchema(),
@@ -223,7 +223,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     ruleNames: parseBrowserRuleNames(files),
     assets: scenarioMusicAssets,
     assetCatalog: parsed.assetCatalog,
-    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [] },
+    editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [], remakePreviewProfiles: [] },
     records: parsed.records,
     diagnostics: parsed.diagnostics,
     semanticSchema: emptySemanticSchema(0),
@@ -762,13 +762,14 @@ export function normalizeBrowserProject(project: Project): Project {
     name: canonicalMapLevelName(map.levelType, map.index)
   }));
   project.ruleNames = defaultRuleNames(project.ruleNames);
-  project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [] };
+  project.editorMetadata ??= { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [], remakePreviewProfiles: [] };
   project.editorMetadata.displayNames ??= {};
   project.editorMetadata.tilePalettes ??= [];
   project.editorMetadata.mapStamps ??= [];
   project.editorMetadata.questThreads ??= [];
   project.editorMetadata.questContextSources ??= [];
   project.editorMetadata.removedScenarioResources ??= [];
+  project.editorMetadata.remakePreviewProfiles ??= [];
   project.semanticSchema ??= emptySemanticSchema();
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);

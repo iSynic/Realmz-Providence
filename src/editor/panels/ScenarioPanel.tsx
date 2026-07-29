@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
-import { ContextualBehaviorCard } from "../components/ContextualBehaviorCard";
+import {
+  ContextualBehaviorCard,
+  ContextualBehaviorHookCard,
+  type ContextualBehaviorHookOption
+} from "../components/ContextualBehaviorCard";
 import { Project, ProjectCommand } from "../types";
 import {
   FormField,
@@ -37,6 +41,21 @@ const MAX_LEVEL_HELP = "Maximum party level is an optional startup gate. Importe
 const STARTUP_LAND_HELP = "The outdoor land level Realmz loads first when the scenario starts.";
 const STARTUP_COORD_HELP = "Startup map/view coordinate. Keep it inside the 0..89 Realmz map bounds.";
 const CREATOR_USER_HELP = "Legacy Str255 creator/user check field. Empty means no creator/user check.";
+export const SCENARIO_LIFECYCLE_HOOKS = [
+  { id: "campaign-start", label: "Campaign Start", description: "Runs after a new campaign and party are ready." },
+  { id: "campaign-resume", label: "Campaign Resume", description: "Runs after a saved campaign has been restored." },
+  { id: "campaign-complete", label: "Campaign Complete", description: "Runs once after an authored finale marks the campaign complete." },
+  { id: "map-enter", label: "Map Enter", description: "Runs after the party enters a map." },
+  { id: "map-leave", label: "Map Leave", description: "Runs before the party leaves a map." },
+  { id: "party-moved", label: "Party Moved", description: "Runs after successful party movement." },
+  { id: "rest-start", label: "Rest Start", description: "Runs when a rest begins." },
+  { id: "rest-complete", label: "Rest Complete", description: "Runs after rest has resolved." },
+  { id: "time-advanced", label: "Time Advanced", description: "Runs after scenario time advances." },
+  { id: "battle-start", label: "Battle Start", description: "Runs as a battle begins." },
+  { id: "battle-complete", label: "Battle Complete", description: "Runs after a battle resolves." },
+  { id: "character-defeated", label: "Character Defeated", description: "Runs when a party character is defeated." },
+  { id: "party-defeated", label: "Party Defeated", description: "Runs when the party is defeated." }
+] as const satisfies readonly ContextualBehaviorHookOption[];
 
 type ScenarioPanelProps = {
   project: Project;
@@ -75,13 +94,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
           onApplyCommand={onApplyCommand}
           onOpenScripting={() => onOpenTool("scripting", "scripts")}
         />
-        <ContextualBehaviorCard
+        <ContextualBehaviorHookCard
           project={project}
           role="lifecycle"
-          hook="campaign-start"
+          hooks={SCENARIO_LIFECYCLE_HOOKS}
           targetKind="lifecycle"
           recordId="campaign"
-          recordLabel="Campaign Start"
+          recordLabel="Campaign"
           onApplyCommand={onApplyCommand}
           onOpenWorkbench={() => onOpenTool("scripting", "scripts")}
         />

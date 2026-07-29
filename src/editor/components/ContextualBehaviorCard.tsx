@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Braces, Play, Plus, Trash2 } from "lucide-react";
 import SCENARIO_API_CATALOG_JSON from "../../../schemas/remake-scenario-capabilities.v2.json";
 import type {
@@ -29,6 +29,48 @@ type ContextualBehaviorCardProps = {
   onApplyCommand?: (command: ProjectCommand) => void;
   onOpenWorkbench?: () => void;
 };
+
+export type ContextualBehaviorHookOption = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+type ContextualBehaviorHookCardProps = Omit<ContextualBehaviorCardProps, "hook" | "recordLabel"> & {
+  hooks: readonly ContextualBehaviorHookOption[];
+  recordLabel: string;
+};
+
+export function ContextualBehaviorHookCard({
+  hooks,
+  recordLabel,
+  ...props
+}: ContextualBehaviorHookCardProps) {
+  const [hook, setHook] = useState(hooks[0]?.id ?? "");
+  useEffect(() => {
+    if (!hooks.some((candidate) => candidate.id === hook)) {
+      setHook(hooks[0]?.id ?? "");
+    }
+  }, [hook, hooks]);
+  const selected = hooks.find((candidate) => candidate.id === hook) ?? hooks[0];
+  if (!selected) return null;
+  return (
+    <div className="contextual-behavior-hook-card">
+      <FormField label="Behavior hook" hint={selected.description ?? "Choose when this behavior runs."}>
+        <select value={selected.id} onChange={(event) => setHook(event.currentTarget.value)}>
+          {hooks.map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>{candidate.label}</option>
+          ))}
+        </select>
+      </FormField>
+      <ContextualBehaviorCard
+        {...props}
+        hook={selected.id}
+        recordLabel={`${recordLabel} · ${selected.label}`}
+      />
+    </div>
+  );
+}
 
 export function ContextualBehaviorCard({
   project,

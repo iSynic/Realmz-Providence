@@ -136,4 +136,22 @@ describe("safe GDScript subset", () => {
     expect(reparsed.diagnostics).toEqual([]);
     expect(reparsed.program).toEqual(parsed.program);
   });
+
+  it("round-trips optional operation arguments without dropping their names", () => {
+    const parsed = parseSafeScript(
+      `func optional_commands() -> void:
+    await play_sound(101, true)
+    var paid: bool = await take_wealth(500, 2, 1, false)
+    return
+`,
+      definition
+    );
+    expect(parsed.diagnostics).toEqual([]);
+    const printed = printSafeScript(parsed.program!);
+    expect(printed).toContain("play_sound(101, true)");
+    expect(printed).toContain("take_wealth(500, 2, 1, false)");
+    const reparsed = parseSafeScript(printed, definition);
+    expect(reparsed.diagnostics).toEqual([]);
+    expect(reparsed.program).toEqual(parsed.program);
+  });
 });

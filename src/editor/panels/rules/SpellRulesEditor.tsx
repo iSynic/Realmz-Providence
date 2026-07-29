@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
-import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
+import {
+  ContextualBehaviorHookCard,
+  type ContextualBehaviorHookOption
+} from "../../components/ContextualBehaviorCard";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
 import { NumberField, SelectField, TextField, CheckboxField } from "./RuleFields";
@@ -17,6 +20,13 @@ const SPELL_PICKER_HELP = "Select the exact packed spell ID. Realmz references s
 const SPELL_CREATE_HELP = "Copying a built-in spell creates the next open Custom-class Data Spell slot. The shared Data S catalog remains unchanged.";
 const SPELL_NEW_CUSTOM_HELP = "Create a blank/default custom spell in the first open Custom-class Data Spell slot.";
 const SPELL_CLEAR_HELP = "Clearing removes the scenario-local Data Spell override for this custom slot and returns it to an empty custom spell entry.";
+export const SPELL_BEHAVIOR_HOOKS = [
+  { id: "validate", label: "Validate", description: "Pure validation before the spell can be cast." },
+  { id: "cast", label: "Cast", description: "Runs when casting begins and may present or yield." },
+  { id: "effect", label: "Apply Effect", description: "Resolves the spell and may schedule a persistent effect." },
+  { id: "tick", label: "Effect Tick", description: "Runs at each interval of a scheduled spell effect." },
+  { id: "expire", label: "Effect Expires", description: "Runs once when a scheduled spell effect ends." }
+] as const satisfies readonly ContextualBehaviorHookOption[];
 
 export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasUrl, onSelectEntity, onApplyCommand }: SpellRulesEditorProps) {
   const entries = useMemo(() => buildSpellEntries(project, catalog), [project, catalog]);
@@ -116,22 +126,13 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
       <main className="rules-detail">
         {selectedEntry && (
           <>
-            <ContextualBehaviorCard
+            <ContextualBehaviorHookCard
               project={project}
               role="spell"
-              hook="validate"
+              hooks={SPELL_BEHAVIOR_HOOKS}
               targetKind="spell"
               recordId={String(selectedEntry.packedId)}
-              recordLabel={`${selectedEntry.label} validation`}
-              onApplyCommand={onApplyCommand}
-            />
-            <ContextualBehaviorCard
-              project={project}
-              role="spell"
-              hook="effect"
-              targetKind="spell"
-              recordId={String(selectedEntry.packedId)}
-              recordLabel={`${selectedEntry.label} effect`}
+              recordLabel={selectedEntry.label}
               onApplyCommand={onApplyCommand}
             />
             <SpellForm

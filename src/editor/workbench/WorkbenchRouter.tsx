@@ -383,6 +383,7 @@ function WorkbenchRouterContent({
         onExportProjectJson={onExportProjectJson}
         onBenchmark={onBenchmark}
         onUpdatePreviewSettings={onUpdatePreviewSettings}
+        onApplyCommand={onApplyCommand}
       />
     );
   }

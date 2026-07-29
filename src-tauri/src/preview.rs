@@ -63,6 +63,8 @@ pub struct PreviewEntry {
     #[serde(default)]
     pub context: Value,
     #[serde(default)]
+    pub fixture: Value,
+    #[serde(default)]
     pub breakpoints: Vec<PreviewBreakpoint>,
     #[serde(default)]
     pub pause_on_start: bool,
@@ -89,6 +91,7 @@ impl Default for PreviewEntry {
             behavior_id: String::new(),
             arguments: json!({}),
             context: json!({}),
+            fixture: json!({}),
             breakpoints: Vec::new(),
             pause_on_start: false,
         }

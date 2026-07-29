@@ -2,7 +2,18 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { Bug, Download, Gauge, Pause, Play, RotateCcw, SkipForward, Square, StepForward } from "lucide-react";
-import { BenchmarkReport, ExportReport, ExportTarget, Project, ProvidenceWorkspace, ScenarioTarget } from "../types";
+import {
+  BenchmarkReport,
+  ExportReport,
+  ExportTarget,
+  Project,
+  ProjectCommand,
+  ProvidenceWorkspace,
+  RemakePreviewAssertion,
+  RemakePreviewPartyMember,
+  RemakePreviewProfile,
+  ScenarioTarget
+} from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { EmptyState, EntityRow, IssueGroup, PanelHeader, ScrollArea, ValidationGate } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
@@ -42,7 +53,8 @@ export function ExportPanel({
   onExport,
   onExportProjectJson,
   onBenchmark,
-  onUpdatePreviewSettings
+  onUpdatePreviewSettings,
+  onApplyCommand
 }: {
   project: Project | null;
   exportReport: ExportReport | null;
@@ -54,6 +66,7 @@ export function ExportPanel({
   onExportProjectJson: () => void;
   onBenchmark: () => void;
   onUpdatePreviewSettings?: (settings: ProvidenceWorkspace["remakePreview"]) => Promise<void>;
+  onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [target, setTarget] = useState<ExportTarget>("providence-portable-folder");
   const [browserTarget, setBrowserTarget] = useState<BrowserExportTarget>("project-zip");
@@ -152,6 +165,7 @@ export function ExportPanel({
         projectDir={projectDir ?? ""}
         settings={workspace?.remakePreview ?? { godotExecutable: "", remakePath: "" }}
         onUpdateSettings={onUpdatePreviewSettings}
+        onApplyCommand={onApplyCommand}
       />
       <section className="tab-panel">
         <PanelHeader
@@ -268,18 +282,54 @@ function readPreviewIntent(): PreviewIntent | null {
   }
 }
 
+function newPreviewProfile(index: number): RemakePreviewProfile {
+  return {
+    id: `preview-${Date.now().toString(36)}-${index}`,
+    name: `Test Party ${index}`,
+    gold: 0,
+    gems: 0,
+    jewelry: 0,
+    totalSeconds: 0,
+    rngSeed: 1,
+    gameplayProfile: "core.classic",
+    questFlags: [],
+    party: [],
+    assertions: []
+  };
+}
+
+function previewFixture(profile: RemakePreviewProfile | null) {
+  if (!profile) return {};
+  return {
+    profileId: profile.id,
+    gameplayProfile: profile.gameplayProfile,
+    wealth: {
+      gold: profile.gold,
+      gems: profile.gems,
+      jewelry: profile.jewelry
+    },
+    totalSeconds: profile.totalSeconds,
+    rngSeed: profile.rngSeed,
+    questFlags: profile.questFlags,
+    party: profile.party,
+    assertions: profile.assertions
+  };
+}
+
 function RemakePreviewPanel({
   desktopRuntime,
   project,
   projectDir,
   settings,
-  onUpdateSettings
+  onUpdateSettings,
+  onApplyCommand
 }: {
   desktopRuntime: boolean;
   project: Project | null;
   projectDir: string;
   settings: ProvidenceWorkspace["remakePreview"];
   onUpdateSettings?: (settings: ProvidenceWorkspace["remakePreview"]) => Promise<void>;
+  onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [godotExecutable, setGodotExecutable] = useState(settings.godotExecutable);
   const [remakePath, setRemakePath] = useState(settings.remakePath);
@@ -295,6 +345,14 @@ function RemakePreviewPanel({
   const [pauseOnStart, setPauseOnStart] = useState(false);
   const [breakpointNode, setBreakpointNode] = useState("");
   const [previewIntent, setPreviewIntent] = useState<PreviewIntent | null>(() => readPreviewIntent());
+  const previewProfiles = project?.editorMetadata?.remakePreviewProfiles ?? [];
+  const [previewProfileId, setPreviewProfileId] = useState(previewProfiles[0]?.id ?? "");
+  const selectedPreviewProfile = previewProfiles.find((profile) => profile.id === previewProfileId) ?? null;
+
+  useEffect(() => {
+    if (previewProfiles.some((profile) => profile.id === previewProfileId)) return;
+    setPreviewProfileId(previewProfiles[0]?.id ?? "");
+  }, [previewProfileId, previewProfiles]);
 
   useEffect(() => {
     setGodotExecutable(settings.godotExecutable);
@@ -393,6 +451,7 @@ function RemakePreviewPanel({
                   role: selectedBehavior?.role ?? "",
                   hook: selectedBehavior?.hook ?? ""
                 },
+            fixture: previewFixture(selectedPreviewProfile),
             breakpoints,
             pauseOnStart,
             slot: 0,
@@ -441,6 +500,38 @@ function RemakePreviewPanel({
     setBreakpoints(next);
     setBreakpointNode("");
     if (running) void sendPreviewCommand("set-breakpoints", { breakpoints: next, pauseOnStart });
+  }
+
+  function updatePreviewProfiles(profiles: RemakePreviewProfile[], label: string) {
+    onApplyCommand?.({
+      kind: "updateRemakePreviewProfiles",
+      label,
+      profiles
+    });
+  }
+
+  function createPreviewProfile() {
+    const profile = newPreviewProfile(previewProfiles.length + 1);
+    updatePreviewProfiles([...previewProfiles, profile], `Create preview profile ${profile.name}`);
+    setPreviewProfileId(profile.id);
+  }
+
+  function updatePreviewProfile(changes: Partial<RemakePreviewProfile>, label = "Update preview profile") {
+    if (!selectedPreviewProfile) return;
+    updatePreviewProfiles(
+      previewProfiles.map((profile) => (
+        profile.id === selectedPreviewProfile.id ? { ...profile, ...changes } : profile
+      )),
+      label
+    );
+  }
+
+  function deletePreviewProfile() {
+    if (!selectedPreviewProfile) return;
+    updatePreviewProfiles(
+      previewProfiles.filter((profile) => profile.id !== selectedPreviewProfile.id),
+      `Delete preview profile ${selectedPreviewProfile.name}`
+    );
   }
 
   const behaviors = project?.remakeRuntime.behaviors ?? [];
@@ -543,6 +634,15 @@ function RemakePreviewPanel({
               <Square size={14} /> Stop
             </button>
           </div>
+          <PreviewProfileEditor
+            profile={selectedPreviewProfile}
+            profiles={previewProfiles}
+            selectedId={previewProfileId}
+            onSelect={setPreviewProfileId}
+            onCreate={createPreviewProfile}
+            onDelete={deletePreviewProfile}
+            onChange={updatePreviewProfile}
+          />
           <InfoGrid
             rows={[
               ["Status", status],
@@ -642,6 +742,249 @@ function RemakePreviewPanel({
         </>
       )}
     </section>
+  );
+}
+
+function PreviewProfileEditor({
+  profile,
+  profiles,
+  selectedId,
+  onSelect,
+  onCreate,
+  onDelete,
+  onChange
+}: {
+  profile: RemakePreviewProfile | null;
+  profiles: RemakePreviewProfile[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  onCreate: () => void;
+  onDelete: () => void;
+  onChange: (changes: Partial<RemakePreviewProfile>, label?: string) => void;
+}) {
+  function updatePartyMember(slot: number, changes: Partial<RemakePreviewPartyMember>) {
+    if (!profile) return;
+    const existing = profile.party.find((member) => member.slot === slot) ?? {
+      slot,
+      name: "",
+      health: null,
+      maximumHealth: null,
+      spellPoints: null,
+      maximumSpellPoints: null,
+      itemIds: []
+    };
+    const member = { ...existing, ...changes };
+    const party = [
+      ...profile.party.filter((candidate) => candidate.slot !== slot),
+      member
+    ].sort((left, right) => left.slot - right.slot);
+    onChange({ party }, `Update preview party slot ${slot + 1}`);
+  }
+
+  function updateAssertion(index: number, changes: Partial<RemakePreviewAssertion>) {
+    if (!profile) return;
+    onChange({
+      assertions: profile.assertions.map((assertion, candidate) => (
+        candidate === index ? { ...assertion, ...changes } : assertion
+      ))
+    }, "Update preview assertion");
+  }
+
+  return (
+    <details className="preview-profile-editor" open>
+      <summary>Test Profile</summary>
+      <p className="muted">
+        Profiles are Providence-only authoring data. They configure the clean party, world state, and deterministic RNG used by Apply and Restart.
+      </p>
+      <div className="preview-profile-toolbar">
+        <label className="field compact">
+          <span>Profile</span>
+          <select value={selectedId} onChange={(event) => onSelect(event.target.value)}>
+            <option value="">Default generated party</option>
+            {profiles.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="btn btn-secondary btn-xs" onClick={onCreate}>New Profile</button>
+        <button type="button" className="btn btn-danger btn-xs" disabled={!profile} onClick={onDelete}>Delete</button>
+      </div>
+      {profile ? (
+        <>
+          <div className="preview-profile-grid">
+            <label className="field compact">
+              <span>Name</span>
+              <input value={profile.name} onChange={(event) => onChange({ name: event.target.value })} />
+            </label>
+            <label className="field compact">
+              <span>Gameplay profile</span>
+              <select value={profile.gameplayProfile} onChange={(event) => onChange({ gameplayProfile: event.target.value })}>
+                <option value="core.classic">Classic</option>
+                <option value="core.samuel">Samuel</option>
+              </select>
+            </label>
+            {([
+              ["gold", "Gold"],
+              ["gems", "Gems"],
+              ["jewelry", "Jewelry"],
+              ["totalSeconds", "Scenario seconds"],
+              ["rngSeed", "RNG seed"]
+            ] as const).map(([field, label]) => (
+              <label className="field compact" key={field}>
+                <span>{label}</span>
+                <input
+                  type="number"
+                  value={profile[field]}
+                  onChange={(event) => onChange({ [field]: Number(event.target.value) })}
+                />
+              </label>
+            ))}
+          </div>
+          <section className="preview-profile-section">
+            <header>
+              <strong>Classic quest flags</strong>
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={() => onChange({
+                  questFlags: [...profile.questFlags, { id: 0, value: 1 }]
+                }, "Add preview quest flag")}
+              >
+                Add Flag
+              </button>
+            </header>
+            {profile.questFlags.map((flag, index) => (
+              <div className="preview-profile-row" key={`${index}:${flag.id}`}>
+                <label className="field compact">
+                  <span>Flag</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={flag.id}
+                    onChange={(event) => onChange({
+                      questFlags: profile.questFlags.map((candidate, candidateIndex) => (
+                        candidateIndex === index ? { ...candidate, id: Number(event.target.value) } : candidate
+                      ))
+                    }, "Update preview quest flag")}
+                  />
+                </label>
+                <label className="field compact">
+                  <span>Value</span>
+                  <input
+                    type="number"
+                    value={flag.value}
+                    onChange={(event) => onChange({
+                      questFlags: profile.questFlags.map((candidate, candidateIndex) => (
+                        candidateIndex === index ? { ...candidate, value: Number(event.target.value) } : candidate
+                      ))
+                    }, "Update preview quest flag")}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-xs"
+                  onClick={() => onChange({
+                    questFlags: profile.questFlags.filter((_, candidateIndex) => candidateIndex !== index)
+                  }, "Remove preview quest flag")}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </section>
+          <section className="preview-profile-section">
+            <header><strong>Party overrides</strong><small>Blank values keep the generated test character’s value.</small></header>
+            {Array.from({ length: 6 }, (_, slot) => {
+              const member = profile.party.find((candidate) => candidate.slot === slot);
+              return (
+                <div className="preview-party-row" key={slot}>
+                  <strong>#{slot + 1}</strong>
+                  <label className="field compact">
+                    <span>Name</span>
+                    <input value={member?.name ?? ""} onChange={(event) => updatePartyMember(slot, { name: event.target.value })} />
+                  </label>
+                  {([
+                    ["health", "HP"],
+                    ["maximumHealth", "Max HP"],
+                    ["spellPoints", "SP"],
+                    ["maximumSpellPoints", "Max SP"]
+                  ] as const).map(([field, label]) => (
+                    <label className="field compact" key={field}>
+                      <span>{label}</span>
+                      <input
+                        type="number"
+                        value={member?.[field] ?? ""}
+                        onChange={(event) => updatePartyMember(slot, {
+                          [field]: event.target.value === "" ? null : Number(event.target.value)
+                        })}
+                      />
+                    </label>
+                  ))}
+                  <label className="field compact">
+                    <span>Item IDs</span>
+                    <input
+                      value={member?.itemIds.join(", ") ?? ""}
+                      onChange={(event) => updatePartyMember(slot, {
+                        itemIds: event.target.value.split(",")
+                          .map((value) => Number.parseInt(value.trim(), 10))
+                          .filter(Number.isFinite)
+                      })}
+                      placeholder="12, 47"
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </section>
+          <section className="preview-profile-section">
+            <header>
+              <strong>Assertions</strong>
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                onClick={() => onChange({
+                  assertions: [...profile.assertions, { path: "wealth.gold", operator: "equals", value: "0" }]
+                }, "Add preview assertion")}
+              >
+                Add Assertion
+              </button>
+            </header>
+            {profile.assertions.map((assertion, index) => (
+              <div className="preview-profile-row assertion" key={index}>
+                <label className="field compact">
+                  <span>State path</span>
+                  <input value={assertion.path} onChange={(event) => updateAssertion(index, { path: event.target.value })} />
+                </label>
+                <label className="field compact">
+                  <span>Check</span>
+                  <select value={assertion.operator} onChange={(event) => updateAssertion(index, { operator: event.target.value as RemakePreviewAssertion["operator"] })}>
+                    <option value="equals">Equals</option>
+                    <option value="not-equals">Does not equal</option>
+                    <option value="at-least">At least</option>
+                    <option value="at-most">At most</option>
+                  </select>
+                </label>
+                <label className="field compact">
+                  <span>Expected</span>
+                  <input value={assertion.value} onChange={(event) => updateAssertion(index, { value: event.target.value })} />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-xs"
+                  onClick={() => onChange({
+                    assertions: profile.assertions.filter((_, candidateIndex) => candidateIndex !== index)
+                  }, "Remove preview assertion")}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </section>
+        </>
+      ) : (
+        <EmptyState compact title="Using the default generated party" body="Create a profile to control wealth, time, flags, party values, inventory, and assertions." />
+      )}
+    </details>
   );
 }
 

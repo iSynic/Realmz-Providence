@@ -20,6 +20,7 @@ import {
 } from "../../types";
 import { parseSafeScript, printSafeScript } from "../../safeScriptLanguage";
 import { CollapsibleSection, FormField, FormGrid, PanelSection } from "../../ui";
+import { GuidedBehaviorEditor } from "./GuidedBehaviorEditor";
 
 type CatalogRole = {
   id: RemakeBehaviorRole;
@@ -27,6 +28,7 @@ type CatalogRole = {
   contextType: string;
   resultType: string;
   hooks: string[];
+  runtimeHooks?: string[];
   allowsYield: boolean;
   pureHooks?: string[];
 };
@@ -188,7 +190,7 @@ function BehaviorLibrary({
       description: "",
       kind: role === "helper" ? "helper" : "entry",
       role,
-      hook: roleContract.hooks[0] ?? "",
+      hook: roleRuntimeHooks(roleContract)[0] ?? "",
       tier: "safe",
       apiVersion: SCENARIO_API_CATALOG.apiVersion,
       behaviorVersion: 1,
@@ -224,7 +226,7 @@ function BehaviorLibrary({
     updateSelected({
       role,
       kind: role === "helper" ? "helper" : "entry",
-      hook: contract.hooks[0] ?? "",
+      hook: roleRuntimeHooks(contract)[0] ?? "",
       returnType,
       ast
     }, "Change behavior role");
@@ -390,7 +392,7 @@ function BehaviorLibrary({
                   disabled={selected.role === "helper"}
                   onChange={(event) => updateSelected({ hook: event.target.value }, "Change behavior hook")}
                 >
-                  {roleById(selected.role).hooks.map((hook) => (
+                  {roleRuntimeHooks(roleById(selected.role)).map((hook) => (
                     <option key={hook} value={hook}>{friendlyName(hook)}</option>
                   ))}
                   {selected.role === "helper" && <option value="">Called by another behavior</option>}
@@ -405,7 +407,8 @@ function BehaviorLibrary({
               </FormField>
             </FormGrid>
             {selected.tier === "safe" && selected.ast ? (
-              <BehaviorOutlineEditor
+              <GuidedBehaviorEditor
+                project={project}
                 behavior={selected}
                 ast={selected.ast}
                 onChange={updateAst}
@@ -505,226 +508,6 @@ function BehaviorLibrary({
       )}
     </>
   );
-}
-
-function BehaviorOutlineEditor({
-  behavior,
-  ast,
-  onChange,
-  onApplyCaptainRecipe
-}: {
-  behavior: RemakeBehaviorDefinition;
-  ast: Record<string, unknown>;
-  onChange: (ast: Record<string, unknown>) => void;
-  onApplyCaptainRecipe: (ast: Record<string, unknown>) => void;
-}) {
-  const body = nodeArray(ast.body);
-  const addStatement = (statement: Record<string, unknown>) => {
-    const withoutReturn = body.filter((node) => node.kind !== "return");
-    const trailingReturn = body.find((node) => node.kind === "return");
-    onChange({
-      ...ast,
-      body: [...withoutReturn, statement, ...(trailingReturn ? [trailingReturn] : [])]
-    });
-  };
-  const addCaptainRecipe = () => {
-    onApplyCaptainRecipe({
-      ...ast,
-      body: [
-        {
-          kind: "operation",
-          capability: "core.inventory.wealth",
-          arguments: {},
-          result: "wealth",
-          declaredType: "wealth-snapshot"
-        },
-        {
-          kind: "operation",
-          capability: "core.map.time",
-          arguments: {},
-          result: "time",
-          declaredType: "time-snapshot"
-        },
-        {
-          kind: "operation",
-          capability: "core.character.party",
-          arguments: {},
-          result: "members",
-          declaredType: "character-snapshot-array"
-        },
-        {
-          kind: "declare",
-          name: "healthy",
-          valueType: "bool",
-          value: {
-            kind: "collection",
-            operation: "any",
-            collection: { kind: "variable", scope: "local", name: "members" },
-            itemName: "member",
-            predicate: {
-              kind: "member",
-              object: { kind: "variable", scope: "local", name: "member" },
-              member: "alive"
-            }
-          }
-        },
-        {
-          kind: "if",
-          condition: {
-            kind: "binary",
-            operator: "and",
-            left: {
-              kind: "binary",
-              operator: "and",
-              left: {
-                kind: "binary",
-                operator: ">=",
-                left: {
-                  kind: "member",
-                  object: { kind: "variable", scope: "local", name: "wealth" },
-                  member: "gold"
-                },
-                right: { kind: "literal", value: 500 }
-              },
-              right: {
-                kind: "binary",
-                operator: "<=",
-                left: {
-                  kind: "member",
-                  object: { kind: "variable", scope: "local", name: "time" },
-                  member: "day"
-                },
-                right: { kind: "literal", value: 3 }
-              }
-            },
-            right: { kind: "variable", scope: "local", name: "healthy" }
-          },
-          then: [
-            {
-              kind: "operation",
-              capability: "core.inventory.take-wealth",
-              arguments: { gold: { kind: "literal", value: 500 } }
-            },
-            {
-              kind: "operation",
-              capability: "core.state.write",
-              arguments: {
-                scope: { kind: "literal", value: "campaign" },
-                name: { kind: "literal", value: "paid_the_captain" },
-                value: { kind: "literal", value: true }
-              }
-            },
-            {
-              kind: "operation",
-              capability: "core.presentation.text",
-              arguments: { text: { kind: "literal", value: "The captain accepts your payment." } }
-            }
-          ],
-          elif: [],
-          else: [
-            {
-              kind: "operation",
-              capability: "core.presentation.text",
-              arguments: { text: { kind: "literal", value: "You have returned too late or without the money." } }
-            }
-          ]
-        },
-        {
-          kind: "return",
-          value: { kind: "literal", value: defaultValueFor(roleReturnType(behavior.role)) }
-        }
-      ]
-    });
-  };
-
-  return (
-    <div className="behavior-outline">
-      <div className="section-kicker">When this {roleById(behavior.role).label} runs</div>
-      {body.length === 0 ? (
-        <div className="rules-help-callout"><span>This behavior does nothing yet.</span></div>
-      ) : (
-        <ol className="behavior-outline-list">
-          {body.map((statement, index) => (
-            <li key={`${String(statement.kind)}:${index}`}>
-              <BehaviorStatement node={statement} />
-              <button
-                type="button"
-                className="btn btn-danger btn-xs"
-                aria-label={`Remove step ${index + 1}`}
-                onClick={() => onChange({ ...ast, body: body.filter((_, itemIndex) => itemIndex !== index) })}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ol>
-      )}
-      <div className="rules-toolbar">
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={() => addStatement({
-            kind: "operation",
-            capability: "core.presentation.text",
-            arguments: { text: { kind: "literal", value: "Your message here." } }
-          })}
-        >
-          Show Text
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={() => addStatement({
-            kind: "operation",
-            capability: "core.state.write",
-            arguments: {
-              scope: { kind: "literal", value: "campaign" },
-              name: { kind: "literal", value: "quest_state" },
-              value: { kind: "literal", value: true }
-            }
-          })}
-        >
-          Set Story State
-        </button>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={addCaptainRecipe}>
-          Gold + Deadline + Healthy Party Recipe
-        </button>
-      </div>
-      <p className="rules-help-callout">
-        More blocks are selected from the API Reference. The outline and Safe source are two views
-        of this same canonical behavior.
-      </p>
-    </div>
-  );
-}
-
-function BehaviorStatement({ node }: { node: Record<string, unknown> }) {
-  if (node.kind === "operation") {
-    const operation = operationById(String(node.capability));
-    return (
-      <div>
-        <strong>{operation?.label ?? friendlyName(String(node.capability))}</strong>
-        <span>{describeArguments(node.arguments)}</span>
-      </div>
-    );
-  }
-  if (node.kind === "if") {
-    return (
-      <div>
-        <strong>If {describeExpression(node.condition)}</strong>
-        <div className="behavior-outline-nested">
-          {nodeArray(node.then).map((child, index) => <BehaviorStatement key={`then:${index}`} node={child} />)}
-          {nodeArray(node.else).length > 0 && <strong>Otherwise</strong>}
-          {nodeArray(node.else).map((child, index) => <BehaviorStatement key={`else:${index}`} node={child} />)}
-        </div>
-      </div>
-    );
-  }
-  if (node.kind === "for") return <div><strong>For each bounded value</strong><span>{describeExpression(node.collection)}</span></div>;
-  if (node.kind === "match") return <div><strong>Match</strong><span>{describeExpression(node.value)}</span></div>;
-  if (node.kind === "return") return <div><strong>Finish behavior</strong></div>;
-  if (node.kind === "call") return <div><strong>Call helper</strong><span>{String(node.behaviorId ?? node.scriptId ?? "")}</span></div>;
-  return <div><strong>{friendlyName(String(node.kind ?? "step"))}</strong></div>;
 }
 
 function ParameterEditor({
@@ -1073,7 +856,7 @@ function BehaviorBindingEditor({
         </FormField>
         <FormField label="When">
           <select value={binding.hook} onChange={(event) => onChange({ ...binding, hook: event.target.value })}>
-            {(behavior ? roleById(behavior.role).hooks : []).map((hook) => (
+            {(behavior ? roleRuntimeHooks(roleById(behavior.role)) : []).map((hook) => (
               <option key={hook} value={hook}>{friendlyName(hook)}</option>
             ))}
           </select>
@@ -1394,9 +1177,9 @@ function ScenarioApiReference() {
           <FormField label="Hook">
             <select value={hook} disabled={!selectedRole} onChange={(event) => setHook(event.target.value)}>
               <option value="all">All compatible hooks</option>
-              {selectedRole?.hooks.map((entry) => (
+              {selectedRole ? roleRuntimeHooks(selectedRole).map((entry) => (
                 <option key={entry} value={entry}>{friendlyName(entry)}</option>
-              ))}
+              )) : null}
             </select>
           </FormField>
         </FormGrid>
@@ -1599,6 +1382,10 @@ function roleById(role: RemakeBehaviorRole) {
   return SCENARIO_API_CATALOG.roles.find((entry) => entry.id === role) ?? SCENARIO_API_CATALOG.roles[0];
 }
 
+function roleRuntimeHooks(role: CatalogRole) {
+  return role.runtimeHooks ?? role.hooks;
+}
+
 function roleReturnType(role: RemakeBehaviorRole): RemakeScriptValueType {
   if (role === "helper") return "void";
   if (role === "action") return "action-outcome";
@@ -1608,10 +1395,6 @@ function roleReturnType(role: RemakeBehaviorRole): RemakeScriptValueType {
   if (role === "monster-ai") return "monster-decision";
   if (role === "rule-modifier") return "rule-modifier";
   return "void";
-}
-
-function operationById(id: string) {
-  return SCENARIO_API_CATALOG.operations.find((operation) => operation.id === id);
 }
 
 function collectCapabilities(ast: Record<string, unknown>) {
@@ -1651,29 +1434,6 @@ function behaviorSource(behavior: RemakeBehaviorDefinition | null) {
 
 function sandboxTemplate() {
   return "extends RefCounted\n\nfunc step(event: Dictionary, state: Dictionary, context) -> Dictionary:\n\treturn {\"state\": state, \"result\": {\"kind\": \"continue\"}}\n";
-}
-
-function nodeArray(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
-    : [];
-}
-
-function describeArguments(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
-  const descriptions = Object.entries(value as Record<string, unknown>)
-    .map(([key, expression]) => `${friendlyName(key)}: ${describeExpression(expression)}`);
-  return descriptions.length ? descriptions.join(" · ") : "";
-}
-
-function describeExpression(value: unknown): string {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return String(value ?? "");
-  const expression = value as Record<string, unknown>;
-  if (expression.kind === "literal") return JSON.stringify(expression.value);
-  if (expression.kind === "variable") return friendlyName(String(expression.name));
-  if (expression.kind === "member") return `${describeExpression(expression.object)} ${friendlyName(String(expression.member))}`;
-  if (expression.kind === "binary") return `${describeExpression(expression.left)} ${String(expression.operator)} ${describeExpression(expression.right)}`;
-  return friendlyName(String(expression.kind ?? "value"));
 }
 
 function extensionProviderOptions(role: RemakeBehaviorRole) {

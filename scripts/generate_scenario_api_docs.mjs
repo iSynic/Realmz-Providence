@@ -13,6 +13,7 @@ for (const role of catalog.roles ?? []) {
     if (!String(role[field] ?? "").trim()) failures.push(`Role ${role.id ?? "?"} lacks ${field}`);
   }
   if (!Array.isArray(role.hooks)) failures.push(`Role ${role.id ?? "?"} lacks hooks`);
+  if (!Array.isArray(role.runtimeHooks)) failures.push(`Role ${role.id ?? "?"} lacks runtimeHooks`);
 }
 for (const operation of catalog.operations ?? []) {
   for (const field of ["id", "label", "category", "owningPort", "minimumTier", "result", "summary", "reference", "example"]) {
@@ -41,6 +42,8 @@ const lines = [
   ""
 ];
 for (const role of catalog.roles) {
+  const runtimeHooks = role.runtimeHooks ?? role.hooks;
+  const plannedHooks = role.hooks.filter((hook) => !runtimeHooks.includes(hook));
   lines.push(
     `### ${role.label}`,
     "",
@@ -49,7 +52,10 @@ for (const role of catalog.roles) {
     `- Stable ID: \`${role.id}\``,
     `- Context: \`${role.contextType}\``,
     `- Result: \`${role.resultType}\``,
-    `- Hooks: ${role.hooks.length ? role.hooks.map((hook) => `\`${hook}\``).join(", ") : "none"}`,
+    `- Runtime hooks: ${runtimeHooks.length ? runtimeHooks.map((hook) => `\`${hook}\``).join(", ") : "none"}`,
+    ...(plannedHooks.length
+      ? [`- Reserved hooks not yet connected: ${plannedHooks.map((hook) => `\`${hook}\``).join(", ")}`]
+      : []),
     `- May yield: ${role.allowsYield ? "yes" : "no"}`,
     "",
     role.reference,
