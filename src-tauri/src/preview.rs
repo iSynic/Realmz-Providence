@@ -21,7 +21,7 @@ const MAX_MESSAGE_BYTES: usize = 1024 * 1024;
 
 #[derive(Default)]
 pub struct PreviewManager {
-    session: Mutex<Option<PreviewSession>>,
+    session: Arc<Mutex<Option<PreviewSession>>>,
 }
 
 struct PreviewSession {
@@ -29,6 +29,7 @@ struct PreviewSession {
     child: Arc<Mutex<Child>>,
     temp_root: PathBuf,
     session_id: String,
+    process_id: u32,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -141,6 +142,14 @@ pub struct LaunchPreviewReport {
     pub process_id: u32,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewSessionStatus {
+    pub running: bool,
+    pub session_id: String,
+    pub process_id: Option<u32>,
+}
+
 #[tauri::command]
 pub fn launch_remake_preview(
     app: AppHandle,
@@ -170,30 +179,33 @@ pub fn launch_remake_preview(
     let manifest: Value = serde_json::from_slice(
         &fs::read(&manifest_path).with_path(&manifest_path)?,
     )
-    .map_err(|error| ProvidenceError::message(format!(
-        "Could not read preview campaign manifest: {error}"
-    )))?;
+    .map_err(|error| {
+        ProvidenceError::message(format!("Could not read preview campaign manifest: {error}"))
+    })?;
     let package_hash = manifest
         .pointer("/integrity/packageHash")
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_string();
 
-    let listener = TcpListener::bind(("127.0.0.1", 0))
-        .map_err(|error| ProvidenceError::message(format!(
+    let listener = TcpListener::bind(("127.0.0.1", 0)).map_err(|error| {
+        ProvidenceError::message(format!(
             "Could not bind the Remake preview loopback socket: {error}"
-        )))?;
+        ))
+    })?;
     let port = listener
         .local_addr()
-        .map_err(|error| ProvidenceError::message(format!(
-            "Could not resolve the Remake preview loopback port: {error}"
-        )))?
+        .map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not resolve the Remake preview loopback port: {error}"
+            ))
+        })?
         .port();
-    listener
-        .set_nonblocking(true)
-        .map_err(|error| ProvidenceError::message(format!(
+    listener.set_nonblocking(true).map_err(|error| {
+        ProvidenceError::message(format!(
             "Could not configure the Remake preview listener: {error}"
-        )))?;
+        ))
+    })?;
 
     let mut command = runtime_command(&request.settings)?;
     command.args([
@@ -207,9 +219,9 @@ pub fn launch_remake_preview(
         "--preview-profile",
         &profile_path.to_string_lossy(),
     ]);
-    let child = command.spawn().map_err(|error| ProvidenceError::message(format!(
-        "Could not launch Realmz Remake preview: {error}"
-    )))?;
+    let child = command.spawn().map_err(|error| {
+        ProvidenceError::message(format!("Could not launch Realmz Remake preview: {error}"))
+    })?;
     let process_id = child.id();
     let child = Arc::new(Mutex::new(child));
 
@@ -223,14 +235,21 @@ pub fn launch_remake_preview(
             return Err(error);
         }
     };
-    let mut socket = accept(stream).map_err(|error| ProvidenceError::message(format!(
-        "Realmz Remake did not complete the preview WebSocket handshake: {error}"
-    )))?;
-    socket.get_mut().set_read_timeout(Some(HANDSHAKE_TIMEOUT)).map_err(|error| {
-        ProvidenceError::message(format!("Could not configure preview socket timeout: {error}"))
+    let mut socket = accept(stream).map_err(|error| {
+        ProvidenceError::message(format!(
+            "Realmz Remake did not complete the preview WebSocket handshake: {error}"
+        ))
     })?;
-    if let Err(error) = authenticate_handshake(&mut socket, &nonce)
-        .and_then(|_| await_package_loaded(&mut socket))
+    socket
+        .get_mut()
+        .set_read_timeout(Some(HANDSHAKE_TIMEOUT))
+        .map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not configure preview socket timeout: {error}"
+            ))
+        })?;
+    if let Err(error) =
+        authenticate_handshake(&mut socket, &nonce).and_then(|_| await_package_loaded(&mut socket))
     {
         terminate_child(&child);
         let _ = fs::remove_dir_all(&temp_root);
@@ -252,31 +271,79 @@ pub fn launch_remake_preview(
     socket
         .get_mut()
         .set_nonblocking(true)
-        .map_err(|error| ProvidenceError::message(format!(
-            "Could not configure nonblocking preview event polling: {error}"
-        )))?;
+        .map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not configure nonblocking preview event polling: {error}"
+            ))
+        })?;
+    socket
+        .get_mut()
+        .set_write_timeout(Some(Duration::from_secs(2)))
+        .map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not configure preview command timeout: {error}"
+            ))
+        })?;
 
     let (command_sender, command_receiver) = mpsc::channel::<Value>();
     let thread_child = child.clone();
     let thread_root = temp_root.clone();
     let thread_session_id = session_id.clone();
-    thread::spawn(move || {
-        run_preview_connection(
-            app,
-            socket,
-            command_receiver,
-            thread_child,
-            &thread_session_id,
-        );
-        let _ = fs::remove_dir_all(thread_root);
-    });
-
-    *manager.session.lock().map_err(lock_error)? = Some(PreviewSession {
+    let session_store = manager.session.clone();
+    *session_store.lock().map_err(lock_error)? = Some(PreviewSession {
         command_sender,
         child,
         temp_root,
         session_id: session_id.clone(),
+        process_id,
     });
+    thread::spawn(move || {
+        let (reason, error_message) = run_preview_connection(
+            app.clone(),
+            socket,
+            command_receiver,
+            thread_child.clone(),
+            &thread_session_id,
+            session_store.clone(),
+        );
+        let was_current = session_store
+            .lock()
+            .map(|mut guard| {
+                if guard
+                    .as_ref()
+                    .is_some_and(|session| session.session_id == thread_session_id)
+                {
+                    guard.take();
+                    true
+                } else {
+                    false
+                }
+            })
+            .unwrap_or(false);
+        if was_current {
+            if let Some(message) = error_message {
+                let _ = app.emit(
+                    "remake-preview-event",
+                    json!({
+                        "type": "runtime-error",
+                        "previewSessionId": thread_session_id,
+                        "message": message,
+                    }),
+                );
+            }
+            terminate_child(&thread_child);
+            let _ = app.emit(
+                "remake-preview-event",
+                json!({
+                    "type": "preview-session-ended",
+                    "previewSessionId": thread_session_id,
+                    "reason": reason,
+                }),
+            );
+        }
+        let _ = fs::remove_dir_all(thread_root);
+    });
+
     Ok(LaunchPreviewReport {
         session_id,
         package_path: package_path.to_string_lossy().replace('\\', "/"),
@@ -296,17 +363,39 @@ pub fn send_remake_preview_command(
         ));
     }
     let guard = manager.session.lock().map_err(lock_error)?;
-    let session = guard.as_ref().ok_or_else(|| {
-        ProvidenceError::message("No Realmz Remake preview is running")
-    })?;
-    session.command_sender.send(message).map_err(|_| {
-        ProvidenceError::message("Realmz Remake preview connection has closed")
-    })
+    let session = guard
+        .as_ref()
+        .ok_or_else(|| ProvidenceError::message("No Realmz Remake preview is running"))?;
+    session
+        .command_sender
+        .send(message)
+        .map_err(|_| ProvidenceError::message("Realmz Remake preview connection has closed"))
 }
 
 #[tauri::command]
 pub fn stop_remake_preview(manager: State<'_, PreviewManager>) -> Result<()> {
     stop_session(&manager)
+}
+
+#[tauri::command]
+pub fn remake_preview_status(manager: State<'_, PreviewManager>) -> Result<PreviewSessionStatus> {
+    session_status(&manager)
+}
+
+fn session_status(manager: &PreviewManager) -> Result<PreviewSessionStatus> {
+    let guard = manager.session.lock().map_err(lock_error)?;
+    let Some(session) = guard.as_ref() else {
+        return Ok(PreviewSessionStatus {
+            running: false,
+            session_id: String::new(),
+            process_id: None,
+        });
+    };
+    Ok(PreviewSessionStatus {
+        running: true,
+        session_id: session.session_id.clone(),
+        process_id: Some(session.process_id),
+    })
 }
 
 fn stop_session(manager: &PreviewManager) -> Result<()> {
@@ -384,9 +473,11 @@ fn accept_preview_connection(
             .lock()
             .map_err(lock_error)?
             .try_wait()
-            .map_err(|error| ProvidenceError::message(format!(
-                "Could not inspect the Realmz Remake preview process: {error}"
-            )))?
+            .map_err(|error| {
+                ProvidenceError::message(format!(
+                    "Could not inspect the Realmz Remake preview process: {error}"
+                ))
+            })?
             .is_some()
         {
             return Err(ProvidenceError::message(
@@ -403,19 +494,23 @@ fn accept_preview_connection(
 }
 
 fn authenticate_handshake(socket: &mut WebSocket<TcpStream>, nonce: &str) -> Result<()> {
-    let message = socket.read().map_err(|error| ProvidenceError::message(format!(
-        "Could not read the Realmz Remake preview handshake: {error}"
-    )))?;
-    let text = message.to_text().map_err(|_| {
-        ProvidenceError::message("Realmz Remake preview handshake was not text")
+    let message = socket.read().map_err(|error| {
+        ProvidenceError::message(format!(
+            "Could not read the Realmz Remake preview handshake: {error}"
+        ))
     })?;
+    let text = message
+        .to_text()
+        .map_err(|_| ProvidenceError::message("Realmz Remake preview handshake was not text"))?;
     if text.len() > MAX_MESSAGE_BYTES {
         return Err(ProvidenceError::message(
             "Realmz Remake preview handshake exceeded the message limit",
         ));
     }
     let value: Value = serde_json::from_str(text).map_err(|error| {
-        ProvidenceError::message(format!("Realmz Remake preview handshake was invalid: {error}"))
+        ProvidenceError::message(format!(
+            "Realmz Remake preview handshake was invalid: {error}"
+        ))
     })?;
     if value.get("type").and_then(Value::as_str) != Some("handshake")
         || value.get("protocolVersion").and_then(Value::as_u64)
@@ -431,9 +526,11 @@ fn authenticate_handshake(socket: &mut WebSocket<TcpStream>, nonce: &str) -> Res
 
 fn await_package_loaded(socket: &mut WebSocket<TcpStream>) -> Result<()> {
     loop {
-        let message = socket.read().map_err(|error| ProvidenceError::message(format!(
-            "Realmz Remake did not finish loading the preview package: {error}"
-        )))?;
+        let message = socket.read().map_err(|error| {
+            ProvidenceError::message(format!(
+                "Realmz Remake did not finish loading the preview package: {error}"
+            ))
+        })?;
         if !message.is_text() {
             continue;
         }
@@ -444,7 +541,9 @@ fn await_package_loaded(socket: &mut WebSocket<TcpStream>) -> Result<()> {
             ));
         }
         let value: Value = serde_json::from_str(text).map_err(|error| {
-            ProvidenceError::message(format!("Realmz Remake preview response was invalid: {error}"))
+            ProvidenceError::message(format!(
+                "Realmz Remake preview response was invalid: {error}"
+            ))
         })?;
         if value.get("type").and_then(Value::as_str) != Some("response")
             || value.get("requestId").and_then(Value::as_str) != Some("")
@@ -469,16 +568,17 @@ fn run_preview_connection(
     command_receiver: mpsc::Receiver<Value>,
     child: Arc<Mutex<Child>>,
     session_id: &str,
-) {
+    session_store: Arc<Mutex<Option<PreviewSession>>>,
+) -> (&'static str, Option<String>) {
     loop {
         let mut idle = true;
         while let Ok(command) = command_receiver.try_recv() {
             idle = false;
-            if socket
-                .send(Message::Text(command.to_string().into()))
-                .is_err()
-            {
-                return;
+            if let Err(error) = socket.send(Message::Text(command.to_string().into())) {
+                return (
+                    "command-send-failed",
+                    Some(format!("Could not send preview command: {error}")),
+                );
             }
         }
         match socket.read() {
@@ -486,33 +586,47 @@ fn run_preview_connection(
                 idle = false;
                 if let Ok(text) = message.to_text() {
                     if text.len() <= MAX_MESSAGE_BYTES {
-                        if let Ok(mut event) = serde_json::from_str::<Value>(text) {
-                            if let Some(object) = event.as_object_mut() {
-                                object.insert(
-                                    "previewSessionId".to_string(),
-                                    Value::String(session_id.to_string()),
+                        match serde_json::from_str::<Value>(text) {
+                            Ok(mut event) => {
+                                if let Some(object) = event.as_object_mut() {
+                                    object.insert(
+                                        "previewSessionId".to_string(),
+                                        Value::String(session_id.to_string()),
+                                    );
+                                }
+                                let is_current = session_store
+                                    .lock()
+                                    .map(|guard| {
+                                        guard
+                                            .as_ref()
+                                            .is_some_and(|session| session.session_id == session_id)
+                                    })
+                                    .unwrap_or(false);
+                                if is_current {
+                                    let _ = app.emit("remake-preview-event", event);
+                                }
+                            }
+                            Err(error) => {
+                                return (
+                                    "invalid-message",
+                                    Some(format!(
+                                        "Realmz Remake preview sent invalid JSON: {error}"
+                                    )),
                                 );
                             }
-                            let _ = app.emit("remake-preview-event", event);
                         }
                     }
                 }
             }
-            Ok(message) if message.is_close() => return,
+            Ok(message) if message.is_close() => return ("connection-closed", None),
             Ok(_) => idle = false,
             Err(WebSocketError::Io(error))
                 if matches!(error.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut) => {}
-            Err(WebSocketError::ConnectionClosed | WebSocketError::AlreadyClosed) => return,
+            Err(WebSocketError::ConnectionClosed | WebSocketError::AlreadyClosed) => {
+                return ("connection-closed", None);
+            }
             Err(error) => {
-                let _ = app.emit(
-                    "remake-preview-event",
-                    json!({
-                        "type": "runtime-error",
-                        "previewSessionId": session_id,
-                        "message": error.to_string(),
-                    }),
-                );
-                return;
+                return ("connection-error", Some(error.to_string()));
             }
         }
         if child
@@ -521,7 +635,7 @@ fn run_preview_connection(
             .and_then(|mut process| process.try_wait().ok().flatten())
             .is_some()
         {
-            return;
+            return ("process-exited", None);
         }
         if idle {
             thread::sleep(Duration::from_millis(10));
@@ -575,9 +689,21 @@ mod tests {
 
     #[test]
     fn preview_entry_defaults_to_a_bounded_rule_fixture() {
-        let entry: PreviewEntry =
-            serde_json::from_value(json!({})).expect("default preview entry");
+        let entry: PreviewEntry = serde_json::from_value(json!({})).expect("default preview entry");
         assert_eq!(entry.kind, "start");
         assert_eq!(entry.base_value, 50.0);
+    }
+
+    #[test]
+    fn preview_manager_reports_no_active_session_by_default() {
+        let status = session_status(&PreviewManager::default()).expect("preview status");
+        assert_eq!(
+            status,
+            PreviewSessionStatus {
+                running: false,
+                session_id: String::new(),
+                process_id: None,
+            }
+        );
     }
 }

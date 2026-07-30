@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   behaviorSourceNodeOptions,
   isBehaviorPreviewKind,
+  normalizePreviewSessionStatus,
   PreviewProfileEditor,
   previewFixture,
   previewKindForRole,
@@ -121,5 +122,31 @@ describe("Realmz Remake role preview routing", () => {
     expect(html).toContain("<strong>Test Profile</strong>");
     expect(html).toContain(">New Profile</button>");
     expect(html).not.toContain("<details");
+  });
+
+  it("normalizes backend-owned preview session status", () => {
+    expect(normalizePreviewSessionStatus({
+      running: true,
+      sessionId: "preview-1",
+      processId: 42
+    })).toEqual({
+      running: true,
+      sessionId: "preview-1",
+      processId: 42
+    });
+    expect(normalizePreviewSessionStatus({
+      running: false,
+      sessionId: "stale-preview",
+      processId: 42
+    })).toEqual({
+      running: false,
+      sessionId: "",
+      processId: null
+    });
+    expect(normalizePreviewSessionStatus(null)).toEqual({
+      running: false,
+      sessionId: "",
+      processId: null
+    });
   });
 });

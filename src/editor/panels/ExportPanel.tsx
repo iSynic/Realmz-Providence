@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bug, Camera, Download, Gauge, Pause, Play, RotateCcw, SkipForward, Square, StepForward } from "lucide-react";
 import {
   BenchmarkReport,
@@ -284,6 +284,28 @@ type PreviewIntent = {
   slot?: number | null;
 };
 type PreviewEvent = Record<string, unknown>;
+
+type PreviewSessionStatus = {
+  running: boolean;
+  sessionId: string;
+  processId: number | null;
+};
+
+export function normalizePreviewSessionStatus(value: unknown): PreviewSessionStatus {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { running: false, sessionId: "", processId: null };
+  }
+  const report = value as Record<string, unknown>;
+  const running = report.running === true;
+  const processId = typeof report.processId === "number" && Number.isFinite(report.processId)
+    ? report.processId
+    : null;
+  return {
+    running,
+    sessionId: running ? String(report.sessionId ?? "") : "",
+    processId: running ? processId : null
+  };
+}
 type PreviewWatchResult = {
   path: string;
   found: boolean;
@@ -498,6 +520,7 @@ function RemakePreviewPanel({
   const [mapEntry, setMapEntry] = useState({ levelType: "land", levelIndex: 0, x: 0, y: 0 });
   const [status, setStatus] = useState("Not running");
   const [running, setRunning] = useState(false);
+  const activeSessionId = useRef("");
   const [runtimeEvent, setRuntimeEvent] = useState<PreviewEvent | null>(null);
   const [events, setEvents] = useState<PreviewEvent[]>([]);
   const [debuggerState, setDebuggerState] = useState<Record<string, unknown>>({});
@@ -553,9 +576,39 @@ function RemakePreviewPanel({
   useEffect(() => {
     if (!desktopRuntime) return;
     let disposed = false;
+    invoke<PreviewSessionStatus>("remake_preview_status")
+      .then((value) => {
+        if (disposed) return;
+        const session = normalizePreviewSessionStatus(value);
+        activeSessionId.current = session.sessionId;
+        setRunning(session.running);
+        if (session.running) {
+          setStatus(session.processId === null
+            ? "Connected to the running Remake preview"
+            : `Connected to Remake preview process ${session.processId}`);
+        }
+      })
+      .catch((error) => {
+        if (!disposed) setStatus(`Could not read preview status: ${String(error)}`);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [desktopRuntime]);
+
+  useEffect(() => {
+    if (!desktopRuntime) return;
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<PreviewEvent>("remake-preview-event", (event) => {
       if (disposed) return;
+      if (event.payload.type === "preview-session-ended") {
+        activeSessionId.current = "";
+        setRunning(false);
+        const reason = String(event.payload.reason ?? "connection-closed");
+        setStatus(reason === "process-exited" ? "Remake preview closed" : `Remake preview ended: ${reason}`);
+        return;
+      }
       const requestId = String(event.payload.requestId ?? "");
       const isDebuggerPoll = event.payload.type === "response"
         && requestId.startsWith("providence:debug-state:auto:");
@@ -640,7 +693,9 @@ function RemakePreviewPanel({
           }
         });
       } catch (error) {
-        if (!disposed) setStatus(`Preview debugger refresh failed: ${String(error)}`);
+        if (!disposed && activeSessionId.current) {
+          setStatus(`Preview debugger refresh failed: ${String(error)}`);
+        }
       }
     };
     void refreshDebugger();
@@ -696,6 +751,7 @@ function RemakePreviewPanel({
       setWatchReport([]);
       setAssertionReport(null);
       setPreviewScreenshot(null);
+      activeSessionId.current = "__launching__";
       const report = await invoke<{
         sessionId: string;
         packagePath: string;
@@ -739,15 +795,27 @@ function RemakePreviewPanel({
           }
         }
       });
-      setRunning(true);
-      setStatus(`Running package ${report.packageHash.slice(0, 12)}… in process ${report.processId}`);
+      activeSessionId.current = report.sessionId;
+      const session = normalizePreviewSessionStatus(
+        await invoke<PreviewSessionStatus>("remake_preview_status")
+      );
+      const launchedSessionIsActive = session.running && session.sessionId === report.sessionId;
+      setRunning(launchedSessionIsActive);
+      if (launchedSessionIsActive) {
+        setStatus(`Running package ${report.packageHash.slice(0, 12)}… in process ${report.processId}`);
+      } else {
+        activeSessionId.current = "";
+        setStatus("Remake preview ended before the debugger connected");
+      }
     } catch (error) {
+      activeSessionId.current = "";
       setRunning(false);
       setStatus(`Preview failed: ${String(error)}`);
     }
   }
 
   async function stopPreview() {
+    activeSessionId.current = "";
     try {
       await invoke("stop_remake_preview");
       setRunning(false);

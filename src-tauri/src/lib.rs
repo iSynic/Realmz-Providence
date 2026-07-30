@@ -62,6 +62,7 @@ pub fn run() {
             commands::export_project,
             commands::export_remake_campaign,
             preview::launch_remake_preview,
+            preview::remake_preview_status,
             preview::send_remake_preview_command,
             preview::stop_remake_preview,
             commands::validate_project,
