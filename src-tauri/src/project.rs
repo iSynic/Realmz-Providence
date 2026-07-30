@@ -101,6 +101,16 @@ pub enum RemakeScriptValueType {
     CharacterSnapshot,
     CharacterSnapshotArray,
     CombatSnapshot,
+    ExplorationSnapshot,
+    ItemInstanceSnapshot,
+    ItemInstanceSnapshotArray,
+    MapDefinitionSnapshot,
+    MonsterDefinitionSnapshot,
+    ItemDefinitionSnapshot,
+    SpellDefinitionSnapshot,
+    BattleDefinitionSnapshot,
+    EncounterDefinitionSnapshot,
+    MediaDefinitionSnapshot,
     ActionOutcome,
     EncounterOutcome,
     EffectOutcome,
@@ -122,6 +132,7 @@ impl RemakeScriptValueType {
                 | Self::FloatArray
                 | Self::StringArray
                 | Self::CharacterSnapshotArray
+                | Self::ItemInstanceSnapshotArray
         )
     }
 }
@@ -502,11 +513,24 @@ pub struct RemakePreviewProfile {
     #[serde(default = "default_preview_gameplay_profile")]
     pub gameplay_profile: String,
     #[serde(default)]
+    pub location: Option<RemakePreviewLocation>,
+    #[serde(default)]
     pub quest_flags: Vec<RemakePreviewQuestFlag>,
     #[serde(default)]
     pub party: Vec<RemakePreviewPartyMember>,
     #[serde(default)]
+    pub watches: Vec<String>,
+    #[serde(default)]
     pub assertions: Vec<RemakePreviewAssertion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewLocation {
+    pub level_type: String,
+    pub level_index: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

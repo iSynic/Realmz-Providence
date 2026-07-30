@@ -19,7 +19,7 @@
 
 .behavior-outline-list > li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 10px;
   padding: 9px 10px;
@@ -75,6 +75,7 @@
 
 .guided-step-actions {
   justify-content: flex-end;
+  justify-self: end;
 }
 
 .guided-inline-control > select,
@@ -208,8 +209,7 @@
   padding: 10px 12px;
 }
 
-.preview-profile-editor > summary {
-  cursor: pointer;
+.preview-profile-editor > header {
   color: var(--text-strong);
   font-weight: 700;
   text-transform: uppercase;
@@ -246,6 +246,12 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.preview-profile-section > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .preview-profile-row,
@@ -308,11 +314,15 @@
 .preview-debugger-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .preview-debugger-grid h4 {
   margin: 0 0 6px;
+}
+
+.preview-debugger-grid > section {
+  min-width: 0;
 }
 
 .preview-debug-frame {
@@ -323,6 +333,80 @@
 
 .preview-event-timeline {
   max-height: 260px;
+}
+
+.preview-watch-editor,
+.preview-watch-result,
+.preview-assertion-summary,
+.preview-assertion-list article {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+}
+
+.preview-watch-editor {
+  margin: 8px 0;
+}
+
+.preview-watch-editor .field {
+  flex: 1;
+}
+
+.preview-watch-list,
+.preview-assertion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.preview-watch-result {
+  justify-content: space-between;
+}
+
+.preview-watch-result code {
+  color: var(--text-strong);
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-watch-result.missing code,
+.preview-assertion-summary.failed,
+.preview-assertion-list article.failed {
+  color: var(--danger, #ff7d70);
+}
+
+.preview-assertion-summary.passed,
+.preview-assertion-list article.passed {
+  color: var(--success, #73d6a0);
+}
+
+.preview-assertion-summary {
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.preview-assertion-list article {
+  align-items: flex-start;
+  border-left: 3px solid currentColor;
+  flex-direction: column;
+  padding: 5px 7px;
+}
+
+.preview-screenshot-panel img {
+  background: #000;
+  border: 1px solid var(--border-subtle, #274255);
+  display: block;
+  height: auto;
+  max-height: 360px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.preview-screenshot-panel > small {
+  display: block;
+  margin-top: 5px;
 }
 
 @media (max-width: 1100px) {

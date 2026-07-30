@@ -568,6 +568,7 @@ describe("project command facade", () => {
       jewelry: 0,
       totalSeconds: 2 * 24 * 60 * 60,
       rngSeed: 42,
+      location: { levelType: "land" as const, levelIndex: 0, x: 2, y: 2 },
       questFlags: [{ id: 17, value: 1 }],
       party: [{
         slot: 0,
@@ -578,6 +579,7 @@ describe("project command facade", () => {
         maximumSpellPoints: 0,
         itemIds: [900]
       }],
+      watches: ["wealth.gold", "location.x"],
       assertions: [{ path: "wealth.gold", operator: "equals" as const, value: "0" }]
     }];
     const next = applyProjectCommand(project, {

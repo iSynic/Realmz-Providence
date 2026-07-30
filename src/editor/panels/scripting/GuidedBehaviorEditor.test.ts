@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
+  collectionQueryOperations,
   compatibleGuidedOperations,
+  ExpressionField,
+  guidedOperationKind,
   makeFlowStatement,
   makeOperationStatement,
   StatementInsertToolbar,
@@ -29,6 +32,9 @@ describe("guided behavior authoring", () => {
     expect(operations.map((entry) => entry.id)).toContain("core.map.teleport");
     expect(operations.map((entry) => entry.id)).toContain("core.encounter.start-battle");
     expect(operations.map((entry) => entry.id)).toContain("core.inventory.change-shop");
+    expect(operations.map((entry) => entry.id)).toContain("core.inventory.items");
+    expect(operations.map((entry) => entry.id)).toContain("core.definitions.monster");
+    expect(operations.map((entry) => entry.id)).toContain("core.definitions.encounter");
     expect(operations.map((entry) => entry.id)).not.toContain("core.combat.snapshot");
   });
 
@@ -64,6 +70,23 @@ describe("guided behavior authoring", () => {
     }))).toMatchObject({
       result: "party_wealth",
       declaredType: "wealth-snapshot"
+    });
+  });
+
+  it("creates typed definition and item-instance snapshot results", () => {
+    expect(makeOperationStatement(
+      compatibleGuidedOperations("action", "run")
+        .find((entry) => entry.id === "core.inventory.items")!
+    )).toMatchObject({
+      result: "party_item_instances",
+      declaredType: "item-instance-snapshot-array"
+    });
+    expect(makeOperationStatement(
+      compatibleGuidedOperations("action", "run")
+        .find((entry) => entry.id === "core.definitions.monster")!
+    )).toMatchObject({
+      result: "monster_definition",
+      declaredType: "monster-definition-snapshot"
     });
   });
 
@@ -106,5 +129,53 @@ describe("guided behavior authoring", () => {
     );
     expect(markup).toContain(">Add Action</button>");
     expect(markup).toContain(">Add Logic</button>");
+  });
+
+  it("renders collection queries without flattening them into fixed values", () => {
+    const markup = renderToStaticMarkup(
+      createElement(ExpressionField, {
+        label: "Initial value",
+        expectedType: "bool",
+        expression: {
+          kind: "collection",
+          operation: "any",
+          collection: { kind: "variable", scope: "local", name: "members" },
+          itemName: "member",
+          predicate: {
+            kind: "member",
+            object: { kind: "variable", scope: "local", name: "member" },
+            member: "alive"
+          }
+        },
+        stateDefinitions: [],
+        onChange: () => undefined
+      })
+    );
+    expect(markup).toContain(">Collection query</option>");
+    expect(markup).toContain(">Any item matches</option>");
+    expect(markup).toContain('value="members"');
+    expect(markup).toContain('value="alive"');
+    expect(markup).not.toContain(">False</option>");
+  });
+
+  it("limits collection query choices to the requested result type", () => {
+    expect(collectionQueryOperations("bool")).toEqual(["any", "all"]);
+    expect(collectionQueryOperations("int")).toEqual(["count"]);
+    expect(collectionQueryOperations("character-snapshot-array")).toEqual(["filter"]);
+    expect(collectionQueryOperations("character-snapshot")).toEqual(["find"]);
+  });
+
+  it("labels presentation yields as presentation rather than data queries", () => {
+    expect(guidedOperationKind(operation())).toBe("Presentation");
+    expect(guidedOperationKind(operation({
+      id: "core.inventory.take-wealth",
+      category: "Inventory and Economy",
+      mutates: true
+    }))).toBe("Command");
+    expect(guidedOperationKind(operation({
+      id: "core.inventory.wealth",
+      category: "Inventory and Economy",
+      mutates: false
+    }))).toBe("Query");
   });
 });

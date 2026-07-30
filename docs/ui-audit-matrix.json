@@ -45,6 +45,12 @@
     { "key": "scenario.contact", "domain": "scenario", "editor": "contact", "label": "Contact Info", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
     { "key": "scenario.registration", "domain": "scenario", "editor": "registration", "label": "Security", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
 
+    { "key": "scripting.behaviors", "domain": "scripting", "editor": "behaviors", "label": "Behaviors", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripting.state", "domain": "scripting", "editor": "state", "label": "State & Attachments", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripting.extensions", "domain": "scripting", "editor": "extensions", "label": "Extensions", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripting.bindings", "domain": "scripting", "editor": "bindings", "label": "Bindings", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripting.reference", "domain": "scripting", "editor": "reference", "label": "API Reference", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+
     { "key": "encounters.simple", "domain": "encounters", "editor": "simple", "label": "Simple Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "encounters.complex", "domain": "encounters", "editor": "complex", "label": "Complex Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "encounters", "states": [
       { "id": "item-response-filtered", "steps": [

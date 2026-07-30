@@ -41,6 +41,7 @@ pub struct PreviewSettings {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewEntry {
+    #[serde(default = "default_preview_entry_kind")]
     pub kind: String,
     #[serde(default)]
     pub trigger_id: String,
@@ -58,6 +59,16 @@ pub struct PreviewEntry {
     pub y: i64,
     #[serde(default)]
     pub behavior_id: String,
+    #[serde(default)]
+    pub role: String,
+    #[serde(default)]
+    pub hook: String,
+    #[serde(default)]
+    pub target_kind: String,
+    #[serde(default)]
+    pub record_id: String,
+    #[serde(default = "default_preview_base_value")]
+    pub base_value: f64,
     #[serde(default)]
     pub arguments: Value,
     #[serde(default)]
@@ -89,6 +100,11 @@ impl Default for PreviewEntry {
             x: 0,
             y: 0,
             behavior_id: String::new(),
+            role: String::new(),
+            hook: String::new(),
+            target_kind: String::new(),
+            record_id: String::new(),
+            base_value: default_preview_base_value(),
             arguments: json!({}),
             context: json!({}),
             fixture: json!({}),
@@ -96,6 +112,14 @@ impl Default for PreviewEntry {
             pause_on_start: false,
         }
     }
+}
+
+fn default_preview_base_value() -> f64 {
+    50.0
+}
+
+fn default_preview_entry_kind() -> String {
+    "start".to_string()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -227,9 +251,9 @@ pub fn launch_remake_preview(
     }
     socket
         .get_mut()
-        .set_read_timeout(Some(Duration::from_millis(100)))
+        .set_nonblocking(true)
         .map_err(|error| ProvidenceError::message(format!(
-            "Could not configure preview event polling: {error}"
+            "Could not configure nonblocking preview event polling: {error}"
         )))?;
 
     let (command_sender, command_receiver) = mpsc::channel::<Value>();
@@ -340,7 +364,14 @@ fn accept_preview_connection(
     let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
     loop {
         match listener.accept() {
-            Ok((stream, address)) if address.ip().is_loopback() => return Ok(stream),
+            Ok((stream, address)) if address.ip().is_loopback() => {
+                stream.set_nonblocking(false).map_err(|error| {
+                    ProvidenceError::message(format!(
+                        "Could not configure the Remake preview connection: {error}"
+                    ))
+                })?;
+                return Ok(stream);
+            }
             Ok(_) => continue,
             Err(error) if error.kind() == ErrorKind::WouldBlock => {}
             Err(error) => {
@@ -440,7 +471,9 @@ fn run_preview_connection(
     session_id: &str,
 ) {
     loop {
+        let mut idle = true;
         while let Ok(command) = command_receiver.try_recv() {
+            idle = false;
             if socket
                 .send(Message::Text(command.to_string().into()))
                 .is_err()
@@ -450,6 +483,7 @@ fn run_preview_connection(
         }
         match socket.read() {
             Ok(message) if message.is_text() => {
+                idle = false;
                 if let Ok(text) = message.to_text() {
                     if text.len() <= MAX_MESSAGE_BYTES {
                         if let Ok(mut event) = serde_json::from_str::<Value>(text) {
@@ -465,7 +499,7 @@ fn run_preview_connection(
                 }
             }
             Ok(message) if message.is_close() => return,
-            Ok(_) => {}
+            Ok(_) => idle = false,
             Err(WebSocketError::Io(error))
                 if matches!(error.kind(), ErrorKind::WouldBlock | ErrorKind::TimedOut) => {}
             Err(WebSocketError::ConnectionClosed | WebSocketError::AlreadyClosed) => return,
@@ -489,6 +523,9 @@ fn run_preview_connection(
         {
             return;
         }
+        if idle {
+            thread::sleep(Duration::from_millis(10));
+        }
     }
 }
 
@@ -507,4 +544,40 @@ fn terminate_child(child: &Arc<Mutex<Child>>) {
 
 fn lock_error<T>(_: std::sync::PoisonError<T>) -> ProvidenceError {
     ProvidenceError::message("Realmz Remake preview state lock was poisoned")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn role_preview_entry_preserves_typed_binding_context() {
+        let entry: PreviewEntry = serde_json::from_value(json!({
+            "kind": "spell",
+            "behaviorId": "scenario.fixture.spell",
+            "role": "spell",
+            "hook": "effect",
+            "targetKind": "spell",
+            "recordId": "16",
+            "slot": -1,
+            "baseValue": 42.5
+        }))
+        .expect("role preview entry");
+        assert_eq!(entry.kind, "spell");
+        assert_eq!(entry.behavior_id, "scenario.fixture.spell");
+        assert_eq!(entry.role, "spell");
+        assert_eq!(entry.hook, "effect");
+        assert_eq!(entry.target_kind, "spell");
+        assert_eq!(entry.record_id, "16");
+        assert_eq!(entry.slot, -1);
+        assert_eq!(entry.base_value, 42.5);
+    }
+
+    #[test]
+    fn preview_entry_defaults_to_a_bounded_rule_fixture() {
+        let entry: PreviewEntry =
+            serde_json::from_value(json!({})).expect("default preview entry");
+        assert_eq!(entry.kind, "start");
+        assert_eq!(entry.base_value, 50.0);
+    }
 }

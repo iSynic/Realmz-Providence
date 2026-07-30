@@ -54,8 +54,8 @@ Every entry behavior has one role and hook. The role controls its input context,
 | --- | --- | --- |
 | Action | `run` | Continue, halt, call, replace, or return |
 | Encounter | `enter`, `option`, `result`, `complete` | Continue, resolve, repeat, close, or branch |
-| Spell | `validate`, `cast`, `effect` | Applied, no effect, or invalid |
-| Item | `use-field`, `use-combat` | Used, rejected, or no effect |
+| Spell | `validate`, `cast`, `effect`, `tick`, `expire` | Applied, no effect, or invalid |
+| Item | `use-field`, `use-combat`, `equip`, `unequip`, `attack`, `defense`, `passive` | Used, rejected, no effect, or a bounded modifier |
 | Monster AI | `decide` | Attack, cast, move, flee, wait, or use item |
 | Lifecycle | campaign start/resume, map, movement, rest, time, battle, character, and party events | Completion |
 | Rule modifier | a named calculation family | Additive, multiplicative, minimum, or maximum changes |
@@ -63,7 +63,10 @@ Every entry behavior has one role and hook. The role controls its input context,
 
 Validation and rule-modifier hooks are pure. They cannot yield or mutate state. Other roles may yield only through operations whose API entry says they yield.
 
-The generated API reference distinguishes runtime-connected hooks from reserved hooks. Providence will not export a behavior attached to a reserved hook. Spell duration tick/expiration, item equip/unequip/attack/defense/passive, and campaign completion are reserved for later runtime seams rather than silently accepted as no-ops.
+The generated API reference distinguishes runtime-connected hooks from any
+future reserved hooks. Providence will not export a behavior attached to a
+hook without an authoritative Remake owner. Every hook listed in the table
+above is runtime-connected in the current catalog.
 
 ### Action Points and XAPs
 
@@ -81,11 +84,18 @@ Use the contextual card on the selected encounter result instead of manually com
 
 Spell validation is pure. Cast and effect behavior run through the Character and Combat ports. An attached custom implementation owns that spell resolution; ordinary Classic or shared-data spells continue through the established spell implementation.
 
-Use separate helpers for reusable targeting or effect calculations. Duration tick and expiration hooks are reserved in the catalog but are not authorable until Remake has a single native duration-event owner. Store explicit duration state now; do not depend on a live coroutine or Godot object.
+Use separate helpers for reusable targeting or effect calculations. Applied
+effects carry explicit duration, interval, and stacking state. Remake owns
+tick and expiration scheduling in the serialized script runtime; a behavior
+does not retain a live coroutine or Godot object.
 
 ### Items
 
-Field and combat use attachments are visible to the native item pickers. Remake resolves the `ItemInstance` to its stable definition and instance identities, then gives the behavior immutable snapshots. Item-instance state remains owned by that exact item instance scope.
+Field/combat use, equip, unequip, attack, defense, and passive attachments are
+visible at their native gameplay seams. Remake resolves the `ItemInstance` to
+its stable definition and instance identities, then gives the behavior
+immutable snapshots. Item-instance state remains owned by that exact item
+instance scope.
 
 Native item hooks still work for existing content. A scenario behavior is checked first only when a matching binding exists.
 
@@ -97,7 +107,10 @@ Do not mutate combat from an AI decision. Return the decision; use spell or item
 
 ### Lifecycle
 
-Lifecycle hooks currently cover campaign start/resume, map entry/leave, party movement, rest start/completion, time advancement, battle start/completion, character defeat, and party defeat. They all use the same serialized event queue. Campaign completion is reserved until Remake has an explicit, authoritative completion boundary.
+Lifecycle hooks cover campaign start/resume/completion, map entry/leave, party
+movement, rest start/completion, time advancement, battle start/completion,
+character defeat, and party defeat. They all use the same serialized event
+queue.
 
 Lifecycle behavior is ordered by binding priority and stable binding ID.
 
@@ -289,6 +302,25 @@ Raw Godot or Remake access belongs to a separately installed engine plug-in:
 
 A missing or incompatible plug-in blocks readiness. The scenario package contains only the plug-in ID, API requirement, and data configuration—not the executable plug-in.
 
+Providence does not install or approve engine plug-ins. In
+**Scripting → Extensions**, it records the exact namespaced plug-in ID and API
+version that the scenario requires. Remake owns the user-local installation,
+content hash, approval hash, activation, and command bridge through
+**Settings → Scenario Engine Plug-ins**. Authors choose a plug-in's
+`plugin.json`, inspect its declared files and capabilities, then approve that
+exact package separately.
+
+The package manifest pins the relative path, byte size, and SHA-256 of every
+plug-in file. Inspection and installation never execute source. Updating any
+file or declared operation replaces the installed package and revokes
+approval.
+
+Plug-in authors declare namespaced providers and Scenario API operations. The
+operations still have typed role compatibility, parameters, results,
+yield/mutation flags, documentation, and examples, and they route through
+Remake's `engine.plugins` port. A plug-in is not a way for a packaged scenario
+to smuggle source into the main process.
+
 ## Recipes
 
 ### Gold plus deadline plus party condition
@@ -305,7 +337,10 @@ Use a time-advanced lifecycle behavior, inspect the deterministic scenario calen
 
 ### Custom spell and status effect
 
-Use pure validation, cast presentation, and effect application. Store duration in combat or character state. Damage, healing, effects, spawning, and animation go through their catalog operations. Tick/expire bindings remain unavailable until Remake exposes the authoritative duration-event boundary.
+Use pure validation, cast presentation, and effect application. Store duration
+through the effect outcome. Damage, healing, conditions, spawning, and
+animation go through their catalog operations. Tick and expire behaviors run
+from Remake's serialized duration-event boundary.
 
 ### Combat and field item use
 
@@ -364,3 +399,15 @@ For runtime contributors:
 - installed extensions and plug-ins register only namespaced, non-core providers.
 
 Adding an operation is incomplete until the catalog, port implementation, Providence authoring surface, Safe parser/printer, save/restore behavior, preview diagnostics, generated reference, examples, and cross-repository tests agree.
+
+Runtime contributors should also run the real Windows isolation gate:
+
+```powershell
+pwsh -NoProfile -File tools/scenario-sandbox-host/run-security-acceptance.ps1 `
+  -GodotExecutable "C:\path\to\Godot_console.exe"
+```
+
+That test launches hostile file, network, process, reflection, resource,
+runaway, oversized-state, and undeclared-command fixtures through the
+AppContainer/Job Object host. Parser or blacklist tests alone do not prove the
+sandbox boundary.

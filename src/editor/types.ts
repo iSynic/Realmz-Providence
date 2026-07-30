@@ -550,6 +550,13 @@ export type RemakePreviewAssertion = {
   value: string;
 };
 
+export type RemakePreviewLocation = {
+  levelType: "land" | "dungeon";
+  levelIndex: number;
+  x: number;
+  y: number;
+};
+
 export type RemakePreviewProfile = {
   id: string;
   name: string;
@@ -559,8 +566,10 @@ export type RemakePreviewProfile = {
   totalSeconds: number;
   rngSeed: number;
   gameplayProfile: string;
+  location: RemakePreviewLocation | null;
   questFlags: RemakePreviewQuestFlag[];
   party: RemakePreviewPartyMember[];
+  watches: string[];
   assertions: RemakePreviewAssertion[];
 };
 
@@ -1028,6 +1037,16 @@ export type RemakeScriptValueType =
   | "character-snapshot"
   | "character-snapshot-array"
   | "combat-snapshot"
+  | "exploration-snapshot"
+  | "item-instance-snapshot"
+  | "item-instance-snapshot-array"
+  | "map-definition-snapshot"
+  | "monster-definition-snapshot"
+  | "item-definition-snapshot"
+  | "spell-definition-snapshot"
+  | "battle-definition-snapshot"
+  | "encounter-definition-snapshot"
+  | "media-definition-snapshot"
   | "action-outcome"
   | "encounter-outcome"
   | "effect-outcome"

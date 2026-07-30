@@ -161,7 +161,9 @@ Reads a Classic quest flag or typed scenario-state value.
 Use named state for new Remake behavior. Quest scope is the compatibility adapter for Classic flag IDs.
 
 ```gdscript
-var paid: bool = read_state("campaign", "paid_the_captain")
+func example_read_state() -> void:
+    var paid: bool = read_state("campaign", "paid_the_captain")
+    return
 ```
 
 #### Set State
@@ -178,7 +180,9 @@ Writes a Classic quest flag or typed scenario-state value.
 The value must match the state definition for the selected scope.
 
 ```gdscript
-set_state("campaign", "paid_the_captain", true)
+func example_set_state() -> void:
+    set_state("campaign", "paid_the_captain", true)
+    return
 ```
 
 #### Deterministic Roll
@@ -195,7 +199,9 @@ Returns a deterministic integer from 1 through the supplied maximum.
 The scenario RNG is serialized in the save and is the only random source available to Safe behavior.
 
 ```gdscript
-var roll: int = roll(100)
+func example_roll() -> void:
+    var roll: int = roll(100)
+    return
 ```
 
 ### World and Time
@@ -214,7 +220,9 @@ Returns the party's current land or dungeon location.
 The result is an immutable snapshot and cannot expose a map node.
 
 ```gdscript
-var location = await current_location()
+func example_current_location() -> void:
+    var location: LocationSnapshot = await current_location()
+    return
 ```
 
 #### Current Time
@@ -231,7 +239,9 @@ Returns the scenario day and time.
 Day is the campaign day used by Classic timed encounters.
 
 ```gdscript
-var clock = await current_time()
+func example_current_time() -> void:
+    var clock: TimeSnapshot = await current_time()
+    return
 ```
 
 #### Teleport Party
@@ -248,7 +258,9 @@ Moves the party to a validated map location.
 The normal map-transition lifecycle, exploration state, music, and timed-event checks still run.
 
 ```gdscript
-await teleport("land", 0, 2, 2)
+func example_teleport() -> void:
+    await teleport("land", 0, 2, 2)
+    return
 ```
 
 #### Change Map Tile
@@ -265,7 +277,9 @@ Changes a land or dungeon tile through the map runtime.
 The mutation is stored in campaign runtime state and survives save/load.
 
 ```gdscript
-await set_map_tile("land", 0, 10, 6, 42)
+func example_set_map_tile() -> void:
+    await set_map_tile("land", 0, 10, 6, 42)
+    return
 ```
 
 #### Advance Time
@@ -282,7 +296,9 @@ Advances or rewinds the campaign clock through the configured rules.
 Timed encounters and condition progression run at the same boundaries as native time changes.
 
 ```gdscript
-await advance_time(3600)
+func example_advance_time() -> void:
+    await advance_time(3600)
+    return
 ```
 
 #### Redraw Map
@@ -299,7 +315,9 @@ Clears temporary presentation and redraws the active map.
 Use this after pictures or authored map changes when the map should become visible immediately.
 
 ```gdscript
-await map_redraw()
+func example_map_redraw() -> void:
+    await map_redraw()
+    return
 ```
 
 #### Set Action Point Chance
@@ -316,7 +334,9 @@ Changes an authored AP or XAP activation percentage.
 The change is stored in campaign state and survives save and load.
 
 ```gdscript
-await map_trigger_chance("land", 0, 17, 0)
+func example_map_trigger_chance() -> void:
+    await map_trigger_chance("land", 0, 17, 0)
+    return
 ```
 
 #### Set Camping Permission
@@ -333,7 +353,9 @@ Allows or prevents camping through the active map rules.
 The HUD and rest controls update through the normal camping boundary.
 
 ```gdscript
-await map_camping(false)
+func example_map_camping() -> void:
+    await map_camping(false)
+    return
 ```
 
 #### Set Map Darkness
@@ -350,7 +372,9 @@ Changes the authored darkness level for a land or dungeon map.
 The map mutation is saved and the active view is refreshed when applicable.
 
 ```gdscript
-await map_darkness("dungeon", 2, 3)
+func example_map_darkness() -> void:
+    await map_darkness("dungeon", 2, 3)
+    return
 ```
 
 #### Give Player Map
@@ -367,7 +391,9 @@ Adds an authored map or note to the party.
 Providence supplies a player-map picker; display optionally opens it immediately.
 
 ```gdscript
-await map_give_player_map(2, true)
+func example_map_give_player_map() -> void:
+    await map_give_player_map(2, true)
+    return
 ```
 
 #### Move Party by Offset
@@ -384,7 +410,9 @@ Moves the party relative to its current map position.
 The destination uses the normal map transition and boundary validation path and is saved in campaign state.
 
 ```gdscript
-var location: LocationSnapshot = await map_shift_party(1, 0)
+func example_map_shift_party() -> void:
+    var location: LocationSnapshot = await map_shift_party(1, 0)
+    return
 ```
 
 #### Face Party
@@ -401,7 +429,9 @@ Faces the party north, east, south, or west.
 Providence presents the stable headings 1 through 4 as named directions and Remake redraws the active view.
 
 ```gdscript
-await map_view_direction(1)
+func example_map_view_direction() -> void:
+    await map_view_direction(1)
+    return
 ```
 
 #### Set Map View Options
@@ -418,7 +448,9 @@ Changes compass visibility or access to the full overhead map.
 Omitted options retain their current values; the chosen view state is included in saves.
 
 ```gdscript
-await map_view_mode(true, false)
+func example_map_view_mode() -> void:
+    await map_view_mode(true, false)
+    return
 ```
 
 #### Change Land Appearance
@@ -435,7 +467,9 @@ Changes the tileset identity and optional darkness of an authored land level.
 Only packaged land looks may be selected; tile projection and saved map overrides remain owned by Map.
 
 ```gdscript
-await map_land_look(0, 3, 0)
+func example_map_land_look() -> void:
+    await map_land_look(0, 3, 0)
+    return
 ```
 
 #### Configure Random Encounter Area
@@ -452,7 +486,9 @@ Changes the encounter chance and optional battle range for an authored random re
 The original bounds and scheduling data are preserved unless separately authored, and the override survives save and load.
 
 ```gdscript
-await map_random_rectangle("land", 0, 2, 15, 4, 7)
+func example_map_random_rectangle() -> void:
+    await map_random_rectangle("land", 0, 2, 15, 4, 7)
+    return
 ```
 
 #### Set Sailing State
@@ -469,7 +505,9 @@ Places the exploring party in or out of its campaign boat state.
 The normal exploration icon and movement state are refreshed immediately.
 
 ```gdscript
-var sailing: bool = await map_sailing(true)
+func example_map_sailing() -> void:
+    var sailing: bool = await map_sailing(true)
+    return
 ```
 
 #### Move Party Back
@@ -486,7 +524,28 @@ Moves the party one tile opposite a supplied entry direction.
 Providence presents the entry direction by name; a zero or invalid direction returns false without inventing movement.
 
 ```gdscript
-var moved: bool = await map_retreat(0, 1)
+func example_map_retreat() -> void:
+    var moved: bool = await map_retreat(0, 1)
+    return
+```
+
+#### Exploration State
+
+Returns the party's immutable camping, sailing, facing, view, and random-encounter state.
+
+- Stable ID: `core.map.exploration`
+- Port: `core.map`
+- Parameters: none
+- Result: `ExplorationSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The snapshot reflects the active gameplay profile and campaign overrides without exposing the map or HUD nodes.
+
+```gdscript
+func example_map_exploration() -> void:
+    var exploration: ExplorationSnapshot = await map_exploration()
+    return
 ```
 
 ### Inventory and Economy
@@ -505,7 +564,9 @@ Returns total and pooled party wealth.
 Gold includes the party members and pool so affordability matches Realmz payment behavior.
 
 ```gdscript
-var wealth = await party_wealth()
+func example_party_wealth() -> void:
+    var wealth: WealthSnapshot = await party_wealth()
+    return
 ```
 
 #### Take Party Wealth
@@ -522,7 +583,9 @@ Atomically takes wealth if the party can afford it.
 No wealth is removed when the complete requested payment cannot be made.
 
 ```gdscript
-var paid: bool = await take_gold(500)
+func example_take_gold() -> void:
+    var paid: bool = await take_gold(500)
+    return
 ```
 
 #### Party Has Item
@@ -539,7 +602,10 @@ Tests scenario-stable item identity across the party.
 Use Providence's item picker; authors should not normally enter the numeric ID.
 
 ```gdscript
-var has_key: bool = await party_has_item(key_item)
+func example_party_has_item() -> void:
+    var key_item: int = 1
+    var has_key: bool = await party_has_item(key_item)
+    return
 ```
 
 #### Give Treasure
@@ -556,7 +622,10 @@ Presents and awards an authored treasure record.
 The normal loot interface and item-instance materialization are used.
 
 ```gdscript
-await give_treasure(reward)
+func example_give_treasure() -> void:
+    var reward: int = 1
+    await give_treasure(reward)
+    return
 ```
 
 #### Drop All Party Items
@@ -573,7 +642,9 @@ Removes every carried party item and returns the number removed.
 Item instances are removed through the inventory API so equipment and load stay consistent.
 
 ```gdscript
-var removed: int = await inventory_drop_items()
+func example_inventory_drop_items() -> void:
+    var removed: int = await inventory_drop_items()
+    return
 ```
 
 #### Open Shop
@@ -590,7 +661,9 @@ Loads an authored shop and optionally opens it immediately.
 Scenario item identities, saved shop mutations, and normal purchase rules remain active.
 
 ```gdscript
-await inventory_open_shop(3, true)
+func example_inventory_open_shop() -> void:
+    await inventory_open_shop(3, true)
+    return
 ```
 
 #### Open Temple Services
@@ -607,7 +680,9 @@ Enables temple services at the supplied price percentage.
 The active inventory and character rule providers still validate each service.
 
 ```gdscript
-await inventory_temple(100)
+func example_inventory_temple() -> void:
+    await inventory_temple(100)
+    return
 ```
 
 #### Enable Banking
@@ -624,7 +699,9 @@ Enables the normal banking interface for the current location.
 This grants access through Remake's existing money and storage UI.
 
 ```gdscript
-await inventory_banking()
+func example_inventory_banking() -> void:
+    await inventory_banking()
+    return
 ```
 
 #### Clear Party Currency
@@ -641,7 +718,9 @@ Clears gold, gems, or jewelry from the party or selected characters.
 Currency uses the friendly Providence selector; the stored value is the stable zero-based currency index.
 
 ```gdscript
-var removed: int = await inventory_clear_currency(0, false)
+func example_inventory_clear_currency() -> void:
+    var removed: int = await inventory_clear_currency(0, false)
+    return
 ```
 
 #### Alter Party Items
@@ -658,7 +737,10 @@ Removes, recharges, or replaces matching scenario item instances.
 Action is remove, charges, or replace; equipped items follow the normal unequip and validation path.
 
 ```gdscript
-var changed: int = await inventory_alter_item(key, "remove", 1)
+func example_inventory_alter_item() -> void:
+    var key: int = 1
+    var changed: int = await inventory_alter_item(key, "remove", 1)
+    return
 ```
 
 #### Store or Restore Equipment
@@ -675,7 +757,9 @@ Captures party equipment or restores the previously captured set.
 The storage snapshot is owned by the Inventory port and included in saves.
 
 ```gdscript
-await inventory_store_equipment(true)
+func example_inventory_store_equipment() -> void:
+    await inventory_store_equipment(true)
+    return
 ```
 
 #### Change Shop Stock
@@ -692,7 +776,29 @@ Changes matching item quantities and optional inflation in an authored shop.
 The effective shop is persisted even if its UI has not been opened yet; loaded shops update immediately.
 
 ```gdscript
-var slots: int = await inventory_change_shop(3, rope, -1, 0)
+func example_inventory_change_shop() -> void:
+    var rope: int = 1
+    var slots: int = await inventory_change_shop(3, rope, -1, 0)
+    return
+```
+
+#### Party Item Instances
+
+Returns bounded immutable snapshots of the exact item instances carried by the party.
+
+- Stable ID: `core.inventory.items`
+- Port: `core.inventory`
+- Parameters: `characterId: string?`
+- Result: `ItemInstanceSnapshot-array`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+Instance identity, ownership, charges, equipment, identification, and Classic item IDs are preserved. No mutable ItemInstance enters a scenario behavior.
+
+```gdscript
+func example_inventory_items() -> void:
+    var items: ItemInstanceSnapshotArray = await inventory_items()
+    return
 ```
 
 ### Party and Characters
@@ -711,7 +817,9 @@ Returns bounded immutable snapshots of the player party.
 References in the snapshots remain stable for the current playthrough.
 
 ```gdscript
-var party = await party_members()
+func example_party_members() -> void:
+    var party: Array[CharacterSnapshot] = await party_members()
+    return
 ```
 
 #### Party Condition
@@ -728,7 +836,10 @@ Tests a named Classic-compatible party condition.
 Providence presents condition names while the package retains the stable condition index.
 
 ```gdscript
-var healthy: bool = not await party_condition(diseased)
+func example_party_condition() -> void:
+    var diseased: int = 1
+    var active: bool = await party_condition(diseased)
+    return
 ```
 
 #### Change Party Health
@@ -745,7 +856,9 @@ Heals or damages the party or the current character selection through the charac
 Target mode may be party or selected; death and recovery lifecycle events use the normal character path.
 
 ```gdscript
-await change_health(-5, false, "selected")
+func example_change_health() -> void:
+    await change_health(-5, false, "selected")
+    return
 ```
 
 #### Give Experience
@@ -762,7 +875,9 @@ Awards experience under the active character rules.
 Level progression and presentation stay owned by the character port.
 
 ```gdscript
-await give_experience(500)
+func example_give_experience() -> void:
+    await give_experience(500)
+    return
 ```
 
 #### Change Party Fatigue
@@ -779,7 +894,9 @@ Adds a signed amount to party fatigue through the active rules.
 The result is clamped by the selected character and map-time providers.
 
 ```gdscript
-var fatigue: float = await character_fatigue(5.0)
+func example_character_fatigue() -> void:
+    var fatigue: float = await character_fatigue(5.0)
+    return
 ```
 
 #### Party Has Ally
@@ -796,7 +913,10 @@ Tests whether the party currently has the selected authored monster as an ally.
 The check uses the saved Classic monster identity rather than display-name guessing.
 
 ```gdscript
-var joined: bool = await character_has_ally(vodalian)
+func example_character_has_ally() -> void:
+    var vodalian: int = 1
+    var joined: bool = await character_has_ally(vodalian)
+    return
 ```
 
 #### Add Party Ally
@@ -813,7 +933,10 @@ Creates an authored monster as a persistent party ally.
 The monster record and scenario-specific image identity are resolved from the active package.
 
 ```gdscript
-await character_add_ally(vodalian)
+func example_character_add_ally() -> void:
+    var vodalian: int = 1
+    await character_add_ally(vodalian)
+    return
 ```
 
 #### Remove Party Ally
@@ -830,7 +953,10 @@ Removes every matching authored ally from the party.
 Selection state and the party HUD are updated with the ally list.
 
 ```gdscript
-var removed: int = await character_remove_ally(vodalian)
+func example_character_remove_ally() -> void:
+    var vodalian: int = 1
+    var removed: int = await character_remove_ally(vodalian)
+    return
 ```
 
 #### Remove Experience
@@ -847,7 +973,9 @@ Removes experience from the party or current selected characters.
 Experience never falls below the character progression floor.
 
 ```gdscript
-var removed: int = await character_remove_experience(100, true)
+func example_character_remove_experience() -> void:
+    var removed: int = await character_remove_experience(100, true)
+    return
 ```
 
 #### Apply Character Condition
@@ -864,7 +992,10 @@ Applies or clears a Classic-compatible condition on party members.
 Target mode is party, selected, or living; condition duration uses the normal condition clock.
 
 ```gdscript
-var affected: int = await character_condition("party", diseased, 8)
+func example_character_condition() -> void:
+    var diseased: int = 1
+    var affected: int = await character_condition("party", diseased, 8)
+    return
 ```
 
 #### Ask Player to Pick Characters
@@ -881,7 +1012,9 @@ Opens the party picker and stores the resulting character selection.
 Later selected-character operations consume this explicit saved selection.
 
 ```gdscript
-var selected: int = await character_pick(1)
+func example_character_pick() -> void:
+    var selected: int = await character_pick(1)
+    return
 ```
 
 #### Check Character Ability
@@ -898,7 +1031,10 @@ Picks one living character and performs an attribute or special-ability check.
 Providence supplies named attributes and abilities while preserving the stable source index.
 
 ```gdscript
-var passed: bool = await character_ability_check("attribute", strength, 0)
+func example_character_ability_check() -> void:
+    var strength: int = 1
+    var passed: bool = await character_ability_check("attribute", strength, 0)
+    return
 ```
 
 #### Level Selected Characters
@@ -915,7 +1051,9 @@ Advances the currently selected characters through normal progression.
 Classic or Samuel character providers still own the actual level-up calculations.
 
 ```gdscript
-var leveled: int = await character_level_selected()
+func example_character_level_selected() -> void:
+    var leveled: int = await character_level_selected()
+    return
 ```
 
 #### Check Party Property
@@ -932,7 +1070,9 @@ Tests party level, camp or boat state, selection, race, caste, or gender.
 Providence presents selector-specific controls and hides fields that do not apply.
 
 ```gdscript
-var aboard: bool = await character_party_misc("in_boat")
+func example_character_party_misc() -> void:
+    var aboard: bool = await character_party_misc("in_boat")
+    return
 ```
 
 #### Change Selected Character Stat
@@ -949,7 +1089,9 @@ Changes a supported stat on the currently selected characters.
 Providence offers named choices for actions, movement, damage, spell points, health, defense, accuracy, resistance, hand-to-hand, and prestige.
 
 ```gdscript
-var changed: int = await character_change_stat("movement", 2)
+func example_character_change_stat() -> void:
+    var changed: int = await character_change_stat("movement", 2)
+    return
 ```
 
 #### Select Characters by Identity
@@ -966,7 +1108,10 @@ Replaces the current character selection using race, caste, gender, or authored 
 Race and caste controls use the scenario's named rule tables while keeping stable numeric identity values.
 
 ```gdscript
-var selected: int = await character_select_identity("race", orc, true)
+func example_character_select_identity() -> void:
+    var orc: int = 1
+    var selected: int = await character_select_identity("race", orc, true)
+    return
 ```
 
 #### Select Characters by Property
@@ -983,7 +1128,9 @@ Replaces the current selection using movement, items, equipment, conditions, sav
 Providence changes the value picker to match the chosen property and Remake validates the resulting selection.
 
 ```gdscript
-var selected: int = await character_select_property("movement_below", 10, "party")
+func example_character_select_property() -> void:
+    var selected: int = await character_select_property("movement_below", 10, "party")
+    return
 ```
 
 #### Filter Characters by Ability Check
@@ -1000,7 +1147,10 @@ Runs an attribute or special-ability check over a bounded party set and stores t
 Candidate mode is party, alive, or selected; authors may retain successes or failures for later effects.
 
 ```gdscript
-var selected: int = await character_filter_ability("special", acrobatics, 30, "party", false)
+func example_character_filter_ability() -> void:
+    var acrobatics: int = 1
+    var selected: int = await character_filter_ability("special", acrobatics, 30, "party", false)
+    return
 ```
 
 ### Presentation
@@ -1019,7 +1169,9 @@ Shows scenario text and waits for its normal presentation boundary.
 Use a String record reference when the text is shared or styled.
 
 ```gdscript
-await show_text("The captain accepts your payment.")
+func example_show_text() -> void:
+    await show_text("The captain accepts your payment.")
+    return
 ```
 
 #### Request Choice
@@ -1036,7 +1188,9 @@ Shows a bounded choice and returns the selected zero-based option.
 The pending choice and selected result are safe save boundaries.
 
 ```gdscript
-var answer: int = await choice("Help?", ["Yes", "No"])
+func example_choice() -> void:
+    var answer: int = await choice("Help?", ["Yes", "No"])
+    return
 ```
 
 #### Show Picture
@@ -1053,7 +1207,10 @@ Shows a packaged scenario picture.
 Providence supplies the picture picker and preview.
 
 ```gdscript
-await show_picture(portal_picture)
+func example_show_picture() -> void:
+    var portal_picture: int = 1
+    await show_picture(portal_picture)
+    return
 ```
 
 #### Play Sound
@@ -1070,7 +1227,10 @@ Plays packaged or stock sound through the presentation service.
 Wait behavior is explicit rather than encoded in the sign of an author-entered number.
 
 ```gdscript
-await play_sound(portal_sound, true)
+func example_play_sound() -> void:
+    var portal_sound: int = 1
+    await play_sound(portal_sound, true)
+    return
 ```
 
 #### Show Scrolling Text
@@ -1087,7 +1247,9 @@ Shows a packaged scrolling-text resource.
 The operation waits until the player closes the scrolling-text presentation.
 
 ```gdscript
-await presentation_scrolling_text(4)
+func example_presentation_scrolling_text() -> void:
+    await presentation_scrolling_text(4)
+    return
 ```
 
 #### Wait for Acknowledgement
@@ -1104,7 +1266,9 @@ Waits at an explicit player acknowledgement boundary.
 Presentation rules may shorten authored waits while preserving the continuation boundary.
 
 ```gdscript
-await presentation_wait("Click to continue")
+func example_presentation_wait() -> void:
+    await presentation_wait("Click to continue")
+    return
 ```
 
 #### Play Music
@@ -1121,7 +1285,9 @@ Plays a packaged track or a configured Remake music category.
 A track name takes precedence; otherwise Remake resolves the selected music category.
 
 ```gdscript
-await presentation_music("Town")
+func example_presentation_music() -> void:
+    await presentation_music("Town")
+    return
 ```
 
 ### Encounters
@@ -1140,7 +1306,10 @@ Starts an authored encounter and returns its result.
 Encounter continuation and result mutation remain in the central interpreter.
 
 ```gdscript
-var result: int = await start_encounter("simple", offer)
+func example_start_encounter() -> void:
+    var offer: int = 1
+    var result: int = await start_encounter("simple", offer)
+    return
 ```
 
 ### Combat and Spells
@@ -1159,7 +1328,10 @@ Starts an authored battle through the normal combat lifecycle.
 Battle terrain, monsters, rewards, macros, and continuation use the same runtime as Classic actions.
 
 ```gdscript
-await start_battle(stable_battle)
+func example_start_battle() -> void:
+    var stable_battle: int = 1
+    await start_battle(stable_battle)
+    return
 ```
 
 #### Combat Snapshot
@@ -1176,7 +1348,9 @@ Returns a bounded immutable view of current combat.
 Monster AI and rule behaviors cannot receive live combatant nodes.
 
 ```gdscript
-var combat = await combat_snapshot()
+func example_combat_snapshot() -> void:
+    var combat: CombatSnapshot = await combat_snapshot()
+    return
 ```
 
 #### Apply Damage
@@ -1193,7 +1367,10 @@ Applies validated combat damage and returns the actual amount.
 Resistance, death, animation, and effect events remain owned by combat.
 
 ```gdscript
-var dealt: int = await damage(target, 8, "magic")
+func example_damage() -> void:
+    var target: String = ""
+    var dealt: int = await damage(target, 8, "magic")
+    return
 ```
 
 #### Apply Healing
@@ -1210,7 +1387,31 @@ Applies validated combat healing and returns the actual amount.
 Healing cannot revive a target unless the behavior uses an explicit revival operation.
 
 ```gdscript
-var healed: int = await heal(target, 8)
+func example_heal() -> void:
+    var target: String = ""
+    var healed: int = await heal(target, 8)
+    return
+```
+
+#### Apply Combat Condition
+
+Applies, replaces, or clears a Classic-compatible condition on one combatant.
+
+- Stable ID: `core.combat.condition`
+- Port: `core.combat`
+- Parameters: `targetId: string`, `conditionIndex: int`, `duration: int`, `mode: string`
+- Result: `int`
+- Roles: `spell`, `item`, `lifecycle`
+- Behavior: yielding; mutates validated state
+
+The target is an opaque combat reference. Mode is add, set, or clear, and the normal trait-backed condition implementation remains authoritative.
+
+```gdscript
+func example_combat_condition() -> void:
+    var target: String = ""
+    var diseased: int = 1
+    var duration: int = await combat_condition(target, diseased, 8, "add")
+    return
 ```
 
 #### Cast Authored Spell
@@ -1227,7 +1428,10 @@ Resolves an authored or stock spell against the party or selected characters.
 Spell bindings, validation, effects, saves, and presentation run through the normal spell path.
 
 ```gdscript
-var affected: int = await character_cast_spell(disease, 4, "party")
+func example_character_cast_spell() -> void:
+    var disease: int = 1
+    var affected: int = await character_cast_spell(disease, 4, "party")
+    return
 ```
 
 #### Combat Has Monster
@@ -1244,7 +1448,10 @@ Tests the active battle for a Classic monster-name identity.
 The check does not confuse scenario-local images or duplicate display names.
 
 ```gdscript
-var present: bool = await combat_has_monster(vampire_bat)
+func example_combat_has_monster() -> void:
+    var vampire_bat: int = 1
+    var present: bool = await combat_has_monster(vampire_bat)
+    return
 ```
 
 #### Destroy Combat Monsters
@@ -1261,7 +1468,10 @@ Removes matching monsters from the active battle.
 The result is bounded by maximum and runs through normal combatant cleanup.
 
 ```gdscript
-var removed: int = await combat_destroy_monsters(skeleton, 4)
+func example_combat_destroy_monsters() -> void:
+    var skeleton: int = 1
+    var removed: int = await combat_destroy_monsters(skeleton, 4)
+    return
 ```
 
 #### Rout Combat Monsters
@@ -1278,7 +1488,10 @@ Forces matching monsters to surrender or flee under combat morale rules.
 The selected gameplay profile may disable Classic morale behavior.
 
 ```gdscript
-var routed: int = await combat_rout_monsters(goblin, 6, 50)
+func example_combat_rout_monsters() -> void:
+    var goblin: int = 1
+    var routed: int = await combat_rout_monsters(goblin, 6, 50)
+    return
 ```
 
 #### Spawn Combat Monsters
@@ -1295,7 +1508,10 @@ Spawns authored monsters near the active combat actor.
 Monster identity, scenario art, placement validation, and combat limits remain owned by Combat.
 
 ```gdscript
-var spawned: int = await combat_spawn_monsters(guardian, 2)
+func example_combat_spawn_monsters() -> void:
+    var guardian: int = 1
+    var spawned: int = await combat_spawn_monsters(guardian, 2)
+    return
 ```
 
 #### Revive Combatants
@@ -1312,7 +1528,9 @@ Revives eligible defeated combatants through the Classic revival behavior.
 The active combat snapshot determines eligible targets and placement.
 
 ```gdscript
-var revived: int = await combat_revive()
+func example_combat_revive() -> void:
+    var revived: int = await combat_revive()
+    return
 ```
 
 #### Set Priest Turning
@@ -1329,7 +1547,9 @@ Enables or disables priest turning for the current campaign state.
 The state is saved and the normal combat presentation announces the change.
 
 ```gdscript
-await combat_priest_turning(false)
+func example_combat_priest_turning() -> void:
+    await combat_priest_turning(false)
+    return
 ```
 
 #### End Battle
@@ -1346,7 +1566,9 @@ Ends the active battle with a validated outcome and reward mode.
 Use won, lost, escaped, or aborted; normal battle cleanup and lifecycle hooks still run.
 
 ```gdscript
-await combat_end_battle("won", "normal")
+func example_combat_end_battle() -> void:
+    await combat_end_battle("won", "normal")
+    return
 ```
 
 #### Fumble Active Combatant
@@ -1363,7 +1585,9 @@ Makes the active combatant drop its current melee weapon when combat rules permi
 Player weapons enter the bounded battle fumble queue; monster weapons are removed through the same combat cleanup path.
 
 ```gdscript
-var dropped: bool = await combat_fumble("The weapon slips free!")
+func example_combat_fumble() -> void:
+    var dropped: bool = await combat_fumble("The weapon slips free!")
+    return
 ```
 
 #### Change Combat Monsters
@@ -1380,7 +1604,10 @@ Changes the faction or scenario icon of matching allies or monsters in the activ
 Target type is ally or monster. Providence supplies authored monster and icon pickers and Remake validates the bounded match count.
 
 ```gdscript
-var changed: int = await combat_change_monsters(goblin, "monster", 4, 1)
+func example_combat_change_monsters() -> void:
+    var goblin: int = 1
+    var changed: int = await combat_change_monsters(goblin, "monster", 4, 1)
+    return
 ```
 
 ### Lifecycle and Rules
@@ -1399,5 +1626,147 @@ Marks the current campaign complete and dispatches its one-time campaign-complet
 Use only at an authored finale. Ordinary AP returns and battle victories do not complete a campaign; completion state is saved and repeated calls are idempotent.
 
 ```gdscript
-var completed: bool = await lifecycle_complete_campaign("victory")
+func example_lifecycle_complete_campaign() -> void:
+    var completed: bool = await lifecycle_complete_campaign("victory")
+    return
+```
+
+### Definitions
+
+#### Map Definition
+
+Looks up an authored map by its stable level identity.
+
+- Stable ID: `core.definitions.map`
+- Port: `core.map`
+- Parameters: `levelType: string`, `levelIndex: int`
+- Result: `MapDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The returned definition omits tile arrays and runtime nodes while retaining the map's stable identity and bounds.
+
+```gdscript
+func example_definitions_map() -> void:
+    var map: MapDefinitionSnapshot = await definitions_map("land", 0)
+    return
+```
+
+#### Monster Definition
+
+Looks up an authored scenario monster.
+
+- Stable ID: `core.definitions.monster`
+- Port: `core.combat`
+- Parameters: `monsterId: int`
+- Result: `MonsterDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The immutable snapshot retains scenario identity, icon, core combat values, experience, and authored spell IDs.
+
+```gdscript
+func example_definitions_monster() -> void:
+    var vampire_bat: int = 1
+    var monster: MonsterDefinitionSnapshot = await definitions_monster(vampire_bat)
+    return
+```
+
+#### Item Definition
+
+Looks up an authored scenario item definition.
+
+- Stable ID: `core.definitions.item`
+- Port: `core.inventory`
+- Parameters: `itemId: int`
+- Result: `ItemDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+Use this for definition-level decisions; use Party Item Instances when exact charges or equipment state matter.
+
+```gdscript
+func example_definitions_item() -> void:
+    var captains_key: int = 1
+    var item: ItemDefinitionSnapshot = await definitions_item(captains_key)
+    return
+```
+
+#### Spell Definition
+
+Looks up an authored scenario spell definition.
+
+- Stable ID: `core.definitions.spell`
+- Port: `core.character`
+- Parameters: `spellId: int`
+- Result: `SpellDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The snapshot describes the packaged override and never returns a GDScript spell resource.
+
+```gdscript
+func example_definitions_spell() -> void:
+    var firestorm: int = 1
+    var spell: SpellDefinitionSnapshot = await definitions_spell(firestorm)
+    return
+```
+
+#### Battle Definition
+
+Looks up an authored battle and its referenced monster identities.
+
+- Stable ID: `core.definitions.battle`
+- Port: `core.combat`
+- Parameters: `battleId: int`
+- Result: `BattleDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The full terrain grid remains runtime-owned; scripts receive only bounded identity and setup metadata.
+
+```gdscript
+func example_definitions_battle() -> void:
+    var ambush: int = 1
+    var battle: BattleDefinitionSnapshot = await definitions_battle(ambush)
+    return
+```
+
+#### Encounter Definition
+
+Looks up an authored simple or complex encounter.
+
+- Stable ID: `core.definitions.encounter`
+- Port: `core.presentation`
+- Parameters: `encounterKind: string`, `encounterId: int`
+- Result: `EncounterDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+This query inspects definition metadata only. Returning an EncounterOutcome remains the supported way to control an active encounter hook.
+
+```gdscript
+func example_definitions_encounter() -> void:
+    var encounter: EncounterDefinitionSnapshot = await definitions_encounter("complex", 4)
+    return
+```
+
+#### Media Definition
+
+Looks up a packaged picture, sound, or scrolling-text resource.
+
+- Stable ID: `core.definitions.media`
+- Port: `core.presentation`
+- Parameters: `mediaKind: string`, `resourceId: int`
+- Result: `MediaDefinitionSnapshot`
+- Roles: `action`, `encounter`, `spell`, `item`, `lifecycle`, `helper`
+- Behavior: yielding; query/presentation only
+
+The immutable record exposes package-relative metadata only and cannot be used for arbitrary filesystem access.
+
+```gdscript
+func example_definitions_media() -> void:
+    var title_picture: int = 1
+    var media: MediaDefinitionSnapshot = await definitions_media("picture", title_picture)
+    return
 ```

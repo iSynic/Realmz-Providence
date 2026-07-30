@@ -770,6 +770,13 @@ export function normalizeBrowserProject(project: Project): Project {
   project.editorMetadata.questContextSources ??= [];
   project.editorMetadata.removedScenarioResources ??= [];
   project.editorMetadata.remakePreviewProfiles ??= [];
+  project.editorMetadata.remakePreviewProfiles = (
+    project.editorMetadata.remakePreviewProfiles.map((profile) => ({
+      ...profile,
+      location: profile.location ?? null,
+      watches: profile.watches ?? []
+    }))
+  );
   project.semanticSchema ??= emptySemanticSchema();
   project.semanticSchema.decoding ??= { ed3Reachability: [], dispatcherNoops: [], confidenceDebt: [] };
   backfillTilesetMetadata(project);

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-import { Bug, Download, Gauge, Pause, Play, RotateCcw, SkipForward, Square, StepForward } from "lucide-react";
+import { Bug, Camera, Download, Gauge, Pause, Play, RotateCcw, SkipForward, Square, StepForward } from "lucide-react";
 import {
   BenchmarkReport,
   ExportReport,
@@ -9,6 +9,7 @@ import {
   Project,
   ProjectCommand,
   ProvidenceWorkspace,
+  RemakeBehaviorDefinition,
   RemakePreviewAssertion,
   RemakePreviewPartyMember,
   RemakePreviewProfile,
@@ -261,7 +262,18 @@ export function ExportPanel({
   );
 }
 
-type PreviewEntryKind = "start" | "map" | "ap" | "battle" | "behavior";
+type PreviewEntryKind =
+  | "start"
+  | "map"
+  | "ap"
+  | "battle"
+  | "behavior"
+  | "encounter"
+  | "spell"
+  | "item"
+  | "monster"
+  | "lifecycle"
+  | "rule";
 type PreviewBreakpoint = { behaviorId: string; sourceNode: string };
 type PreviewIntent = {
   behaviorId: string;
@@ -272,6 +284,35 @@ type PreviewIntent = {
   slot?: number | null;
 };
 type PreviewEvent = Record<string, unknown>;
+type PreviewWatchResult = {
+  path: string;
+  found: boolean;
+  value: unknown;
+};
+type PreviewAssertionCheck = {
+  path?: string;
+  operator?: string;
+  expected?: unknown;
+  actual?: unknown;
+  passed: boolean;
+  message?: string;
+};
+type PreviewAssertionReport = {
+  total: number;
+  passed: number;
+  failed: number;
+  checks: PreviewAssertionCheck[];
+};
+type PreviewScreenshot = {
+  source: string;
+  width: number;
+  height: number;
+};
+export type BehaviorSourceNodeOption = {
+  value: string;
+  label: string;
+  line: number | null;
+};
 
 function readPreviewIntent(): PreviewIntent | null {
   try {
@@ -279,6 +320,121 @@ function readPreviewIntent(): PreviewIntent | null {
     return stored ? JSON.parse(stored) as PreviewIntent : null;
   } catch {
     return null;
+  }
+}
+
+export function previewKindForRole(role: string | undefined): PreviewEntryKind {
+  return ({
+    encounter: "encounter",
+    spell: "spell",
+    item: "item",
+    "monster-ai": "monster",
+    lifecycle: "lifecycle",
+    "rule-modifier": "rule"
+  } as Record<string, PreviewEntryKind>)[role ?? ""] ?? "behavior";
+}
+
+export function previewRoleForKind(kind: PreviewEntryKind): string {
+  return ({
+    encounter: "encounter",
+    spell: "spell",
+    item: "item",
+    monster: "monster-ai",
+    lifecycle: "lifecycle",
+    rule: "rule-modifier"
+  } as Record<string, string>)[kind] ?? "";
+}
+
+export function isBehaviorPreviewKind(kind: PreviewEntryKind) {
+  return ["behavior", "encounter", "spell", "item", "monster", "lifecycle", "rule"].includes(kind);
+}
+
+export function behaviorSourceNodeOptions(behavior: RemakeBehaviorDefinition | null): BehaviorSourceNodeOption[] {
+  if (!behavior?.ast || behavior.tier !== "safe") return [];
+  const nodes = behavior.sourceMap?.nodes && typeof behavior.sourceMap.nodes === "object"
+    ? behavior.sourceMap.nodes as Record<string, unknown>
+    : behavior.sourceMap;
+  const options: BehaviorSourceNodeOption[] = [];
+  const used = new Set<string>();
+
+  const visitStatements = (value: unknown, path: string) => {
+    if (!Array.isArray(value)) return;
+    value.forEach((candidate, index) => {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return;
+      const statement = candidate as Record<string, unknown>;
+      const statementPath = `${path}/${index}`;
+      const explicit = typeof statement.sourceNode === "string" ? statement.sourceNode.trim() : "";
+      const sourceNode = explicit || `guided${statementPath}`;
+      if (!used.has(sourceNode)) {
+        used.add(sourceNode);
+        const source = nodes?.[sourceNode];
+        const line = source && typeof source === "object" && !Array.isArray(source)
+          && typeof (source as Record<string, unknown>).line === "number"
+          ? Number((source as Record<string, unknown>).line)
+          : null;
+        options.push({
+          value: sourceNode,
+          label: `${line == null ? "" : `Line ${line} · `}${statementLabel(statement)}`,
+          line
+        });
+      }
+      if (statement.kind === "if") {
+        visitStatements(statement.then, `${statementPath}/then`);
+        visitStatements(statement.else, `${statementPath}/else`);
+      } else if (statement.kind === "for") {
+        visitStatements(statement.body, `${statementPath}/body`);
+      } else if (statement.kind === "match") {
+        if (Array.isArray(statement.cases)) {
+          statement.cases.forEach((caseValue, caseIndex) => {
+            if (caseValue && typeof caseValue === "object" && !Array.isArray(caseValue)) {
+              visitStatements(
+                (caseValue as Record<string, unknown>).body,
+                `${statementPath}/cases/${caseIndex}/body`
+              );
+            }
+          });
+        }
+        visitStatements(statement.default, `${statementPath}/default`);
+      }
+    });
+  };
+
+  visitStatements((behavior.ast as Record<string, unknown>).body, "/body");
+  return options;
+}
+
+function statementLabel(statement: Record<string, unknown>) {
+  const kind = String(statement.kind ?? "statement");
+  if (kind === "operation") {
+    return friendlyPreviewLabel(String(statement.capability ?? "Scenario operation"));
+  }
+  if (kind === "call") {
+    return `Call ${friendlyPreviewLabel(String(statement.scriptId ?? "helper"))}`;
+  }
+  return ({
+    if: "If / Else",
+    for: "For Each",
+    match: "Match",
+    declare: `Create ${String(statement.name ?? "value")}`,
+    assign: `Set ${String(statement.name ?? "value")}`,
+    return: "Finish behavior"
+  } as Record<string, string>)[kind] ?? friendlyPreviewLabel(kind);
+}
+
+function friendlyPreviewLabel(value: string) {
+  const segments = value.split(".");
+  return (segments[segments.length - 1] ?? value)
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function previewValue(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value === undefined) return "undefined";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
   }
 }
 
@@ -292,14 +448,16 @@ function newPreviewProfile(index: number): RemakePreviewProfile {
     totalSeconds: 0,
     rngSeed: 1,
     gameplayProfile: "core.classic",
+    location: null,
     questFlags: [],
     party: [],
+    watches: [],
     assertions: []
   };
 }
 
-function previewFixture(profile: RemakePreviewProfile | null) {
-  if (!profile) return {};
+export function previewFixture(profile: RemakePreviewProfile | null, watches: string[] = profile?.watches ?? []) {
+  if (!profile) return { watches };
   return {
     profileId: profile.id,
     gameplayProfile: profile.gameplayProfile,
@@ -310,8 +468,10 @@ function previewFixture(profile: RemakePreviewProfile | null) {
     },
     totalSeconds: profile.totalSeconds,
     rngSeed: profile.rngSeed,
+    location: profile.location,
     questFlags: profile.questFlags,
     party: profile.party,
+    watches,
     assertions: profile.assertions
   };
 }
@@ -344,6 +504,11 @@ function RemakePreviewPanel({
   const [breakpoints, setBreakpoints] = useState<PreviewBreakpoint[]>([]);
   const [pauseOnStart, setPauseOnStart] = useState(false);
   const [breakpointNode, setBreakpointNode] = useState("");
+  const [watchPath, setWatchPath] = useState("");
+  const [sessionWatches, setSessionWatches] = useState<string[]>([]);
+  const [watchReport, setWatchReport] = useState<PreviewWatchResult[]>([]);
+  const [assertionReport, setAssertionReport] = useState<PreviewAssertionReport | null>(null);
+  const [previewScreenshot, setPreviewScreenshot] = useState<PreviewScreenshot | null>(null);
   const [previewIntent, setPreviewIntent] = useState<PreviewIntent | null>(() => readPreviewIntent());
   const previewProfiles = project?.editorMetadata?.remakePreviewProfiles ?? [];
   const [previewProfileId, setPreviewProfileId] = useState(previewProfiles[0]?.id ?? "");
@@ -355,6 +520,14 @@ function RemakePreviewPanel({
   }, [previewProfileId, previewProfiles]);
 
   useEffect(() => {
+    setSessionWatches(selectedPreviewProfile?.watches ?? []);
+  }, [selectedPreviewProfile?.id]);
+
+  useEffect(() => {
+    setBreakpointNode("");
+  }, [entryId]);
+
+  useEffect(() => {
     setGodotExecutable(settings.godotExecutable);
     setRemakePath(settings.remakePath);
   }, [settings.godotExecutable, settings.remakePath]);
@@ -364,14 +537,14 @@ function RemakePreviewPanel({
       const detail = (event as CustomEvent<PreviewIntent>).detail;
       if (!detail?.behaviorId) return;
       setPreviewIntent(detail);
-      setEntryKind("behavior");
+      setEntryKind(previewKindForRole(detail.role));
       setEntryId(detail.behaviorId);
     };
     window.addEventListener("providence:preview-behavior", receiveIntent);
     const initial = readPreviewIntent();
     if (initial?.behaviorId) {
       setPreviewIntent(initial);
-      setEntryKind("behavior");
+      setEntryKind(previewKindForRole(initial.role));
       setEntryId(initial.behaviorId);
     }
     return () => window.removeEventListener("providence:preview-behavior", receiveIntent);
@@ -383,14 +556,62 @@ function RemakePreviewPanel({
     let unlisten: (() => void) | undefined;
     listen<PreviewEvent>("remake-preview-event", (event) => {
       if (disposed) return;
-      setRuntimeEvent(event.payload);
-      setEvents((current) => [...current.slice(-299), event.payload]);
+      const requestId = String(event.payload.requestId ?? "");
+      const isDebuggerPoll = event.payload.type === "response"
+        && requestId.startsWith("providence:debug-state:auto:");
+      if (!isDebuggerPoll) {
+        setRuntimeEvent(event.payload);
+        setEvents((current) => [...current.slice(-299), event.payload]);
+      }
       const summary = event.payload.summary && typeof event.payload.summary === "object"
         ? event.payload.summary as Record<string, unknown>
         : null;
-      const nextDebugger = event.payload.debugger ?? summary?.debugger;
+      const state = event.payload.state && typeof event.payload.state === "object"
+        ? event.payload.state as Record<string, unknown>
+        : null;
+      const nextDebugger = event.payload.debugger ?? state?.debugger ?? summary?.debugger;
       if (nextDebugger && typeof nextDebugger === "object") {
-        setDebuggerState(nextDebugger as Record<string, unknown>);
+        const normalizedDebugger = { ...(nextDebugger as Record<string, unknown>) };
+        setDebuggerState(normalizedDebugger);
+        if (isDebuggerPoll && normalizedDebugger.paused) {
+          setStatus("Paused at a Safe behavior boundary");
+        }
+      }
+      const nextWatches = event.payload.watches ?? state?.watches ?? summary?.watches;
+      if (Array.isArray(nextWatches)) {
+        setWatchReport(nextWatches.filter((value): value is PreviewWatchResult => (
+          Boolean(value)
+          && typeof value === "object"
+          && !Array.isArray(value)
+          && typeof (value as Record<string, unknown>).path === "string"
+        )));
+      }
+      const nextAssertions = event.payload.assertions ?? state?.assertions ?? summary?.assertions;
+      if (nextAssertions && typeof nextAssertions === "object" && !Array.isArray(nextAssertions)) {
+        const report = nextAssertions as Record<string, unknown>;
+        setAssertionReport({
+          total: Number(report.total ?? 0),
+          passed: Number(report.passed ?? 0),
+          failed: Number(report.failed ?? 0),
+          checks: Array.isArray(report.checks)
+            ? report.checks.filter((value): value is PreviewAssertionCheck => (
+                Boolean(value) && typeof value === "object" && !Array.isArray(value)
+              ))
+            : []
+        });
+      }
+      const screenshot = event.payload.screenshot;
+      if (screenshot && typeof screenshot === "object" && !Array.isArray(screenshot)) {
+        const image = screenshot as Record<string, unknown>;
+        const mimeType = String(image.mimeType ?? "image/jpeg");
+        const encoded = String(image.base64 ?? "");
+        if (encoded) {
+          setPreviewScreenshot({
+            source: `data:${mimeType};base64,${encoded}`,
+            width: Number(image.width ?? 0),
+            height: Number(image.height ?? 0)
+          });
+        }
       }
       if (event.payload.type === "runtime-error") {
         setStatus(String(event.payload.message ?? "Remake preview runtime error"));
@@ -407,6 +628,29 @@ function RemakePreviewPanel({
     };
   }, [desktopRuntime]);
 
+  useEffect(() => {
+    if (!desktopRuntime || !running) return;
+    let disposed = false;
+    const refreshDebugger = async () => {
+      try {
+        await invoke("send_remake_preview_command", {
+          message: {
+            type: "debug-state",
+            requestId: `providence:debug-state:auto:${Date.now()}`
+          }
+        });
+      } catch (error) {
+        if (!disposed) setStatus(`Preview debugger refresh failed: ${String(error)}`);
+      }
+    };
+    void refreshDebugger();
+    const interval = window.setInterval(() => void refreshDebugger(), 500);
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+    };
+  }, [desktopRuntime, running]);
+
   async function applyAndRestart() {
     if (!project) return;
     const nextSettings = { godotExecutable: godotExecutable.trim(), remakePath: remakePath.trim() };
@@ -414,13 +658,44 @@ function RemakePreviewPanel({
       await onUpdateSettings?.(nextSettings);
       setStatus("Exporting v3 package and starting Remake...");
       const numericId = Number.parseInt(entryId, 10);
-      const selectedBehavior = entryKind === "behavior"
+      const selectedBehavior = isBehaviorPreviewKind(entryKind)
         ? project.remakeRuntime.behaviors.find((behavior) => behavior.id === entryId)
         : null;
-      if (entryKind === "behavior" && !selectedBehavior) {
+      if (isBehaviorPreviewKind(entryKind) && !selectedBehavior) {
         throw new Error("Choose a behavior from this project");
       }
+      const matchingIntent = previewIntent?.behaviorId === selectedBehavior?.id
+        ? previewIntent
+        : null;
+      const selectedBinding = selectedBehavior
+        ? project.remakeRuntime.behaviorBindings.find((binding) =>
+            binding.behaviorId === selectedBehavior.id
+            && (!matchingIntent || (
+              (!matchingIntent.hook || binding.hook === matchingIntent.hook)
+              && (!matchingIntent.targetKind || binding.targetKind === matchingIntent.targetKind)
+              && (!matchingIntent.recordId || binding.recordId === matchingIntent.recordId)
+            ))
+          ) ?? null
+        : null;
+      const role = matchingIntent
+        ? matchingIntent.role ?? selectedBehavior?.role ?? previewRoleForKind(entryKind)
+        : selectedBehavior?.role ?? previewRoleForKind(entryKind);
+      const hook = matchingIntent
+        ? matchingIntent.hook ?? selectedBinding?.hook ?? selectedBehavior?.hook ?? ""
+        : selectedBinding?.hook ?? selectedBehavior?.hook ?? "";
+      const targetKind = matchingIntent
+        ? matchingIntent.targetKind ?? selectedBinding?.targetKind ?? ""
+        : selectedBinding?.targetKind ?? "";
+      const recordId = matchingIntent
+        ? matchingIntent.recordId ?? selectedBinding?.recordId ?? ""
+        : selectedBinding?.recordId ?? "";
+      const bindingSlot = matchingIntent
+        ? matchingIntent.slot ?? selectedBinding?.slot ?? -1
+        : selectedBinding?.slot ?? -1;
       setEvents([]);
+      setWatchReport([]);
+      setAssertionReport(null);
+      setPreviewScreenshot(null);
       const report = await invoke<{
         sessionId: string;
         packagePath: string;
@@ -435,7 +710,12 @@ function RemakePreviewPanel({
             kind: entryKind,
             triggerId: entryKind === "ap" ? entryId.trim() : "",
             battleId: entryKind === "battle" && Number.isFinite(numericId) ? numericId : -1,
-            behaviorId: entryKind === "behavior" ? entryId.trim() : "",
+            behaviorId: isBehaviorPreviewKind(entryKind) ? entryId.trim() : "",
+            role,
+            hook,
+            targetKind,
+            recordId,
+            baseValue: 50,
             arguments: {},
             context: previewIntent?.behaviorId === entryId
               ? {
@@ -451,10 +731,10 @@ function RemakePreviewPanel({
                   role: selectedBehavior?.role ?? "",
                   hook: selectedBehavior?.hook ?? ""
                 },
-            fixture: previewFixture(selectedPreviewProfile),
+            fixture: previewFixture(selectedPreviewProfile, sessionWatches),
             breakpoints,
             pauseOnStart,
-            slot: 0,
+            slot: typeof bindingSlot === "number" ? bindingSlot : -1,
             ...mapEntry
           }
         }
@@ -492,7 +772,7 @@ function RemakePreviewPanel({
   }
 
   function addBreakpoint() {
-    const behaviorId = entryKind === "behavior" ? entryId.trim() : "";
+    const behaviorId = isBehaviorPreviewKind(entryKind) ? entryId.trim() : "";
     const sourceNode = breakpointNode.trim();
     if (!behaviorId || !sourceNode) return;
     if (breakpoints.some((entry) => entry.behaviorId === behaviorId && entry.sourceNode === sourceNode)) return;
@@ -500,6 +780,33 @@ function RemakePreviewPanel({
     setBreakpoints(next);
     setBreakpointNode("");
     if (running) void sendPreviewCommand("set-breakpoints", { breakpoints: next, pauseOnStart });
+  }
+
+  function removeBreakpoint(breakpoint: PreviewBreakpoint) {
+    const next = breakpoints.filter((entry) => entry !== breakpoint);
+    setBreakpoints(next);
+    if (running) void sendPreviewCommand("set-breakpoints", { breakpoints: next, pauseOnStart });
+  }
+
+  function updatePauseOnStart(value: boolean) {
+    setPauseOnStart(value);
+    if (running) void sendPreviewCommand("set-breakpoints", { breakpoints, pauseOnStart: value });
+  }
+
+  function updateWatches(next: string[]) {
+    const normalized = [...new Set(next.map((path) => path.trim()).filter(Boolean))].slice(0, 64);
+    setSessionWatches(normalized);
+    if (selectedPreviewProfile) {
+      updatePreviewProfile({ watches: normalized }, "Update preview watches");
+    }
+    if (running) void sendPreviewCommand("set-watches", { watches: normalized });
+  }
+
+  function addWatch() {
+    const path = watchPath.trim();
+    if (!path || path.length > 160 || sessionWatches.includes(path)) return;
+    updateWatches([...sessionWatches, path]);
+    setWatchPath("");
   }
 
   function updatePreviewProfiles(profiles: RemakePreviewProfile[], label: string) {
@@ -535,6 +842,10 @@ function RemakePreviewPanel({
   }
 
   const behaviors = project?.remakeRuntime.behaviors ?? [];
+  const previewRole = previewRoleForKind(entryKind);
+  const previewBehaviors = previewRole
+    ? behaviors.filter((behavior) => behavior.role === previewRole)
+    : behaviors;
   const paused = Boolean(debuggerState.paused);
   const frames = Array.isArray(debuggerState.callStack)
     ? debuggerState.callStack as Array<Record<string, unknown>>
@@ -542,9 +853,13 @@ function RemakePreviewPanel({
   const persistentValues = debuggerState.persistentValues && typeof debuggerState.persistentValues === "object"
     ? debuggerState.persistentValues as Record<string, unknown>
     : {};
+  const selectedDebugBehavior = isBehaviorPreviewKind(entryKind)
+    ? behaviors.find((behavior) => behavior.id === entryId) ?? null
+    : null;
+  const sourceNodeOptions = behaviorSourceNodeOptions(selectedDebugBehavior);
 
   return (
-    <section className="tab-panel">
+    <section className="tab-panel remake-preview-panel">
       <PanelHeader className="panel-header" title="Realmz Remake Preview" />
       {!desktopRuntime ? (
         <EmptyState
@@ -573,12 +888,25 @@ function RemakePreviewPanel({
             </label>
             <label className="field compact">
               <span>Entry point</span>
-              <select value={entryKind} onChange={(event) => setEntryKind(event.target.value as PreviewEntryKind)}>
+              <select
+                value={entryKind}
+                onChange={(event) => {
+                  setEntryKind(event.target.value as PreviewEntryKind);
+                  setEntryId("");
+                  setPreviewIntent(null);
+                }}
+              >
                 <option value="start">Campaign start</option>
                 <option value="map">Map location</option>
                 <option value="ap">Action point ID</option>
                 <option value="battle">Battle ID</option>
                 <option value="behavior">Scenario behavior</option>
+                <option value="encounter">Encounter behavior</option>
+                <option value="spell">Spell behavior</option>
+                <option value="item">Item behavior</option>
+                <option value="monster">Monster AI behavior</option>
+                <option value="lifecycle">Lifecycle behavior</option>
+                <option value="rule">Rule calculation</option>
               </select>
             </label>
             {entryKind === "map" ? (
@@ -605,12 +933,12 @@ function RemakePreviewPanel({
                   </label>
                 ))}
               </>
-            ) : entryKind === "behavior" ? (
+            ) : isBehaviorPreviewKind(entryKind) ? (
               <label className="field compact">
-                <span>Behavior</span>
+                <span>{previewRole ? `${previewRole.replace("-", " ")} behavior` : "Behavior"}</span>
                 <select value={entryId} onChange={(event) => setEntryId(event.target.value)}>
                   <option value="">Choose a behavior</option>
-                  {behaviors.map((behavior) => (
+                  {previewBehaviors.map((behavior) => (
                     <option key={behavior.id} value={behavior.id}>
                       {behavior.name} · {behavior.role}/{behavior.hook || "helper"}
                     </option>
@@ -625,7 +953,7 @@ function RemakePreviewPanel({
             ) : null}
             <button
               className="btn btn-primary"
-              disabled={!project || !projectDir || !remakePath.trim() || ((entryKind === "ap" || entryKind === "battle" || entryKind === "behavior") && !entryId.trim())}
+              disabled={!project || !projectDir || !remakePath.trim() || ((entryKind === "ap" || entryKind === "battle" || isBehaviorPreviewKind(entryKind)) && !entryId.trim())}
               onClick={applyAndRestart}
             >
               <Play size={14} /> Apply and Restart
@@ -672,23 +1000,36 @@ function RemakePreviewPanel({
                 <button className="btn btn-ghost btn-xs" disabled={!running} onClick={() => sendPreviewCommand("debug-state")}>
                   <Pause size={12} /> Refresh
                 </button>
+                <button className="btn btn-ghost btn-xs" disabled={!running} onClick={() => sendPreviewCommand("capture-screenshot")}>
+                  <Camera size={12} /> Capture
+                </button>
               </div>
             </header>
             <div className="preview-debugger-breakpoints">
               <label className="field compact checkbox-field">
-                <input type="checkbox" checked={pauseOnStart} onChange={(event) => setPauseOnStart(event.target.checked)} />
+                <input type="checkbox" checked={pauseOnStart} onChange={(event) => updatePauseOnStart(event.target.checked)} />
                 <span>Pause on behavior start</span>
               </label>
               <label className="field compact">
-                <span>Source node</span>
-                <input
+                <span>Behavior block</span>
+                <select
                   value={breakpointNode}
                   onChange={(event) => setBreakpointNode(event.target.value)}
-                  placeholder="Outline block ID"
-                  disabled={entryKind !== "behavior" || !entryId}
-                />
+                  disabled={!isBehaviorPreviewKind(entryKind) || !entryId}
+                >
+                  <option value="">
+                    {selectedDebugBehavior?.tier === "sandboxed"
+                      ? "Sandboxed scripts pause at reducer boundaries"
+                      : sourceNodeOptions.length
+                        ? "Choose an outline block"
+                        : "No source-linked blocks"}
+                  </option>
+                  {sourceNodeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </label>
-              <button className="btn btn-secondary btn-xs" disabled={entryKind !== "behavior" || !entryId || !breakpointNode.trim()} onClick={addBreakpoint}>
+              <button className="btn btn-secondary btn-xs" disabled={!isBehaviorPreviewKind(entryKind) || !entryId || !breakpointNode.trim()} onClick={addBreakpoint}>
                 Add Breakpoint
               </button>
               {breakpoints.map((breakpoint) => (
@@ -696,10 +1037,13 @@ function RemakePreviewPanel({
                   type="button"
                   className="token-chip"
                   key={`${breakpoint.behaviorId}:${breakpoint.sourceNode}`}
-                  onClick={() => setBreakpoints((current) => current.filter((entry) => entry !== breakpoint))}
+                  onClick={() => removeBreakpoint(breakpoint)}
                   title="Remove breakpoint"
                 >
-                  {behaviors.find((behavior) => behavior.id === breakpoint.behaviorId)?.name ?? breakpoint.behaviorId}: {breakpoint.sourceNode} ×
+                  {behaviors.find((behavior) => behavior.id === breakpoint.behaviorId)?.name ?? breakpoint.behaviorId}:{" "}
+                  {behaviorSourceNodeOptions(
+                    behaviors.find((behavior) => behavior.id === breakpoint.behaviorId) ?? null
+                  ).find((option) => option.value === breakpoint.sourceNode)?.label ?? breakpoint.sourceNode} ×
                 </button>
               ))}
             </div>
@@ -717,6 +1061,57 @@ function RemakePreviewPanel({
               <section>
                 <h4>Persistent State & Watches</h4>
                 <pre className="code-block">{JSON.stringify(persistentValues, null, 2)}</pre>
+                <div className="preview-watch-editor">
+                  <label className="field compact">
+                    <span>State path</span>
+                    <input
+                      list="preview-watch-paths"
+                      value={watchPath}
+                      maxLength={160}
+                      onChange={(event) => setWatchPath(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addWatch();
+                        }
+                      }}
+                      placeholder="wealth.gold"
+                    />
+                  </label>
+                  <button type="button" className="btn btn-secondary btn-xs" disabled={!watchPath.trim()} onClick={addWatch}>
+                    Add Watch
+                  </button>
+                  <datalist id="preview-watch-paths">
+                    {[
+                      "location.levelType",
+                      "location.levelIndex",
+                      "location.x",
+                      "location.y",
+                      "wealth.gold",
+                      "wealth.gems",
+                      "wealth.jewelry",
+                      "totalSeconds",
+                      "party.0.health",
+                      "party.0.spellPoints",
+                      "questValues.0",
+                      "debugger.pendingOperation"
+                    ].map((path) => <option key={path} value={path} />)}
+                  </datalist>
+                </div>
+                <div className="preview-watch-list">
+                  {sessionWatches.map((path) => {
+                    const result = watchReport.find((entry) => entry.path === path);
+                    return (
+                      <article className={`preview-watch-result ${result?.found ? "found" : "missing"}`} key={path}>
+                        <button type="button" className="token-chip" onClick={() => updateWatches(sessionWatches.filter((entry) => entry !== path))}>
+                          {path} ×
+                        </button>
+                        <code>{result ? result.found ? previewValue(result.value) : "not found" : "waiting…"}</code>
+                      </article>
+                    );
+                  })}
+                  {!sessionWatches.length && <small className="muted">Add a state path to keep it visible while stepping.</small>}
+                </div>
               </section>
               <section>
                 <h4>Event & Command Timeline</h4>
@@ -730,6 +1125,43 @@ function RemakePreviewPanel({
                     />
                   )) : <EmptyState compact title="No runtime events" body="Commands, pauses, errors, and completed behavior entries appear here." />}
                 </ScrollArea>
+              </section>
+              <section>
+                <h4>Profile Assertions</h4>
+                {assertionReport ? (
+                  <>
+                    <div className={`preview-assertion-summary ${assertionReport.failed ? "failed" : "passed"}`}>
+                      <strong>{assertionReport.passed}/{assertionReport.total} passed</strong>
+                      <span>{assertionReport.failed ? `${assertionReport.failed} failed` : "All checks passed"}</span>
+                    </div>
+                    <div className="preview-assertion-list">
+                      {assertionReport.checks.map((check, index) => (
+                        <article className={check.passed ? "passed" : "failed"} key={`${check.path ?? "assertion"}:${index}`}>
+                          <strong>{check.passed ? "Pass" : "Fail"} · {check.path ?? check.message ?? "Invalid assertion"}</strong>
+                          {check.path ? (
+                            <small>
+                              {friendlyPreviewLabel(check.operator ?? "equals")} {previewValue(check.expected)} · actual {previewValue(check.actual)}
+                            </small>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  </>
+                ) : <EmptyState compact title="No assertion result" body="Run or refresh a preview to evaluate the selected test profile." />}
+              </section>
+              <section className="preview-screenshot-panel">
+                <h4>Presentation Screenshot</h4>
+                {previewScreenshot ? (
+                  <>
+                    <img
+                      src={previewScreenshot.source}
+                      alt="Current Realmz Remake preview"
+                      width={previewScreenshot.width || undefined}
+                      height={previewScreenshot.height || undefined}
+                    />
+                    <small>{previewScreenshot.width} × {previewScreenshot.height}</small>
+                  </>
+                ) : <EmptyState compact title="No screenshot captured" body="Capture the running Remake window when presentation state matters." />}
               </section>
             </div>
             {runtimeEvent ? (
@@ -745,7 +1177,7 @@ function RemakePreviewPanel({
   );
 }
 
-function PreviewProfileEditor({
+export function PreviewProfileEditor({
   profile,
   profiles,
   selectedId,
@@ -791,8 +1223,10 @@ function PreviewProfileEditor({
   }
 
   return (
-    <details className="preview-profile-editor" open>
-      <summary>Test Profile</summary>
+    <section className="preview-profile-editor" aria-label="Test profile">
+      <header>
+        <strong>Test Profile</strong>
+      </header>
       <p className="muted">
         Profiles are Providence-only authoring data. They configure the clean party, world state, and deterministic RNG used by Apply and Restart.
       </p>
@@ -840,6 +1274,61 @@ function PreviewProfileEditor({
               </label>
             ))}
           </div>
+          <section className="preview-profile-section">
+            <header>
+              <div>
+                <strong>Starting location</strong>
+                <small>Apply this location before launching the selected entry.</small>
+              </div>
+              <label className="field compact checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={profile.location != null}
+                  onChange={(event) => onChange({
+                    location: event.target.checked
+                      ? { levelType: "land", levelIndex: 0, x: 0, y: 0 }
+                      : null
+                  }, "Update preview starting location")}
+                />
+                <span>Override campaign start</span>
+              </label>
+            </header>
+            {profile.location ? (
+              <div className="preview-profile-grid">
+                <label className="field compact">
+                  <span>Map type</span>
+                  <select
+                    value={profile.location.levelType}
+                    onChange={(event) => onChange({
+                      location: {
+                        ...profile.location!,
+                        levelType: event.target.value as "land" | "dungeon"
+                      }
+                    }, "Update preview map type")}
+                  >
+                    <option value="land">Land</option>
+                    <option value="dungeon">Dungeon</option>
+                  </select>
+                </label>
+                {(["levelIndex", "x", "y"] as const).map((field) => (
+                  <label className="field compact" key={field}>
+                    <span>{field === "levelIndex" ? "Map index" : field.toUpperCase()}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={profile.location![field]}
+                      onChange={(event) => onChange({
+                        location: {
+                          ...profile.location!,
+                          [field]: Number(event.target.value)
+                        }
+                      }, "Update preview starting location")}
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : <small className="muted">Use the campaign’s normal starting location.</small>}
+          </section>
           <section className="preview-profile-section">
             <header>
               <strong>Classic quest flags</strong>
@@ -982,9 +1471,9 @@ function PreviewProfileEditor({
           </section>
         </>
       ) : (
-        <EmptyState compact title="Using the default generated party" body="Create a profile to control wealth, time, flags, party values, inventory, and assertions." />
+        <EmptyState compact title="Using the default generated party" body="Create a profile to control wealth, time, location, flags, party values, inventory, watches, and assertions." />
       )}
-    </details>
+    </section>
   );
 }
 

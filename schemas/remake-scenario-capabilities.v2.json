@@ -13,8 +13,12 @@
       "label": "Action",
       "contextType": "ActionContext",
       "resultType": "ActionOutcome",
-      "hooks": ["run"],
-      "runtimeHooks": ["run"],
+      "hooks": [
+        "run"
+      ],
+      "runtimeHooks": [
+        "run"
+      ],
       "allowsYield": true,
       "summary": "Runs from an AP or XAP action position.",
       "reference": "Action behavior may continue, halt, call, replace, or return through the central interpreter.",
@@ -25,8 +29,18 @@
       "label": "Encounter",
       "contextType": "EncounterContext",
       "resultType": "EncounterOutcome",
-      "hooks": ["enter", "option", "result", "complete"],
-      "runtimeHooks": ["enter", "option", "result", "complete"],
+      "hooks": [
+        "enter",
+        "option",
+        "result",
+        "complete"
+      ],
+      "runtimeHooks": [
+        "enter",
+        "option",
+        "result",
+        "complete"
+      ],
       "allowsYield": true,
       "summary": "Adds behavior to an encounter boundary.",
       "reference": "Attach behavior to the encounter, a selected option or result, or the completion boundary.",
@@ -37,10 +51,24 @@
       "label": "Spell",
       "contextType": "SpellContext",
       "resultType": "EffectOutcome",
-      "hooks": ["validate", "cast", "effect", "tick", "expire"],
-      "runtimeHooks": ["validate", "cast", "effect", "tick", "expire"],
+      "hooks": [
+        "validate",
+        "cast",
+        "effect",
+        "tick",
+        "expire"
+      ],
+      "runtimeHooks": [
+        "validate",
+        "cast",
+        "effect",
+        "tick",
+        "expire"
+      ],
       "allowsYield": true,
-      "pureHooks": ["validate"],
+      "pureHooks": [
+        "validate"
+      ],
       "summary": "Validates, casts, applies, ticks, or expires a scenario spell.",
       "reference": "Validation is pure; cast and effect hooks route combat and presentation through typed ports. An applied effect may declare a bounded duration and round, movement, or scenario-time interval; the runtime then dispatches tick and expiration hooks from serializable effect state.",
       "example": "func apply_spell() -> EffectOutcome:\n    return {\"kind\": \"applied\"}"
@@ -50,10 +78,32 @@
       "label": "Item",
       "contextType": "ItemContext",
       "resultType": "ItemOutcome",
-      "hooks": ["use-field", "use-combat", "equip", "unequip", "attack", "defense", "passive"],
-      "runtimeHooks": ["use-field", "use-combat", "equip", "unequip", "attack", "defense", "passive"],
+      "hooks": [
+        "use-field",
+        "use-combat",
+        "equip",
+        "unequip",
+        "attack",
+        "defense",
+        "passive"
+      ],
+      "runtimeHooks": [
+        "use-field",
+        "use-combat",
+        "equip",
+        "unequip",
+        "attack",
+        "defense",
+        "passive"
+      ],
       "allowsYield": true,
-      "pureHooks": ["equip", "unequip", "attack", "defense", "passive"],
+      "pureHooks": [
+        "equip",
+        "unequip",
+        "attack",
+        "defense",
+        "passive"
+      ],
       "summary": "Adds behavior to an item definition or instance boundary.",
       "reference": "Field and combat use may yield. Equipment, attack, defense, and passive hooks are pure; they may reject an equipment transition or return bounded numeric modifiers. Item-instance state remains attached to the stable item instance rather than a copied dictionary.",
       "example": "func use_item() -> ItemOutcome:\n    return {\"kind\": \"used\"}"
@@ -63,8 +113,12 @@
       "label": "Monster AI",
       "contextType": "MonsterAiContext",
       "resultType": "MonsterDecision",
-      "hooks": ["decide"],
-      "runtimeHooks": ["decide"],
+      "hooks": [
+        "decide"
+      ],
+      "runtimeHooks": [
+        "decide"
+      ],
       "allowsYield": false,
       "summary": "Chooses one validated action from an immutable combat snapshot.",
       "reference": "AI cannot mutate combat directly or retain live Godot objects.",
@@ -144,7 +198,9 @@
         "condition-resistance"
       ],
       "allowsYield": false,
-      "pureHooks": ["*"],
+      "pureHooks": [
+        "*"
+      ],
       "summary": "Returns a bounded modifier for a named gameplay calculation.",
       "reference": "Modifiers run after the selected gameplay profile and built-in providers, then pass through domain clamping.",
       "example": "func modify_damage() -> RuleModifier:\n    return {\"multiply\": 1.25}"
@@ -172,17 +228,229 @@
     "transient"
   ],
   "types": [
-    {"id": "LocationSnapshot", "fields": {"levelType": "string", "levelIndex": "int", "x": "int", "y": "int"}},
-    {"id": "TimeSnapshot", "fields": {"day": "int", "hour": "int", "minute": "int", "second": "int", "totalSeconds": "int"}},
-    {"id": "WealthSnapshot", "fields": {"gold": "int", "gems": "int", "jewelry": "int", "pooledGold": "int"}},
-    {"id": "CharacterSnapshot", "fields": {"id": "string", "name": "string", "level": "int", "raceId": "int?", "raceName": "string?", "casteId": "int?", "casteName": "string?", "gender": "int?", "health": "int", "maximumHealth": "int", "spellPoints": "int", "maximumSpellPoints": "int", "strength": "int?", "intellect": "int?", "wisdom": "int?", "dexterity": "int?", "vitality": "int?", "luck": "int?", "movement": "int?", "conditions": "int-array?", "itemIds": "int-array?", "alive": "bool"}},
-    {"id": "CombatSnapshot", "fields": {"active": "bool", "round": "int", "combatants": "CharacterSnapshot-array"}},
-    {"id": "ActionOutcome", "fields": {"kind": "continue|halt|call|replace|return"}},
-    {"id": "EncounterOutcome", "fields": {"kind": "continue|resolve|repeat|close|branch"}},
-    {"id": "EffectOutcome", "fields": {"kind": "applied|no-effect|invalid", "duration": "int?", "interval": "round|move|minute|hour|day?", "effectKey": "string?", "stacking": "refresh|replace|stack?"}},
-    {"id": "ItemOutcome", "fields": {"kind": "used|rejected|no-effect|modified", "add": "float?", "multiply": "float?", "minimum": "float?", "maximum": "float?"}},
-    {"id": "MonsterDecision", "fields": {"kind": "attack|cast|move|flee|wait|use-item", "targetId": "string?", "dx": "int?", "dy": "int?", "spellId": "string?", "power": "int?", "itemInstanceId": "string?"}},
-    {"id": "RuleModifier", "fields": {"add": "float?", "multiply": "float?", "minimum": "float?", "maximum": "float?"}}
+    {
+      "id": "LocationSnapshot",
+      "fields": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "x": "int",
+        "y": "int"
+      }
+    },
+    {
+      "id": "TimeSnapshot",
+      "fields": {
+        "day": "int",
+        "hour": "int",
+        "minute": "int",
+        "second": "int",
+        "totalSeconds": "int"
+      }
+    },
+    {
+      "id": "WealthSnapshot",
+      "fields": {
+        "gold": "int",
+        "gems": "int",
+        "jewelry": "int",
+        "pooledGold": "int"
+      }
+    },
+    {
+      "id": "CharacterSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "level": "int",
+        "raceId": "int?",
+        "raceName": "string?",
+        "casteId": "int?",
+        "casteName": "string?",
+        "gender": "int?",
+        "health": "int",
+        "maximumHealth": "int",
+        "spellPoints": "int",
+        "maximumSpellPoints": "int",
+        "strength": "int?",
+        "intellect": "int?",
+        "wisdom": "int?",
+        "dexterity": "int?",
+        "vitality": "int?",
+        "luck": "int?",
+        "movement": "int?",
+        "conditions": "int-array?",
+        "itemIds": "int-array?",
+        "alive": "bool"
+      }
+    },
+    {
+      "id": "CombatSnapshot",
+      "fields": {
+        "active": "bool",
+        "round": "int",
+        "combatants": "CharacterSnapshot-array"
+      }
+    },
+    {
+      "id": "ActionOutcome",
+      "fields": {
+        "kind": "continue|halt|call|replace|return"
+      }
+    },
+    {
+      "id": "EncounterOutcome",
+      "fields": {
+        "kind": "continue|resolve|repeat|close|branch"
+      }
+    },
+    {
+      "id": "EffectOutcome",
+      "fields": {
+        "kind": "applied|no-effect|invalid",
+        "duration": "int?",
+        "interval": "round|move|minute|hour|day?",
+        "effectKey": "string?",
+        "stacking": "refresh|replace|stack?"
+      }
+    },
+    {
+      "id": "ItemOutcome",
+      "fields": {
+        "kind": "used|rejected|no-effect|modified",
+        "add": "float?",
+        "multiply": "float?",
+        "minimum": "float?",
+        "maximum": "float?"
+      }
+    },
+    {
+      "id": "MonsterDecision",
+      "fields": {
+        "kind": "attack|cast|move|flee|wait|use-item",
+        "targetId": "string?",
+        "dx": "int?",
+        "dy": "int?",
+        "spellId": "string?",
+        "power": "int?",
+        "itemInstanceId": "string?"
+      }
+    },
+    {
+      "id": "RuleModifier",
+      "fields": {
+        "add": "float?",
+        "multiply": "float?",
+        "minimum": "float?",
+        "maximum": "float?"
+      }
+    },
+    {
+      "id": "ExplorationSnapshot",
+      "fields": {
+        "camping": "bool",
+        "campingAllowed": "bool",
+        "sailing": "bool",
+        "heading": "int",
+        "viewMode": "string",
+        "compassEnabled": "bool",
+        "randomEncountersEnabled": "bool"
+      }
+    },
+    {
+      "id": "ItemInstanceSnapshot",
+      "fields": {
+        "id": "string",
+        "definitionId": "string",
+        "name": "string",
+        "ownerId": "string",
+        "charges": "int",
+        "equipped": "bool",
+        "identified": "bool",
+        "classicItemIds": "int-array"
+      }
+    },
+    {
+      "id": "MapDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "levelType": "string",
+        "levelIndex": "int",
+        "width": "int",
+        "height": "int"
+      }
+    },
+    {
+      "id": "MonsterDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "nameId": "int",
+        "iconId": "int",
+        "maximumHealth": "int",
+        "armor": "int",
+        "movement": "int",
+        "experience": "int",
+        "spellIds": "int-array"
+      }
+    },
+    {
+      "id": "ItemDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "iconId": "int",
+        "itemType": "int",
+        "cost": "int",
+        "weight": "int",
+        "maximumCharges": "int"
+      }
+    },
+    {
+      "id": "SpellDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "spellClass": "int",
+        "cost": "int",
+        "targetType": "int",
+        "inCombat": "bool",
+        "inCamp": "bool",
+        "duration": "int"
+      }
+    },
+    {
+      "id": "BattleDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "monsterIds": "int-array",
+        "distance": "int",
+        "macroId": "int"
+      }
+    },
+    {
+      "id": "EncounterDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "encounterKind": "string",
+        "optionCount": "int",
+        "canBackOut": "bool",
+        "maximumRuns": "int"
+      }
+    },
+    {
+      "id": "MediaDefinitionSnapshot",
+      "fields": {
+        "id": "string",
+        "name": "string",
+        "mediaKind": "string",
+        "resourceId": "int",
+        "runtimePath": "string",
+        "mediaType": "string"
+      }
+    }
   ],
   "operations": [
     {
@@ -191,14 +459,31 @@
       "category": "State and Flow",
       "owningPort": "core.persistence",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": false,
       "mutates": false,
-      "parameters": {"scope": "string", "id": "int?", "name": "string?", "ownerId": "string?"},
+      "parameters": {
+        "scope": "string",
+        "id": "int?",
+        "name": "string?",
+        "ownerId": "string?"
+      },
       "result": "variant",
       "summary": "Reads a Classic quest flag or typed scenario-state value.",
       "reference": "Use named state for new Remake behavior. Quest scope is the compatibility adapter for Classic flag IDs.",
-      "example": "var paid: bool = read_state(\"campaign\", \"paid_the_captain\")"
+      "example": "func example_read_state() -> void:\n    var paid: bool = read_state(\"campaign\", \"paid_the_captain\")\n    return",
+      "editor": {
+        "sourceName": "read_state"
+      }
     },
     {
       "id": "core.state.write",
@@ -206,14 +491,30 @@
       "category": "State and Flow",
       "owningPort": "core.persistence",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": false,
       "mutates": true,
-      "parameters": {"scope": "string", "id": "int?", "name": "string?", "ownerId": "string?", "value": "variant"},
+      "parameters": {
+        "scope": "string",
+        "id": "int?",
+        "name": "string?",
+        "ownerId": "string?",
+        "value": "variant"
+      },
       "result": "void",
       "summary": "Writes a Classic quest flag or typed scenario-state value.",
       "reference": "The value must match the state definition for the selected scope.",
-      "example": "set_state(\"campaign\", \"paid_the_captain\", true)"
+      "example": "func example_set_state() -> void:\n    set_state(\"campaign\", \"paid_the_captain\", true)\n    return",
+      "editor": {
+        "sourceName": "set_state"
+      }
     },
     {
       "id": "core.rng.roll",
@@ -221,14 +522,28 @@
       "category": "State and Flow",
       "owningPort": "core.rules",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": false,
       "mutates": true,
-      "parameters": {"maximum": "int"},
+      "parameters": {
+        "maximum": "int"
+      },
       "result": "int",
       "summary": "Returns a deterministic integer from 1 through the supplied maximum.",
       "reference": "The scenario RNG is serialized in the save and is the only random source available to Safe behavior.",
-      "example": "var roll: int = roll(100)"
+      "example": "func example_roll() -> void:\n    var roll: int = roll(100)\n    return",
+      "editor": {
+        "sourceName": "roll"
+      }
     },
     {
       "id": "core.map.location",
@@ -236,7 +551,16 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "query_location",
@@ -244,7 +568,10 @@
       "result": "LocationSnapshot",
       "summary": "Returns the party's current land or dungeon location.",
       "reference": "The result is an immutable snapshot and cannot expose a map node.",
-      "example": "var location = await current_location()"
+      "example": "func example_current_location() -> void:\n    var location: LocationSnapshot = await current_location()\n    return",
+      "editor": {
+        "sourceName": "current_location"
+      }
     },
     {
       "id": "core.map.time",
@@ -252,7 +579,16 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "query_time",
@@ -260,7 +596,10 @@
       "result": "TimeSnapshot",
       "summary": "Returns the scenario day and time.",
       "reference": "Day is the campaign day used by Classic timed encounters.",
-      "example": "var clock = await current_time()"
+      "example": "func example_current_time() -> void:\n    var clock: TimeSnapshot = await current_time()\n    return",
+      "editor": {
+        "sourceName": "current_time"
+      }
     },
     {
       "id": "core.map.teleport",
@@ -268,15 +607,29 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "teleport",
-      "parameters": {"levelType": "string", "levelIndex": "int", "x": "int", "y": "int"},
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "x": "int",
+        "y": "int"
+      },
       "result": "void",
       "summary": "Moves the party to a validated map location.",
       "reference": "The normal map-transition lifecycle, exploration state, music, and timed-event checks still run.",
-      "example": "await teleport(\"land\", 0, 2, 2)"
+      "example": "func example_teleport() -> void:\n    await teleport(\"land\", 0, 2, 2)\n    return",
+      "editor": {
+        "sourceName": "teleport"
+      }
     },
     {
       "id": "core.map.set-tile",
@@ -284,15 +637,30 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_map_tile",
-      "parameters": {"levelType": "string", "levelIndex": "int", "x": "int", "y": "int", "tile": "int"},
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "x": "int",
+        "y": "int",
+        "tile": "int"
+      },
       "result": "void",
       "summary": "Changes a land or dungeon tile through the map runtime.",
       "reference": "The mutation is stored in campaign runtime state and survives save/load.",
-      "example": "await set_map_tile(\"land\", 0, 10, 6, 42)"
+      "example": "func example_set_map_tile() -> void:\n    await set_map_tile(\"land\", 0, 10, 6, 42)\n    return",
+      "editor": {
+        "sourceName": "set_map_tile"
+      }
     },
     {
       "id": "core.map.advance-time",
@@ -300,15 +668,26 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_game_time",
-      "parameters": {"seconds": "int"},
+      "parameters": {
+        "seconds": "int"
+      },
       "result": "TimeSnapshot",
       "summary": "Advances or rewinds the campaign clock through the configured rules.",
       "reference": "Timed encounters and condition progression run at the same boundaries as native time changes.",
-      "example": "await advance_time(3600)"
+      "example": "func example_advance_time() -> void:\n    await advance_time(3600)\n    return",
+      "editor": {
+        "sourceName": "advance_time"
+      }
     },
     {
       "id": "core.inventory.wealth",
@@ -316,7 +695,16 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "query_party_wealth",
@@ -324,7 +712,10 @@
       "result": "WealthSnapshot",
       "summary": "Returns total and pooled party wealth.",
       "reference": "Gold includes the party members and pool so affordability matches Realmz payment behavior.",
-      "example": "var wealth = await party_wealth()"
+      "example": "func example_party_wealth() -> void:\n    var wealth: WealthSnapshot = await party_wealth()\n    return",
+      "editor": {
+        "sourceName": "party_wealth"
+      }
     },
     {
       "id": "core.inventory.take-wealth",
@@ -332,16 +723,30 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "take_party_wealth",
-      "parameters": {"gold": "int", "gems": "int?", "jewelry": "int?", "showWarning": "bool?"},
+      "parameters": {
+        "gold": "int",
+        "gems": "int?",
+        "jewelry": "int?",
+        "showWarning": "bool?"
+      },
       "result": "bool",
       "resultField": "paid",
       "summary": "Atomically takes wealth if the party can afford it.",
       "reference": "No wealth is removed when the complete requested payment cannot be made.",
-      "example": "var paid: bool = await take_gold(500)"
+      "example": "func example_take_gold() -> void:\n    var paid: bool = await take_gold(500)\n    return",
+      "editor": {
+        "sourceName": "take_gold"
+      }
     },
     {
       "id": "core.inventory.has-item",
@@ -349,16 +754,31 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_party_item",
-      "parameters": {"itemId": "int", "minimumCharges": "int?"},
+      "parameters": {
+        "itemId": "int",
+        "minimumCharges": "int?"
+      },
       "result": "bool",
       "resultField": "possessed",
       "summary": "Tests scenario-stable item identity across the party.",
       "reference": "Use Providence's item picker; authors should not normally enter the numeric ID.",
-      "example": "var has_key: bool = await party_has_item(key_item)"
+      "example": "func example_party_has_item() -> void:\n    var key_item: int = 1\n    var has_key: bool = await party_has_item(key_item)\n    return",
+      "editor": {
+        "sourceName": "party_has_item"
+      }
     },
     {
       "id": "core.inventory.give-treasure",
@@ -366,15 +786,26 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "give_treasure",
-      "parameters": {"treasureId": "int"},
+      "parameters": {
+        "treasureId": "int"
+      },
       "result": "void",
       "summary": "Presents and awards an authored treasure record.",
       "reference": "The normal loot interface and item-instance materialization are used.",
-      "example": "await give_treasure(reward)"
+      "example": "func example_give_treasure() -> void:\n    var reward: int = 1\n    await give_treasure(reward)\n    return",
+      "editor": {
+        "sourceName": "give_treasure"
+      }
     },
     {
       "id": "core.character.party",
@@ -382,7 +813,16 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "query_party_members",
@@ -390,7 +830,10 @@
       "result": "CharacterSnapshot-array",
       "summary": "Returns bounded immutable snapshots of the player party.",
       "reference": "References in the snapshots remain stable for the current playthrough.",
-      "example": "var party = await party_members()"
+      "example": "func example_party_members() -> void:\n    var party: Array[CharacterSnapshot] = await party_members()\n    return",
+      "editor": {
+        "sourceName": "party_members"
+      }
     },
     {
       "id": "core.character.party-condition",
@@ -398,16 +841,30 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_party_condition",
-      "parameters": {"conditionIndex": "int"},
+      "parameters": {
+        "conditionIndex": "int"
+      },
       "result": "bool",
       "resultField": "active",
       "summary": "Tests a named Classic-compatible party condition.",
       "reference": "Providence presents condition names while the package retains the stable condition index.",
-      "example": "var healthy: bool = not await party_condition(diseased)"
+      "example": "func example_party_condition() -> void:\n    var diseased: int = 1\n    var active: bool = await party_condition(diseased)\n    return",
+      "editor": {
+        "sourceName": "party_condition"
+      }
     },
     {
       "id": "core.character.change-health",
@@ -415,15 +872,28 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "change_party_health",
-      "parameters": {"amount": "int", "canKill": "bool?", "targetMode": "string?"},
+      "parameters": {
+        "amount": "int",
+        "canKill": "bool?",
+        "targetMode": "string?"
+      },
       "result": "void",
       "summary": "Heals or damages the party or the current character selection through the character rules.",
       "reference": "Target mode may be party or selected; death and recovery lifecycle events use the normal character path.",
-      "example": "await change_health(-5, false, \"selected\")"
+      "example": "func example_change_health() -> void:\n    await change_health(-5, false, \"selected\")\n    return",
+      "editor": {
+        "sourceName": "change_health"
+      }
     },
     {
       "id": "core.character.give-experience",
@@ -431,15 +901,27 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "give_experience",
-      "parameters": {"amount": "int", "selectedOnly": "bool?"},
+      "parameters": {
+        "amount": "int",
+        "selectedOnly": "bool?"
+      },
       "result": "void",
       "summary": "Awards experience under the active character rules.",
       "reference": "Level progression and presentation stay owned by the character port.",
-      "example": "await give_experience(500)"
+      "example": "func example_give_experience() -> void:\n    await give_experience(500)\n    return",
+      "editor": {
+        "sourceName": "give_experience"
+      }
     },
     {
       "id": "core.presentation.text",
@@ -447,15 +929,26 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "show_text",
-      "parameters": {"text": "string"},
+      "parameters": {
+        "text": "string"
+      },
       "result": "void",
       "summary": "Shows scenario text and waits for its normal presentation boundary.",
       "reference": "Use a String record reference when the text is shared or styled.",
-      "example": "await show_text(\"The captain accepts your payment.\")"
+      "example": "func example_show_text() -> void:\n    await show_text(\"The captain accepts your payment.\")\n    return",
+      "editor": {
+        "sourceName": "show_text"
+      }
     },
     {
       "id": "core.presentation.choice",
@@ -463,16 +956,28 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "choice",
-      "parameters": {"prompt": "string", "options": "string-array"},
+      "parameters": {
+        "prompt": "string",
+        "options": "string-array"
+      },
       "result": "int",
       "resultField": "choice",
       "summary": "Shows a bounded choice and returns the selected zero-based option.",
       "reference": "The pending choice and selected result are safe save boundaries.",
-      "example": "var answer: int = await choice(\"Help?\", [\"Yes\", \"No\"])"
+      "example": "func example_choice() -> void:\n    var answer: int = await choice(\"Help?\", [\"Yes\", \"No\"])\n    return",
+      "editor": {
+        "sourceName": "choice"
+      }
     },
     {
       "id": "core.presentation.picture",
@@ -480,15 +985,26 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "show_picture",
-      "parameters": {"pictureId": "int"},
+      "parameters": {
+        "pictureId": "int"
+      },
       "result": "void",
       "summary": "Shows a packaged scenario picture.",
       "reference": "Providence supplies the picture picker and preview.",
-      "example": "await show_picture(portal_picture)"
+      "example": "func example_show_picture() -> void:\n    var portal_picture: int = 1\n    await show_picture(portal_picture)\n    return",
+      "editor": {
+        "sourceName": "show_picture"
+      }
     },
     {
       "id": "core.presentation.sound",
@@ -496,15 +1012,27 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "play_sound",
-      "parameters": {"soundId": "int", "wait": "bool?"},
+      "parameters": {
+        "soundId": "int",
+        "wait": "bool?"
+      },
       "result": "void",
       "summary": "Plays packaged or stock sound through the presentation service.",
       "reference": "Wait behavior is explicit rather than encoded in the sign of an author-entered number.",
-      "example": "await play_sound(portal_sound, true)"
+      "example": "func example_play_sound() -> void:\n    var portal_sound: int = 1\n    await play_sound(portal_sound, true)\n    return",
+      "editor": {
+        "sourceName": "play_sound"
+      }
     },
     {
       "id": "core.encounter.start",
@@ -512,16 +1040,27 @@
       "category": "Encounters",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "start_encounter",
-      "parameters": {"encounterKind": "string", "encounterId": "int"},
+      "parameters": {
+        "encounterKind": "string",
+        "encounterId": "int"
+      },
       "result": "int",
       "resultField": "outcome",
       "summary": "Starts an authored encounter and returns its result.",
       "reference": "Encounter continuation and result mutation remain in the central interpreter.",
-      "example": "var result: int = await start_encounter(\"simple\", offer)"
+      "example": "func example_start_encounter() -> void:\n    var offer: int = 1\n    var result: int = await start_encounter(\"simple\", offer)\n    return",
+      "editor": {
+        "sourceName": "start_encounter"
+      }
     },
     {
       "id": "core.encounter.start-battle",
@@ -529,15 +1068,26 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "start_battle",
-      "parameters": {"battleId": "int"},
+      "parameters": {
+        "battleId": "int"
+      },
       "result": "void",
       "summary": "Starts an authored battle through the normal combat lifecycle.",
       "reference": "Battle terrain, monsters, rewards, macros, and continuation use the same runtime as Classic actions.",
-      "example": "await start_battle(stable_battle)"
+      "example": "func example_start_battle() -> void:\n    var stable_battle: int = 1\n    await start_battle(stable_battle)\n    return",
+      "editor": {
+        "sourceName": "start_battle"
+      }
     },
     {
       "id": "core.combat.snapshot",
@@ -545,7 +1095,14 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "monster-ai",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "query_combat",
@@ -553,7 +1110,10 @@
       "result": "CombatSnapshot",
       "summary": "Returns a bounded immutable view of current combat.",
       "reference": "Monster AI and rule behaviors cannot receive live combatant nodes.",
-      "example": "var combat = await combat_snapshot()"
+      "example": "func example_combat_snapshot() -> void:\n    var combat: CombatSnapshot = await combat_snapshot()\n    return",
+      "editor": {
+        "sourceName": "combat_snapshot"
+      }
     },
     {
       "id": "core.combat.damage",
@@ -561,16 +1121,27 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "apply_combat_damage",
-      "parameters": {"targetId": "string", "amount": "int", "damageType": "string"},
+      "parameters": {
+        "targetId": "string",
+        "amount": "int",
+        "damageType": "string"
+      },
       "result": "int",
       "resultField": "amount",
       "summary": "Applies validated combat damage and returns the actual amount.",
       "reference": "Resistance, death, animation, and effect events remain owned by combat.",
-      "example": "var dealt: int = await damage(target, 8, \"magic\")"
+      "example": "func example_damage() -> void:\n    var target: String = \"\"\n    var dealt: int = await damage(target, 8, \"magic\")\n    return",
+      "editor": {
+        "sourceName": "damage"
+      }
     },
     {
       "id": "core.combat.heal",
@@ -578,16 +1149,55 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "apply_combat_healing",
-      "parameters": {"targetId": "string", "amount": "int"},
+      "parameters": {
+        "targetId": "string",
+        "amount": "int"
+      },
       "result": "int",
       "resultField": "amount",
       "summary": "Applies validated combat healing and returns the actual amount.",
       "reference": "Healing cannot revive a target unless the behavior uses an explicit revival operation.",
-      "example": "var healed: int = await heal(target, 8)"
+      "example": "func example_heal() -> void:\n    var target: String = \"\"\n    var healed: int = await heal(target, 8)\n    return",
+      "editor": {
+        "sourceName": "heal"
+      }
+    },
+    {
+      "id": "core.combat.condition",
+      "label": "Apply Combat Condition",
+      "category": "Combat and Spells",
+      "owningPort": "core.combat",
+      "minimumTier": "safe",
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle"
+      ],
+      "yields": true,
+      "mutates": true,
+      "commandId": "apply_combat_condition",
+      "parameters": {
+        "targetId": "string",
+        "conditionIndex": "int",
+        "duration": "int",
+        "mode": "string"
+      },
+      "result": "int",
+      "resultField": "value",
+      "summary": "Applies, replaces, or clears a Classic-compatible condition on one combatant.",
+      "reference": "The target is an opaque combat reference. Mode is add, set, or clear, and the normal trait-backed condition implementation remains authoritative.",
+      "example": "func example_combat_condition() -> void:\n    var target: String = \"\"\n    var diseased: int = 1\n    var duration: int = await combat_condition(target, diseased, 8, \"add\")\n    return",
+      "editor": {
+        "sourceName": "combat_condition"
+      }
     },
     {
       "id": "core.map.redraw",
@@ -595,7 +1205,14 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "redraw_map",
@@ -603,7 +1220,10 @@
       "result": "void",
       "summary": "Clears temporary presentation and redraws the active map.",
       "reference": "Use this after pictures or authored map changes when the map should become visible immediately.",
-      "example": "await map_redraw()"
+      "example": "func example_map_redraw() -> void:\n    await map_redraw()\n    return",
+      "editor": {
+        "sourceName": "map_redraw"
+      }
     },
     {
       "id": "core.map.trigger-chance",
@@ -611,15 +1231,30 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_trigger_percent",
-      "parameters": {"levelType": "string", "levelIndex": "int", "triggerId": "int", "percent": "int"},
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "triggerId": "int",
+        "percent": "int"
+      },
       "result": "void",
       "summary": "Changes an authored AP or XAP activation percentage.",
       "reference": "The change is stored in campaign state and survives save and load.",
-      "example": "await map_trigger_chance(\"land\", 0, 17, 0)"
+      "example": "func example_map_trigger_chance() -> void:\n    await map_trigger_chance(\"land\", 0, 17, 0)\n    return",
+      "editor": {
+        "sourceName": "map_trigger_chance"
+      }
     },
     {
       "id": "core.map.camping",
@@ -627,15 +1262,27 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_camping_permission",
-      "parameters": {"allowed": "bool"},
+      "parameters": {
+        "allowed": "bool"
+      },
       "result": "void",
       "summary": "Allows or prevents camping through the active map rules.",
       "reference": "The HUD and rest controls update through the normal camping boundary.",
-      "example": "await map_camping(false)"
+      "example": "func example_map_camping() -> void:\n    await map_camping(false)\n    return",
+      "editor": {
+        "sourceName": "map_camping"
+      }
     },
     {
       "id": "core.map.darkness",
@@ -643,15 +1290,29 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_map_darkness",
-      "parameters": {"levelType": "string", "levelIndex": "int", "darkness": "int"},
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "darkness": "int"
+      },
       "result": "void",
       "summary": "Changes the authored darkness level for a land or dungeon map.",
       "reference": "The map mutation is saved and the active view is refreshed when applicable.",
-      "example": "await map_darkness(\"dungeon\", 2, 3)"
+      "example": "func example_map_darkness() -> void:\n    await map_darkness(\"dungeon\", 2, 3)\n    return",
+      "editor": {
+        "sourceName": "map_darkness"
+      }
     },
     {
       "id": "core.map.give-player-map",
@@ -659,15 +1320,28 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "give_map",
-      "parameters": {"mapId": "int", "display": "bool?"},
+      "parameters": {
+        "mapId": "int",
+        "display": "bool?"
+      },
       "result": "void",
       "summary": "Adds an authored map or note to the party.",
       "reference": "Providence supplies a player-map picker; display optionally opens it immediately.",
-      "example": "await map_give_player_map(2, true)"
+      "example": "func example_map_give_player_map() -> void:\n    await map_give_player_map(2, true)\n    return",
+      "editor": {
+        "sourceName": "map_give_player_map"
+      }
     },
     {
       "id": "core.presentation.scrolling-text",
@@ -675,15 +1349,27 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "show_scrolling_text",
-      "parameters": {"resourceId": "int"},
+      "parameters": {
+        "resourceId": "int"
+      },
       "result": "void",
       "summary": "Shows a packaged scrolling-text resource.",
       "reference": "The operation waits until the player closes the scrolling-text presentation.",
-      "example": "await presentation_scrolling_text(4)"
+      "example": "func example_presentation_scrolling_text() -> void:\n    await presentation_scrolling_text(4)\n    return",
+      "editor": {
+        "sourceName": "presentation_scrolling_text"
+      }
     },
     {
       "id": "core.presentation.wait",
@@ -691,15 +1377,27 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "wait_for_click",
-      "parameters": {"prompt": "string?"},
+      "parameters": {
+        "prompt": "string?"
+      },
       "result": "void",
       "summary": "Waits at an explicit player acknowledgement boundary.",
       "reference": "Presentation rules may shorten authored waits while preserving the continuation boundary.",
-      "example": "await presentation_wait(\"Click to continue\")"
+      "example": "func example_presentation_wait() -> void:\n    await presentation_wait(\"Click to continue\")\n    return",
+      "editor": {
+        "sourceName": "presentation_wait"
+      }
     },
     {
       "id": "core.presentation.music",
@@ -707,15 +1405,28 @@
       "category": "Presentation",
       "owningPort": "core.presentation",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "play_music",
-      "parameters": {"musicType": "string", "trackName": "string?"},
+      "parameters": {
+        "musicType": "string",
+        "trackName": "string?"
+      },
       "result": "void",
       "summary": "Plays a packaged track or a configured Remake music category.",
       "reference": "A track name takes precedence; otherwise Remake resolves the selected music category.",
-      "example": "await presentation_music(\"Town\")"
+      "example": "func example_presentation_music() -> void:\n    await presentation_music(\"Town\")\n    return",
+      "editor": {
+        "sourceName": "presentation_music"
+      }
     },
     {
       "id": "core.inventory.drop-items",
@@ -723,7 +1434,14 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "drop_party_items",
@@ -732,7 +1450,10 @@
       "resultField": "itemsRemoved",
       "summary": "Removes every carried party item and returns the number removed.",
       "reference": "Item instances are removed through the inventory API so equipment and load stay consistent.",
-      "example": "var removed: int = await inventory_drop_items()"
+      "example": "func example_inventory_drop_items() -> void:\n    var removed: int = await inventory_drop_items()\n    return",
+      "editor": {
+        "sourceName": "inventory_drop_items"
+      }
     },
     {
       "id": "core.inventory.open-shop",
@@ -740,15 +1461,28 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "load_shop",
-      "parameters": {"shopId": "int", "openImmediately": "bool?"},
+      "parameters": {
+        "shopId": "int",
+        "openImmediately": "bool?"
+      },
       "result": "void",
       "summary": "Loads an authored shop and optionally opens it immediately.",
       "reference": "Scenario item identities, saved shop mutations, and normal purchase rules remain active.",
-      "example": "await inventory_open_shop(3, true)"
+      "example": "func example_inventory_open_shop() -> void:\n    await inventory_open_shop(3, true)\n    return",
+      "editor": {
+        "sourceName": "inventory_open_shop"
+      }
     },
     {
       "id": "core.inventory.temple",
@@ -756,15 +1490,27 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "offer_temple",
-      "parameters": {"costPercent": "int"},
+      "parameters": {
+        "costPercent": "int"
+      },
       "result": "void",
       "summary": "Enables temple services at the supplied price percentage.",
       "reference": "The active inventory and character rule providers still validate each service.",
-      "example": "await inventory_temple(100)"
+      "example": "func example_inventory_temple() -> void:\n    await inventory_temple(100)\n    return",
+      "editor": {
+        "sourceName": "inventory_temple"
+      }
     },
     {
       "id": "core.inventory.banking",
@@ -772,7 +1518,14 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "enable_banking",
@@ -780,7 +1533,10 @@
       "result": "void",
       "summary": "Enables the normal banking interface for the current location.",
       "reference": "This grants access through Remake's existing money and storage UI.",
-      "example": "await inventory_banking()"
+      "example": "func example_inventory_banking() -> void:\n    await inventory_banking()\n    return",
+      "editor": {
+        "sourceName": "inventory_banking"
+      }
     },
     {
       "id": "core.inventory.clear-currency",
@@ -788,16 +1544,29 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "clear_party_currency",
-      "parameters": {"currency": "int", "selectedOnly": "bool?"},
+      "parameters": {
+        "currency": "int",
+        "selectedOnly": "bool?"
+      },
       "result": "int",
       "resultField": "amountRemoved",
       "summary": "Clears gold, gems, or jewelry from the party or selected characters.",
       "reference": "Currency uses the friendly Providence selector; the stored value is the stable zero-based currency index.",
-      "example": "var removed: int = await inventory_clear_currency(0, false)"
+      "example": "func example_inventory_clear_currency() -> void:\n    var removed: int = await inventory_clear_currency(0, false)\n    return",
+      "editor": {
+        "sourceName": "inventory_clear_currency"
+      }
     },
     {
       "id": "core.inventory.alter-item",
@@ -805,16 +1574,32 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_party_items",
-      "parameters": {"itemId": "int", "action": "string", "maximum": "int?", "chargeDelta": "int?", "replacementItemId": "int?"},
+      "parameters": {
+        "itemId": "int",
+        "action": "string",
+        "maximum": "int?",
+        "chargeDelta": "int?",
+        "replacementItemId": "int?"
+      },
       "result": "int",
       "resultField": "changed",
       "summary": "Removes, recharges, or replaces matching scenario item instances.",
       "reference": "Action is remove, charges, or replace; equipped items follow the normal unequip and validation path.",
-      "example": "var changed: int = await inventory_alter_item(key, \"remove\", 1)"
+      "example": "func example_inventory_alter_item() -> void:\n    var key: int = 1\n    var changed: int = await inventory_alter_item(key, \"remove\", 1)\n    return",
+      "editor": {
+        "sourceName": "inventory_alter_item"
+      }
     },
     {
       "id": "core.inventory.store-equipment",
@@ -822,15 +1607,27 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "store_party_equipment",
-      "parameters": {"capture": "bool"},
+      "parameters": {
+        "capture": "bool"
+      },
       "result": "void",
       "summary": "Captures party equipment or restores the previously captured set.",
       "reference": "The storage snapshot is owned by the Inventory port and included in saves.",
-      "example": "await inventory_store_equipment(true)"
+      "example": "func example_inventory_store_equipment() -> void:\n    await inventory_store_equipment(true)\n    return",
+      "editor": {
+        "sourceName": "inventory_store_equipment"
+      }
     },
     {
       "id": "core.character.fatigue",
@@ -838,16 +1635,28 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_party_fatigue",
-      "parameters": {"amount": "float"},
+      "parameters": {
+        "amount": "float"
+      },
       "result": "float",
       "resultField": "fatigue",
       "summary": "Adds a signed amount to party fatigue through the active rules.",
       "reference": "The result is clamped by the selected character and map-time providers.",
-      "example": "var fatigue: float = await character_fatigue(5.0)"
+      "example": "func example_character_fatigue() -> void:\n    var fatigue: float = await character_fatigue(5.0)\n    return",
+      "editor": {
+        "sourceName": "character_fatigue"
+      }
     },
     {
       "id": "core.character.has-ally",
@@ -855,16 +1664,29 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_party_ally",
-      "parameters": {"monsterId": "int"},
+      "parameters": {
+        "monsterId": "int"
+      },
       "result": "bool",
       "resultField": "present",
       "summary": "Tests whether the party currently has the selected authored monster as an ally.",
       "reference": "The check uses the saved Classic monster identity rather than display-name guessing.",
-      "example": "var joined: bool = await character_has_ally(vodalian)"
+      "example": "func example_character_has_ally() -> void:\n    var vodalian: int = 1\n    var joined: bool = await character_has_ally(vodalian)\n    return",
+      "editor": {
+        "sourceName": "character_has_ally"
+      }
     },
     {
       "id": "core.character.add-ally",
@@ -872,15 +1694,27 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "add_party_ally",
-      "parameters": {"monsterId": "int"},
+      "parameters": {
+        "monsterId": "int"
+      },
       "result": "void",
       "summary": "Creates an authored monster as a persistent party ally.",
       "reference": "The monster record and scenario-specific image identity are resolved from the active package.",
-      "example": "await character_add_ally(vodalian)"
+      "example": "func example_character_add_ally() -> void:\n    var vodalian: int = 1\n    await character_add_ally(vodalian)\n    return",
+      "editor": {
+        "sourceName": "character_add_ally"
+      }
     },
     {
       "id": "core.character.remove-ally",
@@ -888,16 +1722,28 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "remove_party_ally",
-      "parameters": {"monsterId": "int"},
+      "parameters": {
+        "monsterId": "int"
+      },
       "result": "int",
       "resultField": "removed",
       "summary": "Removes every matching authored ally from the party.",
       "reference": "Selection state and the party HUD are updated with the ally list.",
-      "example": "var removed: int = await character_remove_ally(vodalian)"
+      "example": "func example_character_remove_ally() -> void:\n    var vodalian: int = 1\n    var removed: int = await character_remove_ally(vodalian)\n    return",
+      "editor": {
+        "sourceName": "character_remove_ally"
+      }
     },
     {
       "id": "core.character.remove-experience",
@@ -905,16 +1751,29 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "remove_experience",
-      "parameters": {"amount": "int", "selectedOnly": "bool?"},
+      "parameters": {
+        "amount": "int",
+        "selectedOnly": "bool?"
+      },
       "result": "int",
       "resultField": "experienceRemoved",
       "summary": "Removes experience from the party or current selected characters.",
       "reference": "Experience never falls below the character progression floor.",
-      "example": "var removed: int = await character_remove_experience(100, true)"
+      "example": "func example_character_remove_experience() -> void:\n    var removed: int = await character_remove_experience(100, true)\n    return",
+      "editor": {
+        "sourceName": "character_remove_experience"
+      }
     },
     {
       "id": "core.character.condition",
@@ -922,16 +1781,30 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "give_character_condition",
-      "parameters": {"targetMode": "string", "conditionIndex": "int", "duration": "int"},
+      "parameters": {
+        "targetMode": "string",
+        "conditionIndex": "int",
+        "duration": "int"
+      },
       "result": "int",
       "resultField": "affectedCount",
       "summary": "Applies or clears a Classic-compatible condition on party members.",
       "reference": "Target mode is party, selected, or living; condition duration uses the normal condition clock.",
-      "example": "var affected: int = await character_condition(\"party\", diseased, 8)"
+      "example": "func example_character_condition() -> void:\n    var diseased: int = 1\n    var affected: int = await character_condition(\"party\", diseased, 8)\n    return",
+      "editor": {
+        "sourceName": "character_condition"
+      }
     },
     {
       "id": "core.character.pick",
@@ -939,16 +1812,30 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "pick_characters",
-      "parameters": {"count": "int", "allowDead": "bool?", "invert": "bool?"},
+      "parameters": {
+        "count": "int",
+        "allowDead": "bool?",
+        "invert": "bool?"
+      },
       "result": "int",
       "resultField": "selectedCount",
       "summary": "Opens the party picker and stores the resulting character selection.",
       "reference": "Later selected-character operations consume this explicit saved selection.",
-      "example": "var selected: int = await character_pick(1)"
+      "example": "func example_character_pick() -> void:\n    var selected: int = await character_pick(1)\n    return",
+      "editor": {
+        "sourceName": "character_pick"
+      }
     },
     {
       "id": "core.character.ability-check",
@@ -956,16 +1843,30 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_character_ability",
-      "parameters": {"checkType": "string", "checkIndex": "int", "modifier": "int?"},
+      "parameters": {
+        "checkType": "string",
+        "checkIndex": "int",
+        "modifier": "int?"
+      },
       "result": "bool",
       "resultField": "passed",
       "summary": "Picks one living character and performs an attribute or special-ability check.",
       "reference": "Providence supplies named attributes and abilities while preserving the stable source index.",
-      "example": "var passed: bool = await character_ability_check(\"attribute\", strength, 0)"
+      "example": "func example_character_ability_check() -> void:\n    var strength: int = 1\n    var passed: bool = await character_ability_check(\"attribute\", strength, 0)\n    return",
+      "editor": {
+        "sourceName": "character_ability_check"
+      }
     },
     {
       "id": "core.character.level-selected",
@@ -973,7 +1874,14 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "level_up_selected_characters",
@@ -982,7 +1890,10 @@
       "resultField": "leveledCharacterCount",
       "summary": "Advances the currently selected characters through normal progression.",
       "reference": "Classic or Samuel character providers still own the actual level-up calculations.",
-      "example": "var leveled: int = await character_level_selected()"
+      "example": "func example_character_level_selected() -> void:\n    var leveled: int = await character_level_selected()\n    return",
+      "editor": {
+        "sourceName": "character_level_selected"
+      }
     },
     {
       "id": "core.character.party-misc",
@@ -990,16 +1901,31 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "rule-modifier", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "rule-modifier",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_party_misc",
-      "parameters": {"selector": "string", "value": "int?", "selectedOnly": "bool?"},
+      "parameters": {
+        "selector": "string",
+        "value": "int?",
+        "selectedOnly": "bool?"
+      },
       "result": "bool",
       "resultField": "matched",
       "summary": "Tests party level, camp or boat state, selection, race, caste, or gender.",
       "reference": "Providence presents selector-specific controls and hides fields that do not apply.",
-      "example": "var aboard: bool = await character_party_misc(\"in_boat\")"
+      "example": "func example_character_party_misc() -> void:\n    var aboard: bool = await character_party_misc(\"in_boat\")\n    return",
+      "editor": {
+        "sourceName": "character_party_misc"
+      }
     },
     {
       "id": "core.character.cast-spell",
@@ -1007,16 +1933,32 @@
       "category": "Combat and Spells",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "cast_classic_spell",
-      "parameters": {"spellId": "int", "power": "int", "targetMode": "string", "saveAdjustment": "int?", "forceAffect": "bool?"},
+      "parameters": {
+        "spellId": "int",
+        "power": "int",
+        "targetMode": "string",
+        "saveAdjustment": "int?",
+        "forceAffect": "bool?"
+      },
       "result": "int",
       "resultField": "targetCount",
       "summary": "Resolves an authored or stock spell against the party or selected characters.",
       "reference": "Spell bindings, validation, effects, saves, and presentation run through the normal spell path.",
-      "example": "var affected: int = await character_cast_spell(disease, 4, \"party\")"
+      "example": "func example_character_cast_spell() -> void:\n    var disease: int = 1\n    var affected: int = await character_cast_spell(disease, 4, \"party\")\n    return",
+      "editor": {
+        "sourceName": "character_cast_spell"
+      }
     },
     {
       "id": "core.combat.has-monster",
@@ -1024,16 +1966,26 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": false,
       "commandId": "check_combat_monster",
-      "parameters": {"monsterNameId": "int"},
+      "parameters": {
+        "monsterNameId": "int"
+      },
       "result": "bool",
       "resultField": "present",
       "summary": "Tests the active battle for a Classic monster-name identity.",
       "reference": "The check does not confuse scenario-local images or duplicate display names.",
-      "example": "var present: bool = await combat_has_monster(vampire_bat)"
+      "example": "func example_combat_has_monster() -> void:\n    var vampire_bat: int = 1\n    var present: bool = await combat_has_monster(vampire_bat)\n    return",
+      "editor": {
+        "sourceName": "combat_has_monster"
+      }
     },
     {
       "id": "core.combat.destroy-monsters",
@@ -1041,16 +1993,28 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "destroy_combat_monsters",
-      "parameters": {"monsterNameId": "int", "maximum": "int?", "includeAllFactions": "bool?"},
+      "parameters": {
+        "monsterNameId": "int",
+        "maximum": "int?",
+        "includeAllFactions": "bool?"
+      },
       "result": "int",
       "resultField": "removed",
       "summary": "Removes matching monsters from the active battle.",
       "reference": "The result is bounded by maximum and runs through normal combatant cleanup.",
-      "example": "var removed: int = await combat_destroy_monsters(skeleton, 4)"
+      "example": "func example_combat_destroy_monsters() -> void:\n    var skeleton: int = 1\n    var removed: int = await combat_destroy_monsters(skeleton, 4)\n    return",
+      "editor": {
+        "sourceName": "combat_destroy_monsters"
+      }
     },
     {
       "id": "core.combat.rout-monsters",
@@ -1058,16 +2022,28 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "rout_combat_monsters",
-      "parameters": {"monsterNameId": "int", "maximum": "int?", "surrenderPercent": "int?"},
+      "parameters": {
+        "monsterNameId": "int",
+        "maximum": "int?",
+        "surrenderPercent": "int?"
+      },
       "result": "int",
       "resultField": "routed",
       "summary": "Forces matching monsters to surrender or flee under combat morale rules.",
       "reference": "The selected gameplay profile may disable Classic morale behavior.",
-      "example": "var routed: int = await combat_rout_monsters(goblin, 6, 50)"
+      "example": "func example_combat_rout_monsters() -> void:\n    var goblin: int = 1\n    var routed: int = await combat_rout_monsters(goblin, 6, 50)\n    return",
+      "editor": {
+        "sourceName": "combat_rout_monsters"
+      }
     },
     {
       "id": "core.combat.spawn-monsters",
@@ -1075,16 +2051,29 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "spawn_combat_monsters",
-      "parameters": {"monsterId": "int", "count": "int", "radius": "int?", "faction": "int?"},
+      "parameters": {
+        "monsterId": "int",
+        "count": "int",
+        "radius": "int?",
+        "faction": "int?"
+      },
       "result": "int",
       "resultField": "spawned",
       "summary": "Spawns authored monsters near the active combat actor.",
       "reference": "Monster identity, scenario art, placement validation, and combat limits remain owned by Combat.",
-      "example": "var spawned: int = await combat_spawn_monsters(guardian, 2)"
+      "example": "func example_combat_spawn_monsters() -> void:\n    var guardian: int = 1\n    var spawned: int = await combat_spawn_monsters(guardian, 2)\n    return",
+      "editor": {
+        "sourceName": "combat_spawn_monsters"
+      }
     },
     {
       "id": "core.combat.revive",
@@ -1092,7 +2081,12 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "revive_classic_combatants",
@@ -1101,7 +2095,10 @@
       "resultField": "revived",
       "summary": "Revives eligible defeated combatants through the Classic revival behavior.",
       "reference": "The active combat snapshot determines eligible targets and placement.",
-      "example": "var revived: int = await combat_revive()"
+      "example": "func example_combat_revive() -> void:\n    var revived: int = await combat_revive()\n    return",
+      "editor": {
+        "sourceName": "combat_revive"
+      }
     },
     {
       "id": "core.combat.priest-turning",
@@ -1109,15 +2106,27 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_priest_turning",
-      "parameters": {"enabled": "bool"},
+      "parameters": {
+        "enabled": "bool"
+      },
       "result": "void",
       "summary": "Enables or disables priest turning for the current campaign state.",
       "reference": "The state is saved and the normal combat presentation announces the change.",
-      "example": "await combat_priest_turning(false)"
+      "example": "func example_combat_priest_turning() -> void:\n    await combat_priest_turning(false)\n    return",
+      "editor": {
+        "sourceName": "combat_priest_turning"
+      }
     },
     {
       "id": "core.combat.end-battle",
@@ -1125,15 +2134,26 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "end_classic_battle",
-      "parameters": {"outcome": "string", "rewardMode": "string?"},
+      "parameters": {
+        "outcome": "string",
+        "rewardMode": "string?"
+      },
       "result": "void",
       "summary": "Ends the active battle with a validated outcome and reward mode.",
       "reference": "Use won, lost, escaped, or aborted; normal battle cleanup and lifecycle hooks still run.",
-      "example": "await combat_end_battle(\"won\", \"normal\")"
+      "example": "func example_combat_end_battle() -> void:\n    await combat_end_battle(\"won\", \"normal\")\n    return",
+      "editor": {
+        "sourceName": "combat_end_battle"
+      }
     },
     {
       "id": "core.combat.fumble",
@@ -1141,16 +2161,27 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "fumble_active_combatant",
-      "parameters": {"message": "string?", "soundId": "int?"},
+      "parameters": {
+        "message": "string?",
+        "soundId": "int?"
+      },
       "result": "bool",
       "resultField": "fumbled",
       "summary": "Makes the active combatant drop its current melee weapon when combat rules permit it.",
       "reference": "Player weapons enter the bounded battle fumble queue; monster weapons are removed through the same combat cleanup path.",
-      "example": "var dropped: bool = await combat_fumble(\"The weapon slips free!\")"
+      "example": "func example_combat_fumble() -> void:\n    var dropped: bool = await combat_fumble(\"The weapon slips free!\")\n    return",
+      "editor": {
+        "sourceName": "combat_fumble"
+      }
     },
     {
       "id": "core.combat.change-monsters",
@@ -1158,16 +2189,30 @@
       "category": "Combat and Spells",
       "owningPort": "core.combat",
       "minimumTier": "safe",
-      "roles": ["spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_classic_combatants",
-      "parameters": {"monsterNameId": "int", "targetType": "string", "maximum": "int", "faction": "int?", "iconId": "int?"},
+      "parameters": {
+        "monsterNameId": "int",
+        "targetType": "string",
+        "maximum": "int",
+        "faction": "int?",
+        "iconId": "int?"
+      },
       "result": "int",
       "resultField": "altered",
       "summary": "Changes the faction or scenario icon of matching allies or monsters in the active battle.",
       "reference": "Target type is ally or monster. Providence supplies authored monster and icon pickers and Remake validates the bounded match count.",
-      "example": "var changed: int = await combat_change_monsters(goblin, \"monster\", 4, 1)"
+      "example": "func example_combat_change_monsters() -> void:\n    var goblin: int = 1\n    var changed: int = await combat_change_monsters(goblin, \"monster\", 4, 1)\n    return",
+      "editor": {
+        "sourceName": "combat_change_monsters"
+      }
     },
     {
       "id": "core.map.shift-party",
@@ -1175,16 +2220,29 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "shift_party_position",
-      "parameters": {"dx": "int", "dy": "int"},
+      "parameters": {
+        "dx": "int",
+        "dy": "int"
+      },
       "result": "LocationSnapshot",
       "resultField": "location",
       "summary": "Moves the party relative to its current map position.",
       "reference": "The destination uses the normal map transition and boundary validation path and is saved in campaign state.",
-      "example": "var location: LocationSnapshot = await map_shift_party(1, 0)"
+      "example": "func example_map_shift_party() -> void:\n    var location: LocationSnapshot = await map_shift_party(1, 0)\n    return",
+      "editor": {
+        "sourceName": "map_shift_party"
+      }
     },
     {
       "id": "core.map.view-direction",
@@ -1192,15 +2250,27 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_view_direction",
-      "parameters": {"heading": "int"},
+      "parameters": {
+        "heading": "int"
+      },
       "result": "void",
       "summary": "Faces the party north, east, south, or west.",
       "reference": "Providence presents the stable headings 1 through 4 as named directions and Remake redraws the active view.",
-      "example": "await map_view_direction(1)"
+      "example": "func example_map_view_direction() -> void:\n    await map_view_direction(1)\n    return",
+      "editor": {
+        "sourceName": "map_view_direction"
+      }
     },
     {
       "id": "core.map.view-mode",
@@ -1208,15 +2278,28 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_view_mode",
-      "parameters": {"compassEnabled": "bool?", "fullMap": "bool?"},
+      "parameters": {
+        "compassEnabled": "bool?",
+        "fullMap": "bool?"
+      },
       "result": "void",
       "summary": "Changes compass visibility or access to the full overhead map.",
       "reference": "Omitted options retain their current values; the chosen view state is included in saves.",
-      "example": "await map_view_mode(true, false)"
+      "example": "func example_map_view_mode() -> void:\n    await map_view_mode(true, false)\n    return",
+      "editor": {
+        "sourceName": "map_view_mode"
+      }
     },
     {
       "id": "core.map.land-look",
@@ -1224,15 +2307,29 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_land_look",
-      "parameters": {"levelIndex": "int", "landLook": "int", "darkness": "int?"},
+      "parameters": {
+        "levelIndex": "int",
+        "landLook": "int",
+        "darkness": "int?"
+      },
       "result": "void",
       "summary": "Changes the tileset identity and optional darkness of an authored land level.",
       "reference": "Only packaged land looks may be selected; tile projection and saved map overrides remain owned by Map.",
-      "example": "await map_land_look(0, 3, 0)"
+      "example": "func example_map_land_look() -> void:\n    await map_land_look(0, 3, 0)\n    return",
+      "editor": {
+        "sourceName": "map_land_look"
+      }
     },
     {
       "id": "core.map.random-rectangle",
@@ -1240,15 +2337,32 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "set_random_encounter_rect",
-      "parameters": {"levelType": "string", "levelIndex": "int", "rectangleIndex": "int", "percent": "int", "firstBattleId": "int?", "lastBattleId": "int?"},
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "rectangleIndex": "int",
+        "percent": "int",
+        "firstBattleId": "int?",
+        "lastBattleId": "int?"
+      },
       "result": "void",
       "summary": "Changes the encounter chance and optional battle range for an authored random rectangle.",
       "reference": "The original bounds and scheduling data are preserved unless separately authored, and the override survives save and load.",
-      "example": "await map_random_rectangle(\"land\", 0, 2, 15, 4, 7)"
+      "example": "func example_map_random_rectangle() -> void:\n    await map_random_rectangle(\"land\", 0, 2, 15, 4, 7)\n    return",
+      "editor": {
+        "sourceName": "map_random_rectangle"
+      }
     },
     {
       "id": "core.map.sailing",
@@ -1256,16 +2370,28 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "update_exploration_status",
-      "parameters": {"enabled": "bool"},
+      "parameters": {
+        "enabled": "bool"
+      },
       "result": "bool",
       "resultField": "isInBoat",
       "summary": "Places the exploring party in or out of its campaign boat state.",
       "reference": "The normal exploration icon and movement state are refreshed immediately.",
-      "example": "var sailing: bool = await map_sailing(true)"
+      "example": "func example_map_sailing() -> void:\n    var sailing: bool = await map_sailing(true)\n    return",
+      "editor": {
+        "sourceName": "map_sailing"
+      }
     },
     {
       "id": "core.map.retreat",
@@ -1273,16 +2399,29 @@
       "category": "World and Time",
       "owningPort": "core.map",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "back_up_party",
-      "parameters": {"dx": "int", "dy": "int"},
+      "parameters": {
+        "dx": "int",
+        "dy": "int"
+      },
       "result": "bool",
       "resultField": "partyBackedUp",
       "summary": "Moves the party one tile opposite a supplied entry direction.",
       "reference": "Providence presents the entry direction by name; a zero or invalid direction returns false without inventing movement.",
-      "example": "var moved: bool = await map_retreat(0, 1)"
+      "example": "func example_map_retreat() -> void:\n    var moved: bool = await map_retreat(0, 1)\n    return",
+      "editor": {
+        "sourceName": "map_retreat"
+      }
     },
     {
       "id": "core.character.change-stat",
@@ -1290,16 +2429,29 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_selected_characters",
-      "parameters": {"stat": "string", "amount": "int"},
+      "parameters": {
+        "stat": "string",
+        "amount": "int"
+      },
       "result": "int",
       "resultField": "changedCharacterCount",
       "summary": "Changes a supported stat on the currently selected characters.",
       "reference": "Providence offers named choices for actions, movement, damage, spell points, health, defense, accuracy, resistance, hand-to-hand, and prestige.",
-      "example": "var changed: int = await character_change_stat(\"movement\", 2)"
+      "example": "func example_character_change_stat() -> void:\n    var changed: int = await character_change_stat(\"movement\", 2)\n    return",
+      "editor": {
+        "sourceName": "character_change_stat"
+      }
     },
     {
       "id": "core.character.select-identity",
@@ -1307,16 +2459,31 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "select_characters_by_identity",
-      "parameters": {"selector": "string", "value": "int", "livingOnly": "bool?", "group": "int?"},
+      "parameters": {
+        "selector": "string",
+        "value": "int",
+        "livingOnly": "bool?",
+        "group": "int?"
+      },
       "result": "int",
       "resultField": "selectedCount",
       "summary": "Replaces the current character selection using race, caste, gender, or authored identity groups.",
       "reference": "Race and caste controls use the scenario's named rule tables while keeping stable numeric identity values.",
-      "example": "var selected: int = await character_select_identity(\"race\", orc, true)"
+      "example": "func example_character_select_identity() -> void:\n    var orc: int = 1\n    var selected: int = await character_select_identity(\"race\", orc, true)\n    return",
+      "editor": {
+        "sourceName": "character_select_identity"
+      }
     },
     {
       "id": "core.character.select-property",
@@ -1324,16 +2491,30 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "select_characters_by_misc",
-      "parameters": {"selector": "string", "value": "int?", "candidateMode": "string?"},
+      "parameters": {
+        "selector": "string",
+        "value": "int?",
+        "candidateMode": "string?"
+      },
       "result": "int",
       "resultField": "selectedCount",
       "summary": "Replaces the current selection using movement, items, equipment, conditions, saves, or other bounded character properties.",
       "reference": "Providence changes the value picker to match the chosen property and Remake validates the resulting selection.",
-      "example": "var selected: int = await character_select_property(\"movement_below\", 10, \"party\")"
+      "example": "func example_character_select_property() -> void:\n    var selected: int = await character_select_property(\"movement_below\", 10, \"party\")\n    return",
+      "editor": {
+        "sourceName": "character_select_property"
+      }
     },
     {
       "id": "core.character.filter-ability",
@@ -1341,16 +2522,32 @@
       "category": "Party and Characters",
       "owningPort": "core.character",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "filter_selected_characters",
-      "parameters": {"checkType": "string", "checkIndex": "int", "modifier": "int?", "candidateMode": "string?", "selectOnFailure": "bool?"},
+      "parameters": {
+        "checkType": "string",
+        "checkIndex": "int",
+        "modifier": "int?",
+        "candidateMode": "string?",
+        "selectOnFailure": "bool?"
+      },
       "result": "int",
       "resultField": "selectedCount",
       "summary": "Runs an attribute or special-ability check over a bounded party set and stores the matching characters.",
       "reference": "Candidate mode is party, alive, or selected; authors may retain successes or failures for later effects.",
-      "example": "var selected: int = await character_filter_ability(\"special\", acrobatics, 30, \"party\", false)"
+      "example": "func example_character_filter_ability() -> void:\n    var acrobatics: int = 1\n    var selected: int = await character_filter_ability(\"special\", acrobatics, 30, \"party\", false)\n    return",
+      "editor": {
+        "sourceName": "character_filter_ability"
+      }
     },
     {
       "id": "core.inventory.change-shop",
@@ -1358,16 +2555,31 @@
       "category": "Inventory and Economy",
       "owningPort": "core.inventory",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "alter_shop",
-      "parameters": {"shopId": "int", "itemId": "int", "quantityDelta": "int", "inflationDelta": "int?"},
+      "parameters": {
+        "shopId": "int",
+        "itemId": "int",
+        "quantityDelta": "int",
+        "inflationDelta": "int?"
+      },
       "result": "int",
       "resultField": "matchingSlots",
       "summary": "Changes matching item quantities and optional inflation in an authored shop.",
       "reference": "The effective shop is persisted even if its UI has not been opened yet; loaded shops update immediately.",
-      "example": "var slots: int = await inventory_change_shop(3, rope, -1, 0)"
+      "example": "func example_inventory_change_shop() -> void:\n    var rope: int = 1\n    var slots: int = await inventory_change_shop(3, rope, -1, 0)\n    return",
+      "editor": {
+        "sourceName": "inventory_change_shop"
+      }
     },
     {
       "id": "core.lifecycle.complete-campaign",
@@ -1375,16 +2587,282 @@
       "category": "Lifecycle and Rules",
       "owningPort": "core.persistence",
       "minimumTier": "safe",
-      "roles": ["action", "encounter", "spell", "item", "lifecycle", "helper"],
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
       "yields": true,
       "mutates": true,
       "commandId": "complete_campaign",
-      "parameters": {"ending": "string?"},
+      "parameters": {
+        "ending": "string?"
+      },
       "result": "bool",
       "resultField": "completed",
       "summary": "Marks the current campaign complete and dispatches its one-time campaign-complete lifecycle hook.",
       "reference": "Use only at an authored finale. Ordinary AP returns and battle victories do not complete a campaign; completion state is saved and repeated calls are idempotent.",
-      "example": "var completed: bool = await lifecycle_complete_campaign(\"victory\")"
+      "example": "func example_lifecycle_complete_campaign() -> void:\n    var completed: bool = await lifecycle_complete_campaign(\"victory\")\n    return",
+      "editor": {
+        "sourceName": "lifecycle_complete_campaign"
+      }
+    },
+    {
+      "id": "core.map.exploration",
+      "label": "Exploration State",
+      "category": "World and Time",
+      "owningPort": "core.map",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_exploration",
+      "parameters": {},
+      "result": "ExplorationSnapshot",
+      "summary": "Returns the party's immutable camping, sailing, facing, view, and random-encounter state.",
+      "reference": "The snapshot reflects the active gameplay profile and campaign overrides without exposing the map or HUD nodes.",
+      "example": "func example_map_exploration() -> void:\n    var exploration: ExplorationSnapshot = await map_exploration()\n    return",
+      "editor": {
+        "sourceName": "map_exploration"
+      }
+    },
+    {
+      "id": "core.inventory.items",
+      "label": "Party Item Instances",
+      "category": "Inventory and Economy",
+      "owningPort": "core.inventory",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_party_items",
+      "parameters": {
+        "characterId": "string?"
+      },
+      "result": "ItemInstanceSnapshot-array",
+      "resultField": "items",
+      "summary": "Returns bounded immutable snapshots of the exact item instances carried by the party.",
+      "reference": "Instance identity, ownership, charges, equipment, identification, and Classic item IDs are preserved. No mutable ItemInstance enters a scenario behavior.",
+      "example": "func example_inventory_items() -> void:\n    var items: ItemInstanceSnapshotArray = await inventory_items()\n    return",
+      "editor": {
+        "sourceName": "inventory_items"
+      }
+    },
+    {
+      "id": "core.definitions.map",
+      "label": "Map Definition",
+      "category": "Definitions",
+      "owningPort": "core.map",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_map_definition",
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int"
+      },
+      "result": "MapDefinitionSnapshot",
+      "summary": "Looks up an authored map by its stable level identity.",
+      "reference": "The returned definition omits tile arrays and runtime nodes while retaining the map's stable identity and bounds.",
+      "example": "func example_definitions_map() -> void:\n    var map: MapDefinitionSnapshot = await definitions_map(\"land\", 0)\n    return",
+      "editor": {
+        "sourceName": "definitions_map"
+      }
+    },
+    {
+      "id": "core.definitions.monster",
+      "label": "Monster Definition",
+      "category": "Definitions",
+      "owningPort": "core.combat",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_monster_definition",
+      "parameters": {
+        "monsterId": "int"
+      },
+      "result": "MonsterDefinitionSnapshot",
+      "summary": "Looks up an authored scenario monster.",
+      "reference": "The immutable snapshot retains scenario identity, icon, core combat values, experience, and authored spell IDs.",
+      "example": "func example_definitions_monster() -> void:\n    var vampire_bat: int = 1\n    var monster: MonsterDefinitionSnapshot = await definitions_monster(vampire_bat)\n    return",
+      "editor": {
+        "sourceName": "definitions_monster"
+      }
+    },
+    {
+      "id": "core.definitions.item",
+      "label": "Item Definition",
+      "category": "Definitions",
+      "owningPort": "core.inventory",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_item_definition",
+      "parameters": {
+        "itemId": "int"
+      },
+      "result": "ItemDefinitionSnapshot",
+      "summary": "Looks up an authored scenario item definition.",
+      "reference": "Use this for definition-level decisions; use Party Item Instances when exact charges or equipment state matter.",
+      "example": "func example_definitions_item() -> void:\n    var captains_key: int = 1\n    var item: ItemDefinitionSnapshot = await definitions_item(captains_key)\n    return",
+      "editor": {
+        "sourceName": "definitions_item"
+      }
+    },
+    {
+      "id": "core.definitions.spell",
+      "label": "Spell Definition",
+      "category": "Definitions",
+      "owningPort": "core.character",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_spell_definition",
+      "parameters": {
+        "spellId": "int"
+      },
+      "result": "SpellDefinitionSnapshot",
+      "summary": "Looks up an authored scenario spell definition.",
+      "reference": "The snapshot describes the packaged override and never returns a GDScript spell resource.",
+      "example": "func example_definitions_spell() -> void:\n    var firestorm: int = 1\n    var spell: SpellDefinitionSnapshot = await definitions_spell(firestorm)\n    return",
+      "editor": {
+        "sourceName": "definitions_spell"
+      }
+    },
+    {
+      "id": "core.definitions.battle",
+      "label": "Battle Definition",
+      "category": "Definitions",
+      "owningPort": "core.combat",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_battle_definition",
+      "parameters": {
+        "battleId": "int"
+      },
+      "result": "BattleDefinitionSnapshot",
+      "summary": "Looks up an authored battle and its referenced monster identities.",
+      "reference": "The full terrain grid remains runtime-owned; scripts receive only bounded identity and setup metadata.",
+      "example": "func example_definitions_battle() -> void:\n    var ambush: int = 1\n    var battle: BattleDefinitionSnapshot = await definitions_battle(ambush)\n    return",
+      "editor": {
+        "sourceName": "definitions_battle"
+      }
+    },
+    {
+      "id": "core.definitions.encounter",
+      "label": "Encounter Definition",
+      "category": "Definitions",
+      "owningPort": "core.presentation",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_encounter_definition",
+      "parameters": {
+        "encounterKind": "string",
+        "encounterId": "int"
+      },
+      "result": "EncounterDefinitionSnapshot",
+      "summary": "Looks up an authored simple or complex encounter.",
+      "reference": "This query inspects definition metadata only. Returning an EncounterOutcome remains the supported way to control an active encounter hook.",
+      "example": "func example_definitions_encounter() -> void:\n    var encounter: EncounterDefinitionSnapshot = await definitions_encounter(\"complex\", 4)\n    return",
+      "editor": {
+        "sourceName": "definitions_encounter"
+      }
+    },
+    {
+      "id": "core.definitions.media",
+      "label": "Media Definition",
+      "category": "Definitions",
+      "owningPort": "core.presentation",
+      "minimumTier": "safe",
+      "roles": [
+        "action",
+        "encounter",
+        "spell",
+        "item",
+        "lifecycle",
+        "helper"
+      ],
+      "yields": true,
+      "mutates": false,
+      "commandId": "query_media_definition",
+      "parameters": {
+        "mediaKind": "string",
+        "resourceId": "int"
+      },
+      "result": "MediaDefinitionSnapshot",
+      "summary": "Looks up a packaged picture, sound, or scrolling-text resource.",
+      "reference": "The immutable record exposes package-relative metadata only and cannot be used for arbitrary filesystem access.",
+      "example": "func example_definitions_media() -> void:\n    var title_picture: int = 1\n    var media: MediaDefinitionSnapshot = await definitions_media(\"picture\", title_picture)\n    return",
+      "editor": {
+        "sourceName": "definitions_media"
+      }
     }
   ],
   "modifierFamilies": [

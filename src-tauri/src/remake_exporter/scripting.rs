@@ -406,6 +406,7 @@ fn validate_ast(
                     "literal",
                     "variable",
                     "array",
+                    "record",
                     "unary",
                     "binary",
                     "member",
@@ -738,6 +739,82 @@ fn value_matches_type(
                         .is_some_and(|entries| entries.iter().all(character_snapshot_matches))
                 })
         }),
+        RemakeScriptValueType::ExplorationSnapshot => snapshot_fields_match(
+            value,
+            &["viewMode"],
+            &["heading"],
+            &[
+                "camping",
+                "campingAllowed",
+                "sailing",
+                "compassEnabled",
+                "randomEncountersEnabled",
+            ],
+            &[],
+        ),
+        RemakeScriptValueType::ItemInstanceSnapshot => item_instance_snapshot_matches(value),
+        RemakeScriptValueType::ItemInstanceSnapshotArray => {
+            value.as_array().is_some_and(|values| {
+                values.len() <= max_length.unwrap_or_default()
+                    && values.iter().all(item_instance_snapshot_matches)
+            })
+        }
+        RemakeScriptValueType::MapDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name", "levelType"],
+            &["levelIndex", "width", "height"],
+            &[],
+            &[],
+        ),
+        RemakeScriptValueType::MonsterDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name"],
+            &[
+                "nameId",
+                "iconId",
+                "maximumHealth",
+                "armor",
+                "movement",
+                "experience",
+            ],
+            &[],
+            &["spellIds"],
+        ),
+        RemakeScriptValueType::ItemDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name"],
+            &["iconId", "itemType", "cost", "weight", "maximumCharges"],
+            &[],
+            &[],
+        ),
+        RemakeScriptValueType::SpellDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name"],
+            &["spellClass", "cost", "targetType", "duration"],
+            &["inCombat", "inCamp"],
+            &[],
+        ),
+        RemakeScriptValueType::BattleDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name"],
+            &["distance", "macroId"],
+            &[],
+            &["monsterIds"],
+        ),
+        RemakeScriptValueType::EncounterDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name", "encounterKind"],
+            &["optionCount", "maximumRuns"],
+            &["canBackOut"],
+            &[],
+        ),
+        RemakeScriptValueType::MediaDefinitionSnapshot => snapshot_fields_match(
+            value,
+            &["id", "name", "mediaKind", "runtimePath", "mediaType"],
+            &["resourceId"],
+            &[],
+            &[],
+        ),
         RemakeScriptValueType::CharacterSnapshotArray => value.as_array().is_some_and(|values| {
             values.len() <= max_length.unwrap_or_default()
                 && values.iter().all(character_snapshot_matches)
@@ -778,6 +855,44 @@ fn value_matches_type(
                 })
         }),
     }
+}
+
+fn item_instance_snapshot_matches(value: &Value) -> bool {
+    snapshot_fields_match(
+        value,
+        &["id", "definitionId", "name", "ownerId"],
+        &["charges"],
+        &["equipped", "identified"],
+        &["classicItemIds"],
+    )
+}
+
+fn snapshot_fields_match(
+    value: &Value,
+    string_fields: &[&str],
+    integer_fields: &[&str],
+    boolean_fields: &[&str],
+    integer_array_fields: &[&str],
+) -> bool {
+    value.as_object().is_some_and(|snapshot| {
+        string_fields
+            .iter()
+            .all(|field| snapshot.get(*field).is_some_and(Value::is_string))
+            && integer_fields
+                .iter()
+                .all(|field| snapshot.get(*field).is_some_and(Value::is_i64))
+            && boolean_fields
+                .iter()
+                .all(|field| snapshot.get(*field).is_some_and(Value::is_boolean))
+            && integer_array_fields.iter().all(|field| {
+                snapshot.get(*field).is_some_and(|entries| {
+                    entries.as_array().is_some_and(|values| {
+                        values.len() <= MAX_ARRAY_LENGTH
+                            && values.iter().all(|entry| entry.is_i64() || entry.is_u64())
+                    })
+                })
+            })
+    })
 }
 
 fn outcome_kind_matches(value: &Value, allowed: &[&str]) -> bool {
@@ -872,5 +987,53 @@ mod tests {
         let left = json!({"b": 2, "a": 1});
         let right: Value = serde_json::from_str(r#"{"a":1,"b":2}"#).unwrap();
         assert_eq!(hash_json(&left).unwrap(), hash_json(&right).unwrap());
+    }
+
+    #[test]
+    fn safe_ast_accepts_record_expressions() {
+        let script: RemakeBehaviorDefinition = serde_json::from_value(json!({
+            "id": "scenario.fixture.outcome",
+            "name": "Fixture Outcome",
+            "kind": "entry",
+            "role": "action",
+            "hook": "run",
+            "tier": "safe",
+            "apiVersion": SCRIPT_API_VERSION,
+            "returnType": "action-outcome",
+            "requestedCapabilities": [],
+            "stateSchema": {},
+            "sourceMap": {},
+            "ast": {
+                "kind": "function",
+                "name": "fixture_outcome",
+                "parameters": [],
+                "returnType": "action-outcome",
+                "body": [{
+                    "kind": "return",
+                    "value": {
+                        "kind": "record",
+                        "fields": {
+                            "kind": {"kind": "literal", "value": "continue"}
+                        }
+                    }
+                }]
+            },
+            "source": null
+        }))
+        .unwrap();
+        let mut node_count = 0;
+        let mut calls = BTreeSet::new();
+        let mut errors = Vec::new();
+
+        validate_ast(
+            script.ast.as_ref().unwrap(),
+            &script,
+            "Fixture behavior",
+            &mut node_count,
+            &mut calls,
+            &mut errors,
+        );
+
+        assert!(errors.is_empty(), "{}", errors.join("\n"));
     }
 }

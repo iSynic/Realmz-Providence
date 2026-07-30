@@ -50,6 +50,16 @@ const SCRIPT_TYPES: RemakeScriptValueType[] = [
   "character-snapshot",
   "character-snapshot-array",
   "combat-snapshot",
+  "exploration-snapshot",
+  "item-instance-snapshot",
+  "item-instance-snapshot-array",
+  "map-definition-snapshot",
+  "monster-definition-snapshot",
+  "item-definition-snapshot",
+  "spell-definition-snapshot",
+  "battle-definition-snapshot",
+  "encounter-definition-snapshot",
+  "media-definition-snapshot",
   "bool-array",
   "int-array",
   "float-array",
@@ -699,7 +709,7 @@ function OperationStatementEditor({
   return (
     <CollapsibleSection
       title={operation.label}
-      eyebrow={`${operation.mutates ? "Command" : "Query"}${operation.yields ? " · waits for Remake" : ""}`}
+      eyebrow={`${guidedOperationKind(operation)}${operation.yields ? " · waits for Remake" : ""}`}
       defaultOpen
     >
       <p>{operation.summary}</p>
@@ -814,6 +824,11 @@ function OperationStatementEditor({
       )}
     </CollapsibleSection>
   );
+}
+
+export function guidedOperationKind(operation: GuidedCatalogOperation) {
+  if (operation.category === "Presentation") return "Presentation";
+  return operation.mutates ? "Command" : "Query";
 }
 
 function NestedBlock({
@@ -1020,7 +1035,7 @@ function ConditionEditor({
   );
 }
 
-function ExpressionField({
+export function ExpressionField({
   label,
   expectedType,
   expression,
@@ -1040,6 +1055,8 @@ function ExpressionField({
     ? expression.scope === "persistent" ? "state" : "local"
     : expression.kind === "member"
       ? "field"
+      : expression.kind === "collection"
+        ? "collection"
       : "constant";
   return (
     <FormField label={label}>
@@ -1062,6 +1079,8 @@ function ExpressionField({
                 object: { kind: "variable", scope: "local", name: "context" },
                 member: "value"
               });
+            } else if (next === "collection") {
+              onChange(defaultCollectionExpression(type));
             } else onChange(defaultExpression(type, label));
           }}
         >
@@ -1069,6 +1088,7 @@ function ExpressionField({
           <option value="local">Local or parameter</option>
           <option value="state" disabled={stateDefinitions.length === 0}>Story state</option>
           <option value="field">Context or snapshot field</option>
+          <option value="collection">Collection query</option>
         </select>
         {mode === "local" && (
           <input
@@ -1113,6 +1133,14 @@ function ExpressionField({
             />
           </div>
         )}
+        {mode === "collection" && (
+          <CollectionExpressionEditor
+            expectedType={type}
+            expression={expression}
+            stateDefinitions={stateDefinitions}
+            onChange={onChange}
+          />
+        )}
         {mode === "constant" && (
           <LiteralEditor
             type={type}
@@ -1124,6 +1152,125 @@ function ExpressionField({
       </div>
     </FormField>
   );
+}
+
+function CollectionExpressionEditor({
+  expectedType,
+  expression,
+  stateDefinitions,
+  onChange
+}: {
+  expectedType: string;
+  expression: AstNode;
+  stateDefinitions: RemakeStateDefinition[];
+  onChange: (expression: AstNode) => void;
+}) {
+  const options = collectionQueryOperations(expectedType);
+  const operation = options.includes(String(expression.operation))
+    ? String(expression.operation)
+    : options[0];
+  const itemName = String(expression.itemName || "item");
+  const hasPredicate = expression.predicate !== undefined;
+  const predicateRequired = operation !== "count";
+
+  const updateOperation = (nextOperation: string) => {
+    const next: AstNode = {
+      ...expression,
+      operation: nextOperation,
+      itemName
+    };
+    if (nextOperation !== "count" && next.predicate === undefined) {
+      next.predicate = { kind: "literal", value: true };
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className="guided-collection-expression">
+      <FormGrid columns={2}>
+        <FormField label="Collection query">
+          <select
+            value={operation}
+            onChange={(event) => updateOperation(event.target.value)}
+          >
+            {options.map((entry) => (
+              <option key={entry} value={entry}>{collectionQueryLabel(entry)}</option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Item name">
+          <input
+            value={itemName}
+            onChange={(event) => onChange({
+              ...expression,
+              itemName: portableName(event.target.value)
+            })}
+          />
+        </FormField>
+      </FormGrid>
+      <ExpressionField
+        label="Collection"
+        expectedType="variant"
+        expression={asNode(expression.collection)}
+        stateDefinitions={stateDefinitions}
+        onChange={(collection) => onChange({ ...expression, collection })}
+      />
+      {operation === "count" && (
+        <label className="guided-optional-toggle">
+          <input
+            type="checkbox"
+            checked={hasPredicate}
+            onChange={(event) => {
+              const next = { ...expression };
+              if (event.target.checked) next.predicate = { kind: "literal", value: true };
+              else delete next.predicate;
+              onChange(next);
+            }}
+          />
+          Count only matching items
+        </label>
+      )}
+      {(predicateRequired || hasPredicate) && (
+        <div className="guided-collection-predicate">
+          <strong>{operation === "count" ? "Matching condition" : "Condition"}</strong>
+          <ConditionEditor
+            expression={asNode(expression.predicate)}
+            stateDefinitions={stateDefinitions}
+            onChange={(predicate) => onChange({ ...expression, predicate })}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function collectionQueryOperations(expectedType: string): string[] {
+  const type = expectedType.replace(/\?$/, "");
+  if (type === "bool") return ["any", "all"];
+  if (type === "int") return ["count"];
+  if (type.endsWith("-array")) return ["filter"];
+  if (type === "variant") return ["any", "all", "find", "count", "filter"];
+  return ["find"];
+}
+
+function defaultCollectionExpression(expectedType: string): AstNode {
+  const operation = collectionQueryOperations(expectedType)[0];
+  return {
+    kind: "collection",
+    operation,
+    collection: { kind: "variable", scope: "local", name: "items" },
+    itemName: "item",
+    ...(operation === "count" ? {} : { predicate: { kind: "literal", value: true } })
+  };
+}
+
+function collectionQueryLabel(operation: string) {
+  if (operation === "any") return "Any item matches";
+  if (operation === "all") return "Every item matches";
+  if (operation === "find") return "Find first matching item";
+  if (operation === "count") return "Count items";
+  if (operation === "filter") return "Keep matching items";
+  return friendlyName(operation);
 }
 
 function LiteralEditor({
@@ -1561,7 +1708,17 @@ function scriptTypeForCatalog(type: string): RemakeScriptValueType | null {
     TimeSnapshot: "time-snapshot",
     WealthSnapshot: "wealth-snapshot",
     "CharacterSnapshot-array": "character-snapshot-array",
-    CombatSnapshot: "combat-snapshot"
+    CombatSnapshot: "combat-snapshot",
+    ExplorationSnapshot: "exploration-snapshot",
+    ItemInstanceSnapshot: "item-instance-snapshot",
+    "ItemInstanceSnapshot-array": "item-instance-snapshot-array",
+    MapDefinitionSnapshot: "map-definition-snapshot",
+    MonsterDefinitionSnapshot: "monster-definition-snapshot",
+    ItemDefinitionSnapshot: "item-definition-snapshot",
+    SpellDefinitionSnapshot: "spell-definition-snapshot",
+    BattleDefinitionSnapshot: "battle-definition-snapshot",
+    EncounterDefinitionSnapshot: "encounter-definition-snapshot",
+    MediaDefinitionSnapshot: "media-definition-snapshot"
   };
   return types[type] ?? null;
 }

@@ -59,6 +59,7 @@ const CATALOG_TYPE_FIELDS = new Map<RemakeScriptValueType, Record<string, Remake
 
 const BASE_OPERATION_SPECS: Record<string, OperationSpec> = {
   read_state: { capability: "core.state.read", names: ["scope", "name"], optionalNames: ["ownerId"], result: "dynamic" },
+  set_state: { capability: "core.state.write", names: ["scope", "name", "value"], optionalNames: ["ownerId"], result: "void" },
   write_state: { capability: "core.state.write", names: ["scope", "name", "value"], optionalNames: ["ownerId"], result: "void" },
   read_quest: { capability: "core.state.read", names: ["id"], result: "int", fixed: { scope: "quest" } },
   write_quest: { capability: "core.state.write", names: ["id", "value"], result: "void", fixed: { scope: "quest" } },
@@ -80,7 +81,7 @@ const BASE_OPERATION_SPECS: Record<string, OperationSpec> = {
   party_has_item: { capability: "core.inventory.has-item", names: ["itemId"], optionalNames: ["minimumCharges"], result: "bool", yields: true },
   give_treasure: { capability: "core.inventory.give-treasure", names: ["treasureId"], result: "void", yields: true },
   party_has_condition: { capability: "core.character.party-condition", names: ["conditionIndex"], result: "bool", yields: true },
-  change_health: { capability: "core.character.change-health", names: ["amount"], optionalNames: ["canKill"], result: "void", yields: true },
+  change_health: { capability: "core.character.change-health", names: ["amount"], optionalNames: ["canKill", "targetMode"], result: "void", yields: true },
   give_experience: { capability: "core.character.give-experience", names: ["amount"], optionalNames: ["selectedOnly"], result: "void", yields: true },
   start_encounter: { capability: "core.encounter.start", names: ["encounterKind", "encounterId"], result: "int", yields: true },
   start_battle: { capability: "core.encounter.start-battle", names: ["battleId"], result: "void", yields: true },
@@ -90,7 +91,6 @@ const BASE_OPERATION_SPECS: Record<string, OperationSpec> = {
 };
 
 const OPERATION_SPECS: Record<string, OperationSpec> = {
-  ...BASE_OPERATION_SPECS,
   ...Object.fromEntries(CATALOG_OPERATION_ROWS.map((operation) => {
     const required: string[] = [];
     const optional: string[] = [];
@@ -106,7 +106,8 @@ const OPERATION_SPECS: Record<string, OperationSpec> = {
       result: scriptTypeForCatalogType(operation.result),
       yields: operation.yields
     } satisfies OperationSpec];
-  }))
+  })),
+  ...BASE_OPERATION_SPECS
 };
 
 const CATALOG_OPERATIONS = new Map(
@@ -474,7 +475,9 @@ class ExpressionParser {
     while (this.peek() === ".") {
       this.index += 1;
       const member = this.tokens[this.index++]?.text ?? "";
-      if (!/^[a-z_][a-z0-9_]*$/.test(member)) throw new Error("Expected a member name after '.'.");
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(member)) {
+        throw new Error("Expected a member name after '.'.");
+      }
       left = { kind: "member", object: left, member };
     }
     const precedence: Record<string, number> = { or: 1, and: 2, "==": 3, "!=": 3, "<": 4, "<=": 4, ">": 4, ">=": 4, "+": 5, "-": 5, "*": 6, "/": 6, "%": 6 };
@@ -723,9 +726,19 @@ function validateSafeTypes(
         report(`Collection query requires an array, not ${collectionType}.`);
       }
       const operation = String(node.operation);
+      if (!["any", "all", "find", "count", "filter"].includes(operation)) {
+        report(`Unsupported collection query '${operation}'.`);
+        return "unknown";
+      }
+      if (operation !== "count" && !node.predicate) {
+        report(`Collection query '${operation}' requires a matching condition.`);
+      }
       if (operation === "count") return "int";
       if (operation === "any" || operation === "all") return "bool";
       if (operation === "filter") return collectionType;
+      if (operation === "find" && collectionType.endsWith("-array")) {
+        return collectionType.replace(/-array$/, "") as RemakeScriptValueType;
+      }
       return "unknown";
     }
     return "unknown";
@@ -733,19 +746,8 @@ function validateSafeTypes(
   const operationResult = (statement: JsonNode): RemakeScriptValueType | "unknown" => {
     const capability = String(statement.capability);
     const catalogResult = CATALOG_OPERATIONS.get(capability)?.result;
-    const catalogTypes: Record<string, RemakeScriptValueType | "unknown"> = {
-      void: "void",
-      bool: "bool",
-      int: "int",
-      float: "float",
-      string: "string",
-      LocationSnapshot: "location-snapshot",
-      TimeSnapshot: "time-snapshot",
-      WealthSnapshot: "wealth-snapshot",
-      "CharacterSnapshot-array": "character-snapshot-array",
-      CombatSnapshot: "combat-snapshot"
-    };
-    if (catalogResult && catalogResult in catalogTypes) return catalogTypes[catalogResult];
+    const mappedResult = scriptTypeForCatalogType(catalogResult);
+    if (mappedResult !== "unknown") return mappedResult;
     if (capability === "core.state.read") {
       const argumentsValue = (statement.arguments ?? {}) as JsonNode;
       const scope = literalString(argumentsValue.scope as JsonNode | undefined);
@@ -928,6 +930,17 @@ function parseType(value: string): RemakeScriptValueType {
     CharacterSnapshotArray: "character-snapshot-array",
     "Array[CharacterSnapshot]": "character-snapshot-array",
     CombatSnapshot: "combat-snapshot",
+    ExplorationSnapshot: "exploration-snapshot",
+    ItemInstanceSnapshot: "item-instance-snapshot",
+    ItemInstanceSnapshotArray: "item-instance-snapshot-array",
+    "Array[ItemInstanceSnapshot]": "item-instance-snapshot-array",
+    MapDefinitionSnapshot: "map-definition-snapshot",
+    MonsterDefinitionSnapshot: "monster-definition-snapshot",
+    ItemDefinitionSnapshot: "item-definition-snapshot",
+    SpellDefinitionSnapshot: "spell-definition-snapshot",
+    BattleDefinitionSnapshot: "battle-definition-snapshot",
+    EncounterDefinitionSnapshot: "encounter-definition-snapshot",
+    MediaDefinitionSnapshot: "media-definition-snapshot",
     ActionOutcome: "action-outcome",
     EncounterOutcome: "encounter-outcome",
     EffectOutcome: "effect-outcome",
@@ -948,6 +961,16 @@ function printType(value: string) {
     "character-snapshot": "CharacterSnapshot",
     "character-snapshot-array": "Array[CharacterSnapshot]",
     "combat-snapshot": "CombatSnapshot",
+    "exploration-snapshot": "ExplorationSnapshot",
+    "item-instance-snapshot": "ItemInstanceSnapshot",
+    "item-instance-snapshot-array": "Array[ItemInstanceSnapshot]",
+    "map-definition-snapshot": "MapDefinitionSnapshot",
+    "monster-definition-snapshot": "MonsterDefinitionSnapshot",
+    "item-definition-snapshot": "ItemDefinitionSnapshot",
+    "spell-definition-snapshot": "SpellDefinitionSnapshot",
+    "battle-definition-snapshot": "BattleDefinitionSnapshot",
+    "encounter-definition-snapshot": "EncounterDefinitionSnapshot",
+    "media-definition-snapshot": "MediaDefinitionSnapshot",
     "action-outcome": "ActionOutcome",
     "encounter-outcome": "EncounterOutcome",
     "effect-outcome": "EffectOutcome",
@@ -980,6 +1003,16 @@ function scriptTypeForCatalogType(value: string | undefined): RemakeScriptValueT
     CharacterSnapshot: "character-snapshot",
     "CharacterSnapshot-array": "character-snapshot-array",
     CombatSnapshot: "combat-snapshot",
+    ExplorationSnapshot: "exploration-snapshot",
+    ItemInstanceSnapshot: "item-instance-snapshot",
+    "ItemInstanceSnapshot-array": "item-instance-snapshot-array",
+    MapDefinitionSnapshot: "map-definition-snapshot",
+    MonsterDefinitionSnapshot: "monster-definition-snapshot",
+    ItemDefinitionSnapshot: "item-definition-snapshot",
+    SpellDefinitionSnapshot: "spell-definition-snapshot",
+    BattleDefinitionSnapshot: "battle-definition-snapshot",
+    EncounterDefinitionSnapshot: "encounter-definition-snapshot",
+    MediaDefinitionSnapshot: "media-definition-snapshot",
     ActionOutcome: "action-outcome",
     EncounterOutcome: "encounter-outcome",
     EffectOutcome: "effect-outcome",

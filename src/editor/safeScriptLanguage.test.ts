@@ -149,8 +149,36 @@ describe("safe GDScript subset", () => {
     expect(parsed.diagnostics).toEqual([]);
     const printed = printSafeScript(parsed.program!);
     expect(printed).toContain("play_sound(101, true)");
-    expect(printed).toContain("take_wealth(500, 2, 1, false)");
+    expect(printed).toContain("take_gold(500, 2, 1, false)");
     const reparsed = parseSafeScript(printed, definition);
+    expect(reparsed.diagnostics).toEqual([]);
+    expect(reparsed.program).toEqual(parsed.program);
+  });
+
+  it("queries exact item instances and authored definitions with typed fields", () => {
+    const actionDefinition = {
+      ...definition,
+      returnType: "action-outcome" as const
+    };
+    const parsed = parseSafeScript(
+      `func inspect_inventory() -> ActionOutcome:
+    var items: Array[ItemInstanceSnapshot] = await inventory_items()
+    var charged: bool = any(items, item, item.charges > 0)
+    var monster: MonsterDefinitionSnapshot = await definitions_monster(1)
+    if charged and monster.maximumHealth > 0:
+        await show_text(monster.name)
+    return {"kind": "continue"}
+`,
+      actionDefinition
+    );
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.requestedCapabilities).toEqual([
+      "core.definitions.monster",
+      "core.inventory.items",
+      "core.presentation.text"
+    ]);
+    const printed = printSafeScript(parsed.program!);
+    const reparsed = parseSafeScript(printed, actionDefinition);
     expect(reparsed.diagnostics).toEqual([]);
     expect(reparsed.program).toEqual(parsed.program);
   });

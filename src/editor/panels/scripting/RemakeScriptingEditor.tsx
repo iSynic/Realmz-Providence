@@ -9,6 +9,7 @@ import {
   RemakeBehaviorDefinition,
   RemakeBehaviorRole,
   RemakeBehaviorTargetKind,
+  RemakePluginRequirement,
   RemakeProviderBinding,
   RemakeRuntime,
   RemakeScriptParameter,
@@ -85,6 +86,16 @@ const SCRIPT_VALUE_TYPES: RemakeScriptValueType[] = [
   "character-snapshot",
   "character-snapshot-array",
   "combat-snapshot",
+  "exploration-snapshot",
+  "item-instance-snapshot",
+  "item-instance-snapshot-array",
+  "map-definition-snapshot",
+  "monster-definition-snapshot",
+  "item-definition-snapshot",
+  "spell-definition-snapshot",
+  "battle-definition-snapshot",
+  "encounter-definition-snapshot",
+  "media-definition-snapshot",
   "action-outcome",
   "encounter-outcome",
   "effect-outcome",
@@ -969,6 +980,25 @@ function ExtensionEditor({
       }]
     }, "Add extension action");
   };
+  const updatePlugin = (index: number, requirement: RemakePluginRequirement | null) => {
+    update({
+      requiredPlugins: requirement
+        ? runtime.requiredPlugins.map((entry, entryIndex) => entryIndex === index ? requirement : entry)
+        : runtime.requiredPlugins.filter((_, entryIndex) => entryIndex !== index)
+    }, requirement ? "Update engine plug-in requirement" : "Remove engine plug-in requirement");
+  };
+  const addPlugin = () => {
+    const used = new Set(runtime.requiredPlugins.map((entry) => entry.id));
+    let sequence = runtime.requiredPlugins.length + 1;
+    let id = `scenario.plugin-${sequence}`;
+    while (used.has(id)) {
+      sequence += 1;
+      id = `scenario.plugin-${sequence}`;
+    }
+    update({
+      requiredPlugins: [...runtime.requiredPlugins, { id, apiVersion: 1 }]
+    }, "Require engine plug-in");
+  };
   return (
     <>
       <PanelSection eyebrow="Installed Providers" title="Built-In Extensions" count={runtime.requiredExtensions.length}>
@@ -1003,6 +1033,57 @@ function ExtensionEditor({
             </div>
           );
         })}
+      </PanelSection>
+      <PanelSection
+        eyebrow="Separately Installed"
+        title="Engine Plug-ins"
+        count={runtime.requiredPlugins.length}
+      >
+        <p>
+          Engine plug-ins are not included in the scenario. Players install and approve them
+          separately in Remake, and the exact plug-in ID and API version must be available before
+          this campaign can start.
+        </p>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={addPlugin}>
+          Add Engine Plug-in Requirement
+        </button>
+        {runtime.requiredPlugins.map((requirement, index) => (
+          <FormGrid columns={3} key={`${requirement.id}:${index}`}>
+            <FormField label="Plug-in ID">
+              <input
+                value={requirement.id}
+                onChange={(event) => updatePlugin(index, {
+                  ...requirement,
+                  id: event.target.value.trim()
+                })}
+                placeholder="publisher.plugin-name"
+              />
+            </FormField>
+            <FormField label="API version">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={requirement.apiVersion}
+                onChange={(event) => updatePlugin(index, {
+                  ...requirement,
+                  apiVersion: Math.max(1, Number.parseInt(event.target.value || "1", 10))
+                })}
+              />
+            </FormField>
+            <button
+              type="button"
+              className="btn btn-danger btn-xs"
+              onClick={() => updatePlugin(index, null)}
+            >
+              Remove
+            </button>
+          </FormGrid>
+        ))}
+        <div className="rules-help-callout">
+          Plug-in code runs in Remake with the user&apos;s account privileges. Use Safe behaviors or
+          sandboxed scripts unless the scenario genuinely needs an engine-level provider.
+        </div>
       </PanelSection>
       <CollapsibleSection title="Extension action slots" eyebrow="Technical Details" defaultOpen={false}>
         <button type="button" className="btn btn-primary btn-sm" disabled={!operations.length || !project.triggers.length} onClick={addSemanticAction}>

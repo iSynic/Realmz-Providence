@@ -5,6 +5,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { createRemakeScriptingAcceptanceProject } from "./remake_scripting_acceptance_fixture.mjs";
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,6 +20,8 @@ const classicOutputA = path.join(proofRoot, "native-classic-a", "Providence Owne
 const classicOutputB = path.join(proofRoot, "native-classic-b", "Providence Ownership Proof");
 const remakeOutputA = path.join(proofRoot, "remake-classic-a");
 const remakeOutputB = path.join(proofRoot, "remake-classic-b");
+const remakeScriptedOutputA = path.join(proofRoot, "remake-scripted-a");
+const remakeScriptedOutputB = path.join(proofRoot, "remake-scripted-b");
 const browserWindowsOutput = path.join(proofRoot, "browser-native-windows", "Providence Ownership Proof");
 const browserClassicOutput = path.join(proofRoot, "browser-native-classic", "Providence Ownership Proof");
 const reimportDir = path.join(proofRoot, "reimported.providence");
@@ -429,6 +432,12 @@ await runCargoExample("export_project_fixture", [projectDir, classicOutputB, "ma
 await assertNoRawSources("after repeated Classic-Mac export");
 await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeOutputA]);
 await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeOutputB]);
+const scriptedProject = createRemakeScriptingAcceptanceProject(project);
+scriptedProject.scenario.projectPath = projectDir;
+await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(scriptedProject, null, 2)}\n`);
+await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeScriptedOutputA]);
+await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeScriptedOutputB]);
+await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
 
 const windowsFilesA = await readFlatDirectory(windowsOutputA);
 const windowsFilesB = await readFlatDirectory(windowsOutputB);
@@ -436,6 +445,8 @@ const classicFilesA = await readFlatDirectory(classicOutputA);
 const classicFilesB = await readFlatDirectory(classicOutputB);
 const remakeFilesA = await readDirectoryTree(remakeOutputA);
 const remakeFilesB = await readDirectoryTree(remakeOutputB);
+const remakeScriptedFilesA = await readDirectoryTree(remakeScriptedOutputA);
+const remakeScriptedFilesB = await readDirectoryTree(remakeScriptedOutputB);
 const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
 const browserPoisonedProject = JSON.parse(JSON.stringify(project));
@@ -573,6 +584,12 @@ assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
 assertFileMapsEqual(remakeFilesA, remakeFilesB, "repeated Remake compatibility export");
 assertRemakeCompatibilityBundle(remakeFilesA, project);
+assertFileMapsEqual(
+  remakeScriptedFilesA,
+  remakeScriptedFilesB,
+  "repeated Remake scripting acceptance export"
+);
+assertRemakeScriptingAcceptanceBundle(remakeScriptedFilesA, scriptedProject);
 assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
 assertFileMapsEqual(classicFilesA, browserClassicFiles, "Rust/browser Classic-Mac compile");
 assertFileMapsEqual(browserWindowsFiles, browserEmbeddedCompatibilityTrapFiles, "authored browser embedded-compatibility access guard");
@@ -702,6 +719,15 @@ const summary = {
     packagedManagedResources: project.assets.length,
     manifest: fileManifest(remakeFilesA)
   },
+  remakeScriptingAcceptance: {
+    path: relative(remakeScriptedOutputA),
+    deterministic: true,
+    formatVersion: 3,
+    behaviorCount: scriptedProject.remakeRuntime.behaviors.length,
+    bindingCount: scriptedProject.remakeRuntime.behaviorBindings.length,
+    stateDefinitionCount: scriptedProject.remakeRuntime.stateDefinitions.length,
+    manifest: fileManifest(remakeScriptedFilesA)
+  },
   conservativeReimport: {
     path: relative(reimportDir),
     immutable: reimported.source.immutable,
@@ -743,6 +769,7 @@ console.log(`- Native Windows folder: ${relative(windowsOutputA)}`);
 console.log(`- Native Classic-Mac folder: ${relative(classicOutputA)}`);
 console.log(`- Browser/native byte parity: Windows and Classic-Mac (no raw sources)`);
 console.log(`- Deterministic Remake Classic bundle: ${relative(remakeOutputA)}`);
+console.log(`- Deterministic Remake scripted bundle: ${relative(remakeScriptedOutputA)}`);
 console.log(`- Proof summary: ${relative(summaryPath)}`);
 
 async function bundleScenarioCompiler() {
@@ -1676,6 +1703,99 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const expectedPayloadFiles = runtimeManagedAssets.length + runtimeMediaFiles;
   expect(manifest.counts.packagedAssetPayloads === expectedPayloadFiles, "Remake export reported the wrong packaged payload count");
   expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === expectedPayloadFiles, "Remake export produced an unexpected payload file set");
+}
+
+function assertRemakeScriptingAcceptanceBundle(files, scriptedProject) {
+  const requiredDocuments = [
+    "campaign.json",
+    "runtime.json",
+    "classic/encounters.json",
+    "classic/scripts.json",
+    "remake/scripts.json"
+  ];
+  for (const name of requiredDocuments) {
+    expect(files.has(name), `Remake scripting acceptance export is missing ${name}`);
+  }
+  const manifest = JSON.parse(Buffer.from(files.get("campaign.json")).toString("utf8"));
+  const runtime = JSON.parse(Buffer.from(files.get("runtime.json")).toString("utf8"));
+  const classicScripts = JSON.parse(Buffer.from(files.get("classic/scripts.json")).toString("utf8"));
+  const encounters = JSON.parse(Buffer.from(files.get("classic/encounters.json")).toString("utf8"));
+  const scripts = JSON.parse(Buffer.from(files.get("remake/scripts.json")).toString("utf8"));
+
+  expect(manifest.format === "realmz-remake-scenario" && manifest.formatVersion === 3, "Remake scripting acceptance export has the wrong bundle identity");
+  expect(manifest.name === "Providence Scripting Acceptance", "Remake scripting acceptance export lost its authored name");
+  expect(runtime.authoringTarget === "remake-enhanced", "Remake scripting acceptance runtime lost its authoring target");
+  expect(runtime.scriptExecution?.behaviorCount === 9, "Remake scripting acceptance runtime has the wrong behavior count");
+  expect(runtime.scriptExecution?.requiresSandbox === false, "Safe-only acceptance behavior unexpectedly requires the sandbox");
+  expect(runtime.targetSupport?.nativeRealmz === false && runtime.targetSupport?.realmzRemake === true, "Remake-only target support was not computed from behavior use");
+  expect(runtime.targetSupport?.remakeOnlyReasons?.includes("scenario-behaviors"), "Remake-only diagnostics do not name scenario behaviors");
+
+  expect(scripts.schemaVersion === 2 && scripts.apiVersion === 2, "Remake scripting acceptance document has the wrong schema or API version");
+  expect(scripts.behaviors.length === scriptedProject.remakeRuntime.behaviors.length, "Remake scripting acceptance behavior count changed during export");
+  expect(scripts.bindings.length === scriptedProject.remakeRuntime.behaviorBindings.length, "Remake scripting acceptance binding count changed during export");
+  expect(scripts.stateDefinitions.length === scriptedProject.remakeRuntime.stateDefinitions.length, "Remake scripting acceptance state count changed during export");
+  expect(scripts.migrations.length === 1, "Remake scripting acceptance migration was not exported");
+  expect(scripts.behaviors.every((behavior) => behavior.tier === "safe" && behavior.program?.kind === "function"), "Safe acceptance behavior did not compile into canonical VM instructions");
+  expect(scripts.behaviors.some((behavior) => behavior.role === "spell" && behavior.hook === "effect"), "Spell behavior is absent from the acceptance export");
+  expect(scripts.behaviors.some((behavior) => behavior.role === "item" && behavior.hook === "use-field"), "Item behavior is absent from the acceptance export");
+  expect(scripts.behaviors.some((behavior) => behavior.role === "monster-ai" && behavior.hook === "decide"), "Monster AI behavior is absent from the acceptance export");
+  expect(scripts.behaviors.some((behavior) => behavior.role === "lifecycle" && behavior.hook === "campaign-start"), "Lifecycle behavior is absent from the acceptance export");
+  expect(scripts.behaviors.some((behavior) => behavior.role === "rule-modifier" && behavior.hook === "attack-chance"), "Rule-modifier behavior is absent from the acceptance export");
+  const actionBehavior = scripts.behaviors.find((behavior) =>
+    behavior.id === "scenario.providence.accept-captain-quest"
+  );
+  const actionNodes = [];
+  const collectActionNodes = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(collectActionNodes);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    actionNodes.push(value);
+    Object.values(value).forEach(collectActionNodes);
+  };
+  collectActionNodes(actionBehavior?.program ?? {});
+  const actionCapabilities = new Set(actionNodes.map((node) => node.capability).filter(Boolean));
+  for (const capability of [
+    "core.presentation.text",
+    "core.presentation.choice",
+    "core.map.teleport",
+    "core.encounter.start-battle"
+  ]) {
+    expect(actionCapabilities.has(capability), `Scenario-scale acceptance behavior is missing ${capability}`);
+  }
+  const sourceNodes = actionNodes.map((node) => node.sourceNode).filter(Boolean);
+  expect(
+    new Set(sourceNodes).size === sourceNodes.length,
+    "Scenario-scale acceptance behavior contains duplicate debugger source-node IDs"
+  );
+
+  const trigger = classicScripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
+  const scriptedAction = trigger?.actions.find((action) => action.slot === 0);
+  expect(
+    scriptedAction?.kind === "semantic"
+      && scriptedAction.operation === "core.script.call"
+      && scriptedAction.parameters?.behaviorId === "scenario.providence.accept-captain-quest",
+    "Action behavior binding did not replace its authored AP slot"
+  );
+  const encounter = encounters.simpleEncounters.find((candidate) => candidate.id === 0);
+  const scriptedEncounterResult = encounter?.actions.find((action) => action.slot === 0);
+  expect(
+    scriptedEncounterResult?.kind === "semantic"
+      && scriptedEncounterResult.operation === "core.script.call"
+      && scriptedEncounterResult.parameters?.behaviorId === "scenario.providence.encounter-result",
+    "Encounter behavior binding did not replace its authored result slot"
+  );
+
+  for (const [name, document] of [
+    ["campaign.json", manifest],
+    ["runtime.json", runtime],
+    ["classic/scripts.json", classicScripts],
+    ["classic/encounters.json", encounters],
+    ["remake/scripts.json", scripts]
+  ]) {
+    assertPortableRemakeDocument(document, `scripted ${name}`);
+  }
 }
 
 function assertPortableRemakeDocument(value, context) {
