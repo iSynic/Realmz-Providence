@@ -194,10 +194,13 @@ function BehaviorLibrary({
 
   const add = (role: RemakeBehaviorRole = "action") => {
     const roleContract = roleById(role);
-    const suffix = behaviors.length + 1;
+    const identity = nextBehaviorIdentity(
+      project.scenario.id || project.scenario.name,
+      behaviors
+    );
     const behavior: RemakeBehaviorDefinition = {
-      id: `scenario.${portableId(project.scenario.id || project.scenario.name)}.behavior-${suffix}`,
-      name: `${roleContract.label} Behavior ${suffix}`,
+      id: identity.id,
+      name: `${roleContract.label} Behavior ${identity.sequence}`,
       description: "",
       kind: role === "helper" ? "helper" : "entry",
       role,
@@ -211,7 +214,7 @@ function BehaviorLibrary({
       requestedCapabilities: [],
       stateSchema: {},
       sourceMap: { schemaVersion: 1, nodes: {} },
-      ast: emptyBehaviorAst(`behavior_${suffix}`, roleReturnType(role)),
+      ast: emptyBehaviorAst(`behavior_${identity.sequence}`, roleReturnType(role)),
       source: null
     };
     onCommit([...behaviors, behavior], "Add scenario behavior");
@@ -232,7 +235,14 @@ function BehaviorLibrary({
     const contract = roleById(role);
     const returnType = roleReturnType(role);
     const ast = selected.tier === "safe"
-      ? { ...(selected.ast ?? emptyBehaviorAst(portableFunctionName(selected.name), returnType)), returnType }
+      ? {
+        ...(selected.ast ?? emptyBehaviorAst(
+          portableFunctionName(selected.name),
+          returnType,
+          selected.parameters
+        )),
+        returnType
+      }
       : null;
     updateSelected({
       role,
@@ -318,28 +328,55 @@ function BehaviorLibrary({
 
   const convertTier = () => {
     if (!selected) return;
+    const identity = nextBehaviorIdentity(
+      project.scenario.id || project.scenario.name,
+      behaviors
+    );
     if (selected.tier === "safe") {
-      const source = selected.ast ? printSafeScript(selected.ast) : draft;
-      updateSelected({ tier: "sandboxed", ast: null, source }, "Convert behavior to sandboxed GDScript");
+      const source = sandboxTemplate();
+      const copy: RemakeBehaviorDefinition = {
+        ...selected,
+        id: identity.id,
+        name: `${selected.name} (Sandboxed)`,
+        tier: "sandboxed",
+        behaviorVersion: 1,
+        sourceMap: { schemaVersion: 1, nodes: {} },
+        ast: null,
+        source
+      };
+      onCommit([...behaviors, copy], "Create sandboxed behavior copy");
+      setSelectedId(copy.id);
       setDraft(source);
+      setDiagnostics([
+        "Created an unbound sandboxed copy with the required reducer contract. "
+          + "The original Safe behavior and its bindings were preserved."
+      ]);
       setShowSource(true);
       return;
     }
-    const parsed = parseSafeScript(
-      draft,
-      selected,
-      behaviors,
-      project.remakeRuntime.stateDefinitions
+    const ast = emptyBehaviorAst(
+      `behavior_${identity.sequence}`,
+      selected.returnType,
+      selected.parameters
     );
-    setDiagnostics(parsed.diagnostics.map(formatDiagnostic));
-    if (!parsed.program) return;
-    updateSelected({
+    const copy: RemakeBehaviorDefinition = {
+      ...selected,
+      id: identity.id,
+      name: `${selected.name} (Safe)`,
       tier: "safe",
-      ast: parsed.program,
+      behaviorVersion: 1,
       source: null,
-      sourceMap: { schemaVersion: 1, nodes: parsed.sourceMap },
-      requestedCapabilities: parsed.requestedCapabilities
-    }, "Convert behavior to Safe");
+      ast,
+      requestedCapabilities: [],
+      sourceMap: { schemaVersion: 1, nodes: {} }
+    };
+    onCommit([...behaviors, copy], "Create Safe behavior copy");
+    setSelectedId(copy.id);
+    setDraft(printSafeScript(ast));
+    setDiagnostics([
+      "Created an unbound Safe copy. The sandboxed source and its bindings were preserved."
+    ]);
+    setShowSource(true);
   };
 
   return (
@@ -500,7 +537,9 @@ function BehaviorLibrary({
             <p>Capabilities are generated from Safe blocks: {selected.requestedCapabilities.join(", ") || "none"}</p>
             <div className="rules-toolbar">
               <button type="button" className="btn btn-secondary btn-sm" onClick={convertTier}>
-                {selected.tier === "safe" ? "Convert to Sandboxed GDScript…" : "Convert Back to Safe…"}
+                {selected.tier === "safe"
+                  ? "Create Sandboxed Copy…"
+                  : "Create Safe Copy…"}
               </button>
               <button
                 type="button"
@@ -1494,11 +1533,19 @@ function collectCapabilities(ast: Record<string, unknown>) {
   return [...capabilities].sort();
 }
 
-function emptyBehaviorAst(name: string, returnType: RemakeScriptValueType) {
+function emptyBehaviorAst(
+  name: string,
+  returnType: RemakeScriptValueType,
+  parameters: RemakeScriptParameter[] = []
+) {
   return {
     kind: "function",
     name,
-    parameters: [],
+    parameters: parameters.map((parameter) => ({
+      name: parameter.name,
+      valueType: parameter.valueType,
+      maxLength: parameter.maxLength
+    })),
     returnType,
     body: returnType === "void"
       ? [{ kind: "return" }]
@@ -1513,8 +1560,19 @@ function behaviorSource(behavior: RemakeBehaviorDefinition | null) {
     : behavior.source ?? sandboxTemplate();
 }
 
-function sandboxTemplate() {
+export function sandboxTemplate() {
   return "extends RefCounted\n\nfunc step(event: Dictionary, state: Dictionary, context) -> Dictionary:\n\treturn {\"state\": state, \"result\": {\"kind\": \"continue\"}}\n";
+}
+
+export function nextBehaviorIdentity(
+  scenarioIdentity: string,
+  behaviors: Pick<RemakeBehaviorDefinition, "id">[]
+) {
+  const prefix = `scenario.${portableId(scenarioIdentity)}.behavior-`;
+  const used = new Set(behaviors.map((behavior) => behavior.id));
+  let sequence = 1;
+  while (used.has(`${prefix}${sequence}`)) sequence += 1;
+  return { id: `${prefix}${sequence}`, sequence };
 }
 
 function extensionProviderOptions(role: RemakeBehaviorRole) {

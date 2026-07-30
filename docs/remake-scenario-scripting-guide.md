@@ -282,7 +282,12 @@ Safe behavior pauses at block boundaries. Sandboxed scripts pause at reducer bou
 
 ## Sandboxed GDScript
 
-Choose **Advanced → Convert to Sandboxed GDScript** only when the Safe language cannot express the behavior.
+Choose **Advanced → Create Sandboxed Copy** only when the Safe language cannot
+express the behavior. Providence keeps the original Safe behavior and its
+bindings, creates an unbound sandboxed behavior with the required
+`step(event, state, context)` reducer contract, and leaves attachment of the
+new behavior explicit. Creating a Safe copy from sandboxed source follows the
+same non-destructive rule.
 
 Sandboxed source is preserved byte-for-byte and hashed. It runs in a separate persistent Godot process under the same role and capability contract. Each reducer step receives an event, previous explicit JSON state, and restricted context, then returns new JSON state plus continue/yield/halt/error.
 

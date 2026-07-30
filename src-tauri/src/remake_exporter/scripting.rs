@@ -204,6 +204,7 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
                     errors.push(format!("{context} requires a canonical safe AST."));
                     continue;
                 };
+                validate_safe_program_signature(ast, script, &context, &mut errors);
                 let mut node_count = 0;
                 let mut script_calls = BTreeSet::new();
                 validate_ast(
@@ -224,9 +225,9 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
                     errors.push(format!("{context} requires exact UTF-8 GDScript source."));
                     continue;
                 };
-                if !source.contains("func step(") {
+                if !has_sandbox_reducer_signature(source) {
                     errors.push(format!(
-                        "{context} must implement func step(event, state, context)."
+                        "{context} must implement func step(event, state, context) with exactly those three reducer parameters."
                     ));
                 }
                 for forbidden in FULL_SCRIPT_DENYLIST {
@@ -442,6 +443,44 @@ fn validate_ast(
             }
         }
         _ => {}
+    }
+}
+
+fn validate_safe_program_signature(
+    value: &Value,
+    script: &RemakeBehaviorDefinition,
+    context: &str,
+    errors: &mut Vec<String>,
+) {
+    let Some(program) = value.as_object() else {
+        errors.push(format!("{context} Safe program must be a function object."));
+        return;
+    };
+    if program.get("kind").and_then(Value::as_str) != Some("function") {
+        errors.push(format!("{context} Safe program root must be a function."));
+    }
+    let function_name = program
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    if !valid_identifier(function_name) {
+        errors.push(format!(
+            "{context} Safe function name '{function_name}' is invalid."
+        ));
+    }
+    let expected_parameters =
+        serde_json::to_value(&script.parameters).expect("script parameters serialize");
+    if program.get("parameters") != Some(&expected_parameters) {
+        errors.push(format!(
+            "{context} Safe function parameters must match the behavior signature."
+        ));
+    }
+    let expected_return =
+        serde_json::to_value(script.return_type).expect("script return type serializes");
+    if program.get("returnType") != Some(&expected_return) {
+        errors.push(format!(
+            "{context} Safe function return type must match the behavior signature."
+        ));
     }
 }
 
@@ -939,6 +978,40 @@ fn valid_identifier(value: &str) -> bool {
     })
 }
 
+fn has_sandbox_reducer_signature(source: &str) -> bool {
+    source.lines().any(|line| {
+        let trimmed = line.trim_start();
+        let Some(after_func) = trimmed.strip_prefix("func") else {
+            return false;
+        };
+        if !after_func.chars().next().is_some_and(char::is_whitespace) {
+            return false;
+        }
+        let after_func = after_func.trim_start();
+        let Some(after_name) = after_func.strip_prefix("step") else {
+            return false;
+        };
+        let after_name = after_name.trim_start();
+        let Some(parameters) = after_name.strip_prefix('(') else {
+            return false;
+        };
+        let Some(end) = parameters.find(')') else {
+            return false;
+        };
+        let names = parameters[..end]
+            .split(',')
+            .map(|parameter| {
+                parameter
+                    .split([':', '='])
+                    .next()
+                    .unwrap_or_default()
+                    .trim()
+            })
+            .collect::<Vec<_>>();
+        names == ["event", "state", "context"]
+    })
+}
+
 fn hash_json(value: &Value) -> Result<String> {
     let canonical = serde_json::to_vec(&canonical_value(value)).map_err(|error| {
         ProvidenceError::message(format!(
@@ -980,6 +1053,20 @@ mod tests {
                 .iter()
                 .any(|forbidden| *forbidden == token && source.contains(forbidden)));
         }
+    }
+
+    #[test]
+    fn sandbox_reducer_requires_the_runtime_signature() {
+        assert!(has_sandbox_reducer_signature(
+            "func step(event: Dictionary, state: Dictionary, context) -> Dictionary:\n  return {}"
+        ));
+        assert!(has_sandbox_reducer_signature(
+            "func step(event, state, context):\n  return {}"
+        ));
+        assert!(!has_sandbox_reducer_signature("func step():\n  return {}"));
+        assert!(!has_sandbox_reducer_signature(
+            "func step(event, state):\n  return {}"
+        ));
     }
 
     #[test]
@@ -1035,5 +1122,52 @@ mod tests {
         );
 
         assert!(errors.is_empty(), "{}", errors.join("\n"));
+    }
+
+    #[test]
+    fn safe_program_signature_must_match_the_behavior() {
+        let script: RemakeBehaviorDefinition = serde_json::from_value(json!({
+            "id": "scenario.fixture.signature",
+            "name": "Fixture Signature",
+            "kind": "helper",
+            "role": "helper",
+            "hook": "",
+            "tier": "safe",
+            "apiVersion": SCRIPT_API_VERSION,
+            "parameters": [{
+                "name": "amount",
+                "valueType": "int",
+                "maxLength": null
+            }],
+            "returnType": "int",
+            "requestedCapabilities": [],
+            "stateSchema": {},
+            "sourceMap": {},
+            "ast": {
+                "kind": "function",
+                "name": "fixture_signature",
+                "parameters": [],
+                "returnType": "int",
+                "body": [{
+                    "kind": "return",
+                    "value": {"kind": "literal", "value": 0}
+                }]
+            },
+            "source": null
+        }))
+        .unwrap();
+        let mut errors = Vec::new();
+
+        validate_safe_program_signature(
+            script.ast.as_ref().unwrap(),
+            &script,
+            "Fixture behavior",
+            &mut errors,
+        );
+
+        assert_eq!(
+            errors,
+            ["Fixture behavior Safe function parameters must match the behavior signature."]
+        );
     }
 }
