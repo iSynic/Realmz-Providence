@@ -383,6 +383,8 @@ export function targetPickerConfig(opcode: number) {
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
     49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     62: { label: "Scrolling Text", hint: "Select a scenario TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search scrolling text # or body..." },
+    88: { label: "Monster Target", hint: "Select the special-character monster record to remove.", recordType: "monster" },
+    89: { label: "Monster Target", hint: "Select the special-character monster record to add.", recordType: "monster" },
     97: { label: "Map Record", hint: "Select a map record." },
     104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
@@ -570,7 +572,7 @@ function targetOptionsDependencyKey(project: Project | null, opcode: number, cat
   const parts: Array<string | number> = [code];
   if (code === 1) parts.push("messages", objectCacheKey(project.messages), "triggers", objectCacheKey(project.triggers));
   else if ([2, 48, 56, 107].includes(code)) parts.push("battles", objectCacheKey(project.battles), "triggers", objectCacheKey(project.triggers));
-  else if (code === 127) parts.push("monsters", objectCacheKey(project.monsters), "triggers", objectCacheKey(project.triggers));
+  else if ([88, 89, 127].includes(code)) parts.push("monsters", objectCacheKey(project.monsters), "triggers", objectCacheKey(project.triggers));
   else if (code === 10) parts.push("treasures", objectCacheKey(project.treasures), "triggers", objectCacheKey(project.triggers));
   else if ([6, 49, 51].includes(code)) parts.push("shops", objectCacheKey(project.shops), "triggers", objectCacheKey(project.triggers));
   else if ([4, 35, 104].includes(code)) parts.push("simple", objectCacheKey(project.simpleEncounters), "triggers", objectCacheKey(project.triggers));
@@ -625,7 +627,7 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
         }
       : null;
   }
-  if (code === 127) {
+  if ([88, 89, 127].includes(code)) {
     const record = project.monsters?.find((candidate) => candidate.id === id);
     return record
       ? {
@@ -902,8 +904,8 @@ function addTypedProjectTargets(project: Project, code: number, options: ScriptT
       options.push({ key: `battle:${record.id}`, value: record.id, label: `Battle ${record.id}`, detail: `${record.grid.filter(Boolean).length} monster slot(s)`, summary: `strings ${record.messageBefore}/${record.messageAfter}, battle action ${record.battleMacro}, ${used.get(record.id) ?? 0} script use(s)`, compatibility: "Editable", sourceState: record.authored ? "Authored" : "Imported", entity: { type: "battle", id: `battle:${record.id}` } });
     }
   }
-  if (code === 127) {
-    const used = usageCounts(project, [127]);
+  if ([88, 89, 127].includes(code)) {
+    const used = usageCounts(project, [88, 89, 127]);
     for (const record of project.monsters ?? []) {
       options.push({
         key: `monster:${record.id}`,
@@ -1241,6 +1243,8 @@ export function targetSemanticTypes(code: number) {
     49: ["shop"],
     56: ["battle"],
     62: ["resource"],
+    88: ["monster"],
+    89: ["monster"],
     97: ["map", "map record"],
     104: ["simple encounter"],
     107: ["battle"],

@@ -12,6 +12,7 @@ import {
 } from "./RealmzTargetPicker";
 import type { LibraryCatalog, Project } from "../types";
 import { filterTargetOptions } from "./realmzTargetPickerSearch";
+import { validateActionDraft } from "../scriptValidation";
 
 describe("Realmz target semantics", () => {
   it("preserves signed direct-target behavior when replacing a selection", () => {
@@ -30,7 +31,17 @@ describe("Realmz target semantics", () => {
   it("keeps target picker coverage tied to normalized Realmz opcodes", () => {
     expect(targetPickerConfig(5)?.recordType).toBe("complexEncounter");
     expect(targetPickerConfig(-5)?.recordType).toBe("complexEncounter");
+    expect(targetPickerConfig(89)).toMatchObject({ label: "Monster Target", recordType: "monster" });
     expect(targetPickerConfig(58)).toBeNull();
+  });
+
+  it("exposes Add Special monster records and rejects unavailable IDs", () => {
+    const monster = { id: 116, displayName: "Goblin Shaman", hitDice: 3, armor: 7, movementMax: 11, items: [], spells: [], authored: false };
+    const project = { monsters: [monster], triggers: [], extracodes: [], maps: [], semanticSchema: { entities: [] }, assetCatalog: { pictures: [], sounds: [], icons: [], tilesets: [] } } as unknown as Project;
+    expect(targetOptionsForOpcode(project, 89).map((option) => option.value)).toEqual([116]);
+    expect(targetOptionsForOpcode(project, 89).some((option) => option.value === 149)).toBe(false);
+    expect(validateActionDraft(project, { id: "tutorial-action", source: "Data DD" } as never, 0, 89, 149).map((issue) => issue.id)).toContain("tutorial-action:0:unresolved-target");
+    expect(validateActionDraft(project, { id: "tutorial-action", source: "Data DD" } as never, 0, 89, 116)).toEqual([]);
   });
 });
 
