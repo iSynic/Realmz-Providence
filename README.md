@@ -95,7 +95,7 @@ Strings are searchable, editable, byte-aware, and linked to their uses throughou
 - Roads, water, shorelines, mountains, forests, walls, doors, caves, and decorative terrain
 - Secret areas, hidden-walkable terrain, combat-clearing terrain, movement, and line-of-sight overlays
 - Player Maps, markers, map names, random rectangles, notes, and map-linked Action Points
-- Full-map quality-7 JPEG export at native tile resolution, plus scenario-wide ZIP export at the current editor scale with the enabled overlays
+- Full-map quality-7 JPEG export at native tile resolution, plus scenario-wide ZIP export at the current editor scale with the enabled overlays; desktop exports use a Save dialog and report the saved path
 
 ### Scripts and narrative
 

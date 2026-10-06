@@ -3,12 +3,12 @@ import type { EditorState } from "../../store";
 import type { MapEntity, MapPreviewFocalPoint, MapPreviewMode, TilesetAsset } from "../../types";
 import {
   createScenarioMapArchive,
-  downloadBlob,
   mapExportFileName,
   nativeMapPixelSize,
   renderMapJpeg,
   scenarioMapArchiveFileName
 } from "../../map/mapImageExport";
+import { saveMapImageExport } from "../../map/saveMapImageExport";
 
 export function useMapImageExport({
   state,
@@ -44,8 +44,7 @@ export function useMapImageExport({
     setStatus("Rendering native JPG...");
     try {
       const jpeg = await renderMapJpeg(options, selectedMap, nativeMapPixelSize(selectedTileset));
-      downloadBlob(jpeg, mapExportFileName(selectedMap));
-      setStatus(`Exported ${selectedMap.name}.`);
+      setStatus(await saveMapImageExport(jpeg, mapExportFileName(selectedMap), "jpg"));
     } catch (error) {
       setStatus(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -61,8 +60,7 @@ export function useMapImageExport({
       const archive = await createScenarioMapArchive(options, state.zoom, ({ completed, total, map }) => {
         setStatus(`Rendering ${completed}/${total}: ${map.name}`);
       });
-      downloadBlob(archive, scenarioMapArchiveFileName(options.project, state.zoom));
-      setStatus(`Exported ${options.project.maps.length} maps at ${Math.round(state.zoom * 100)}%.`);
+      setStatus(await saveMapImageExport(archive, scenarioMapArchiveFileName(options.project, state.zoom), "zip"));
     } catch (error) {
       setStatus(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {

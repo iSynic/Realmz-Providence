@@ -223,7 +223,7 @@ export function MapViewFilters({
           <Images size={15} />
           <span>All Maps</span>
         </button>
-        <span className="map-export-status" aria-live="polite">{exportStatus}</span>
+        <span className="map-export-status" aria-live="polite" title={exportStatus}>{exportStatus}</span>
       </div>
     </div>
   );

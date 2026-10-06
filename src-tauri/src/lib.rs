@@ -7,6 +7,7 @@ pub mod exporter;
 mod generated;
 pub mod harness;
 pub mod importer;
+mod map_image_export;
 pub mod media_assets;
 pub mod music_compatibility;
 mod native_manifest;
@@ -59,6 +60,7 @@ pub fn run() {
             commands::save_project,
             commands::export_project,
             commands::export_remake_campaign,
+            map_image_export::save_map_image_export,
             commands::validate_project,
             commands::benchmark_project,
             harness::get_harness_config,
