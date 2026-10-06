@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
+import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TileAttributeProfile, TriggerRecord } from "../types";
 import { mapRecordContainsCell, mapRecordTerrainFootprint, randomRectCellBounds, randomRectContainsCell, tileValueAt } from "../map/geometry";
 import { hasSecretPathTile, isCombatClearingTerrain, isConcealedWalkableTerrain, isSecretWalkableTile } from "../map/secrets";
 import { landCellSecretState } from "../map/actionPointMarkers";
@@ -12,6 +12,7 @@ export function MapKeyHud({
   anchor,
   onRequestMove,
   map,
+  tileAttributes = [],
   hover,
   triggers,
   randomLevel,
@@ -26,6 +27,7 @@ export function MapKeyHud({
   anchor: MapHudAnchor;
   onRequestMove: () => void;
   map: MapEntity;
+  tileAttributes?: TileAttributeProfile[];
   hover: { x: number; y: number } | null;
   triggers: TriggerRecord[];
   randomLevel: RandomLevel | null;
@@ -38,7 +40,7 @@ export function MapKeyHud({
   const visibleMapRecords = mapRecords.filter((record) => mapRecordTerrainFootprint(record, map));
   const boxes = hover ? hoverBoxesAt(map, hover, triggers, randomLevel, visibleMapRecords) : [];
   const raw = hover ? tileValueAt(map, hover.x, hover.y) : null;
-  const secretTags = hover && raw != null ? secretHoverTags(raw, map) : [];
+  const secretTags = hover && raw != null ? secretHoverTags(raw, map, tileAttributes) : [];
   const overlayCount = triggers.length + (randomLevel?.rects.length ?? 0) + visibleMapRecords.length;
   return (
     <div
@@ -134,14 +136,14 @@ function hoverBoxesAt(
   });
 }
 
-function secretHoverTags(value: number, map: MapEntity) {
+function secretHoverTags(value: number, map: MapEntity, attributes: TileAttributeProfile[]) {
   if (map.levelType === "dungeon") return [];
   const tags = [];
   const secretState = landCellSecretState(value);
   if (secretState === "hidden") tags.push("hidden secret area");
   if (secretState === "revealed") tags.push("revealed secret area");
-  if (isSecretWalkableTile(value, map)) tags.push("secret passage terrain");
-  if (isConcealedWalkableTerrain(value, map)) tags.push("concealed walk-through terrain");
+  if (isSecretWalkableTile(value, map, attributes)) tags.push("secret passage terrain");
+  if (isConcealedWalkableTerrain(value, map, attributes)) tags.push("concealed walk-through terrain");
   if (isCombatClearingTerrain(value, map)) tags.push("solid on land map; clears to open ground in combat");
   else if (hasSecretPathTile(value, map)) tags.push("encoded passability flag");
   return tags;

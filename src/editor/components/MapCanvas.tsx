@@ -382,8 +382,8 @@ export function RealmzMapCanvas({
     onResetPaintPreview: resetPaintPreview
   });
   const terrainOverlayDependency = useMemo(
-    () => `${viewOptions.showSecretOverlays ? secretOverlaySignature(map) : "secrets-off"}:${viewOptions.showCombatClearingOverlays ? combatClearingOverlaySignature(map) : "combat-clearing-off"}`,
-    [map.tiles, map.levelType, map.render.mode, viewOptions.showSecretOverlays, viewOptions.showCombatClearingOverlays]
+    () => `${viewOptions.showSecretOverlays ? secretOverlaySignature(map, tileAttributes) : "secrets-off"}:${viewOptions.showCombatClearingOverlays ? combatClearingOverlaySignature(map) : "combat-clearing-off"}`,
+    [map.tiles, map.levelType, map.render.mode, map.render.landlook, tileAttributes, viewOptions.showSecretOverlays, viewOptions.showCombatClearingOverlays]
   );
   const overlayMapDependency = previewMode !== "off" ? map : `${map.id}:${terrainOverlayDependency}`;
 
@@ -437,7 +437,7 @@ export function RealmzMapCanvas({
     if (showRandomRects && randomLevel) {
       drawRandomRectangles(ctx, map, randomLevel, selectedEntity, cell);
     }
-    if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell, icons);
+    if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell, icons, tileAttributes);
     if (viewOptions.showCombatClearingOverlays) drawCombatClearingOverlay(ctx, map, cell);
     if (previewMode !== "off") drawMapVisibilityPreview(ctx, map, tileset, tileAttributes, cell, previewMode, previewFocalPoint);
     drawTriggers(ctx, triggers, selectedEntity, cell);
@@ -580,6 +580,7 @@ export function RealmzMapCanvas({
           anchor={hudAnchor}
           onRequestMove={() => setHudAnchor(nextHudAnchor)}
           map={map}
+          tileAttributes={tileAttributes}
           hover={hover}
           triggers={triggers}
           randomLevel={showRandomRects ? randomLevel : null}
@@ -725,11 +726,11 @@ function changedTileCells(previous: number[], next: number[], map: MapEntity) {
   return cells;
 }
 
-function secretOverlaySignature(map: MapEntity) {
+function secretOverlaySignature(map: MapEntity, attributes: TileAttributeProfile[]) {
   let hash = map.levelType === "dungeon" || map.render.mode === "dungeon-top-down" ? 0x811c9dc5 : 0x45d9f3b;
   for (const value of map.tiles) {
     let marker = 0;
-    if (showsHiddenWalkableOverlay(value, map)) marker |= 1;
+    if (showsHiddenWalkableOverlay(value, map, attributes)) marker |= 1;
     if (hasSecretMarkerTile(value, map)) marker |= 2;
     hash = Math.imul(hash ^ marker, 16777619);
   }

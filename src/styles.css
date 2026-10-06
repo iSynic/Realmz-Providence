@@ -3,6 +3,7 @@
 @import "./editor/styles/documents-authoring.css";
 @import "./editor/styles/text-scenario.css";
 @import "./editor/styles/map-context-sidebar.css";
+@import "./editor/styles/map-image-export.css";
 @import "./editor/styles/map-selection-controls.css";
 @import "./editor/styles/map-paint-inspector.css";
 @import "./editor/styles/map-landlook-workbenches.css";

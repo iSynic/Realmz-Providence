@@ -16,6 +16,7 @@ import type {
 import type { MapWorkbenchState } from "./useMapWorkbenchState";
 import { useMapCanvasVisibility } from "./useMapCanvasVisibility";
 import { MapCanvasEmptyState } from "./MapCanvasEmptyState";
+import { useMapImageExport } from "./useMapImageExport";
 export function MapCanvasWorkbench({
   state,
   selectedMap,
@@ -107,6 +108,7 @@ export function MapCanvasWorkbench({
     showMapRecords: state.showMapRecords,
     visibleMapRecordIds: state.visibleMapRecordIds
   });
+  const mapImageExport = useMapImageExport({ state, selectedMap, selectedTileset, previewMode, previewFocalPoint });
   return (
     <>
       <MapViewFilters
@@ -119,6 +121,10 @@ export function MapCanvasWorkbench({
         onSetViewFlag={onSetViewFlag}
         onSetVisibleRandomRectIds={onSetVisibleRandomRectIds}
         onSetVisibleMapRecordIds={onSetVisibleMapRecordIds}
+        onExportCurrentMap={mapImageExport.exportCurrentMap}
+        onExportAllMaps={mapImageExport.exportAllMaps}
+        exportBusy={mapImageExport.busy}
+        exportStatus={mapImageExport.status}
       />
       {selectedMap ? (
         <RealmzMapCanvas

@@ -19,7 +19,9 @@ Providence therefore authors the land cell's Normal, Hidden Secret, or Revealed 
 
 The same transformation applies to negative special-icon cells. Note and path bits are independent high bits and must survive Secret Area and Action Point marker changes.
 
-Stock land tiles `169` and `180-185` are hidden-walkable path tiles and receive Providence's hidden-walkable authoring overlay even in the ordinary base band. That overlay is a visibility aid, not evidence that the cell has Hidden or Revealed Secret Area state.
+Hidden-walkable terrain is identified by the active landlook's `mapstats.ispath != 0` and `solid == 0`, matching `buttonchoice.c:164-166`. This includes scenario-defined custom landlooks: Trouble in the Sword Lands land 9 uses Custom 2 (landlook 7), whose tile `169` has `ispath = 1` and `solid = 0`. Land 15 uses Snow (landlook 10), where tile `169` has the same role. Providence's Secrets overlay uses the decoded landlook metadata, with reviewed stock tile IDs as a fallback when metadata is unavailable. Note/path high bits are removed before reading the tile ID.
+
+Solid path tiles such as Plains `180-185` are combat-clearing terrain, not ordinary walk-through terrain. They have a separate Combat Clearing overlay. Both overlays are visibility aids, not evidence that a cell has Hidden or Revealed Secret Area state.
 
 ## Dungeon Levels
 
@@ -37,7 +39,7 @@ The revealed bit is runtime state, not the control used to author a new secret. 
 
 - Creating an Action Point writes the normal land band or dungeon `0x1000` marker.
 - Land cells expose Normal, Hidden Secret, and Revealed Secret states whether or not an Action Point exists there.
-- Hidden-walkable tiles `169` and `180-185` remain marked on the map and in the tile palette without being mislabeled as Secret Areas.
+- Hidden-walkable tiles remain marked on the map without being mislabeled as Secret Areas. Custom tilesets use their own decoded path and solidity flags.
 - Normalizing a land cell retains `+1000` when an Action Point still occupies the coordinate; otherwise it returns to the base tile band.
 - A dungeon Action Point is Secret when its cell already has one or more Dungeon Draw `Allow Move` directions.
 - Moving a land Action Point clears only a normal `+1000` marker from its old cell and writes an AP marker at the destination. Hidden or revealed Secret Area state stays on its authored cell.

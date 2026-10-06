@@ -1,4 +1,4 @@
-import { ChevronDown, Eye, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronDown, Download, Eye, Images, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
 import { MapEntity, MapViewFlag, RandomLevel, SemanticEntity } from "../types";
@@ -77,7 +77,11 @@ export function MapViewFilters({
   onSetSmoothTiles,
   onSetViewFlag,
   onSetVisibleRandomRectIds,
-  onSetVisibleMapRecordIds
+  onSetVisibleMapRecordIds,
+  onExportCurrentMap,
+  onExportAllMaps,
+  exportBusy = false,
+  exportStatus = ""
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -88,6 +92,10 @@ export function MapViewFilters({
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
   onSetVisibleRandomRectIds: (ids: string[]) => void;
   onSetVisibleMapRecordIds: (ids: number[]) => void;
+  onExportCurrentMap?: () => void;
+  onExportAllMaps?: () => void;
+  exportBusy?: boolean;
+  exportStatus?: string;
 }) {
   const [open, setOpen] = useState(false);
   const randomEntries = useMemo(
@@ -205,6 +213,17 @@ export function MapViewFilters({
         <IconButton title="Zoom in" onClick={() => onSetZoom(clampZoom(Number((state.zoom + ZOOM_BUTTON_STEP).toFixed(2))))}>
           <ZoomIn size={15} />
         </IconButton>
+      </div>
+      <div className="map-export-cluster" aria-label="Map image exports">
+        <button type="button" disabled={!selectedMap || exportBusy || !onExportCurrentMap} onClick={onExportCurrentMap} title="Export the full current map as a quality-7 JPEG at its native tile resolution with the enabled overlays">
+          <Download size={15} />
+          <span>Map JPG</span>
+        </button>
+        <button type="button" disabled={!selectedMap || exportBusy || !onExportAllMaps} onClick={onExportAllMaps} title="Export every scenario map as quality-7 JPEGs at the current zoom with the enabled overlays">
+          <Images size={15} />
+          <span>All Maps</span>
+        </button>
+        <span className="map-export-status" aria-live="polite">{exportStatus}</span>
       </div>
     </div>
   );

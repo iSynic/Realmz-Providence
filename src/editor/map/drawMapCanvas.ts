@@ -329,13 +329,13 @@ export function drawMapRecords(
   }
 }
 
-export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number, icons: Record<number, IconEntry> = {}) {
+export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number, icons: Record<number, IconEntry> = {}, attributes: readonly TileAttributeProfile[] = []) {
   if (map.levelType === "dungeon") return;
   ctx.save();
   for (let y = 0; y < MAP_CELLS; y += 1) {
     for (let x = 0; x < MAP_CELLS; x += 1) {
       const value = tileValueAt(map, x, y);
-      if (showsHiddenWalkableOverlay(value, map)) {
+      if (showsHiddenWalkableOverlay(value, map, attributes)) {
         drawOfficialPathMarker(ctx, x, y, cell);
       }
       if (hasSecretMarkerTile(value, map)) {
