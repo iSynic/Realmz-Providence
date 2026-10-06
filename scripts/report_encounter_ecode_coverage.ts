@@ -251,7 +251,7 @@ function renderMarkdown(value: typeof report) {
     lines.push(`| ${entry.opcode} | ${escapeCell(entry.title)} | ${escapeCell(entry.shape)} | ${entry.contractStatus} | ${entry.runtimeConfidence} | ${escapeCell(entry.fields.map((field) => `${field.label} (${field.control}, default ${field.defaultValue}${field.targetFamily ? `, ${field.targetFamily}` : ""}; signed: ${field.signedBehavior}${field.conditionalTargetMeaning ? `; conditional: ${field.conditionalTargetMeaning}` : ""})`).join("; "))} |`);
   }
   lines.push("", "## Contract", "", ...value.notes.map((note) => `- ${note}`), "");
-  return `${lines.join("\n")}\n`;
+  return `${lines.join("\n").trimEnd()}\n`;
 }
 
 function validationRule(control: string | undefined, targetFamily: string | null | undefined) {

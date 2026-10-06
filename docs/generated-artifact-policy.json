@@ -16,6 +16,13 @@
       ]
     },
     {
+      "name": "Remake extension catalog",
+      "command": "generate:remake-extension-catalog",
+      "outputs": [
+        "src/editor/generated/remakeExtensionCatalog.ts"
+      ]
+    },
+    {
       "name": "Realmz native ABI audit",
       "command": "audit:realmz-native-abi",
       "outputs": [

@@ -111,6 +111,7 @@
     { "key": "rules.spells", "domain": "rules", "editor": "spells", "label": "Spell Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "rules.races", "domain": "rules", "editor": "races", "label": "Race Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "rules.castes", "domain": "rules", "editor": "castes", "label": "Caste Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "rules" } },
+    { "key": "rules.remake", "domain": "rules", "editor": "remake", "label": "Remake Runtime", "workbenches": ["project"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
 
     { "key": "assets.project-assets", "domain": "assets", "editor": "project-assets", "label": "Scenario Assets", "workbenches": ["project"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "assets" } },
     { "key": "assets.pictures", "domain": "assets", "editor": "pictures", "label": "Scenario Pictures", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },

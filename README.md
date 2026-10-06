@@ -17,7 +17,9 @@ Providence is not a clone of Divinity's interface. It presents the same game con
 
 ## Download
 
-The current release is **Realmz Providence 0.5.4**.
+The current release is **Realmz Providence 0.5.9**.
+
+This is the final planned React/Tauri release. This implementation is preserved on the [legacy/tauri maintenance branch](https://github.com/iSynic/Realmz-Providence/tree/legacy/tauri). The native Godot vNext implementation will move onto `main` after its acceptance checks; it is not included in this release.
 
 | Platform | Package |
 | --- | --- |

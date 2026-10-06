@@ -62,7 +62,8 @@ const MODULE_BASELINES = [
   { path: "src/editor/panels/maps/useMapWorkbenchState.ts", maximum: 216, owner: "ISY-319" },
   { path: "src/editor/panels/maps/useSmartBrushWorkbenchState.ts", maximum: 170, owner: "ISY-393" },
   { path: "src-tauri/src/realmz.rs", maximum: 471, owner: "ISY-320" },
-  { path: "src-tauri/src/realmz/action_points.rs", maximum: 583, owner: "ISY-320" },
+  // Reconcile the shipped v0.5.8 codec baseline; fixed-record ownership is unchanged.
+  { path: "src-tauri/src/realmz/action_points.rs", maximum: 584, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/assembly.rs", maximum: 444, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/assembly_alignment.rs", maximum: 80, owner: "ISY-393" },
   { path: "src-tauri/src/realmz/asset_catalog.rs", maximum: 173, owner: "ISY-320" },
@@ -83,7 +84,8 @@ const MODULE_BASELINES = [
   { path: "src/editor/styles/script-record-header.css", maximum: 47, owner: "ISY-393" },
   { path: "src/editor/styles/action-point-editor.css", maximum: 1126, owner: "ISY-321" },
   { path: "src/editor/styles/action-point-references.css", maximum: 881, owner: "ISY-321" },
-  { path: "src/editor/styles/action-point-settings.css", maximum: 796, owner: "ISY-321" },
+  // Reconcile the shipped v0.5.8 settings styles; settings UI retains ownership.
+  { path: "src/editor/styles/action-point-settings.css", maximum: 816, owner: "ISY-321" },
   { path: "src/editor/styles/action-point-technical-storage.css", maximum: 70, owner: "ISY-393" },
   { path: "src/editor/styles/quests.css", maximum: 338, owner: "ISY-321" },
   { path: "src/editor/styles/action-point-diagnostics.css", maximum: 325, owner: "ISY-321" },
