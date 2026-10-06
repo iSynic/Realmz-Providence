@@ -407,16 +407,17 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         }
     }
 
-    for entry in WalkDir::new(&export_dir).max_depth(1).min_depth(1) {
-        let Ok(entry) = entry else {
-            continue;
-        };
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if !source_names.contains(&name) {
-            audit.extra_exports.push(name);
+    let exported_names: BTreeSet<String> = WalkDir::new(&export_dir)
+        .max_depth(1)
+        .min_depth(1)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .collect();
+    for name in &exported_names {
+        if !export_name_matches_source(name, &source_names, &exported_names, &export_dir) {
+            audit.extra_exports.push(name.clone());
         }
     }
     audit.extra_export_files = audit.extra_exports.len();
@@ -503,6 +504,68 @@ fn temp_workspace(name: &str) -> PathBuf {
     env::temp_dir()
         .join("realmz-providence-roundtrip-audit")
         .join(format!("{}-{}-{stamp}", std::process::id(), sanitize(name)))
+}
+
+fn export_name_matches_source(
+    name: &str,
+    source_names: &BTreeSet<String>,
+    exported_names: &BTreeSet<String>,
+    export_dir: &Path,
+) -> bool {
+    source_names.contains(name)
+        || source_names.iter().any(|source_name| {
+            // A case-insensitive filesystem may retain the compiler's spelling of
+            // one source file. Distinct case-sensitive files must still be counted.
+            source_name.eq_ignore_ascii_case(name)
+                && !exported_names.contains(source_name)
+                && export_dir.join(source_name).is_file()
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn case_alias_requires_the_source_path_to_resolve() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("Prince Of Darkness"), b"source").unwrap();
+        let source = BTreeSet::from(["Prince of Darkness".to_string()]);
+        let exported = BTreeSet::from(["Prince Of Darkness".to_string()]);
+        assert_eq!(
+            export_name_matches_source("Prince Of Darkness", &source, &exported, temp.path()),
+            temp.path().join("Prince of Darkness").is_file()
+        );
+        assert!(!export_name_matches_source(
+            "Other",
+            &source,
+            &exported,
+            temp.path()
+        ));
+    }
+
+    #[test]
+    fn distinct_exported_spellings_are_not_collapsed() {
+        let temp = tempfile::tempdir().unwrap();
+        fs::write(temp.path().join("Prince of Darkness"), b"source").unwrap();
+        let source = BTreeSet::from(["Prince of Darkness".to_string()]);
+        let exported = BTreeSet::from([
+            "Prince of Darkness".to_string(),
+            "Prince Of Darkness".to_string(),
+        ]);
+        assert!(export_name_matches_source(
+            "Prince of Darkness",
+            &source,
+            &exported,
+            temp.path()
+        ));
+        assert!(!export_name_matches_source(
+            "Prince Of Darkness",
+            &source,
+            &exported,
+            temp.path()
+        ));
+    }
 }
 
 fn sanitize(value: &str) -> String {
