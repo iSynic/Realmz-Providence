@@ -209,6 +209,7 @@ function isNegativeBattleMacroLink(link: SemanticLink) {
 
 function ed3RootTypeForLinkSource(from: string) {
   if (from.startsWith("action-slot:trigger:")) return "map-trigger-call";
+  if (from.startsWith("encounter:")) return "encounter-result-call";
   if (from.startsWith("random:")) return "random-region-door";
   if (from.startsWith("time:")) return "timed-encounter-door";
   if (from.startsWith("item:")) return "door-item-macro";
@@ -243,6 +244,7 @@ export function ed3RootTypeLabel(rootType: string | null | undefined) {
   if (value.includes("global")) return "Source-backed global event";
   if (value.includes("random")) return "Source-backed random encounter action";
   if (value.includes("time")) return "Source-backed timed encounter action";
+  if (value.includes("encounter")) return "Source-backed encounter result";
   if (value.includes("battle")) return "Source-backed battle action";
   if (value.includes("monster")) return "Source-backed monster action";
   if (value.includes("item")) return "Source-backed item action";

@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 5;
+pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 6;
 
 #[allow(dead_code)]
 pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
@@ -11,6 +11,7 @@ pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
     "appVersion",
     "scenario",
     "source",
+    "remakeRuntime",
     "maps",
     "landLayout",
     "mapRecords",
@@ -99,13 +100,8 @@ pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
-    "rows",
-    "cols",
-    "cells",
-    "authored",
-    "provenance",
-];
+pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] =
+    &["rows", "cols", "cells", "authored", "provenance"];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_MAP_RECORD_FIELDS: &[&str] = &[
@@ -205,14 +201,11 @@ pub const PROVIDENCE_ACTION_FIELDS: &[&str] = &[
     "label",
     "category",
     "gosub",
+    "mediaRequiredForProgression",
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &[
-    "id",
-    "values",
-    "provenance",
-];
+pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &["id", "values", "provenance"];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS: &[&str] = &[
@@ -263,12 +256,7 @@ pub const PROVIDENCE_MANAGED_ASSET_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &[
-    "tilesets",
-    "pictures",
-    "icons",
-    "sounds",
-];
+pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &["tilesets", "pictures", "icons", "sounds"];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
@@ -342,20 +330,10 @@ pub const PROVIDENCE_SHOP_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &[
-    "id",
-    "text",
-    "authored",
-    "provenance",
-];
+pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &["id", "text", "authored", "provenance"];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[
-    "id",
-    "text",
-    "authored",
-    "provenance",
-];
+pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &["id", "text", "authored", "provenance"];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[
@@ -423,19 +401,11 @@ pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[
-    "id",
-    "text",
-    "authored",
-    "provenance",
-];
+pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] =
+    &["id", "text", "authored", "provenance"];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &[
-    "sourceFile",
-    "setId",
-    "monsters",
-];
+pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &["sourceFile", "setId", "monsters"];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_ITEM_TEXT_FIELDS: &[&str] = &[
@@ -1178,7 +1148,12 @@ pub enum ActionCategory {
     Map,
     #[serde(alias = "Registration", alias = "Scenario")]
     Registration,
-    #[serde(alias = "Advanced", alias = "Characters", alias = "Rules", alias = "State")]
+    #[serde(
+        alias = "Advanced",
+        alias = "Characters",
+        alias = "Rules",
+        alias = "State"
+    )]
     State,
     #[serde(alias = "Time")]
     Time,
@@ -1205,6 +1180,8 @@ pub struct Action {
     pub label: String,
     pub category: ActionCategory,
     pub gosub: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_required_for_progression: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1560,6 +1537,8 @@ pub struct EncounterActionRow {
     pub slot: usize,
     pub raw_code: i16,
     pub id: i16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_required_for_progression: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

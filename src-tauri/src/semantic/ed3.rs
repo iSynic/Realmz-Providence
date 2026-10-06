@@ -1,8 +1,26 @@
+use super::runtime::RuntimeReachability;
 use crate::project::*;
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+#[cfg(test)]
 pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &[TriggerRecord]) {
+    classify_ed3_reachability_impl(schema, triggers, None);
+}
+
+pub(super) fn classify_ed3_reachability_with_runtime(
+    schema: &mut SemanticSchema,
+    triggers: &[TriggerRecord],
+    runtime_reachability: &RuntimeReachability,
+) {
+    classify_ed3_reachability_impl(schema, triggers, Some(runtime_reachability));
+}
+
+fn classify_ed3_reachability_impl(
+    schema: &mut SemanticSchema,
+    triggers: &[TriggerRecord],
+    runtime_reachability: Option<&RuntimeReachability>,
+) {
     let ed3_triggers: Vec<_> = triggers
         .iter()
         .filter(|trigger| trigger.source == "Data ED3" && trigger.active)
@@ -58,9 +76,26 @@ pub(super) fn classify_ed3_reachability(schema: &mut SemanticSchema, triggers: &
 
     let mut reachable = BTreeMap::new();
     let mut queue = VecDeque::new();
-    for (id, root) in roots {
-        reachable.insert(id.clone(), root);
-        queue.push_back(id);
+    if let Some(runtime_reachability) = runtime_reachability {
+        for id in &runtime_reachability.macros {
+            let entity_id = macro_entity_id(*id);
+            if !ed3_ids.contains(&entity_id) {
+                continue;
+            }
+            reachable.insert(
+                entity_id.clone(),
+                ReachabilityRoot {
+                    root_type: "runtime-content-graph".to_string(),
+                    evidence: runtime_reachability.evidence_for("macro", *id),
+                },
+            );
+            queue.push_back(entity_id);
+        }
+    } else {
+        for (id, root) in roots {
+            reachable.insert(id.clone(), root);
+            queue.push_back(id);
+        }
     }
 
     while let Some(current) = queue.pop_front() {
@@ -255,6 +290,8 @@ fn is_macro_reachability_link(link: &SemanticLink) -> bool {
 fn root_type_for(from: &str) -> String {
     if from.starts_with("action-slot:trigger:") {
         "map-trigger-call".to_string()
+    } else if from.starts_with("encounter:") {
+        "encounter-result-call".to_string()
     } else if from.starts_with("random:") {
         "random-region-door".to_string()
     } else if from.starts_with("time:") {
@@ -373,6 +410,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -425,6 +463,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -445,6 +484,26 @@ mod tests {
     }
 
     #[test]
+    fn encounter_result_call_promotes_ed3_record() {
+        let trigger = ed3_trigger(175, Vec::new());
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(175));
+        schema.links.push(macro_link(
+            "link:complex:15:result:1:step:4",
+            "encounter:complex:15",
+            175,
+            "calls_macro",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[trigger]);
+
+        let row = &schema.decoding.ed3_reachability[0];
+        assert!(row.reachable);
+        assert_eq!(row.classification, "reachable-macro");
+        assert_eq!(row.root_type.as_deref(), Some("encounter-result-call"));
+    }
+
+    #[test]
     fn edcd_branch_from_reachable_macro_recurses_to_ed3_record() {
         let root_trigger = ed3_trigger(
             2,
@@ -456,6 +515,7 @@ mod tests {
                 label: "Extend AP".to_string(),
                 category: ActionCategory::Branch,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let nested_trigger = ed3_trigger(
@@ -468,6 +528,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -511,6 +572,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let revive_trigger = ed3_trigger(
@@ -523,6 +585,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -567,6 +630,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -602,6 +666,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();

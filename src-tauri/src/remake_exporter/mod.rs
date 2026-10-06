@@ -1,6 +1,12 @@
 mod assets;
+mod comparison;
 mod documents;
 mod portable;
+mod rule_selection;
+
+pub use comparison::{
+    compare_remake_bundles, RemakeBundleComparison, RemakeBundleMismatch, RemakeBundleMismatchKind,
+};
 
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{LevelType, ProvidenceProject};
@@ -13,14 +19,15 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-pub const REMAKE_CLASSIC_FORMAT: &str = "realmz-remake-classic-campaign";
-pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 1;
+pub const REMAKE_CLASSIC_FORMAT: &str = "realmz-remake-scenario";
+pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 2;
+pub const REMAKE_DOCUMENT_SCHEMA_VERSION: u32 = 1;
 
 const CLASSIC_DIR: &str = "classic";
 const LIMITATIONS: [&str; 3] = [
-    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Styled-text payloads remain Classic resource data.",
-    "Providence schema version 5 authors a land start; the v1 bundle can also represent dungeon starts when the canonical model gains that distinction.",
-    "Negative cicn special-land-tile identities use the additive v1 assets.catalog.specialLandTiles collection because ordinary v1 icon identities are non-negative.",
+    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Scrolling TEXT is decoded for runtime use, and matching styl resources become portable rich-text presentation runs rather than binary payloads.",
+    "Providence schema version 6 authors a land start; the v2 bundle can also represent dungeon starts when the canonical model gains that distinction.",
+    "Negative cicn special-land-tile identities use the additive assets.catalog.specialLandTiles collection because ordinary icon identities are non-negative.",
 ];
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -47,7 +54,8 @@ pub struct RemakeExportCounts {
     pub packaged_asset_payloads: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct RemakeExportReport {
     pub output_dir: PathBuf,
     pub written_files: Vec<String>,
@@ -69,6 +77,13 @@ pub fn export_remake_campaign(
 ) -> Result<RemakeExportReport> {
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
+    let runtime_errors = crate::remake_extension_catalog::validate_remake_runtime(project);
+    if !runtime_errors.is_empty() {
+        return Err(ProvidenceError::message(format!(
+            "Realmz Remake runtime contract is invalid:\n- {}",
+            runtime_errors.join("\n- ")
+        )));
+    }
     prepare_output_dir(output_dir)?;
     let classic_dir = output_dir.join(CLASSIC_DIR);
     fs::create_dir_all(&classic_dir).with_path(&classic_dir)?;
@@ -79,7 +94,7 @@ pub fn export_remake_campaign(
     counts.managed_assets = packaged_assets.managed_assets.len();
     counts.packaged_asset_payloads = packaged_assets.written_files.len();
     let files = contract_files();
-    let documents = build_documents(project, &packaged_assets)?;
+    let documents = build_documents(project, &packaged_assets, project_dir)?;
     let manifest = campaign_manifest(project, &counts, &files, &limitations);
     assert_portable_value(&manifest, project_dir, "campaign.json")?;
 
@@ -87,7 +102,11 @@ pub fn export_remake_campaign(
     write_json(&output_dir.join("campaign.json"), &manifest)?;
     written_files.push("campaign.json".to_string());
     for (name, document) in documents {
-        let relative_path = format!("{CLASSIC_DIR}/{name}");
+        let relative_path = if name == "runtime.json" {
+            name.to_string()
+        } else {
+            format!("{CLASSIC_DIR}/{name}")
+        };
         assert_portable_value(&document, project_dir, &relative_path)?;
         write_json(&output_dir.join(&relative_path), &document)?;
         written_files.push(relative_path);
@@ -191,7 +210,7 @@ fn prepare_output_dir(output_dir: &Path) -> Result<()> {
 }
 
 fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
-    write_json_with_style(path, value, true)
+    write_json_with_style(path, value, false)
 }
 
 fn write_json_with_style(path: &Path, value: &impl Serialize, multiline: bool) -> Result<()> {
@@ -306,7 +325,7 @@ fn limitations_for_project(project: &ProvidenceProject) -> Vec<String> {
         .count();
     if music_assets > 0 {
         limitations.push(format!(
-            "{music_assets} canonical scenario music asset(s) were omitted: Classic bundle v1 has no scenario-music playlist contract. Native Realmz exports still carry their original MOD payloads."
+            "{music_assets} canonical scenario music asset(s) were omitted: scenario format v2 has no scenario-music playlist contract yet. Native Realmz exports still carry their original MOD payloads."
         ));
     }
     limitations

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProjectCommand, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { browserReferenceAtlasToken } from "../browser/atlasPaths";
-import { loadBrowserScenarioResourcePreview } from "../browser/project";
+import { loadBrowserScenarioItemIconAssets, loadBrowserScenarioResourcePreview } from "../browser/project";
+import { loadBrowserProjectRawSources } from "../browser/projectStore";
 import { resourcePreviewDataUrlFromBase64 } from "../browser/resourcePreview";
 import { useResolvedPreviewUrl } from "../previewUrls";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
@@ -145,7 +146,25 @@ export function ResourcesPanel({
   const [referenceUseAsset, setReferenceUseAsset] = useState<LibraryAsset | null>(null);
   const [referenceUseBusy, setReferenceUseBusy] = useState(false);
   const [referenceUseError, setReferenceUseError] = useState("");
+  const [browserSourceRevision, setBrowserSourceRevision] = useState(0);
   const normalizedQuery = query.trim().toLowerCase();
+  useEffect(() => {
+    let cancelled = false;
+    if (!project || desktopRuntime) return;
+    void loadBrowserProjectRawSources(project)
+      .then((rawSources) => {
+        if (!cancelled && rawSources) {
+          setBrowserSourceRevision((revision) => revision + 1);
+        }
+      })
+      .catch(() => {
+        // Browser-local projects can predate raw-source persistence. Keep the
+        // existing catalog-only inventory when there is nothing to rehydrate.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [desktopRuntime, project]);
   const revealScenarioCopy = (result: ReferenceAssetScenarioCopyResult) => {
     setSectionOverride("project");
     setKindFilter(result.kind);
@@ -267,7 +286,10 @@ export function ResourcesPanel({
       (!normalizedQuery || assetSearchText(asset.label, asset.resourceType, asset.resourceId, asset.fileName).includes(normalizedQuery))
     );
   }, [customAssets, kindFilter, normalizedQuery, project?.assets, section]);
-  const allScenarioResources = useMemo(() => scenarioResourceAssets(project), [project]);
+  const allScenarioResources = useMemo(
+    () => scenarioResourceAssets(project),
+    [browserSourceRevision, project]
+  );
   const scenarioResources = useMemo(() => allScenarioResources.filter((asset) =>
     section === "project" &&
     assetMatchesKind(asset.kind, kindFilter) &&
@@ -1225,6 +1247,27 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   }
   for (const icon of project.assetCatalog.icons ?? []) {
     addResource(icon.resourceType, icon.resourceId, icon.name || `${icon.resourceType} ${icon.resourceId}`, icon.source, icon.previewPath);
+  }
+  for (const icon of loadBrowserScenarioItemIconAssets(project)) {
+    const resourceId = Math.abs(icon.resourceId);
+    if (assets.some((asset) => asset.resourceType === "cicn" && Math.abs(asset.resourceId) === resourceId)) continue;
+    addResource(icon.resourceType, resourceId, icon.name || `cicn ${resourceId}`, icon.source, icon.previewPath);
+  }
+  for (const resource of project.scenarioIconResources ?? []) {
+    const resourceId = Math.abs(resource.resourceId);
+    if (assets.some((asset) => asset.resourceType === "cicn" && Math.abs(asset.resourceId) === resourceId)) continue;
+    addResource(
+      "cicn",
+      resourceId,
+      resource.label || `cicn ${resourceId}`,
+      `Scenario resource: item icon ${resourceId}`,
+      resource.previewPath,
+      {
+        family: "scenario-item-icon",
+        bytes: base64ByteLength(resource.resourceBase64),
+        previewStatus: resource.previewPath ? "preview-ready" : "preserved"
+      }
+    );
   }
   for (const sound of project.assetCatalog.sounds ?? []) {
     addResource(sound.resourceType, sound.resourceId, sound.name || `${sound.resourceType} ${sound.resourceId}`, sound.source, sound.previewPath);

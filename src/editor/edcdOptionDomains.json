@@ -1,0 +1,456 @@
+{
+  "schemaVersion": 1,
+  "source": "Divinity opcode help plus audited Realmz runtime corrections",
+  "domains": [
+    { "opcode": 2, "field": "revivePartyFlag", "options": [
+      { "value": 0, "label": "Victory points and treasure" },
+      { "value": 5, "label": "Victory points only" },
+      { "value": 10, "label": "Revive after loss" }
+    ] },
+    { "opcode": 3, "field": "replyPolarity", "options": [
+      { "value": 0, "label": "Right / No continues" },
+      { "value": 1, "label": "Left / Yes continues" }
+    ] },
+    { "opcode": 3, "field": "branchMode", "options": [
+      { "value": 0, "label": "Back up party" },
+      { "value": 1, "label": "Extra Action Point" },
+      { "value": 2, "label": "Simple Encounter result" },
+      { "value": 3, "label": "Complex Encounter result" },
+      { "value": 4, "label": "Eliminate this choice" }
+    ] },
+    { "opcode": 7, "field": "levelKind", "options": [
+      { "value": 0, "label": "Same map family" },
+      { "value": 1, "label": "Land level" },
+      { "value": 2, "label": "Dungeon level" }
+    ] },
+    { "opcode": 7, "field": "resultSlot", "options": [
+      { "value": 0, "label": "Result 1" },
+      { "value": 1, "label": "Result 2" },
+      { "value": 2, "label": "Result 3" },
+      { "value": 3, "label": "Result 4" }
+    ] },
+    { "opcode": 12, "field": "isDungeon", "options": [
+      { "value": 0, "label": "Land level" },
+      { "value": 1, "label": "Dungeon level" }
+    ] },
+    { "opcode": 17, "field": "forceAffect", "options": [
+      { "value": 0, "label": "Allow normal resistance" },
+      { "value": 1, "label": "Ignore player resistance" }
+    ] },
+    { "opcode": 18, "field": "forceAffect", "options": [
+      { "value": 0, "label": "Allow normal resistance" },
+      { "value": 1, "label": "Ignore player resistance" }
+    ] },
+    { "opcode": 21, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 21, "field": "missingBehavior", "options": [
+      { "value": 0, "label": "Use missing target" },
+      { "value": 1, "label": "Continue current script" },
+      { "value": 2, "label": "Display string and exit" }
+    ] },
+    { "opcode": 22, "field": "mode", "options": [
+      { "value": 1, "label": "Drop item" },
+      { "value": 2, "label": "Alter charges" },
+      { "value": 3, "label": "Replace item" }
+    ] },
+    { "opcode": 30, "field": "sourceSet", "options": [
+      { "value": 0, "label": "Picked characters" },
+      { "value": 1, "label": "Everyone" },
+      { "value": 2, "label": "Alive characters" }
+    ] },
+    { "opcode": 30, "field": "attributeFlag", "options": [
+      { "value": 0, "label": "Special ability" },
+      { "value": 1, "label": "Attribute" }
+    ] },
+    { "opcode": 31, "field": "attributeFlag", "options": [
+      { "value": 0, "label": "Special ability" },
+      { "value": 1, "label": "Attribute" }
+    ] },
+    { "opcode": 33, "field": "failureMarker", "options": [
+      { "value": -1, "label": "Go to last code if missing" },
+      { "value": 0, "label": "Continue if possessed" },
+      { "value": 1, "label": "Continue if not possessed" },
+      { "value": 2, "label": "Force branch" }
+    ] },
+    { "opcode": 37, "field": "mode", "options": [
+      { "value": 0, "label": "Enter dungeon" },
+      { "value": 1, "label": "Exit to land" }
+    ] },
+    { "opcode": 37, "field": "signedHeading", "options": [
+      { "value": 1, "label": "North" },
+      { "value": 2, "label": "East" },
+      { "value": 3, "label": "South" },
+      { "value": 4, "label": "West" },
+      { "value": -1, "label": "North, 3D-only" },
+      { "value": -2, "label": "East, 3D-only" },
+      { "value": -3, "label": "South, 3D-only" },
+      { "value": -4, "label": "West, 3D-only" }
+    ] },
+    { "opcode": 38, "field": "testB", "options": [
+      { "value": 0, "label": "Continue when item is possessed" },
+      { "value": 1, "label": "Continue when item is missing" }
+    ] },
+    { "opcode": 38, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter result" },
+      { "value": 2, "label": "Complex Encounter result" }
+    ] },
+    { "opcode": 40, "field": "expectedState", "options": [
+      { "value": 1, "label": "Branch if condition exists" },
+      { "value": 2, "label": "Branch if condition does not exist" }
+    ] },
+    { "opcode": 40, "field": "branchMode", "options": [
+      { "value": 0, "label": "No branch" },
+      { "value": 1, "label": "Extra Action Point" },
+      { "value": 2, "label": "Simple Encounter" },
+      { "value": 3, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 40, "field": "condition", "options": [
+      { "value": 0, "label": "Torch lit" },
+      { "value": 1, "label": "Waterworld" },
+      { "value": 2, "label": "Dragon hide" },
+      { "value": 3, "label": "Discover secret" },
+      { "value": 4, "label": "Wizard eye" },
+      { "value": 5, "label": "Search" },
+      { "value": 6, "label": "Free fall / levitate" },
+      { "value": 7, "label": "Sentry" },
+      { "value": 8, "label": "Charm resistance" }
+    ] },
+    { "opcode": 41, "field": "oneBasedChoiceSlot", "options": [
+      { "value": 1, "label": "Choice 1" },
+      { "value": 2, "label": "Choice 2" },
+      { "value": 3, "label": "Choice 3" },
+      { "value": 4, "label": "Choice 4" }
+    ] },
+    { "opcode": 42, "field": "successBehavior", "options": [
+      { "value": -2, "label": "Exit and erase codes" },
+      { "value": 1, "label": "Branch" },
+      { "value": 2, "label": "Exit and save codes" }
+    ] },
+    { "opcode": 42, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter result" },
+      { "value": 2, "label": "Complex Encounter result" }
+    ] },
+    { "opcode": 43, "field": "scope", "options": [
+      { "value": 0, "label": "Whole party" },
+      { "value": 1, "label": "Picked characters" },
+      { "value": 2, "label": "Alive characters" }
+    ] },
+    { "opcode": 46, "field": "testB", "options": [
+      { "value": 0, "label": "Continue when quest is set" },
+      { "value": 1, "label": "Continue when quest is not set" }
+    ] },
+    { "opcode": 46, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter result" },
+      { "value": 2, "label": "Complex Encounter result" }
+    ] },
+    { "opcode": 50, "field": "selector", "options": [
+      { "value": 0, "label": "Race" },
+      { "value": 1, "label": "Gender" },
+      { "value": 2, "label": "Caste" },
+      { "value": 3, "label": "Race class" },
+      { "value": 4, "label": "Caste class" }
+    ] },
+    { "opcode": 50, "field": "gender", "options": [
+      { "value": 1, "label": "Male" },
+      { "value": 2, "label": "Female" }
+    ] },
+    { "opcode": 50, "field": "livingOnly", "options": [
+      { "value": 0, "label": "All characters" },
+      { "value": 1, "label": "Alive only" }
+    ] },
+    { "opcode": 52, "field": "selector", "options": [
+      { "value": 0, "label": "Movement" },
+      { "value": 1, "label": "Position" },
+      { "value": 2, "label": "Item possession" },
+      { "value": 3, "label": "Percent chance" },
+      { "value": 4, "label": "Save versus attribute" },
+      { "value": 5, "label": "Save versus spell type" }
+    ] },
+    { "opcode": 52, "field": "sourceSet", "options": [
+      { "value": 0, "label": "All characters" },
+      { "value": 1, "label": "Alive only" },
+      { "value": 2, "label": "Picked only" }
+    ] },
+    { "opcode": 53, "field": "casteGroup", "options": [
+      { "value": 0, "label": "Use specific caste only" },
+      { "value": 1, "label": "Fighter types" },
+      { "value": 2, "label": "Magical types" },
+      { "value": 3, "label": "Monk / rogue types" }
+    ] },
+    { "opcode": 53, "field": "sourceSet", "options": [
+      { "value": 0, "label": "All characters" },
+      { "value": 1, "label": "Alive only" },
+      { "value": 2, "label": "Picked only" }
+    ] },
+    { "opcode": 54, "field": "resetDayFlag", "options": [
+      { "value": 0, "label": "Keep scheduled base day" },
+      { "value": 1, "label": "Reset to current day" }
+    ] },
+    { "opcode": 55, "field": "failureBehavior", "options": [
+      { "value": 0, "label": "Exit codes on failure" },
+      { "value": 1, "label": "Branch to Extra Action Point" },
+      { "value": 2, "label": "Display string and exit" }
+    ] },
+    { "opcode": 57, "field": "landlook", "options": [
+      { "value": 0, "label": "Plains" },
+      { "value": 3, "label": "Subterranean" },
+      { "value": 4, "label": "Castle" },
+      { "value": 5, "label": "Desert" },
+      { "value": 9, "label": "Swamp" },
+      { "value": 10, "label": "Snow" }
+    ] },
+    { "opcode": 57, "field": "isDark", "options": [
+      { "value": 0, "label": "Daytime" },
+      { "value": 1, "label": "Dark" }
+    ] },
+    { "opcode": 58, "field": "testB", "options": [
+      { "value": -2, "label": "Exit and erase codes" },
+      { "value": 1, "label": "Branch" },
+      { "value": 2, "label": "Exit and save codes" }
+    ] },
+    { "opcode": 58, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter result" },
+      { "value": 2, "label": "Complex Encounter result" }
+    ] },
+    { "opcode": 59, "field": "testB", "options": [
+      { "value": -2, "label": "Exit and erase codes" },
+      { "value": 1, "label": "Branch" },
+      { "value": 2, "label": "Exit and save codes" }
+    ] },
+    { "opcode": 59, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter result" },
+      { "value": 2, "label": "Complex Encounter result" }
+    ] },
+    { "opcode": 60, "field": "moneyType", "options": [
+      { "value": 1, "label": "Gold" },
+      { "value": 2, "label": "Gems" },
+      { "value": 3, "label": "Jewelry" }
+    ] },
+    { "opcode": 60, "field": "pickedOnly", "options": [
+      { "value": 0, "label": "All characters" },
+      { "value": 1, "label": "Picked characters" }
+    ] },
+    { "opcode": 61, "field": "randomize", "options": [
+      { "value": 0, "label": "Move exact distance" },
+      { "value": 1, "label": "Random distance from 1 to value" }
+    ] },
+    { "opcode": 63, "field": "mode", "options": [
+      { "value": 1, "label": "Set absolute time" },
+      { "value": 2, "label": "Offset game time" }
+    ] },
+    { "opcode": 67, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 68, "field": "mode", "options": [
+      { "value": 1, "label": "Set fatigue to 100%" },
+      { "value": 2, "label": "Set fatigue to 0%" },
+      { "value": 3, "label": "Calculate new fatigue" }
+    ] },
+    { "opcode": 69, "field": "spellcasting", "options": [
+      { "value": 0, "label": "Character spellcasting on" },
+      { "value": 1, "label": "Character spellcasting off" }
+    ] },
+    { "opcode": 69, "field": "monstercasting", "options": [
+      { "value": 0, "label": "Monster and NPC spellcasting on" },
+      { "value": 1, "label": "Monster and NPC spellcasting off" }
+    ] },
+    { "opcode": 69, "field": "spellcharging", "options": [
+      { "value": 0, "label": "Spell-point recharging on" },
+      { "value": 1, "label": "Spell-point recharging off" }
+    ] },
+    { "opcode": 70, "field": "mode", "options": [
+      { "value": 1, "label": "Save current position" },
+      { "value": 2, "label": "Return to saved position" }
+    ] },
+    { "opcode": 72, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 75, "field": "testA", "options": [
+      { "value": 1, "label": "Picked characters" },
+      { "value": 2, "label": "All alive characters" }
+    ] },
+    { "opcode": 75, "field": "falseBehavior", "options": [
+      { "value": 0, "label": "Continue script on failure" },
+      { "value": 1, "label": "Exit and save codes on failure" }
+    ] },
+    { "opcode": 75, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 76, "field": "branchMode", "options": [
+      { "value": 0, "label": "No automatic branch" },
+      { "value": 1, "label": "Extra Action Point" },
+      { "value": 2, "label": "Simple Encounter" },
+      { "value": 3, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 77, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 78, "field": "testA", "options": [
+      { "value": 1, "label": "Shoreline" },
+      { "value": 2, "label": "Is / needs boat" },
+      { "value": 3, "label": "Path" },
+      { "value": 4, "label": "Blocks line of sight" },
+      { "value": 5, "label": "Needs fly / float" },
+      { "value": 6, "label": "Special type / forest" },
+      { "value": 7, "label": "Specific tile ID" }
+    ] },
+    { "opcode": 78, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 81, "field": "characterSelector", "options": [
+      { "value": -1, "label": "Picked characters" },
+      { "value": 0, "label": "Whole party" },
+      { "value": 1, "label": "Character position 1" },
+      { "value": 2, "label": "Character position 2" },
+      { "value": 3, "label": "Character position 3" },
+      { "value": 4, "label": "Character position 4" },
+      { "value": 5, "label": "Character position 5" },
+      { "value": 6, "label": "Character position 6" }
+    ] },
+    { "opcode": 85, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 86, "field": "testSelector", "options": [
+      { "value": 0, "label": "Caste present" },
+      { "value": 1, "label": "Race present" },
+      { "value": 2, "label": "Gender present" },
+      { "value": 3, "label": "In boat" },
+      { "value": 4, "label": "Camping" },
+      { "value": 5, "label": "Caste class present" },
+      { "value": 6, "label": "Race class present" },
+      { "value": 7, "label": "Total party levels" },
+      { "value": 8, "label": "Picked-character levels" }
+    ] },
+    { "opcode": 86, "field": "branchMode", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 87, "field": "branchModeOrValue", "options": [
+      { "value": 0, "label": "Extra Action Point" },
+      { "value": 1, "label": "Simple Encounter" },
+      { "value": 2, "label": "Complex Encounter" }
+    ] },
+    { "opcode": 87, "field": "falseBehavior", "options": [
+      { "value": 0, "label": "Use missing target" },
+      { "value": 1, "label": "Continue codes" },
+      { "value": 2, "label": "Display string and exit" }
+    ] },
+    { "opcode": 90, "field": "scope", "options": [
+      { "value": 0, "label": "Take from each character" },
+      { "value": 1, "label": "Take from picked characters" },
+      { "value": 2, "label": "Spread across party" }
+    ] },
+    { "opcode": 92, "field": "isDungeon", "options": [
+      { "value": 0, "label": "Land level" },
+      { "value": 1, "label": "Dungeon level" }
+    ] },
+    { "opcode": 92, "field": "shapeMode", "options": [
+      { "value": -1, "label": "Keep current shape" },
+      { "value": 0, "label": "Set coordinates" },
+      { "value": 1, "label": "Offset rectangle" },
+      { "value": 2, "label": "Warp individual bounds" }
+    ] },
+    { "opcode": 103, "field": "mode", "options": [
+      { "value": 1, "label": "Continue if in boat" },
+      { "value": 2, "label": "Continue if not in boat" }
+    ] },
+    { "opcode": 103, "field": "statusValue", "options": [
+      { "value": 1, "label": "Continue if camping" },
+      { "value": 2, "label": "Continue if not camping" }
+    ] },
+    { "opcode": 103, "field": "branchModeOrBehavior", "options": [
+      { "value": 1, "label": "Set status to in boat" },
+      { "value": 2, "label": "Set status to not in boat" }
+    ] },
+    { "opcode": 106, "field": "darkStatePlusOne", "options": [
+      { "value": 1, "label": "Make current land level light" },
+      { "value": 2, "label": "Make current land level dark" }
+    ] },
+    { "opcode": 106, "field": "stopIfAlready", "options": [
+      { "value": 0, "label": "Continue if already set" },
+      { "value": 1, "label": "Skip remaining actions if already set" }
+    ] },
+    { "opcode": 108, "field": "statSelector", "options": [
+      { "value": 1, "label": "Melee attacks" },
+      { "value": 2, "label": "Spell attacks" },
+      { "value": 3, "label": "Movement" },
+      { "value": 4, "label": "Damage" },
+      { "value": 5, "label": "Spell points" },
+      { "value": 6, "label": "Hand-to-hand" },
+      { "value": 7, "label": "Stamina" },
+      { "value": 8, "label": "Armor rating" },
+      { "value": 9, "label": "To-hit" },
+      { "value": 10, "label": "Projectile to-hit" },
+      { "value": 11, "label": "Magic resistance" },
+      { "value": 12, "label": "Prestige" }
+    ] },
+    { "opcode": 120, "field": "targetClass", "options": [
+      { "value": 1, "label": "NPC" },
+      { "value": 2, "label": "Monster" }
+    ] },
+    { "opcode": 125, "field": "includeTraitorSide", "options": [
+      { "value": 0, "label": "Respect party allegiance" },
+      { "value": 1, "label": "Force kill even if allied" }
+    ] },
+    { "opcode": 126, "field": "mode", "options": [
+      { "value": 0, "label": "After round number" },
+      { "value": 1, "label": "Percent chance each round" },
+      { "value": 2, "label": "Flee / fail" }
+    ] },
+    { "opcode": 126, "field": "repeatMode", "options": [
+      { "value": 0, "label": "Single activation" },
+      { "value": 1, "label": "Check each round" },
+      { "value": 2, "label": "Branch to random macro" }
+    ] }
+  ],
+  "numericGuidance": [
+    { "opcode": 7, "field": "levelOrCache", "reason": "Map level IDs are open numeric values; -2 and -3 select encounter-script replacement." },
+    { "opcode": 20, "field": "levelOrKeep", "reason": "Map level ID with -1 as the keep-current sentinel." },
+    { "opcode": 20, "field": "xOrKeep", "reason": "Coordinate with -1 as the keep-current sentinel." },
+    { "opcode": 20, "field": "yOrKeep", "reason": "Coordinate with -1 as the keep-current sentinel." },
+    { "opcode": 23, "field": "percent", "reason": "Open base-10000 encounter chance; 0 disables and -1 selects the invisible encounter." },
+    { "opcode": 23, "field": "battleLowOrKeep", "reason": "Battle ID/range value with -1 as the keep-current sentinel." },
+    { "opcode": 23, "field": "battleHighOrKeep", "reason": "Battle ID/range value with -1 as the keep-current sentinel." },
+    { "opcode": 38, "field": "slot", "reason": "Open encounter-result code slot number; 0 selects the first slot." },
+    { "opcode": 42, "field": "slot", "reason": "Open encounter-result code slot number; 0 selects the first slot." },
+    { "opcode": 45, "field": "levelOrKeep", "reason": "Map level ID with -1 as the keep-current sentinel." },
+    { "opcode": 45, "field": "xOrKeep", "reason": "Coordinate with -1 as the keep-current sentinel." },
+    { "opcode": 45, "field": "yOrKeep", "reason": "Coordinate with -1 as the keep-current sentinel." },
+    { "opcode": 46, "field": "slot", "reason": "Open encounter-result code slot number; 0 selects the first slot." },
+    { "opcode": 54, "field": "percentOrKeep", "reason": "Open percent value with -1 as the keep-current sentinel." },
+    { "opcode": 54, "field": "incrementOrKeep", "reason": "Open day increment with -1 as the keep-current sentinel." },
+    { "opcode": 54, "field": "dayOffsetOrKeep", "reason": "Open day offset with -1 as the keep-current sentinel." },
+    { "opcode": 55, "field": "pickedSelector", "reason": "Hybrid signed count: 0 means any, 1-6 selects a position, and negative values mean at least that many." },
+    { "opcode": 56, "field": "cowardMacro", "reason": "Extra Action Point reference with -1 as the backstep sentinel." },
+    { "opcode": 58, "field": "slot", "reason": "Open encounter-result code slot number; 0 selects the first slot." },
+    { "opcode": 59, "field": "slot", "reason": "Open encounter-result code slot number; 0 selects the first slot." },
+    { "opcode": 64, "field": "dayLimit", "reason": "Open day threshold with -1 as the skip-test sentinel." },
+    { "opcode": 64, "field": "hourLimit", "reason": "Open hour threshold with -1 as the skip-test sentinel." },
+    { "opcode": 67, "field": "successTarget", "reason": "Branch target with -1 as the continue-current-script sentinel." },
+    { "opcode": 67, "field": "failureTarget", "reason": "Branch target with -1 as the continue-current-script sentinel." },
+    { "opcode": 86, "field": "falseTarget", "reason": "Conditional target whose zero value continues and whose other meaning depends on the selected branch mode." },
+    { "opcode": 124, "field": "traitorOverride", "reason": "Open traitor value range 1-127 with 0 as the default sentinel." },
+    { "opcode": 125, "field": "maxCount", "reason": "Open monster count with 0 meaning all matching monsters." }
+  ]
+}

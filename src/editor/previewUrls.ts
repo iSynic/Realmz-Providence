@@ -137,7 +137,12 @@ export async function resolveIconPreviewUrl(
   if (!iconId) return null;
   const projectAsset = findIconProjectAsset(project, iconId);
   const libraryAsset = findIconLibraryAsset(catalog, iconId);
-  const resolved = await resolvePreviewUrl(projectAsset?.previewPath ?? null, null, libraryAsset, context);
+  const resolved = await resolvePreviewUrl(projectAsset?.previewPath ?? null, null, libraryAsset, {
+    ...context,
+    project: project ?? context.project,
+    resourceType: "cicn",
+    resourceId: iconId
+  });
   return resolved ?? browserReferenceIconUrl(Math.abs(iconId));
 }
 

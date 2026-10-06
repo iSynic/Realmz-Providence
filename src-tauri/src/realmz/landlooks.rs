@@ -271,8 +271,8 @@ pub fn write_custom_landlook_metadata(metadata: &CustomLandlookMetadata) -> Resu
         if slot.slot >= LANDLOOK_RANGE_SLOTS {
             continue;
         }
-        let start = base_offset + LANDLOOK_RANGE_HEADER_BYTES
-            + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
+        let start =
+            base_offset + LANDLOOK_RANGE_HEADER_BYTES + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
         write_i16_be(&mut output, start, slot.first_tile);
         write_i16_be(&mut output, start + 2, slot.last_tile);
     }

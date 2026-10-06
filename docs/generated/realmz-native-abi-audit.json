@@ -1,0 +1,1924 @@
+{
+  "version": 1,
+  "authority": {
+    "sourceGitCommit": "0c19b9159ae1d982147f4dc5a3fd465b65a4e244",
+    "structsHeader": {
+      "path": "src/realmz_orig/structs.h",
+      "sha256": "451FC83F7B3FCD17E39EBBCF9981B8041F6D5F75F1A219ECE061676F142C146E"
+    },
+    "typesHeader": {
+      "path": "src/Types.h",
+      "sha256": "5F0D9B1F0B737439621140AC3E0F001C6F24BF0D6D73D2FBC17E2E4C6C87E99F"
+    },
+    "probe": "scripts/realmz_native_abi_probe.c",
+    "modes": [
+      "compiler-default",
+      "fpack-struct=2"
+    ],
+    "modesIdentical": true
+  },
+  "summary": {
+    "structs": 18,
+    "fields": 290,
+    "paddingRanges": 4,
+    "paddingBytes": 4,
+    "writableContainers": 37,
+    "structBackedContainers": 24,
+    "nonStructContainers": 13,
+    "boundaryConsumerChecks": 65,
+    "paddingSentinelTests": 8,
+    "mismatches": 0
+  },
+  "records": [
+    {
+      "name": "restrictinfo",
+      "size": 320,
+      "containers": [
+        "Data RI"
+      ],
+      "fields": [
+        {
+          "name": "description",
+          "offset": 0,
+          "bytes": 256
+        },
+        {
+          "name": "maxpc",
+          "offset": 256,
+          "bytes": 2
+        },
+        {
+          "name": "maxlevel",
+          "offset": 258,
+          "bytes": 2
+        },
+        {
+          "name": "canrace",
+          "offset": 260,
+          "bytes": 30
+        },
+        {
+          "name": "cancaste",
+          "offset": 290,
+          "bytes": 30
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "contactdata",
+      "size": 4608,
+      "containers": [
+        "Data CI"
+      ],
+      "fields": [
+        {
+          "name": "scenarioname",
+          "offset": 0,
+          "bytes": 256
+        },
+        {
+          "name": "version",
+          "offset": 256,
+          "bytes": 256
+        },
+        {
+          "name": "date",
+          "offset": 512,
+          "bytes": 256
+        },
+        {
+          "name": "authorsname",
+          "offset": 768,
+          "bytes": 256
+        },
+        {
+          "name": "email",
+          "offset": 1024,
+          "bytes": 256
+        },
+        {
+          "name": "web",
+          "offset": 1280,
+          "bytes": 256
+        },
+        {
+          "name": "fee",
+          "offset": 1536,
+          "bytes": 256
+        },
+        {
+          "name": "payinfo",
+          "offset": 1792,
+          "bytes": 1280
+        },
+        {
+          "name": "titles",
+          "offset": 3072,
+          "bytes": 1280
+        },
+        {
+          "name": "description",
+          "offset": 4352,
+          "bytes": 256
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "door",
+      "size": 40,
+      "containers": [
+        "Data DD",
+        "Data DDD"
+      ],
+      "fields": [
+        {
+          "name": "doorid",
+          "offset": 0,
+          "bytes": 4
+        },
+        {
+          "name": "landid",
+          "offset": 4,
+          "bytes": 1
+        },
+        {
+          "name": "landx",
+          "offset": 5,
+          "bytes": 1
+        },
+        {
+          "name": "landy",
+          "offset": 6,
+          "bytes": 1
+        },
+        {
+          "name": "percent",
+          "offset": 7,
+          "bytes": 1
+        },
+        {
+          "name": "code",
+          "offset": 8,
+          "bytes": 16
+        },
+        {
+          "name": "id",
+          "offset": 24,
+          "bytes": 16
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "race",
+      "size": 408,
+      "containers": [
+        "Data Race"
+      ],
+      "fields": [
+        {
+          "name": "plusminustohit",
+          "offset": 0,
+          "bytes": 16
+        },
+        {
+          "name": "specialability",
+          "offset": 16,
+          "bytes": 28
+        },
+        {
+          "name": "drvbonus",
+          "offset": 44,
+          "bytes": 16
+        },
+        {
+          "name": "attbonus",
+          "offset": 60,
+          "bytes": 12
+        },
+        {
+          "name": "minmax",
+          "offset": 72,
+          "bytes": 24
+        },
+        {
+          "name": "spare",
+          "offset": 96,
+          "bytes": 16
+        },
+        {
+          "name": "conditions",
+          "offset": 112,
+          "bytes": 80
+        },
+        {
+          "name": "maxage",
+          "offset": 192,
+          "bytes": 2
+        },
+        {
+          "name": "doesnotdie",
+          "offset": 194,
+          "bytes": 2
+        },
+        {
+          "name": "basemove",
+          "offset": 196,
+          "bytes": 2
+        },
+        {
+          "name": "magres",
+          "offset": 198,
+          "bytes": 2
+        },
+        {
+          "name": "twohand",
+          "offset": 200,
+          "bytes": 2
+        },
+        {
+          "name": "missile",
+          "offset": 202,
+          "bytes": 2
+        },
+        {
+          "name": "numofattacks",
+          "offset": 204,
+          "bytes": 4
+        },
+        {
+          "name": "cancaste",
+          "offset": 208,
+          "bytes": 30
+        },
+        {
+          "name": "agerange",
+          "offset": 238,
+          "bytes": 20
+        },
+        {
+          "name": "agechange",
+          "offset": 258,
+          "bytes": 75
+        },
+        {
+          "name": "canregenerate",
+          "offset": 333,
+          "bytes": 1
+        },
+        {
+          "name": "defaulticonset",
+          "offset": 334,
+          "bytes": 2
+        },
+        {
+          "name": "itemtypes",
+          "offset": 336,
+          "bytes": 8
+        },
+        {
+          "name": "descriptors",
+          "offset": 344,
+          "bytes": 2
+        },
+        {
+          "name": "spacer",
+          "offset": 346,
+          "bytes": 62
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "mapstats",
+      "size": 40,
+      "containers": [
+        "Data Custom 1 BD",
+        "Data Custom 2 BD",
+        "Data Custom 3 BD"
+      ],
+      "fields": [
+        {
+          "name": "sound",
+          "offset": 0,
+          "bytes": 2
+        },
+        {
+          "name": "time",
+          "offset": 2,
+          "bytes": 2
+        },
+        {
+          "name": "solid",
+          "offset": 4,
+          "bytes": 2
+        },
+        {
+          "name": "shore",
+          "offset": 6,
+          "bytes": 2
+        },
+        {
+          "name": "needboad",
+          "offset": 8,
+          "bytes": 2
+        },
+        {
+          "name": "ispath",
+          "offset": 10,
+          "bytes": 2
+        },
+        {
+          "name": "los",
+          "offset": 12,
+          "bytes": 2
+        },
+        {
+          "name": "flyfloat",
+          "offset": 14,
+          "bytes": 2
+        },
+        {
+          "name": "forest",
+          "offset": 16,
+          "bytes": 2
+        },
+        {
+          "name": "spare",
+          "offset": 18,
+          "bytes": 2
+        },
+        {
+          "name": "build",
+          "offset": 20,
+          "bytes": 18
+        },
+        {
+          "name": "clearlandid",
+          "offset": 38,
+          "bytes": 2
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "caste",
+      "size": 576,
+      "containers": [
+        "Data Caste"
+      ],
+      "fields": [
+        {
+          "name": "specialability",
+          "offset": 0,
+          "bytes": 56
+        },
+        {
+          "name": "drvbonus",
+          "offset": 56,
+          "bytes": 16
+        },
+        {
+          "name": "attbonus",
+          "offset": 72,
+          "bytes": 12
+        },
+        {
+          "name": "spellcasters",
+          "offset": 84,
+          "bytes": 24
+        },
+        {
+          "name": "minmax",
+          "offset": 108,
+          "bytes": 24
+        },
+        {
+          "name": "conditions",
+          "offset": 132,
+          "bytes": 80
+        },
+        {
+          "name": "canusemissile",
+          "offset": 212,
+          "bytes": 2
+        },
+        {
+          "name": "getsmissilebonus",
+          "offset": 214,
+          "bytes": 2
+        },
+        {
+          "name": "stamina",
+          "offset": 216,
+          "bytes": 4
+        },
+        {
+          "name": "strength",
+          "offset": 220,
+          "bytes": 4
+        },
+        {
+          "name": "dodge",
+          "offset": 224,
+          "bytes": 4
+        },
+        {
+          "name": "tohit",
+          "offset": 228,
+          "bytes": 4
+        },
+        {
+          "name": "missile",
+          "offset": 232,
+          "bytes": 4
+        },
+        {
+          "name": "hand2hand",
+          "offset": 236,
+          "bytes": 4
+        },
+        {
+          "name": "spare1",
+          "offset": 240,
+          "bytes": 4
+        },
+        {
+          "name": "spare2",
+          "offset": 244,
+          "bytes": 4
+        },
+        {
+          "name": "casteclass",
+          "offset": 248,
+          "bytes": 2
+        },
+        {
+          "name": "minimumagegroup",
+          "offset": 250,
+          "bytes": 2
+        },
+        {
+          "name": "movebonus",
+          "offset": 252,
+          "bytes": 2
+        },
+        {
+          "name": "magres",
+          "offset": 254,
+          "bytes": 2
+        },
+        {
+          "name": "twohand",
+          "offset": 256,
+          "bytes": 2
+        },
+        {
+          "name": "maxstaminabonus",
+          "offset": 258,
+          "bytes": 2
+        },
+        {
+          "name": "bonusattacks",
+          "offset": 260,
+          "bytes": 2
+        },
+        {
+          "name": "maxattacks",
+          "offset": 262,
+          "bytes": 2
+        },
+        {
+          "name": "victory",
+          "offset": 264,
+          "bytes": 120
+        },
+        {
+          "name": "startmoney",
+          "offset": 384,
+          "bytes": 2
+        },
+        {
+          "name": "startitems",
+          "offset": 386,
+          "bytes": 40
+        },
+        {
+          "name": "attacks",
+          "offset": 426,
+          "bytes": 10
+        },
+        {
+          "name": "itemtypes",
+          "offset": 436,
+          "bytes": 8
+        },
+        {
+          "name": "defaulticon",
+          "offset": 444,
+          "bytes": 2
+        },
+        {
+          "name": "maxspellsattacks",
+          "offset": 446,
+          "bytes": 2
+        },
+        {
+          "name": "spellssofar",
+          "offset": 448,
+          "bytes": 2
+        },
+        {
+          "name": "spacer",
+          "offset": 450,
+          "bytes": 126
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "battle",
+      "size": 346,
+      "containers": [
+        "Data BD"
+      ],
+      "fields": [
+        {
+          "name": "battle",
+          "offset": 0,
+          "bytes": 338
+        },
+        {
+          "name": "dist",
+          "offset": 338,
+          "bytes": 1
+        },
+        {
+          "name": "messagebefore",
+          "offset": 340,
+          "bytes": 2
+        },
+        {
+          "name": "messageafter",
+          "offset": 342,
+          "bytes": 2
+        },
+        {
+          "name": "battlemacro",
+          "offset": 344,
+          "bytes": 2
+        }
+      ],
+      "padding": [
+        {
+          "offset": 339,
+          "bytes": 1
+        }
+      ]
+    },
+    {
+      "name": "timeencounter",
+      "size": 40,
+      "containers": [
+        "Data TD3"
+      ],
+      "fields": [
+        {
+          "name": "day",
+          "offset": 0,
+          "bytes": 2
+        },
+        {
+          "name": "increment",
+          "offset": 2,
+          "bytes": 2
+        },
+        {
+          "name": "percent",
+          "offset": 4,
+          "bytes": 2
+        },
+        {
+          "name": "door",
+          "offset": 6,
+          "bytes": 2
+        },
+        {
+          "name": "reclevel",
+          "offset": 8,
+          "bytes": 2
+        },
+        {
+          "name": "recrect",
+          "offset": 10,
+          "bytes": 2
+        },
+        {
+          "name": "recx",
+          "offset": 12,
+          "bytes": 2
+        },
+        {
+          "name": "recy",
+          "offset": 14,
+          "bytes": 2
+        },
+        {
+          "name": "recitem",
+          "offset": 16,
+          "bytes": 2
+        },
+        {
+          "name": "recquest",
+          "offset": 18,
+          "bytes": 2
+        },
+        {
+          "name": "stuff",
+          "offset": 20,
+          "bytes": 20
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "monster",
+      "size": 210,
+      "containers": [
+        "Data MD",
+        "Data MD1",
+        "Data MD-1"
+      ],
+      "fields": [
+        {
+          "name": "hd",
+          "offset": 0,
+          "bytes": 1
+        },
+        {
+          "name": "bonus",
+          "offset": 1,
+          "bytes": 1
+        },
+        {
+          "name": "dx",
+          "offset": 2,
+          "bytes": 1
+        },
+        {
+          "name": "name",
+          "offset": 3,
+          "bytes": 1
+        },
+        {
+          "name": "movementmax",
+          "offset": 4,
+          "bytes": 1
+        },
+        {
+          "name": "ac",
+          "offset": 5,
+          "bytes": 1
+        },
+        {
+          "name": "magres",
+          "offset": 6,
+          "bytes": 1
+        },
+        {
+          "name": "dist",
+          "offset": 7,
+          "bytes": 1
+        },
+        {
+          "name": "traiter",
+          "offset": 8,
+          "bytes": 1
+        },
+        {
+          "name": "size",
+          "offset": 9,
+          "bytes": 1
+        },
+        {
+          "name": "type",
+          "offset": 10,
+          "bytes": 8
+        },
+        {
+          "name": "noofattacks",
+          "offset": 18,
+          "bytes": 1
+        },
+        {
+          "name": "noofmagattacks",
+          "offset": 19,
+          "bytes": 1
+        },
+        {
+          "name": "attacks",
+          "offset": 20,
+          "bytes": 20
+        },
+        {
+          "name": "damplus",
+          "offset": 40,
+          "bytes": 1
+        },
+        {
+          "name": "castpercent",
+          "offset": 41,
+          "bytes": 1
+        },
+        {
+          "name": "runpercent",
+          "offset": 42,
+          "bytes": 1
+        },
+        {
+          "name": "surrenderpercent",
+          "offset": 43,
+          "bytes": 1
+        },
+        {
+          "name": "misslepercent",
+          "offset": 44,
+          "bytes": 1
+        },
+        {
+          "name": "cansum",
+          "offset": 45,
+          "bytes": 1
+        },
+        {
+          "name": "save",
+          "offset": 46,
+          "bytes": 6
+        },
+        {
+          "name": "spellimmune",
+          "offset": 52,
+          "bytes": 6
+        },
+        {
+          "name": "money",
+          "offset": 58,
+          "bytes": 6
+        },
+        {
+          "name": "spells",
+          "offset": 64,
+          "bytes": 20
+        },
+        {
+          "name": "items",
+          "offset": 84,
+          "bytes": 12
+        },
+        {
+          "name": "weapon",
+          "offset": 96,
+          "bytes": 2
+        },
+        {
+          "name": "iconid",
+          "offset": 98,
+          "bytes": 2
+        },
+        {
+          "name": "spellpoints",
+          "offset": 100,
+          "bytes": 2
+        },
+        {
+          "name": "exp",
+          "offset": 102,
+          "bytes": 2
+        },
+        {
+          "name": "stamina",
+          "offset": 104,
+          "bytes": 2
+        },
+        {
+          "name": "staminamax",
+          "offset": 106,
+          "bytes": 2
+        },
+        {
+          "name": "underneath",
+          "offset": 108,
+          "bytes": 8
+        },
+        {
+          "name": "target",
+          "offset": 116,
+          "bytes": 1
+        },
+        {
+          "name": "guarding",
+          "offset": 117,
+          "bytes": 1
+        },
+        {
+          "name": "notonmenu",
+          "offset": 118,
+          "bytes": 1
+        },
+        {
+          "name": "beenattacked",
+          "offset": 119,
+          "bytes": 1
+        },
+        {
+          "name": "movement",
+          "offset": 120,
+          "bytes": 1
+        },
+        {
+          "name": "magtohit",
+          "offset": 121,
+          "bytes": 1
+        },
+        {
+          "name": "condition",
+          "offset": 122,
+          "bytes": 40
+        },
+        {
+          "name": "lr",
+          "offset": 162,
+          "bytes": 1
+        },
+        {
+          "name": "up",
+          "offset": 163,
+          "bytes": 1
+        },
+        {
+          "name": "attacknum",
+          "offset": 164,
+          "bytes": 1
+        },
+        {
+          "name": "bonusattack",
+          "offset": 165,
+          "bytes": 1
+        },
+        {
+          "name": "todoondeath",
+          "offset": 166,
+          "bytes": 2
+        },
+        {
+          "name": "maxspellpoints",
+          "offset": 168,
+          "bytes": 2
+        },
+        {
+          "name": "monname",
+          "offset": 170,
+          "bytes": 40
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "maps",
+      "size": 340,
+      "containers": [
+        "Data MD2"
+      ],
+      "fields": [
+        {
+          "name": "icon",
+          "offset": 0,
+          "bytes": 60
+        },
+        {
+          "name": "startx",
+          "offset": 60,
+          "bytes": 2
+        },
+        {
+          "name": "starty",
+          "offset": 62,
+          "bytes": 2
+        },
+        {
+          "name": "level",
+          "offset": 64,
+          "bytes": 2
+        },
+        {
+          "name": "pictid",
+          "offset": 66,
+          "bytes": 2
+        },
+        {
+          "name": "iconsize",
+          "offset": 68,
+          "bytes": 2
+        },
+        {
+          "name": "show",
+          "offset": 70,
+          "bytes": 2
+        },
+        {
+          "name": "isdungeon",
+          "offset": 72,
+          "bytes": 2
+        },
+        {
+          "name": "spare",
+          "offset": 74,
+          "bytes": 2
+        },
+        {
+          "name": "rect",
+          "offset": 76,
+          "bytes": 8
+        },
+        {
+          "name": "note",
+          "offset": 84,
+          "bytes": 256
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "thief",
+      "size": 118,
+      "containers": [
+        "Data TD2"
+      ],
+      "fields": [
+        {
+          "name": "type",
+          "offset": 0,
+          "bytes": 10
+        },
+        {
+          "name": "modifer",
+          "offset": 10,
+          "bytes": 8
+        },
+        {
+          "name": "codes",
+          "offset": 18,
+          "bytes": 8
+        },
+        {
+          "name": "codef",
+          "offset": 26,
+          "bytes": 8
+        },
+        {
+          "name": "texts",
+          "offset": 34,
+          "bytes": 16
+        },
+        {
+          "name": "textf",
+          "offset": 50,
+          "bytes": 16
+        },
+        {
+          "name": "sounds",
+          "offset": 66,
+          "bytes": 16
+        },
+        {
+          "name": "soundf",
+          "offset": 82,
+          "bytes": 16
+        },
+        {
+          "name": "spell",
+          "offset": 98,
+          "bytes": 2
+        },
+        {
+          "name": "lowdamage",
+          "offset": 100,
+          "bytes": 2
+        },
+        {
+          "name": "highdamage",
+          "offset": 102,
+          "bytes": 2
+        },
+        {
+          "name": "tumblers",
+          "offset": 104,
+          "bytes": 2
+        },
+        {
+          "name": "prompt",
+          "offset": 106,
+          "bytes": 6
+        },
+        {
+          "name": "sound",
+          "offset": 112,
+          "bytes": 6
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "randlevel",
+      "size": 644,
+      "containers": [
+        "Data RD",
+        "Data RDD"
+      ],
+      "fields": [
+        {
+          "name": "randrect",
+          "offset": 0,
+          "bytes": 160
+        },
+        {
+          "name": "percent",
+          "offset": 160,
+          "bytes": 40
+        },
+        {
+          "name": "battlerange",
+          "offset": 200,
+          "bytes": 80
+        },
+        {
+          "name": "randdoor",
+          "offset": 280,
+          "bytes": 120
+        },
+        {
+          "name": "randdoorpercent",
+          "offset": 400,
+          "bytes": 120
+        },
+        {
+          "name": "landlook",
+          "offset": 520,
+          "bytes": 1
+        },
+        {
+          "name": "isdark",
+          "offset": 521,
+          "bytes": 1
+        },
+        {
+          "name": "uselos",
+          "offset": 522,
+          "bytes": 1
+        },
+        {
+          "name": "only",
+          "offset": 523,
+          "bytes": 20
+        },
+        {
+          "name": "option",
+          "offset": 543,
+          "bytes": 20
+        },
+        {
+          "name": "sound",
+          "offset": 564,
+          "bytes": 40
+        },
+        {
+          "name": "text",
+          "offset": 604,
+          "bytes": 40
+        }
+      ],
+      "padding": [
+        {
+          "offset": 563,
+          "bytes": 1
+        }
+      ]
+    },
+    {
+      "name": "treasure",
+      "size": 48,
+      "containers": [
+        "Data TD"
+      ],
+      "fields": [
+        {
+          "name": "itemid",
+          "offset": 0,
+          "bytes": 40
+        },
+        {
+          "name": "exp",
+          "offset": 40,
+          "bytes": 2
+        },
+        {
+          "name": "gold",
+          "offset": 42,
+          "bytes": 2
+        },
+        {
+          "name": "gems",
+          "offset": 44,
+          "bytes": 2
+        },
+        {
+          "name": "jewelry",
+          "offset": 46,
+          "bytes": 2
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "encount2",
+      "size": 160,
+      "containers": [
+        "Data ED2"
+      ],
+      "fields": [
+        {
+          "name": "code",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "name": "id",
+          "offset": 32,
+          "bytes": 64
+        },
+        {
+          "name": "choiceresult",
+          "offset": 96,
+          "bytes": 1
+        },
+        {
+          "name": "wordresult",
+          "offset": 97,
+          "bytes": 1
+        },
+        {
+          "name": "group",
+          "offset": 98,
+          "bytes": 8
+        },
+        {
+          "name": "spellid",
+          "offset": 106,
+          "bytes": 20
+        },
+        {
+          "name": "spellresult",
+          "offset": 126,
+          "bytes": 10
+        },
+        {
+          "name": "itemid",
+          "offset": 136,
+          "bytes": 10
+        },
+        {
+          "name": "itemresult",
+          "offset": 146,
+          "bytes": 5
+        },
+        {
+          "name": "canbackout",
+          "offset": 151,
+          "bytes": 1
+        },
+        {
+          "name": "thief",
+          "offset": 152,
+          "bytes": 1
+        },
+        {
+          "name": "maxtimes",
+          "offset": 153,
+          "bytes": 1
+        },
+        {
+          "name": "castesuccess",
+          "offset": 154,
+          "bytes": 1
+        },
+        {
+          "name": "thiefsuccess",
+          "offset": 155,
+          "bytes": 1
+        },
+        {
+          "name": "thieffail",
+          "offset": 156,
+          "bytes": 1
+        },
+        {
+          "name": "prompt",
+          "offset": 158,
+          "bytes": 2
+        }
+      ],
+      "padding": [
+        {
+          "offset": 157,
+          "bytes": 1
+        }
+      ],
+      "composite": {
+        "fixedTextTailOffset": 160,
+        "fixedTextTailBytes": 360,
+        "recordBytes": 520
+      }
+    },
+    {
+      "name": "encount",
+      "size": 106,
+      "containers": [
+        "Data ED"
+      ],
+      "fields": [
+        {
+          "name": "code",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "name": "id",
+          "offset": 32,
+          "bytes": 64
+        },
+        {
+          "name": "choiceresult",
+          "offset": 96,
+          "bytes": 4
+        },
+        {
+          "name": "canbackout",
+          "offset": 100,
+          "bytes": 1
+        },
+        {
+          "name": "maxtimes",
+          "offset": 101,
+          "bytes": 1
+        },
+        {
+          "name": "castesuccess",
+          "offset": 102,
+          "bytes": 1
+        },
+        {
+          "name": "prompt",
+          "offset": 104,
+          "bytes": 2
+        }
+      ],
+      "padding": [
+        {
+          "offset": 103,
+          "bytes": 1
+        }
+      ],
+      "composite": {
+        "fixedTextTailOffset": 106,
+        "fixedTextTailBytes": 320,
+        "recordBytes": 426
+      }
+    },
+    {
+      "name": "spell",
+      "size": 30,
+      "containers": [
+        "Data Spell"
+      ],
+      "fields": [
+        {
+          "name": "range1",
+          "offset": 0,
+          "bytes": 1
+        },
+        {
+          "name": "range2",
+          "offset": 1,
+          "bytes": 1
+        },
+        {
+          "name": "queicon",
+          "offset": 2,
+          "bytes": 1
+        },
+        {
+          "name": "tohitbonus",
+          "offset": 3,
+          "bytes": 1
+        },
+        {
+          "name": "savebonus",
+          "offset": 4,
+          "bytes": 1
+        },
+        {
+          "name": "fixedtargetnum",
+          "offset": 5,
+          "bytes": 1
+        },
+        {
+          "name": "canrotate",
+          "offset": 6,
+          "bytes": 1
+        },
+        {
+          "name": "saveadjust",
+          "offset": 7,
+          "bytes": 1
+        },
+        {
+          "name": "cannot",
+          "offset": 8,
+          "bytes": 1
+        },
+        {
+          "name": "resistadjust",
+          "offset": 9,
+          "bytes": 1
+        },
+        {
+          "name": "cost",
+          "offset": 10,
+          "bytes": 1
+        },
+        {
+          "name": "damage1",
+          "offset": 11,
+          "bytes": 1
+        },
+        {
+          "name": "damage2",
+          "offset": 12,
+          "bytes": 1
+        },
+        {
+          "name": "powerdam1",
+          "offset": 13,
+          "bytes": 1
+        },
+        {
+          "name": "powerdam2",
+          "offset": 14,
+          "bytes": 1
+        },
+        {
+          "name": "duration1",
+          "offset": 15,
+          "bytes": 1
+        },
+        {
+          "name": "duration2",
+          "offset": 16,
+          "bytes": 1
+        },
+        {
+          "name": "powerdur1",
+          "offset": 17,
+          "bytes": 1
+        },
+        {
+          "name": "powerdur2",
+          "offset": 18,
+          "bytes": 1
+        },
+        {
+          "name": "spelllook1",
+          "offset": 19,
+          "bytes": 1
+        },
+        {
+          "name": "spelllook2",
+          "offset": 20,
+          "bytes": 1
+        },
+        {
+          "name": "sound1",
+          "offset": 21,
+          "bytes": 1
+        },
+        {
+          "name": "sound2",
+          "offset": 22,
+          "bytes": 1
+        },
+        {
+          "name": "targettype",
+          "offset": 23,
+          "bytes": 1
+        },
+        {
+          "name": "size",
+          "offset": 24,
+          "bytes": 1
+        },
+        {
+          "name": "special",
+          "offset": 25,
+          "bytes": 1
+        },
+        {
+          "name": "damagetype",
+          "offset": 26,
+          "bytes": 1
+        },
+        {
+          "name": "spellclass",
+          "offset": 27,
+          "bytes": 1
+        },
+        {
+          "name": "incombat",
+          "offset": 28,
+          "bytes": 1
+        },
+        {
+          "name": "incamp",
+          "offset": 29,
+          "bytes": 1
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "itemattr",
+      "size": 100,
+      "containers": [
+        "Data NI"
+      ],
+      "fields": [
+        {
+          "name": "st",
+          "offset": 0,
+          "bytes": 2
+        },
+        {
+          "name": "itemid",
+          "offset": 2,
+          "bytes": 2
+        },
+        {
+          "name": "iconid",
+          "offset": 4,
+          "bytes": 2
+        },
+        {
+          "name": "type",
+          "offset": 6,
+          "bytes": 2
+        },
+        {
+          "name": "blunt",
+          "offset": 8,
+          "bytes": 2
+        },
+        {
+          "name": "nohands",
+          "offset": 10,
+          "bytes": 2
+        },
+        {
+          "name": "lu",
+          "offset": 12,
+          "bytes": 2
+        },
+        {
+          "name": "movement",
+          "offset": 14,
+          "bytes": 2
+        },
+        {
+          "name": "ac",
+          "offset": 16,
+          "bytes": 2
+        },
+        {
+          "name": "magres",
+          "offset": 18,
+          "bytes": 2
+        },
+        {
+          "name": "damage",
+          "offset": 20,
+          "bytes": 2
+        },
+        {
+          "name": "spellpoints",
+          "offset": 22,
+          "bytes": 2
+        },
+        {
+          "name": "sound",
+          "offset": 24,
+          "bytes": 2
+        },
+        {
+          "name": "wieght",
+          "offset": 26,
+          "bytes": 2
+        },
+        {
+          "name": "cost",
+          "offset": 28,
+          "bytes": 2
+        },
+        {
+          "name": "charge",
+          "offset": 30,
+          "bytes": 2
+        },
+        {
+          "name": "iscurse",
+          "offset": 32,
+          "bytes": 2
+        },
+        {
+          "name": "ismagical",
+          "offset": 34,
+          "bytes": 2
+        },
+        {
+          "name": "itemcat",
+          "offset": 36,
+          "bytes": 8
+        },
+        {
+          "name": "racerestrictions",
+          "offset": 44,
+          "bytes": 2
+        },
+        {
+          "name": "casterestrictions",
+          "offset": 46,
+          "bytes": 2
+        },
+        {
+          "name": "specificrace",
+          "offset": 48,
+          "bytes": 2
+        },
+        {
+          "name": "specificcaste",
+          "offset": 50,
+          "bytes": 2
+        },
+        {
+          "name": "raceclassonly",
+          "offset": 52,
+          "bytes": 2
+        },
+        {
+          "name": "casteclassonly",
+          "offset": 54,
+          "bytes": 2
+        },
+        {
+          "name": "spare2",
+          "offset": 56,
+          "bytes": 14
+        },
+        {
+          "name": "vssmall",
+          "offset": 70,
+          "bytes": 2
+        },
+        {
+          "name": "vslarge",
+          "offset": 72,
+          "bytes": 2
+        },
+        {
+          "name": "heat",
+          "offset": 74,
+          "bytes": 2
+        },
+        {
+          "name": "cold",
+          "offset": 76,
+          "bytes": 2
+        },
+        {
+          "name": "electric",
+          "offset": 78,
+          "bytes": 2
+        },
+        {
+          "name": "vsundead",
+          "offset": 80,
+          "bytes": 2
+        },
+        {
+          "name": "vsdd",
+          "offset": 82,
+          "bytes": 2
+        },
+        {
+          "name": "vsevil",
+          "offset": 84,
+          "bytes": 2
+        },
+        {
+          "name": "sp1",
+          "offset": 86,
+          "bytes": 2
+        },
+        {
+          "name": "sp2",
+          "offset": 88,
+          "bytes": 2
+        },
+        {
+          "name": "sp3",
+          "offset": 90,
+          "bytes": 2
+        },
+        {
+          "name": "sp4",
+          "offset": 92,
+          "bytes": 2
+        },
+        {
+          "name": "sp5",
+          "offset": 94,
+          "bytes": 2
+        },
+        {
+          "name": "xcharge",
+          "offset": 96,
+          "bytes": 2
+        },
+        {
+          "name": "drop",
+          "offset": 98,
+          "bytes": 2
+        }
+      ],
+      "padding": []
+    },
+    {
+      "name": "shop",
+      "size": 3002,
+      "containers": [
+        "Data SD"
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "offset": 0,
+          "bytes": 2000
+        },
+        {
+          "name": "num",
+          "offset": 2000,
+          "bytes": 1000
+        },
+        {
+          "name": "inflation",
+          "offset": 3000,
+          "bytes": 2
+        }
+      ],
+      "padding": []
+    }
+  ],
+  "containerCoverage": [
+    {
+      "container": "Data BD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "battle"
+    },
+    {
+      "container": "Data DD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "door"
+    },
+    {
+      "container": "Data DDD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "door"
+    },
+    {
+      "container": "Data DES",
+      "ownershipStatus": "decoded-writable",
+      "classification": "fixed-text-record",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data DL",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "uniform-i16-map-grid",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data ED",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct-plus-fixed-text",
+      "nativeStruct": "encount"
+    },
+    {
+      "container": "Data ED2",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct-plus-fixed-text",
+      "nativeStruct": "encount2"
+    },
+    {
+      "container": "Data ED3",
+      "ownershipStatus": "decoded-writable",
+      "classification": "uniform-i16-action-row",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data EDCD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "uniform-i16-extra-code-row",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data LD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "uniform-i16-map-grid",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data MD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "monster"
+    },
+    {
+      "container": "Data MD-1",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "monster"
+    },
+    {
+      "container": "Data MD1",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "monster"
+    },
+    {
+      "container": "Data MD2",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "native-struct",
+      "nativeStruct": "maps"
+    },
+    {
+      "container": "Data NI",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "itemattr"
+    },
+    {
+      "container": "Data RD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "randlevel"
+    },
+    {
+      "container": "Data RDD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "randlevel"
+    },
+    {
+      "container": "Data SD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "shop"
+    },
+    {
+      "container": "Data SD2",
+      "ownershipStatus": "decoded-writable",
+      "classification": "fixed-text-record",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data Solids",
+      "ownershipStatus": "decoded-writable",
+      "classification": "uniform-byte-table",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data TD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "treasure"
+    },
+    {
+      "container": "Data TD2",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "thief"
+    },
+    {
+      "container": "Data TD3",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "timeencounter"
+    },
+    {
+      "container": "Global",
+      "ownershipStatus": "decoded-writable",
+      "classification": "uniform-i16-table",
+      "nativeStruct": null
+    },
+    {
+      "container": "Scenario",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "sequential-file-format",
+      "nativeStruct": null
+    },
+    {
+      "container": "Scenario Startup Shell",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "sequential-file-format",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data CS",
+      "ownershipStatus": "decoded-writable",
+      "classification": "sequential-file-format",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data CI",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "contactdata"
+    },
+    {
+      "container": "Data RI",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "restrictinfo"
+    },
+    {
+      "container": "Layout",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "uniform-i16-grid-with-preserved-tail",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data Spell",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "native-struct",
+      "nativeStruct": "spell"
+    },
+    {
+      "container": "Data Custom 1 BD",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "native-struct-table-plus-sequential-tail",
+      "nativeStruct": "mapstats"
+    },
+    {
+      "container": "Data OD",
+      "ownershipStatus": "decoded-writable",
+      "classification": "fixed-text-record",
+      "nativeStruct": null
+    },
+    {
+      "container": "Data Race",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "race"
+    },
+    {
+      "container": "Data Caste",
+      "ownershipStatus": "decoded-writable",
+      "classification": "native-struct",
+      "nativeStruct": "caste"
+    },
+    {
+      "container": "Data Custom 2 BD",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "native-struct-table-plus-sequential-tail",
+      "nativeStruct": "mapstats"
+    },
+    {
+      "container": "Data Custom 3 BD",
+      "ownershipStatus": "mixed-writable-preserved",
+      "classification": "native-struct-table-plus-sequential-tail",
+      "nativeStruct": "mapstats"
+    }
+  ]
+}

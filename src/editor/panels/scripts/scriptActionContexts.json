@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "restrictions": [
+    { "opcode": 34, "contexts": ["simple-encounter", "complex-encounter"], "reason": "Break Encounter Loop is meaningful only while an encounter result script is running." },
+    { "opcode": 35, "contexts": ["simple-encounter"], "reason": "Eliminate Simple Encounter Option changes the currently running Simple Encounter." },
+    { "opcode": 44, "contexts": ["complex-encounter"], "reason": "Eliminate Complex Encounter Choice changes the currently running Complex Encounter." },
+    { "opcode": 100, "contexts": ["battle-macro", "monster-macro"], "reason": "End Battle requires an active combat runtime." },
+    { "opcode": 119, "contexts": ["monster-macro"], "reason": "Revive NPC After Combat is documented for an NPC Monster Macro." },
+    { "opcode": 120, "contexts": ["battle-macro", "monster-macro"], "reason": "Alter NPC / Monster During Combat requires an active combat runtime." },
+    { "opcode": 121, "contexts": ["battle-macro", "monster-macro"], "reason": "De-animate Lower Undead is documented for Monster and Battle Macros only." },
+    { "opcode": 122, "contexts": ["monster-macro"], "reason": "Cause Fumble is documented for Monster Macros only." },
+    { "opcode": 123, "contexts": ["battle-macro", "monster-macro"], "reason": "Cause Rout is documented for Monster and Battle Macros only." },
+    { "opcode": 124, "contexts": ["battle-macro", "monster-macro"], "reason": "Spawn Monster is documented for Monster and Battle Macros only." },
+    { "opcode": 125, "contexts": ["battle-macro", "monster-macro"], "reason": "Destroy Related Monsters is documented for Monster and Battle Macros only." },
+    { "opcode": 126, "contexts": ["battle-macro"], "reason": "Battle Macro Criteria is evaluated by an assigned Battle Macro after combat rounds." },
+    { "opcode": 127, "contexts": ["battle-macro", "monster-macro"], "reason": "Continue If Monster Present is documented for Monster and Battle Macros only." }
+  ]
+}

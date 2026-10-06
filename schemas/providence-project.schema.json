@@ -12,6 +12,7 @@
     "appVersion",
     "scenario",
     "source",
+    "remakeRuntime",
     "maps",
     "landLayout",
     "mapRecords",
@@ -51,12 +52,13 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 5,
+      "const": 6,
       "description": "Providence persisted-project schema version."
     },
     "appVersion": { "type": "string" },
     "scenario": { "$ref": "#/$defs/scenarioMeta" },
     "source": { "$ref": "#/$defs/source" },
+    "remakeRuntime": { "$ref": "#/$defs/remakeRuntime" },
     "maps": {
       "type": "array",
       "items": { "$ref": "#/$defs/mapEntity" }
@@ -171,6 +173,71 @@
     "validation": { "$ref": "#/$defs/canonicalObject" }
   },
   "$defs": {
+    "remakeRuntime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendedGameplayProfile",
+        "requiredExtensions",
+        "semanticActions",
+        "bindings"
+      ],
+      "properties": {
+        "recommendedGameplayProfile": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*$"
+        },
+        "requiredExtensions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "apiVersion", "configuration"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*$"
+              },
+              "apiVersion": {"type": "integer", "minimum": 1},
+              "configuration": {"type": "object"}
+            }
+          }
+        },
+        "semanticActions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["targetKind", "recordId", "slot", "operation", "parameters"],
+            "properties": {
+              "targetKind": {
+                "type": "string",
+                "enum": ["trigger", "simpleEncounter", "complexEncounter"]
+              },
+              "recordId": {"type": "string"},
+              "slot": {"type": "integer", "minimum": 0, "maximum": 31},
+              "operation": {
+                "type": "string",
+                "pattern": "^scenario\\.[a-z0-9][a-z0-9.-]*$"
+              },
+              "parameters": {"type": "object"}
+            }
+          }
+        },
+        "bindings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["spells", "items", "encounters", "monsterAi", "lifecycle"],
+          "properties": {
+            "spells": {"type": "object", "additionalProperties": {"type": "string"}},
+            "items": {"type": "object", "additionalProperties": {"type": "string"}},
+            "encounters": {"type": "object", "additionalProperties": {"type": "string"}},
+            "monsterAi": {"type": "object", "additionalProperties": {"type": "string"}},
+            "lifecycle": {"type": "object", "additionalProperties": {"type": "string"}}
+          }
+        }
+      }
+    },
     "levelType": {
       "type": "string",
       "enum": ["land", "dungeon"],
@@ -499,6 +566,8 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceAction",
       "x-providence-rust-name": "Action",
+      "x-providence-rust-optional": ["mediaRequiredForProgression"],
+      "x-providence-rust-skip-none": ["mediaRequiredForProgression"],
       "required": ["slot", "rawCode", "code", "id", "label", "category"],
       "properties": {
         "slot": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -511,7 +580,11 @@
           "description": "Open editor-facing label in TypeScript; normalized through ActionCategory at the Rust boundary.",
           "x-providence-rust-type": "ActionCategory"
         },
-        "gosub": { "type": "boolean" }
+        "gosub": { "type": "boolean" },
+        "mediaRequiredForProgression": {
+          "type": "boolean",
+          "description": "Project-only Remake readiness marker for media the player must receive to continue."
+        }
       }
     },
     "triggerRecord": {
@@ -945,11 +1018,17 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceEncounterActionRow",
       "x-providence-rust-name": "EncounterActionRow",
+      "x-providence-rust-optional": ["mediaRequiredForProgression"],
+      "x-providence-rust-skip-none": ["mediaRequiredForProgression"],
       "required": ["slot", "rawCode", "id"],
       "properties": {
         "slot": { "type": "integer", "minimum": 0, "maximum": 31, "x-providence-rust-type": "usize" },
         "rawCode": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i16" },
-        "id": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }
+        "id": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "mediaRequiredForProgression": {
+          "type": "boolean",
+          "description": "Project-only Remake readiness marker for media the player must receive to continue."
+        }
       }
     },
     "simpleEncounterRecord": {

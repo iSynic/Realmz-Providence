@@ -31,7 +31,7 @@ describe("Realmz target semantics", () => {
   it("keeps target picker coverage tied to normalized Realmz opcodes", () => {
     expect(targetPickerConfig(5)?.recordType).toBe("complexEncounter");
     expect(targetPickerConfig(-5)?.recordType).toBe("complexEncounter");
-    expect(targetPickerConfig(89)).toMatchObject({ label: "Monster Target", recordType: "monster" });
+    expect(targetPickerConfig(89)).toMatchObject({ label: "Special Character", recordType: "monster" });
     expect(targetPickerConfig(58)).toBeNull();
   });
 

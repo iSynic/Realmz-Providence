@@ -198,7 +198,7 @@ for (const opcode of expectedManualNoneStepOnlyCodes) {
     failures.push(`Manual no-option opcode ${opcode} should be in MANUAL_NONE_STEP_ONLY_ACTIONS.`);
   }
 }
-for (const key of ["crosswalk", "manualHelp", "catalog", "actions", "targetPicker"]) {
+for (const key of ["crosswalk", "manualHelp", "catalog", "actions", "targetPicker", "optionDomains", "authoringContexts"]) {
   if (!apOpcodeCoverage.source?.[key]) failures.push(`Opcode audit report is missing source.${key}.`);
 }
 if (coverageEntries.length < 120) {
@@ -240,7 +240,7 @@ for (const entry of coverageEntries) {
     for (const key of ["fieldLabel", "internalName", "storage", "expectedControl", "implementedSurface", "status", "evidence"]) {
       if (!(key in control)) failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} authoring control is missing ${key}.`);
     }
-    if (!["search-target", "compact-select", "toggle", "narrow-number", "step-only", "advanced-preserved"].includes(control.expectedControl)) {
+    if (!["search-target", "compact-select", "toggle", "contextual-number", "narrow-number", "step-only", "advanced-preserved"].includes(control.expectedControl)) {
       failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} has unknown expectedControl ${control.expectedControl}.`);
     }
     if (!["ok", "needs-ui-fix", "needs-copy-fix", "needs-evidence", "intentionally-preserved"].includes(control.status)) {
@@ -288,8 +288,8 @@ for (const opcode of [84, 98, 99]) {
 }
 
 const macro121 = coverageEntry(121);
-if (macro121?.gapStatus !== "combat-macro-only") {
-  failures.push("Opcode 121 should stay marked combat-macro-only.");
+if (macro121?.gapStatus !== "context-restricted") {
+  failures.push("Opcode 121 should stay marked context-restricted.");
 }
 if (macro121?.evidenceConfidence !== "source-backed") {
   failures.push("Opcode 121 should stay source-backed.");
@@ -328,16 +328,17 @@ if (inversePick?.gapStatus !== "covered-in-current-ui") {
 if (inversePick?.evidenceConfidence !== "manual-backed") {
   failures.push("Opcode -14 should inherit manual-backed confidence from opcode 14.");
 }
-if (!hasAuthoringControl(inversePick, "ID", "narrow-number", "direct-id")) {
-  failures.push("Opcode -14 should retain a direct ID control audit.");
+if (!hasAuthoringControl(inversePick, "ID", "contextual-number", "direct-id")) {
+  failures.push("Opcode -14 should retain a contextual direct-value control audit.");
 }
 if (!(inversePick?.authoringControls ?? []).every((control) => control.status === "ok")) {
   failures.push("Opcode -14 controls should audit as ok.");
 }
 
-for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {
+for (const opcode of [24, 25, 26, 28, 34, 49, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102, 111, 112, 119]) {
   const entry = coverageEntry(opcode);
-  if (entry?.gapStatus !== "step-only-no-options") {
+  const expectedGap = [34, 100, 119].includes(opcode) ? "context-restricted" : "step-only-no-options";
+  if (entry?.gapStatus !== expectedGap) {
     failures.push(`Manual no-option opcode ${opcode} should stay marked step-only-no-options.`);
   }
   if (!(entry?.authoringControls ?? []).every((control) => control.expectedControl === "step-only" && control.status === "ok")) {
@@ -1102,7 +1103,8 @@ for (const snippet of [
   "Monster Macro",
   "Combat Macro Actions",
   "Positive battle macro imports are preserved",
-  "definition.opcode === 121 && combatMacroContext",
+  "scriptActionContextRestriction(definition.opcode)",
+  "scriptActionAllowedInAnyContext",
   "combatMacroContext?.kind === \"battle\") return \"Battle Macro\"",
   "Battle / Monster / Item Action\") return \"Source-Linked Extra Action\""
 ]) {

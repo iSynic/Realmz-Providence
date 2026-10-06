@@ -44,6 +44,13 @@ const SIGNED_DIRECT_TARGET_BEHAVIOR: Record<number, string> = {
   47: "clears quest"
 };
 
+const SIGNED_DIRECT_TARGET_MODES: Record<number, { positive: string; negative: string }> = {
+  1: { positive: "Wait for player input", negative: "Continue without waiting" },
+  6: { positive: "Enable the Shop button", negative: "Open the shop immediately" },
+  29: { positive: "Give map for later viewing", negative: "Give and display map immediately" },
+  47: { positive: "Set quest flag", negative: "Clear quest flag" }
+};
+
 export function resolveSignedTargetValue(opcode: number, value: number) {
   const code = normalizeStepOpcode(opcode);
   return SIGNED_DIRECT_TARGET_BEHAVIOR[code] ? Math.abs(value) : value;
@@ -91,6 +98,7 @@ export function TargetPicker({
   showDetail = true,
   showTargetCount = true,
   showPreview = true,
+  showSignedBehavior = true,
   allowCreateAtZero = false,
   previewContext = {}
 }: {
@@ -106,6 +114,7 @@ export function TargetPicker({
   showDetail?: boolean;
   showTargetCount?: boolean;
   showPreview?: boolean;
+  showSignedBehavior?: boolean;
   allowCreateAtZero?: boolean;
   previewContext?: PreviewRuntimeContext;
 }) {
@@ -186,7 +195,9 @@ export function TargetPicker({
     && (!selected || hasCurrentValue || (allowCreateAtZero && resolvedValue === 0))
   );
   const behavior = signedTargetBehaviorLabel(opcode, value);
-  const showWaitControl = supportsSignedSoundReference(opcode) && resolvedValue !== 0;
+  const showWaitControl = showSignedBehavior && supportsSignedSoundReference(opcode) && resolvedValue !== 0;
+  const signedTargetMode = SIGNED_DIRECT_TARGET_MODES[normalizeStepOpcode(opcode)];
+  const showSignedTargetMode = showSignedBehavior && Boolean(signedTargetMode) && resolvedValue !== 0;
   const detail = selected
     ? targetPickerSelectedDetail(selected, normalizeStepOpcode(opcode), behavior)
     : "";
@@ -290,6 +301,29 @@ export function TargetPicker({
           <span>Wait for sound to finish</span>
         </label>
       )}
+      {showSignedTargetMode && signedTargetMode && (
+        <fieldset className="realmz-target-picker-mode">
+          <legend>Runtime behavior</legend>
+          <label>
+            <input
+              type="radio"
+              name={`target-mode-${normalizeStepOpcode(opcode)}`}
+              checked={value >= 0}
+              onChange={() => onChange(Math.abs(resolvedValue))}
+            />
+            <span>{signedTargetMode.positive}</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name={`target-mode-${normalizeStepOpcode(opcode)}`}
+              checked={value < 0}
+              onChange={() => onChange(-Math.abs(resolvedValue))}
+            />
+            <span>{signedTargetMode.negative}</span>
+          </label>
+        </fieldset>
+      )}
       {!isSearchDrivenPicker && showDetail && detail && <small>{detail}</small>}
       {showPreview && selectedReferencePreview && (
         <ReferencePreview
@@ -377,16 +411,11 @@ export function targetPickerConfig(opcode: number) {
     10: { label: "Treasure Target", hint: "Select a treasure record.", recordType: "treasure" },
     27: { label: "Picture Resource", hint: "Select a picture resource or managed picture asset." },
     29: { label: "Player Map", hint: "Select the Maps/Notes entry to give or display.", searchPlaceholder: "Search map #, name, or note..." },
-    35: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
     39: { label: "Extra Action Point", hint: "Select the Extra Action Point this action runs." },
-    44: { label: "Complex Encounter", hint: "Select the complex encounter this action mutates.", recordType: "complexEncounter" },
     47: { label: "Quest Flag", hint: "Select a quest flag to write.", recordType: "questLabel" },
-    49: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
     62: { label: "Scrolling Text", hint: "Select a scenario TEXT resource for the scrolling-text movie window.", searchPlaceholder: "Search scrolling text # or body..." },
-    88: { label: "Monster Target", hint: "Select the special-character monster record to remove.", recordType: "monster" },
-    89: { label: "Monster Target", hint: "Select the special-character monster record to add.", recordType: "monster" },
-    97: { label: "Map Record", hint: "Select a map record." },
-    104: { label: "Simple Encounter", hint: "Select the simple encounter this action mutates.", recordType: "simpleEncounter" },
+    88: { label: "Special Character", hint: "Select the scenario monster record used for this special character.", recordType: "monster" },
+    89: { label: "Special Character", hint: "Select the scenario monster record used for this special character.", recordType: "monster" },
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;
@@ -1235,18 +1264,13 @@ export function targetSemanticTypes(code: number) {
     10: ["treasure"],
     27: ["picture", "resource"],
     29: ["map", "map record"],
-    35: ["simple encounter"],
     39: ["macro"],
-    44: ["complex encounter"],
     47: ["quest flag"],
     48: ["battle"],
-    49: ["shop"],
     56: ["battle"],
     62: ["resource"],
     88: ["monster"],
     89: ["monster"],
-    97: ["map", "map record"],
-    104: ["simple encounter"],
     107: ["battle"],
     127: ["monster"]
   };

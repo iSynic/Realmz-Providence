@@ -1,5 +1,6 @@
 use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
+use super::opcodes::normalize_opcode;
 use crate::project::*;
 use crate::realmz::{
     shop_prefix_record_count, write_battles, write_complex_encounters, write_global_macro_hooks,
@@ -634,6 +635,58 @@ pub(super) fn add_encounters(schema: &mut SemanticSchema, buffers: &BTreeMap<Str
             COMPLEX_ENCOUNTER_BYTES,
             super::common::COMPLEX_STRUCT_BYTES,
         );
+    }
+}
+
+pub(super) fn add_encounter_macro_links(
+    schema: &mut SemanticSchema,
+    simple_encounters: &[SimpleEncounterRecord],
+    complex_encounters: &[ComplexEncounterRecord],
+) {
+    for (kind, encounters) in [
+        (
+            "simple",
+            simple_encounters
+                .iter()
+                .map(|encounter| (encounter.id, &encounter.actions))
+                .collect::<Vec<_>>(),
+        ),
+        (
+            "complex",
+            complex_encounters
+                .iter()
+                .map(|encounter| (encounter.id, &encounter.actions))
+                .collect::<Vec<_>>(),
+        ),
+    ] {
+        for (encounter_id, actions) in encounters {
+            let entity_id = format!("encounter:{kind}:{encounter_id}");
+            for action in actions {
+                if normalize_opcode(action.raw_code) != 39 || action.id < 0 {
+                    continue;
+                }
+                let result = action.slot / 8 + 1;
+                let step = action.slot % 8 + 1;
+                push_link(
+                    schema,
+                    &entity_id,
+                    &format!("macro:{}", action.id),
+                    "calls_macro",
+                    Confidence::SourceBacked,
+                    vec![format!(
+                        "record:Data E{}:{encounter_id}",
+                        if kind == "complex" { "D2" } else { "D" }
+                    )],
+                    summary([
+                        ("opcode", json!(39)),
+                        ("rawCode", json!(action.raw_code)),
+                        ("slot", json!(action.slot)),
+                        ("result", json!(result)),
+                        ("step", json!(step)),
+                    ]),
+                );
+            }
+        }
     }
 }
 
@@ -2597,5 +2650,57 @@ mod tests {
 
         assert_eq!(summary.get("locationKind"), Some(&json!("land")));
         assert!(!summary.contains_key("reservedWords"));
+    }
+
+    #[test]
+    fn complex_encounter_result_links_to_its_extra_action_point() {
+        let mut schema = SemanticSchema::default();
+        let encounter = ComplexEncounterRecord {
+            id: 15,
+            actions: vec![EncounterActionRow {
+                slot: 3,
+                raw_code: 39,
+                id: 175,
+                media_required_for_progression: None,
+            }],
+            action_result: 1,
+            word_result: 0,
+            groups: vec![0; 8],
+            spell_ids: vec![0; 10],
+            spell_results: vec![0; 10],
+            item_ids: vec![0; 5],
+            item_results: vec![0; 5],
+            choice_results: Vec::new(),
+            word_results: Vec::new(),
+            can_back_out: false,
+            thief: false,
+            max_times: 0,
+            caste_success: 0,
+            thief_success: 0,
+            thief_fail: 0,
+            prompt: 0,
+            texts: vec![String::new(); 9],
+            authored: false,
+            provenance: Provenance {
+                source_file: "Data ED2".to_string(),
+                record_index: 15,
+                byte_offset: 15 * COMPLEX_ENCOUNTER_BYTES,
+                byte_length: COMPLEX_ENCOUNTER_BYTES,
+                confidence: Confidence::SourceBacked,
+            },
+        };
+
+        add_encounter_macro_links(&mut schema, &[], &[encounter]);
+
+        let link = schema
+            .links
+            .iter()
+            .find(|link| link.kind == "calls_macro")
+            .expect("complex encounter result should call its Extra Action Point");
+        assert_eq!(link.from, "encounter:complex:15");
+        assert_eq!(link.to, "macro:175");
+        assert_eq!(link.metadata.get("result"), Some(&json!(1)));
+        assert_eq!(link.metadata.get("step"), Some(&json!(4)));
+        assert_eq!(link.metadata.get("slot"), Some(&json!(3)));
     }
 }

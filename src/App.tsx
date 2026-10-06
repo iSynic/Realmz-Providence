@@ -36,6 +36,7 @@ import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
 import { GlobalSearchDialog } from "./editor/workbench/GlobalSearchDialog";
 import { DivinityManualWindow } from "./editor/views/DivinityManualWindow";
 import { GlobalSearchResult } from "./editor/globalSearch";
+import { macroSelectionEditor } from "./editor/panels/scripts/scriptInventory";
 import type { DocumentationToolTarget } from "./editor/docs/documentationContent";
 import {
   LazyDocumentsView as DocumentsView,
@@ -470,8 +471,7 @@ export function App() {
     const trigger = state.project?.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === macroId);
     if (!trigger) return "macros";
     const classification = extraActionPointClassification(state.project, trigger);
-    if (classification === "Global Macro") return "global-macros";
-    return "macros";
+    return macroSelectionEditor(state.activeTab, state.activeEditor, classification);
   }
 
   function macroRecordIndexFromEntityId(id: string) {

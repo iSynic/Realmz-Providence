@@ -166,6 +166,32 @@
       "container": "standalone-file"
     },
     {
+      "id": "v2-quicktime-gif",
+      "bytesBase64": "APQAAAAAAAIAAgARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIIAAAAAxAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgAAAAAAAAAAAAAAVmdpZiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAEgAAABIAAAAAAAqAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI//9HSUY4OWECAAIAgQAA/wAAAP8AAAD/////LAAAAAACAAIAAAIDRDQFADsA/w==",
+      "byteLength": 244,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "v2-quicktime-uncompressed-packbits",
+      "bytesBase64": "AMAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIIBAAAAkAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJiACAAAAAAAAQAIAAAAAAAAAAAASAAAAEgAAAAAAAgAAQAIAAAAAAAAAAAAAAAAAAAAAIAAAAEAAAAAAAAAAAAB////////AAAAAAABAAgAAAAAAAEACAAAAvkAAAD/",
+      "byteLength": 192,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "v2-quicktime-unknown-codec",
+      "bytesBase64": "APQAAAAAAAIAAgARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIIAAAAAxAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgAAAAAAAAAAAAAAVnp6enoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAEgAAABIAAAAAAAqAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAhHSUY4OWECAAIAgQAA/wAAAP8AAAD/////LAAAAAACAAIAAAIDRDQFADsA/w==",
+      "byteLength": 244,
+      "claim": "fixture-proven",
+      "malformedCompanionOf": "v2-quicktime-gif"
+    },
+    {
+      "id": "v2-quicktime-gif-truncated",
+      "bytesBase64": "APQAAAAAAAIAAgARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIIAAAAAxAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgAAAAAAAAAAAAAAVmdpZiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAEgAAABIAAAAAAAqAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI//9HSUY4OWECAAIAgQAA/wAAAP8AAAD/////LAAAAAA=",
+      "byteLength": 230,
+      "claim": "fixture-proven",
+      "malformedCompanionOf": "v2-quicktime-gif"
+    },
+    {
       "id": "standalone-512-byte-invalid-version",
       "bytesBase64": "AAAAAAAAAAEACAARAv4MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAKoAAP8=",
       "prefixZeroBytes": 512,
@@ -315,6 +341,10 @@
     "directbits32-chunky-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
     "directbits32-planar-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
     "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-quicktime-gif": { "status": "decoded", "width": 2, "height": 2, "version": "v2", "format": "quicktime-gif", "opcode": "0x8200", "opcodeCount": 4, "rgbaFnv1a": "a3f66bad", "diagnosticCodes": [] },
+    "v2-quicktime-uncompressed-packbits": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "quicktime-packbits-indexed-8", "opcode": "0x8201", "opcodeCount": 4, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
+    "v2-quicktime-unknown-codec": { "status": "unsupported-variant", "diagnosticCodes": ["pict.quicktime_codec_unsupported"] },
+    "v2-quicktime-gif-truncated": { "status": "malformed", "diagnosticCodes": ["pict.quicktime_truncated"] },
     "standalone-512-byte-invalid-version": { "status": "malformed", "diagnosticCodes": ["pict.standalone_header_invalid"] },
     "v1-bitsrect-byte-stream-truncated": { "status": "malformed", "diagnosticCodes": ["pict.bits_truncated"] },
     "v1-bitsrect-byte-stream-missing-end": { "status": "malformed", "diagnosticCodes": ["pict.v1_missing_end_picture"] },

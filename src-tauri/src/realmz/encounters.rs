@@ -126,23 +126,21 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
 
 pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
     parse_fixed_records(buffer, TIMED_ENCOUNTER_BYTES)
-        .map(|(id, start, record)| {
-            TimedEncounterRecord {
-                id,
-                day: i16_be(record, 0),
-                increment: i16_be(record, 2),
-                percent: i16_be(record, 4),
-                door: i16_be(record, 6),
-                required_level: i16_be(record, 8),
-                required_random_rect: i16_be(record, 10),
-                required_x: i16_be(record, 12),
-                required_y: i16_be(record, 14),
-                required_item: i16_be(record, 16),
-                required_quest: i16_be(record, 18),
-                location_kind: timed_location_kind(i16_be(record, 20)),
-                authored: false,
-                provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
-            }
+        .map(|(id, start, record)| TimedEncounterRecord {
+            id,
+            day: i16_be(record, 0),
+            increment: i16_be(record, 2),
+            percent: i16_be(record, 4),
+            door: i16_be(record, 6),
+            required_level: i16_be(record, 8),
+            required_random_rect: i16_be(record, 10),
+            required_x: i16_be(record, 12),
+            required_y: i16_be(record, 14),
+            required_item: i16_be(record, 16),
+            required_quest: i16_be(record, 18),
+            location_kind: timed_location_kind(i16_be(record, 20)),
+            authored: false,
+            provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
         })
         .collect()
 }
@@ -232,7 +230,12 @@ fn parse_encounter_actions(record: &[u8]) -> Vec<EncounterActionRow> {
         let raw_code = record[slot] as i8 as i16;
         let id = i16_be(record, 32 + slot * 2);
         if raw_code != 0 || id != 0 {
-            actions.push(EncounterActionRow { slot, raw_code, id });
+            actions.push(EncounterActionRow {
+                slot,
+                raw_code,
+                id,
+                media_required_for_progression: None,
+            });
         }
     }
     actions
@@ -314,6 +317,7 @@ mod tests {
             slot: 3,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         }];
         encounter.choice_results[2] = 7;
         encounter.can_back_out = true;
@@ -351,6 +355,7 @@ mod tests {
             slot: 4,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         });
         encounter.action_result = 6;
         encounter.word_result = 7;

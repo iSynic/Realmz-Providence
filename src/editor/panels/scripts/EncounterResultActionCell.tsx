@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Eye, X } from "lucide-react";
+import { Eye, SlidersHorizontal, X } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import {
   resolveSignedMessageTarget,
@@ -19,6 +19,12 @@ import {
   resultActionOptionsFor,
   signedResultActionCode
 } from "./encounterFlow";
+import { encounterEcodeActionSummary } from "./encounterEcodeSettings";
+import {
+  directActionSettingsFor,
+  directActionSummary
+} from "./directActionSettings";
+import { scriptActionAllowedInContext, scriptActionContextRestrictionReason } from "./scriptActionContexts";
 
 export function encounterResultIdHelp(
   project: Project,
@@ -73,29 +79,43 @@ function conciseTargetDetail(value: string) {
 export function EncounterResultActionCell({
   project,
   catalog,
+  recordKind,
   slot,
   row,
   onUpdate,
   onFocusCode,
-  onPreviewTarget
+  onPreviewTarget,
+  onEditSettings,
+  onEditDirect
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
+  recordKind: "simple" | "complex";
   slot: number;
   row: EncounterActionRow;
   onUpdate: (changes: Partial<EncounterActionRow>) => void;
   onFocusCode: (code: number) => void;
   onPreviewTarget: (opcode: number, value: number) => void;
+  onEditSettings: (rawCode: number) => void;
+  onEditDirect: (rawCode: number) => void;
 }) {
   const idHelpId = useId();
   const baseCode = resultActionBaseCode(row.rawCode);
   const isNegativeAction = row.rawCode < 0;
   const rowOption = actionOptionFor(baseCode);
+  const isEcodeBacked = Boolean(rowOption?.edcdShape);
+  const ecodeSummary = isEcodeBacked ? encounterEcodeActionSummary(project, catalog, row) : null;
+  const directSettings = isEcodeBacked ? null : directActionSettingsFor(row.rawCode);
+  const directSummary = isEcodeBacked ? null : directActionSummary(project, catalog, row.rawCode, row.id);
   const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
   const populated = row.rawCode !== 0 || row.id !== 0;
   const targetPicker = targetPickerConfig(baseCode);
-  const canBrowse = Boolean(targetPicker);
-  const options = resultActionOptionsFor(baseCode);
+  const canBrowse = Boolean(targetPicker) && !isEcodeBacked;
+  const options = resultActionOptionsFor(baseCode, recordKind);
+  const allowedInEncounter = scriptActionAllowedInContext(
+    baseCode,
+    recordKind === "simple" ? "simple-encounter" : "complex-encounter"
+  );
   const idHelp = encounterResultIdHelp(project, catalog, row);
   return (
     <div className={`simple-encounter-action-cell${populated ? " populated" : ""}`}>
@@ -116,25 +136,65 @@ export function EncounterResultActionCell({
         onFocus={() => onFocusCode(baseCode)}
         onChange={(event) => {
           const nextCode = Number(event.currentTarget.value);
-          onUpdate({ rawCode: signedResultActionCode(nextCode, isNegativeAction) });
+          const nextRawCode = signedResultActionCode(nextCode, isNegativeAction);
+          if (actionOptionFor(nextCode)?.edcdShape) {
+            onEditSettings(nextRawCode);
+            return;
+          }
+          const nextSettings = directActionSettingsFor(nextRawCode);
+          if (nextSettings.kind === "none") {
+            onUpdate({ rawCode: nextRawCode, id: 0 });
+            return;
+          }
+          onEditDirect(nextRawCode);
         }}
       >
         {options.map((option) => (
           <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
         ))}
       </select>
-      <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
-        <label className="encounter-action-id-field">
-          <input
-            type="number"
-            value={row.id}
-            aria-label={`Result action ${slot} ID`}
+      {isEcodeBacked ? (
+        <TutorialTip
+          title={`${rowOption?.displayTitle ?? rowOption?.shortLabel ?? `Opcode ${baseCode}`} Settings`}
+          body={`${ecodeSummary ?? "Configure this action's settings."} Raw storage details remain available inside the settings dialog.`}
+          side="below"
+          focusable={false}
+          tooltipId={idHelpId}
+        >
+          <button
+            type="button"
+            className="encounter-action-settings-field"
+            aria-label={`Edit result action ${slot} settings`}
             aria-describedby={idHelpId}
             onFocus={() => onFocusCode(baseCode)}
-            onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
-          />
-        </label>
-      </TutorialTip>
+            onClick={() => onEditSettings(row.rawCode)}
+          >
+            <span>{ecodeSummary}</span>
+            <SlidersHorizontal size={12} />
+          </button>
+        </TutorialTip>
+      ) : directSettings?.kind !== "none" && baseCode !== 0 ? (
+        <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
+          <button
+            type="button"
+            className="encounter-action-settings-field"
+            aria-label={`Edit result action ${slot} settings`}
+            aria-describedby={idHelpId}
+            onFocus={() => onFocusCode(baseCode)}
+            onClick={() => onEditDirect(row.rawCode)}
+          >
+            <span>{directSummary}</span>
+            <SlidersHorizontal size={12} />
+          </button>
+        </TutorialTip>
+      ) : (
+        <span
+          className="encounter-action-settings-field encounter-action-no-settings-field"
+          aria-label={`Result action ${slot} has no settings`}
+        >
+          <span>{baseCode === 0 ? "Empty" : directSummary}</span>
+        </span>
+      )}
       <div className="encounter-action-row-actions">
         {canBrowse ? (
           <button
@@ -160,6 +220,11 @@ export function EncounterResultActionCell({
         )}
         {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
       </div>
+      {populated && !allowedInEncounter && (
+        <small className="field-warning encounter-action-context-warning">
+          Imported value preserved. {scriptActionContextRestrictionReason(baseCode)}
+        </small>
+      )}
     </div>
   );
 }

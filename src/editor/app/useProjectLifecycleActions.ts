@@ -13,7 +13,7 @@ import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
 import { createProjectFromScenarioSeed, parseScenarioSeed, ScenarioSeed, ScenarioSeedProjectResult } from "../scenarioSeed";
 import { createScenarioSeedPreflightOutcome, ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
-import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ScenarioTarget, ValidationReport } from "../types";
+import { BenchmarkReport, ExportReport, ExportTarget, LibraryCatalog, Project, RemakeExportReport, ScenarioTarget, ValidationReport } from "../types";
 import { commandError } from "../utils";
 import {
   defaultExportPath,
@@ -547,17 +547,20 @@ export function useProjectLifecycleActions({
     }
   }
 
-  async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
+  async function exportProject(exportTarget: ExportTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
       try {
-        if (scenarioTarget === "providence-portable-folder") {
+        if (exportTarget === "realmz-remake-folder") {
+          throw new Error("Realmz Remake folder export requires Providence desktop.");
+        }
+        if (exportTarget === "providence-portable-folder") {
           await downloadBrowserProjectPackage(state.project);
           dispatch({ type: "setStatus", status: "Downloaded Providence project ZIP package with project metadata, managed asset payloads, and captured raw sources where available." });
         } else {
-          const report = await downloadBrowserScenarioPackage(state.project, scenarioTarget);
+          const report = await downloadBrowserScenarioPackage(state.project, exportTarget);
           dispatch({ type: "setExportReport", report });
-          dispatch({ type: "setStatus", status: `Downloaded ${scenarioTarget === "mac-classic-folder" ? "Mac Classic" : "Windows Realmz"} scenario ZIP with ${report.passThroughFiles.length.toLocaleString()} preserved source file(s) and ${report.writtenResources.length.toLocaleString()} resource update(s).` });
+          dispatch({ type: "setStatus", status: `Downloaded ${exportTarget === "mac-classic-folder" ? "Mac Classic" : "Windows Realmz"} scenario ZIP with ${report.passThroughFiles.length.toLocaleString()} preserved source file(s) and ${report.writtenResources.length.toLocaleString()} resource update(s).` });
         }
       } catch (error) {
         dispatch({ type: "setStatus", status: `Browser export failed: ${commandError(error)}` });
@@ -569,21 +572,32 @@ export function useProjectLifecycleActions({
         directory: true,
         multiple: false,
         defaultPath: parentPath(exportDir || defaultExportPath(roots.export, state.project.scenario.name)) || roots.export,
-        title: "Choose Realmz Scenario Export Folder"
+        title: exportTarget === "realmz-remake-folder" ? "Choose Realmz Remake Scenario Folder" : "Choose Realmz Scenario Export Folder"
       });
       const selectedPath = normalizeDialogPath(selected);
       if (!selectedPath) return;
-      dispatch({ type: "setStatus", status: "Exporting scenario folder..." });
+      dispatch({ type: "setStatus", status: exportTarget === "realmz-remake-folder" ? "Exporting Realmz Remake scenario folder..." : "Exporting scenario folder..." });
       const targetExportDir = selectedPath;
       setExportDir(targetExportDir);
-      const report = await invoke<ExportReport>("export_project", {
-        projectDir,
-        project: state.project,
-        outputDir: targetExportDir,
-        scenarioTarget
-      });
+      const report = exportTarget === "realmz-remake-folder"
+        ? remakeExportReportForPanel(await invoke<RemakeExportReport>("export_remake_campaign", {
+            projectDir,
+            project: state.project,
+            outputDir: targetExportDir
+          }))
+        : await invoke<ExportReport>("export_project", {
+            projectDir,
+            project: state.project,
+            outputDir: targetExportDir,
+            scenarioTarget: exportTarget
+          });
       dispatch({ type: "setExportReport", report });
-      dispatch({ type: "setStatus", status: `Exported ${report.writtenFiles.length} supported files` });
+      dispatch({
+        type: "setStatus",
+        status: exportTarget === "realmz-remake-folder"
+          ? `Exported Realmz Remake scenario folder with ${report.writtenFiles.length.toLocaleString()} file(s) and ${(report.remakeCounts?.packagedAssetPayloads ?? 0).toLocaleString()} packaged asset payload(s).`
+          : `Exported ${report.writtenFiles.length} supported files`
+      });
     } catch (error) {
       dispatch({ type: "setStatus", status: `Export failed: ${commandError(error)}` });
     }
@@ -723,6 +737,27 @@ async function downloadBrowserProjectPackage(project: Project) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export function remakeExportReportForPanel(report: RemakeExportReport): ExportReport {
+  return {
+    outputPath: report.outputDir,
+    target: "realmz-remake-folder",
+    writtenFiles: report.writtenFiles,
+    passThroughFiles: [],
+    writtenResources: [],
+    preservedResources: 0,
+    resourceWarnings: [],
+    blockedAssets: [],
+    warnings: report.limitations,
+    targetCompatibilityIssues: [],
+    targetCompatibility: {
+      blockers: [],
+      warnings: [],
+      notes: []
+    },
+    remakeCounts: report.counts
+  };
 }
 
 async function downloadBrowserScenarioPackage(project: Project, target: ScenarioTarget) {

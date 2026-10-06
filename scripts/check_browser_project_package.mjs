@@ -12,6 +12,7 @@ const sourceFiles = [
   "src/editor/browser/fsAccess.ts",
   "src/editor/generated/realmzNativeManifestPolicy.ts",
   "src/editor/generated/providenceProjectContract.ts",
+  "src/editor/types.ts",
   "src/editor/projectOrigin.ts",
   "src/editor/browser/projectPackage.ts"
 ];
@@ -44,8 +45,14 @@ const { createStoredZip, readStoredZip } = requireFromBuild("./src/editor/browse
 
 const rawBytes = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
 const rawSha256 = sha256Hex(rawBytes);
+const emptyRemakeRuntime = () => ({
+  recommendedGameplayProfile: "core.classic",
+  requiredExtensions: [],
+  semanticActions: [],
+  bindings: { spells: {}, items: {}, encounters: {}, monsterAi: {}, lifecycle: {} }
+});
 const project = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   appVersion: "browser-package-check",
   scenario: {
     name: "Fixture Scenario",
@@ -66,6 +73,7 @@ const project = {
       editable: true
     }]
   },
+  remakeRuntime: emptyRemakeRuntime(),
   assets: [{
     id: "asset-text-101",
     label: "Text 101",

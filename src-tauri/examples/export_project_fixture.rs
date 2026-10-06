@@ -24,7 +24,9 @@ fn main() {
         }
     };
 
-    match open_project(&project_dir).and_then(|project| export_project(&project_dir, &project, &output_dir, target)) {
+    match open_project(&project_dir)
+        .and_then(|project| export_project(&project_dir, &project, &output_dir, target))
+    {
         Ok(report) => {
             println!("{}", output_dir.display());
             eprintln!(

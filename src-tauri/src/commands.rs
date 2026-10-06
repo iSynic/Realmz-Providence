@@ -14,6 +14,9 @@ use crate::project::{ProvidenceProject, ScenarioTarget, SemanticSchema, Validati
 use crate::project_package::{
     open_project_package as open_project_package_impl, OpenedProjectPackage,
 };
+use crate::remake_exporter::{
+    export_remake_campaign as export_remake_campaign_impl, RemakeExportReport,
+};
 use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{
     inspect_resource_preview, preview_data_url_for_resource, DecodedResourcePreview,
@@ -334,6 +337,15 @@ pub fn export_project(
         output_dir,
         scenario_target.unwrap_or(ScenarioTarget::ProvidencePortableFolder),
     )
+}
+
+#[tauri::command]
+pub fn export_remake_campaign(
+    project_dir: String,
+    project: ProvidenceProject,
+    output_dir: String,
+) -> Result<RemakeExportReport> {
+    export_remake_campaign_impl(&project, project_dir, output_dir)
 }
 
 #[tauri::command]

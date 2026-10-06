@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "source": "Divinity opcode help checked against Realmz newland.c direct CODE/ID consumers",
+  "domains": [
+    {
+      "opcode": 35,
+      "label": "Simple Encounter choice to eliminate",
+      "help": "Choose one of the four choices in the currently running Simple Encounter.",
+      "options": [
+        { "value": 1, "label": "Choice 1", "description": "Remove the first response choice." },
+        { "value": 2, "label": "Choice 2", "description": "Remove the second response choice." },
+        { "value": 3, "label": "Choice 3", "description": "Remove the third response choice." },
+        { "value": 4, "label": "Choice 4", "description": "Remove the fourth response choice." }
+      ]
+    },
+    {
+      "opcode": 36,
+      "label": "Equipment operation",
+      "help": "Capture the party's equipment and wealth, or restore the previously captured state.",
+      "options": [
+        { "value": 1, "label": "Capture equipment", "description": "Remove and store the party's equipment and pooled wealth." },
+        { "value": 0, "label": "Restore equipment", "description": "Return the stored equipment and wealth to the party." }
+      ]
+    },
+    {
+      "opcode": 44,
+      "label": "Complex Encounter result to eliminate",
+      "help": "Realmz stores this as a one-based result number and clears that result in the currently running Complex Encounter.",
+      "options": [
+        { "value": 1, "label": "Result 1", "description": "Remove the first result script." },
+        { "value": 2, "label": "Result 2", "description": "Remove the second result script." },
+        { "value": 3, "label": "Result 3", "description": "Remove the third result script." },
+        { "value": 4, "label": "Result 4", "description": "Remove the fourth result script." }
+      ]
+    },
+    {
+      "opcode": 66,
+      "label": "Camping ability",
+      "help": "Control whether the party may camp.",
+      "options": [
+        { "value": 0, "label": "Allow camping", "description": "The party may camp normally." },
+        { "value": 1, "label": "Prevent camping", "description": "The party cannot camp until another action enables it." }
+      ]
+    },
+    {
+      "opcode": 71,
+      "label": "Coordinate display",
+      "help": "Control whether Realmz shows the party's X and Y coordinates.",
+      "options": [
+        { "value": 0, "label": "Show coordinates", "description": "Display the current X and Y values." },
+        { "value": 1, "label": "Hide coordinates", "description": "Display question marks instead of X and Y values." }
+      ]
+    },
+    {
+      "opcode": 95,
+      "label": "Direction to face",
+      "help": "Choose the party's new dungeon facing. Realmz randomizes any value outside 1 through 4.",
+      "options": [
+        { "value": -1, "label": "Random direction", "description": "Choose a random facing at runtime." },
+        { "value": 1, "label": "North", "description": "Face north." },
+        { "value": 2, "label": "East", "description": "Face east." },
+        { "value": 3, "label": "South", "description": "Face south." },
+        { "value": 4, "label": "West", "description": "Face west." }
+      ]
+    },
+    {
+      "opcode": 104,
+      "label": "Random battles",
+      "help": "This affects ordinary Random Rectangle battles, not authored special random encounters.",
+      "options": [
+        { "value": 1, "label": "Allow random battles", "description": "Ordinary random battles may occur." },
+        { "value": 0, "label": "Disable random battles", "description": "Suppress ordinary random battles." }
+      ]
+    },
+    {
+      "opcode": 105,
+      "label": "Allies and NPCs in battle",
+      "help": "Realmz treats zero as active and any nonzero value as suspended. Providence offers the canonical zero and one values.",
+      "options": [
+        { "value": 0, "label": "Activate allies", "description": "Allow allied monsters and NPCs to participate." },
+        { "value": 1, "label": "Suspend allies", "description": "Prevent allied monsters and NPCs from participating." }
+      ]
+    }
+  ],
+  "numericGuidance": [
+    {
+      "opcode": 11,
+      "label": "Victory points",
+      "help": "Enter the total victory points to share among eligible party members.",
+      "min": 0
+    },
+    {
+      "opcode": 14,
+      "label": "Characters to pick",
+      "help": "Choose how many party members the player must select. A negative stored value restricts the picker to eligible conscious or animated characters.",
+      "min": 1,
+      "max": 6
+    },
+    {
+      "opcode": 32,
+      "label": "Temple price rate",
+      "help": "100 means normal prices, 200 means double prices, and 50 means half prices.",
+      "min": 0,
+      "max": 32000,
+      "suffix": "%"
+    }
+  ],
+  "signedModes": [
+    {
+      "opcode": 1,
+      "positiveLabel": "Wait for player input",
+      "negativeLabel": "Continue without waiting",
+      "help": "A negative string ID displays the message without requiring a click."
+    },
+    {
+      "opcode": 6,
+      "positiveLabel": "Enable the Shop button",
+      "negativeLabel": "Open the shop immediately",
+      "help": "A negative shop ID enters the shop directly."
+    },
+    {
+      "opcode": 9,
+      "positiveLabel": "Continue while sound plays",
+      "negativeLabel": "Wait for sound to finish",
+      "help": "A negative sound ID pauses the script until playback completes."
+    },
+    {
+      "opcode": 14,
+      "positiveLabel": "Normal character selection",
+      "negativeLabel": "Restrict to eligible characters",
+      "help": "The sign changes who may be selected; the magnitude remains the requested count."
+    },
+    {
+      "opcode": 29,
+      "positiveLabel": "Give map for later viewing",
+      "negativeLabel": "Give and display map immediately",
+      "help": "A negative map ID opens the map as soon as it is awarded."
+    },
+    {
+      "opcode": 47,
+      "positiveLabel": "Set quest flag",
+      "negativeLabel": "Clear quest flag",
+      "help": "The sign chooses whether the selected quest is set or cleared."
+    }
+  ]
+}

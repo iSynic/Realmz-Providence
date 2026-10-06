@@ -5,18 +5,27 @@ import { EncounterResultActionCell, encounterResultIdHelp } from "./EncounterRes
 
 const project = {
   messages: [{ id: 15, text: "The tide answers." }],
-  triggers: []
+  triggers: [],
+  assetCatalog: {
+    tilesets: [],
+    pictures: [],
+    icons: [],
+    sounds: []
+  }
 } as unknown as Project;
 
 function renderCell(row: EncounterActionRow) {
   return renderToStaticMarkup(
     <EncounterResultActionCell
       project={project}
+      recordKind="simple"
       slot={0}
       row={row}
       onUpdate={() => undefined}
       onFocusCode={() => undefined}
       onPreviewTarget={() => undefined}
+      onEditSettings={() => undefined}
+      onEditDirect={() => undefined}
     />
   );
 }
@@ -67,5 +76,56 @@ describe("EncounterResultActionCell", () => {
   it("falls back to useful raw-value guidance for undocumented actions", () => {
     expect(encounterResultIdHelp(project, null, { slot: 0, rawCode: 200, id: 7 }).body)
       .toBe("No contextual ID-field description is documented for this action. Current raw value: 7.");
+  });
+
+  it("does not expose Remake export policy controls on authored media actions", () => {
+    const sound = renderCell({ slot: 0, rawCode: 9, id: 321, mediaRequiredForProgression: true });
+    const negativePicture = renderCell({ slot: 0, rawCode: -27, id: 306 });
+
+    expect(sound).not.toContain("Required for Remake progression");
+    expect(negativePicture).not.toContain("Required for Remake progression");
+  });
+
+  it("replaces a settings-row number with a contextual settings control", () => {
+    const withBattle = {
+      ...project,
+      battles: [{ id: 4 }, { id: 8 }],
+      extracodes: [{ id: 12, values: [4, 8, 0, 0, 0] }]
+    } as unknown as Project;
+    const html = renderToStaticMarkup(
+      <EncounterResultActionCell
+        project={withBattle}
+        recordKind="simple"
+        slot={0}
+        row={{ slot: 0, rawCode: 2, id: 12 }}
+        onUpdate={() => undefined}
+        onFocusCode={() => undefined}
+        onPreviewTarget={() => undefined}
+        onEditSettings={() => undefined}
+        onEditDirect={() => undefined}
+      />
+    );
+
+    expect(html).toContain('aria-label="Edit result action 0 settings"');
+    expect(html).toContain("Battle");
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
+    expect(html).not.toMatch(/<input[^>]+value="12"/);
+  });
+
+  it("replaces direct raw values with a contextual settings control", () => {
+    const html = renderCell({ slot: 0, rawCode: 66, id: 1 });
+
+    expect(html).toContain('aria-label="Edit result action 0 settings"');
+    expect(html).toContain("Prevent camping");
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
+    expect(html).not.toMatch(/<input[^>]+value="1"/);
+  });
+
+  it("does not offer an ID editor when Realmz ignores the field", () => {
+    const html = renderCell({ slot: 0, rawCode: 24, id: 17 });
+
+    expect(html).toContain("No settings · preserved ID 17");
+    expect(html).toContain('aria-label="Result action 0 has no settings"');
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
   });
 });

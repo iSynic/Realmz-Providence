@@ -1,6 +1,6 @@
 import { LibraryCatalog, Project, ProjectCommand, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, SelectedEntity } from "../../types";
 
-export type RulesFamily = "spells" | "races" | "castes";
+export type RulesFamily = "spells" | "races" | "castes" | "remake";
 
 export type SpellRuleEntry = {
   packedId: number;

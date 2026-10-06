@@ -86,8 +86,8 @@ pub(super) fn validate_caste_storage(record: &ScenarioCasteOverride) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::super::{
-        parse_caste_overrides, parse_race_overrides, write_caste_overrides,
-        write_race_overrides, CASTE_BYTES, RACE_BYTES,
+        parse_caste_overrides, parse_race_overrides, write_caste_overrides, write_race_overrides,
+        CASTE_BYTES, RACE_BYTES,
     };
 
     #[test]

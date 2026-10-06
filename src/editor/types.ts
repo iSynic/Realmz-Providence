@@ -678,6 +678,7 @@ export type DungeonCellFlagState = "on" | "off" | "mixed";
 export type LandCellSecretState = "normal" | "hidden" | "revealed";
 
 export type ProjectCommand =
+  | { kind: "updateRemakeRuntime"; label: string; runtime: RemakeRuntime }
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | {
       kind: "updateDungeonCellFlags";
@@ -802,6 +803,7 @@ export type ProjectCommand =
       slot: number;
       rawCode: number;
       id: number;
+      mediaRequiredForProgression?: boolean;
     }
   | {
       kind: "swapActionSlots";
@@ -867,6 +869,7 @@ export type ProjectCommand =
   | { kind: "updateShopRecord"; label: string; id: number; changes: Partial<Pick<ShopRecord, "itemIds" | "quantities" | "inflation">> }
   | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
   | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
+  | { kind: "applyEncounterResultSettings"; label: string; recordKind: "simple" | "complex"; encounterId: number; slot: number; rawCode: number; rowId: number; edcdValues: number[]; secondaryEdcdValues?: number[] }
   | { kind: "updateThiefEncounterRecord"; label: string; id: number; changes: Partial<Pick<ThiefEncounterRecord, "typeFlags" | "modifiers" | "successCodes" | "failureCodes" | "successText" | "failureText" | "successSounds" | "failureSounds" | "spell" | "lowDamage" | "highDamage" | "tumblers" | "prompts" | "promptSounds">> }
   | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind">> }
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
@@ -948,11 +951,52 @@ export type MapCoordinateTarget = {
 export type ProjectOrigin = ProvidenceProjectOrigin;
 export type ProjectSource = ProvidenceProjectSource;
 
+export type RemakeExtensionRequirement = {
+  id: string;
+  apiVersion: number;
+  configuration: Record<string, unknown>;
+};
+
+export type RemakeSemanticAction = {
+  targetKind: "trigger" | "simpleEncounter" | "complexEncounter";
+  recordId: string;
+  slot: number;
+  operation: `scenario.${string}`;
+  parameters: Record<string, unknown>;
+};
+
+export type RemakeRuntime = {
+  recommendedGameplayProfile: string;
+  requiredExtensions: RemakeExtensionRequirement[];
+  semanticActions: RemakeSemanticAction[];
+  bindings: {
+    spells: Record<string, string>;
+    items: Record<string, string>;
+    encounters: Record<string, string>;
+    monsterAi: Record<string, string>;
+    lifecycle: Record<string, string>;
+  };
+};
+
+export const emptyRemakeRuntime = (): RemakeRuntime => ({
+  recommendedGameplayProfile: "core.classic",
+  requiredExtensions: [],
+  semanticActions: [],
+  bindings: {
+    spells: {},
+    items: {},
+    encounters: {},
+    monsterAi: {},
+    lifecycle: {}
+  }
+});
+
 export type Project = {
   schemaVersion: number;
   appVersion: string;
   scenario: ScenarioMeta;
   source: ProjectSource;
+  remakeRuntime: RemakeRuntime;
   maps: MapEntity[];
   landLayout?: LandLayout | null;
   triggers: TriggerRecord[];
@@ -1114,7 +1158,7 @@ export type ValidationReport = {
 
 export type ExportReport = {
   outputPath: string;
-  target: ScenarioTarget;
+  target: ExportTarget;
   writtenFiles: string[];
   passThroughFiles: string[];
   writtenResources: string[];
@@ -1124,9 +1168,38 @@ export type ExportReport = {
   warnings: string[];
   targetCompatibilityIssues: TargetCompatibilityIssue[];
   targetCompatibility: TargetCompatibilityBuckets;
+  remakeCounts?: RemakeExportCounts;
 };
 
 export type ScenarioTarget = "mac-classic-folder" | "windows-realmz-folder" | "providence-portable-folder";
+export type ExportTarget = ScenarioTarget | "realmz-remake-folder";
+export type RemakeExportCounts = {
+  maps: number;
+  landMaps: number;
+  dungeonMaps: number;
+  triggers: number;
+  activeTriggers: number;
+  extraCodes: number;
+  messages: number;
+  battles: number;
+  monsters: number;
+  scenarioItems: number;
+  itemTexts: number;
+  treasures: number;
+  shops: number;
+  simpleEncounters: number;
+  complexEncounters: number;
+  thiefEncounters: number;
+  timedEncounters: number;
+  managedAssets: number;
+  packagedAssetPayloads: number;
+};
+export type RemakeExportReport = {
+  outputDir: string;
+  writtenFiles: string[];
+  counts: RemakeExportCounts;
+  limitations: string[];
+};
 export type TargetCompatibilityIssue = {
   target: ScenarioTarget;
   severity: string;

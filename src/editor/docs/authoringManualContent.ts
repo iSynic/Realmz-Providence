@@ -554,7 +554,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       DIVINITY_CHAPTERS.macrosQuests,
       MARKDOWN_REFERENCES.scriptsV2,
       MARKDOWN_REFERENCES.actionPointEvidence,
-      MARKDOWN_REFERENCES.opcodeEdcdEvidence
+      MARKDOWN_REFERENCES.opcodeEdcdEvidence,
+      MARKDOWN_REFERENCES.encounterEcodeAuthoring
     ],
     relatedTopicIds: ["maps", "text", "encounters-targets", "combat", "economy", "scenario", "linter-release"],
     toolTargets: [{ domain: "scripts", editor: "action-points", label: "Open Action Points" }],
@@ -737,7 +738,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     summary: "Author conversations and event gates that sit between map triggers, scripts, text, combat, rewards, thief actions, and timing.",
     tags: ["encounters", "simple", "complex", "rogue", "timed", "trap", "lock", "choices", "branches"],
     badges: ["chapter", "branching"],
-    references: [DIVINITY_CHAPTERS.simpleEncounter, DIVINITY_CHAPTERS.complexEncounter, MARKDOWN_REFERENCES.encounterEvidence, MARKDOWN_REFERENCES.thiefTimedEvidence],
+    references: [DIVINITY_CHAPTERS.simpleEncounter, DIVINITY_CHAPTERS.complexEncounter, MARKDOWN_REFERENCES.encounterEvidence, MARKDOWN_REFERENCES.thiefTimedEvidence, MARKDOWN_REFERENCES.encounterEcodeAuthoring],
     relatedTopicIds: ["scripts", "text", "combat", "economy", "rules", "linter-release"],
     toolTargets: [{ domain: "encounters", editor: "simple", label: "Open Encounters" }],
     sections: [
@@ -764,7 +765,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "The eye button beside a string, spell, item, battle, treasure, or script opens a searchable picker and preview without leaving the encounter.",
           "Selecting an entry in a picker updates the numbered field only after you confirm the choice.",
           "Item-response rows show response number, item number, and item name together so the requirement remains readable.",
-          "Result columns use the same named action families as Action Points; empty rows remain available for additional outcomes."
+          "Result columns use the same named action families as Action Points; empty rows remain available for additional outcomes.",
+          "Settings-backed result actions open a contextual editor. Apply stores the action and its five settings values together; Cancel leaves the encounter unchanged; shared settings default to a caller-owned duplicate."
         ]
       },
       {
@@ -1214,7 +1216,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         cards: [
           { title: "Fix Blockers", body: "Resolve missing targets, invalid records, malformed resources, and package errors that prevent export.", facts: ["must fix"] },
           { title: "Review Warnings", body: "Check compatibility risks, missing visible results, preserved source files, and target-specific notes.", facts: ["review"] },
-          { title: "Export Target", body: "Choose Providence project ZIP, Mac scenario ZIP, Windows scenario ZIP, or desktop folder output intentionally.", facts: ["package"] }
+          { title: "Export Target", body: "Choose Providence project ZIP, Mac scenario ZIP, Windows scenario ZIP, native desktop folder, or self-contained Realmz Remake scenario folder output intentionally.", facts: ["package"] }
         ]
       },
       {

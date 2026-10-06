@@ -51,6 +51,10 @@ describe("browser PICT conformance", () => {
     expect(ids).toContain("directbits32-planar-packbits");
     expect(ids).toContain("standalone-512-byte-container");
     expect(ids).toContain("standalone-512-byte-invalid-version");
+    expect(ids).toContain("v2-quicktime-gif");
+    expect(ids).toContain("v2-quicktime-uncompressed-packbits");
+    expect(ids).toContain("v2-quicktime-unknown-codec");
+    expect(ids).toContain("v2-quicktime-gif-truncated");
     expect(pictConformance.fixtures.filter((fixture) => "malformedCompanionOf" in fixture).length).toBeGreaterThanOrEqual(5);
   });
 

@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::path::Path;
 
-const OMITTED_FIELDS: [&str; 21] = [
+const OMITTED_FIELDS: [&str; 22] = [
     "rawBytes",
     "rawValues",
     "rawByte",
@@ -25,6 +25,7 @@ const OMITTED_FIELDS: [&str; 21] = [
     "previewPath",
     "resourcePath",
     "imagePath",
+    "mediaRequiredForProgression",
 ];
 
 const SOURCE_FIELDS: [&str; 5] = [
@@ -70,7 +71,7 @@ pub(crate) fn portable_source_label(source: &str) -> String {
     if let Some(index) = normalized.rfind("/Data Files/") {
         return normalized[index + 1..].to_string();
     }
-    if looks_absolute_path(&normalized) {
+    if normalized.contains('/') || looks_absolute_path(&normalized) {
         return normalized
             .rsplit('/')
             .find(|value| !value.is_empty())
@@ -78,6 +79,43 @@ pub(crate) fn portable_source_label(source: &str) -> String {
             .to_string();
     }
     normalized
+}
+
+pub(crate) fn portable_diagnostic_message(message: &str, source: Option<&str>) -> String {
+    let Some(source) = source else {
+        return message.to_string();
+    };
+    let label = portable_source_label(source);
+    let mut portable = message.replace(source, &label);
+    let normalized_source = source.trim_start_matches("\\\\?\\").replace('\\', "/");
+    if normalized_source != source {
+        portable = portable.replace(&normalized_source, &label);
+    }
+    portable
+}
+
+pub(crate) fn portable_project_diagnostic_message(
+    message: &str,
+    source: Option<&str>,
+    project_dir: &Path,
+) -> String {
+    let mut portable = portable_diagnostic_message(message, source);
+    let Some(source) = source else {
+        return portable;
+    };
+    let source_label = portable_source_label(source);
+    let project_dir = project_dir.to_string_lossy();
+    for project in [
+        project_dir.to_string(),
+        project_dir.replace('\\', "/"),
+        project_dir.replace('/', "\\"),
+    ] {
+        for separator in ['/', '\\'] {
+            let raw_source = format!("{project}{separator}raw-sources{separator}{source_label}");
+            portable = portable.replace(&raw_source, &source_label);
+        }
+    }
+    portable
 }
 
 pub(crate) fn assert_portable_value(
@@ -103,7 +141,7 @@ fn assert_portable_value_inner(value: &Value, project_root: &str, context: &str)
                 )));
             }
             if (!project_root.is_empty() && lower.contains(project_root))
-                || contains_filesystem_path(&normalized)
+                || contains_filesystem_path(text)
             {
                 return Err(ProvidenceError::message(format!(
                     "{context} contains a non-portable filesystem path: {text}"
@@ -145,11 +183,74 @@ fn contains_filesystem_path(text: &str) -> bool {
 
 fn looks_absolute_path(text: &str) -> bool {
     let bytes = text.as_bytes();
-    text.starts_with('/')
-        || text.starts_with("\\\\")
+    let unix_rooted = text.starts_with('/')
+        && (bytes.len() == 1
+            || ((bytes[1].is_ascii_alphanumeric() || matches!(bytes[1], b'.' | b'_' | b'-'))
+                && (text[1..].contains('/')
+                    || !text[1..].bytes().any(|byte| byte.is_ascii_whitespace()))));
+    text.starts_with("\\\\")
         || text.starts_with("//")
+        || unix_rooted
         || (bytes.len() >= 3
             && bytes[0].is_ascii_alphabetic()
             && bytes[1] == b':'
             && matches!(bytes[2], b'/' | b'\\'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        contains_filesystem_path, portable_diagnostic_message, portable_project_diagnostic_message,
+        portable_source_label,
+    };
+    use std::path::Path;
+
+    #[test]
+    fn authored_slash_prefixed_text_is_not_a_filesystem_path() {
+        assert!(!contains_filesystem_path("/ Hn"));
+        assert!(!contains_filesystem_path(
+            "/   + j ; authored encounter text"
+        ));
+        assert!(!contains_filesystem_path("/=I_t"));
+        assert!(!contains_filesystem_path(
+            "/4  t$    w< 8  G     g      e    W ~"
+        ));
+        assert!(!contains_filesystem_path("\\Z[ authored script text"));
+    }
+
+    #[test]
+    fn absolute_paths_remain_detectable() {
+        assert!(contains_filesystem_path("/tmp/scenario/Scenario.rsrc"));
+        assert!(contains_filesystem_path("C:\\Scenarios\\Scenario.rsrc"));
+        assert!(contains_filesystem_path("\\\\server\\share\\Scenario.rsrc"));
+    }
+
+    #[test]
+    fn diagnostic_messages_replace_their_source_path() {
+        let source = "C:\\Scenarios\\Dead of Night\\Scenario.rsrc";
+        let message =
+            "Scenario snd 24 in C:\\Scenarios\\Dead of Night\\Scenario.rsrc could not be decoded";
+        assert_eq!(
+            portable_diagnostic_message(message, Some(source)),
+            "Scenario snd 24 in Scenario.rsrc could not be decoded"
+        );
+        assert_eq!(portable_source_label(source), "Scenario.rsrc");
+        assert_eq!(
+            portable_source_label("tmp/example.providence/raw-sources/Scenario.rsrc"),
+            "Scenario.rsrc"
+        );
+    }
+
+    #[test]
+    fn project_diagnostic_messages_remove_preserved_raw_source_paths() {
+        let message = "Scenario PICT 30015 in tmp/example.providence/raw-sources/Scenario.rsrc could not be decoded";
+        assert_eq!(
+            portable_project_diagnostic_message(
+                message,
+                Some("Scenario.rsrc"),
+                Path::new("tmp/example.providence"),
+            ),
+            "Scenario PICT 30015 in Scenario.rsrc could not be decoded"
+        );
+    }
 }

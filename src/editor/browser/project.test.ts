@@ -6,14 +6,178 @@ import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
   importBrowserScenario,
+  loadBrowserScenarioItemIconAssets,
   normalizeBrowserProject,
   registerBrowserSourceSnapshot,
   validateBrowserProject
 } from "./project";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
+import { ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
+import { validateRealmzTargetRecord } from "../targetValidation";
+import { encodeStringListResource, writeResourceFork } from "./resourceFork";
+import { encodeCicnResource } from "../cicnEncoder";
 
 describe("browser project native manifest validation", () => {
+  it("hydrates scenario-local item names after Data ID fallbacks", async () => {
+    const itemTextResource = (unidentified: string, identified: string, description: string) => {
+      const unidentifiedNames = new Array<string>(200).fill("");
+      const identifiedNames = new Array<string>(200).fill("");
+      const descriptions = new Array<string>(200).fill("");
+      unidentifiedNames[199] = unidentified;
+      identifiedNames[199] = identified;
+      descriptions[199] = description;
+      return writeResourceFork([
+        { resourceType: "STR#", id: 800, name: "SUPPLIES", attributes: 0, data: encodeStringListResource(unidentifiedNames) },
+        { resourceType: "STR#", id: 801, name: "SUPPLIES Short", attributes: 0, data: encodeStringListResource(identifiedNames) },
+        { resourceType: "STR#", id: 802, name: "SUPPLIES LONG", attributes: 0, data: encodeStringListResource(descriptions) }
+      ]);
+    };
+    const project = await importBrowserScenario({
+      kind: "file-selection",
+      name: "Dead of Night",
+      files: [
+        new File([itemTextResource("Fallback Seal", "Fallback Seal", "Fallback description")], "Data ID.rsrc"),
+        new File([itemTextResource("Seal", "Seal of Officialdom", "")], "Scenario.rsrc")
+      ]
+    });
+
+    expect(project.itemTexts.find((record) => record.itemId === 999)).toMatchObject({
+      unidentifiedName: "Seal",
+      identifiedName: "Seal of Officialdom",
+      description: "",
+      authored: false,
+      provenance: expect.objectContaining({ sourceFile: "Scenario.rsrc" })
+    });
+  });
+
+  it("imports item-referenced scenario icons instead of same-ID library fallbacks", async () => {
+    const dataNi = new Uint8Array(100);
+    dataNi[2] = 0x03;
+    dataNi[3] = 0xd6;
+    dataNi[4] = 0x75;
+    dataNi[5] = 0x6d;
+    const cicn = encodeCicnResource({
+      width: 2,
+      height: 2,
+      rgba: new Uint8Array([
+        0, 128, 0, 255,
+        0, 255, 0, 255,
+        32, 32, 32, 255,
+        0, 0, 0, 0
+      ])
+    });
+    const scenarioFork = writeResourceFork([
+      {
+        resourceType: "cicn",
+        id: 30061,
+        name: "Robe with Green Shine",
+        attributes: 0,
+        data: cicn
+      }
+    ]);
+
+    const project = await importBrowserScenario({
+      kind: "file-selection",
+      name: "Dead of Night",
+      files: [
+        new File([dataNi], "Data NI"),
+        new File([scenarioFork], "Scenario.rsrc")
+      ]
+    });
+
+    expect(project.scenarioItems[0]).toMatchObject({ itemId: 982, iconId: 30061 });
+    expect(project.assetCatalog.icons).toContainEqual(expect.objectContaining({
+      id: "scenario-cicn-30061",
+      resourceId: 30061,
+      name: "Robe with Green Shine",
+      source: expect.stringContaining("Scenario.rsrc")
+    }));
+    expect(project.scenarioIconResources).toContainEqual(expect.objectContaining({
+      resourceId: 30061,
+      label: "Robe with Green Shine",
+      sourceKind: "scenario-resource",
+      resourceBase64: expect.any(String),
+      imported: true
+    }));
+    const legacyProject = {
+      ...project,
+      scenarioIconResources: [],
+      assetCatalog: { ...project.assetCatalog, icons: [] }
+    };
+    expect(loadBrowserScenarioItemIconAssets(legacyProject)).toContainEqual(expect.objectContaining({
+      resourceId: 30061,
+      name: "Robe with Green Shine",
+      source: expect.stringContaining("Scenario.rsrc")
+    }));
+  });
+
+  it("treats a complex encounter result as the caller of its Extra Action Point", async () => {
+    const project = createBrowserProject("Encounter XAP Reachability");
+    const parsed = parseScenarioBuffers(new Map([
+      ["Data ED2", new Uint8Array(520)]
+    ]));
+    project.complexEncounters = [{
+      ...parsed.complexEncounters[0],
+      id: 15,
+      actions: [{ slot: 3, rawCode: 39, id: 175 }],
+      actionResult: 1,
+      texts: ["Complex Encounter 15", "", "", "", "", "", "", "", ""],
+      authored: true
+    }];
+    project.triggers = [{
+      id: "trigger:land:0:37",
+      source: "Data DD",
+      levelType: "land",
+      levelIndex: 0,
+      recordIndex: 37,
+      active: true,
+      doorid: 37,
+      percent: 100,
+      coordinate: { x: 1, y: 1 },
+      actions: [{
+        slot: 1,
+        rawCode: 5,
+        code: 5,
+        id: 15,
+        label: "Complex Encounter",
+        category: "encounter"
+      }]
+    }, {
+      id: "macro:175",
+      source: "Data ED3",
+      levelType: null,
+      levelIndex: null,
+      recordIndex: 175,
+      active: true,
+      doorid: 0,
+      percent: 0,
+      coordinate: null,
+      actions: []
+    }];
+
+    const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
+    project.semanticSchema = semanticSchema;
+
+    expect(semanticSchema.links).toContainEqual(expect.objectContaining({
+      from: "action-slot:trigger:land:0:37:1",
+      to: "encounter:complex:15",
+      kind: "starts_encounter"
+    }));
+    expect(semanticSchema.links).toContainEqual(expect.objectContaining({
+      from: "encounter:complex:15",
+      to: "macro:175",
+      kind: "calls_macro",
+      metadata: expect.objectContaining({ result: 1, step: 4, slot: 3 })
+    }));
+    expect(ed3ReachabilityFor(project, 175)).toMatchObject({
+      reachable: true,
+      rootType: "encounter-result-call"
+    });
+    expect(isCallableMacro(project, project.triggers[1])).toBe(true);
+    expect(validateRealmzTargetRecord(project, "complexEncounter", 15).some((issue) => issue.id.includes("unlinked-extra-action-target"))).toBe(false);
+  });
+
   it("promotes imported eight-channel Custom music as a canonical MOD asset", async () => {
     const module = standardModFixture("8CHN", 8, "Approaching Antares");
     const project = await importBrowserScenario({

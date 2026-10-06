@@ -321,7 +321,7 @@ async function checkArtifactGeneratorReferences(policy, packageScripts) {
     const commandSource = packageScripts[family.command];
     if (!commandSource) continue;
     let ownerSource = commandSource;
-    const scriptPaths = commandSource.match(/scripts[\\/][^\s"']+\.(?:js|mjs|ps1)/g) ?? [];
+    const scriptPaths = commandSource.match(/scripts[\\/][^\s"']+\.(?:js|mjs|ts|ps1)/g) ?? [];
     for (const scriptPath of scriptPaths) {
       try {
         ownerSource += `\n${await readFile(path.join(ROOT, scriptPath), "utf8")}`;

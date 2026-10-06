@@ -48,6 +48,44 @@ export function teleportMapCoordinateTarget(
   return { levelType, levelIndex, x, y };
 }
 
+export function teleportPreviewMapCoordinateTarget(
+  project: Project,
+  shape: string,
+  values: readonly number[],
+  sourceLevelType: LevelType | null = null,
+  previewMap: Pick<Project["maps"][number], "levelType" | "index"> | null = null
+): MapCoordinateTarget | null {
+  const runtimeTarget = teleportMapCoordinateTarget(shape, values, sourceLevelType);
+  if (runtimeTarget) return runtimeTarget;
+
+  const indexes = teleportFieldIndexes(shape);
+  if (!indexes || indexes.mode != null) return null;
+  let levelIndex = Number(values[indexes.level] ?? -1);
+  const x = Number(values[indexes.x] ?? -1);
+  const y = Number(values[indexes.y] ?? -1);
+  if (![levelIndex, x, y].every(Number.isInteger) || x < 0 || y < 0) return null;
+
+  if (levelIndex === -1) {
+    if (!previewMap) return null;
+    levelIndex = previewMap.index;
+  } else if (levelIndex < 0) {
+    return null;
+  }
+
+  if (sourceLevelType) return { levelType: sourceLevelType, levelIndex, x, y };
+
+  const availableLevelTypes = [...new Set(
+    project.maps
+      .filter((map) => map.index === levelIndex)
+      .map((map) => map.levelType)
+  )];
+  const previewLevelType = availableLevelTypes.length === 1
+    ? availableLevelTypes[0]
+    : previewMap?.levelType ?? null;
+  if (!previewLevelType) return null;
+  return { levelType: previewLevelType, levelIndex, x, y };
+}
+
 export function teleportLevelOptions(
   project: Project,
   levelType: LevelType | null

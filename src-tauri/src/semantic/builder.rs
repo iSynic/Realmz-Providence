@@ -1,5 +1,5 @@
 use super::common::*;
-use super::{ed3, map_names, metadata, records, resources, triggers};
+use super::{ed3, map_names, metadata, records, resources, runtime, triggers};
 use crate::project::*;
 use crate::realmz::{ParsedScenario, FIELD_BYTES, RANDLEVEL_BYTES};
 use serde_json::json;
@@ -71,6 +71,11 @@ pub fn build_semantic_schema(
         records::add_encounters(&mut schema, buffers);
         records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);
     }
+    records::add_encounter_macro_links(
+        &mut schema,
+        &parsed.simple_encounters,
+        &parsed.complex_encounters,
+    );
     resources::add_resources(&mut schema, buffers);
     resources::add_managed_resources(&mut schema, managed_assets);
     map_names::add_map_name_links(&mut schema, buffers);
@@ -78,7 +83,12 @@ pub fn build_semantic_schema(
     add_tile_assets(&mut schema, &parsed.asset_catalog);
     add_render_profiles(&mut schema, &parsed.maps, &parsed.asset_catalog);
     add_runtime_cache_model(&mut schema);
-    ed3::classify_ed3_reachability(&mut schema, &parsed.triggers);
+    let runtime_reachability = runtime::classify_runtime_reachability(scenario, parsed);
+    ed3::classify_ed3_reachability_with_runtime(
+        &mut schema,
+        &parsed.triggers,
+        &runtime_reachability,
+    );
     add_quest_flag_entities(&mut schema);
     add_referenced_resource_placeholders(&mut schema);
     add_reverse_links_and_summary(&mut schema);

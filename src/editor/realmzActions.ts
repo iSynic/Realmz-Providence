@@ -25,6 +25,7 @@ const DOCUMENTED_OPCODE_CODES = [
 
 export const NOT_USED_ACTION_CODES = new Set([79, 80, 109, 110, 113, 114, 115, 116, 117, 118]);
 const PRESERVE_CURRENT_LABEL_CODES = new Set([84]);
+const REMAKE_PROGRESSION_MEDIA_ACTION_CODES = new Set([9, 27, 29]);
 
 const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   [-23]: { shortLabel: "Dungeon Random Region", category: "Encounter", description: "Mutate dungeon random encounter rectangle data.", edcdShape: "random-region-mutation" },
@@ -205,6 +206,10 @@ export function actionOptionFor(rawCode: number): RealmzActionOption {
 export function normalizeStepOpcode(code: number) {
   if (code < 0 && code !== -14 && code !== -23) return -code;
   return code;
+}
+
+export function supportsRemakeProgressionMediaRequirement(code: number) {
+  return REMAKE_PROGRESSION_MEDIA_ACTION_CODES.has(normalizeStepOpcode(code));
 }
 
 export function hasNewlandDispatcherCase(code: number) {

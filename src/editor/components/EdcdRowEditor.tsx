@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Save, Trash2 } from "lucide-react";
-import { LibraryCatalog, LevelType, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryCatalog, LevelType, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../types";
 import { CollapsibleSection, EmptyState, FieldRow, PanelSection, type ReferencePickerOption } from "../ui";
 import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
+import { documentedEdcdOptionsForField } from "../edcdOptionDomains";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
 import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, choicePromptStorageFromOptionLabels, parseChoicePromptValue, serializeChoicePromptValue } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
-import { teleportDestinationLevelType, teleportFieldIndexes, teleportHeadingLabel, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget } from "../teleportDestinations";
+import { teleportDestinationLevelType, teleportFieldIndexes, teleportHeadingLabel, teleportLevelLabel, teleportLevelOptions, teleportPreviewMapCoordinateTarget } from "../teleportDestinations";
 import { selectEntityFromId } from "../utils";
 import { EdcdReferenceTargetField, numericReferenceQuery } from "./EdcdReferenceTargetField";
 
@@ -16,7 +17,7 @@ type EdcdField = {
   value?: number;
 };
 
-type EdcdUsage = {
+export type EdcdEditorUsage = {
   rowId?: number;
   shape?: string;
   opcode?: number;
@@ -47,14 +48,16 @@ export function EdcdRowEditor({
   onStepOpcodeChange,
   onDraftValuesChange,
   onSecondaryDraftValuesChange,
+  onDraftValidityChange,
   onApplyCommand,
   showActionButtons = true,
   presentation = "inventory",
-  sourceLevelType = null
+  sourceLevelType = null,
+  previewMap = null
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
-  edcdUsage?: EdcdUsage | null;
+  edcdUsage?: EdcdEditorUsage | null;
   fallbackRowId: number;
   fallbackShape?: string;
   fallbackFieldNames?: string[];
@@ -68,10 +71,12 @@ export function EdcdRowEditor({
   onStepOpcodeChange?: (rawCode: number) => void;
   onDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onSecondaryDraftValuesChange?: (values: number[], dirty: boolean) => void;
+  onDraftValidityChange?: (issue: string | null) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
   sourceLevelType?: LevelType | null;
+  previewMap?: Pick<MapEntity, "levelType" | "index"> | null;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
   const shape = edcdUsage?.shape ?? fallbackShape ?? null;
@@ -88,12 +93,20 @@ export function EdcdRowEditor({
   const opcode = edcdUsage?.opcode ?? fallbackOpcode;
   const rowExists = Boolean(row);
   const initialDraftKey = `${rowId ?? "none"}:${shape ?? "none"}:${opcode ?? "none"}:${rowExists ? "stored" : "missing"}:${initialValues.join("|")}`;
+  const battleEditorKey = `${rowId ?? "none"}:${shape ?? "none"}:${opcode ?? "none"}`;
   const [draft, setDraft] = useState(initialValues.map(String));
+  const [battleRangeIntent, setBattleRangeIntent] = useState<boolean | null>(null);
+  const [battleSurpriseIntent, setBattleSurpriseIntent] = useState<boolean | null>(null);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
 
   useEffect(() => {
     setDraft(initialValues.map(String));
   }, [initialDraftKey]);
+
+  useEffect(() => {
+    setBattleRangeIntent(null);
+    setBattleSurpriseIntent(null);
+  }, [battleEditorKey]);
 
   const numericDraft = useMemo(() => draft.map((value) => {
     const parsed = Number(value);
@@ -101,7 +114,7 @@ export function EdcdRowEditor({
   }), [draft]);
   const changed = numericDraft.some((value, index) => value !== initialValues[index]);
   const needsSelectedStepApply = !rowExists || changed;
-  const canApplySettings = Boolean(onApplyCommand) && (!rowExists || changed);
+  const canApplySettingsBase = Boolean(onApplyCommand) && (!rowExists || changed);
   const settingsActionLabel = rowExists ? "Apply Settings" : "Create Settings";
   const settingsCommandLabel = rowExists ? `Update settings ${rowId}` : `Create settings ${rowId}`;
 
@@ -109,6 +122,30 @@ export function EdcdRowEditor({
     if (rowId == null || !shape) return;
     onDraftValuesChange?.(numericDraft, needsSelectedStepApply);
   }, [needsSelectedStepApply, numericDraft, onDraftValuesChange, rowId, shape]);
+
+  const normalizedShapeId = normalizeShape(shape ?? "");
+  const battleLowIndex = normalizedShapeId.includes("battle")
+    ? fieldNames.findIndex((field) => normalizeField(field) === "battlelow")
+    : -1;
+  const battleHighIndex = normalizedShapeId.includes("battle")
+    ? fieldNames.findIndex((field) => normalizeField(field) === "battlehigh")
+    : -1;
+  const battleLowValue = battleLowIndex >= 0 ? Number(draft[battleLowIndex] ?? "0") : 0;
+  const battleHighValue = battleHighIndex >= 0 ? Number(draft[battleHighIndex] ?? "0") : 0;
+  const hasBattleSelectionFields = battleLowIndex >= 0 && battleHighIndex >= 0;
+  const battleRangeMode = hasBattleSelectionFields
+    ? battleRangeIntent ?? battleHighValue !== 0
+    : false;
+  const battleSurpriseMode = hasBattleSelectionFields
+    ? battleSurpriseIntent ?? (battleLowValue < 0 || battleHighValue < 0)
+    : false;
+  const battleDraftIssue = hasBattleSelectionFields
+    ? battleSelectionDraftIssue(battleLowValue, battleHighValue, battleRangeMode, battleSurpriseMode)
+    : null;
+
+  useEffect(() => {
+    onDraftValidityChange?.(battleDraftIssue);
+  }, [battleDraftIssue, onDraftValidityChange]);
 
   if (rowId == null || !shape) return null;
   const shapeId = shape;
@@ -125,10 +162,11 @@ export function EdcdRowEditor({
   const primaryFields = fieldMetadata.filter((field) => !field.preserved);
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
   const preservedIndexes = preservedFields.map((field) => field.index);
+  const canApplySettings = canApplySettingsBase && !battleDraftIssue;
   const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog, sourceLevelType);
   const guidedSections = guidedSectionsForShape(shapeId, primaryFields, numericDraft, opcode);
   const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary, sourceLevelType);
-  const mapCoordinateTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
+  const mapCoordinateTarget = teleportPreviewMapCoordinateTarget(project, shapeId, numericDraft, sourceLevelType, previewMap);
   const mapCoordinateMap = mapCoordinateTarget
     ? project.maps.find((candidate) => candidate.levelType === mapCoordinateTarget.levelType && candidate.index === mapCoordinateTarget.levelIndex) ?? null
     : null;
@@ -234,6 +272,7 @@ export function EdcdRowEditor({
               showActionButtons={showActionButtons && presentation !== "selected-step"}
               presentation="selected-step"
               sourceLevelType={sourceLevelType}
+              previewMap={previewMap}
             />
           </div>
         )}
@@ -296,6 +335,9 @@ export function EdcdRowEditor({
     if (normalizedShape === "item-branch" && normalizedTitle === "result") {
       return renderItemBranchResultSection(section);
     }
+    if (normalizedShape.includes("battle") && normalizedTitle === "battle") {
+      return renderBattleSection(section);
+    }
     if ((normalizedShape === "teleport" || normalizedShape === "dungeon-move") && normalizedTitle === "destination") {
       return renderTeleportDestinationSection(section);
     }
@@ -309,6 +351,95 @@ export function EdcdRowEditor({
           {section.fields.map((field) => renderParameterField(field))}
         </div>
       </section>
+    );
+  }
+
+  function renderBattleSection(section: GuidedSection) {
+    const lowField = section.fields.find((field) => normalizeField(field.internalName) === "battlelow");
+    const highField = section.fields.find((field) => normalizeField(field.internalName) === "battlehigh");
+    const groupedIndexes = new Set([lowField?.index, highField?.index].filter((index): index is number => index != null));
+    const additionalFields = section.fields.filter((field) => !groupedIndexes.has(field.index));
+    const lowValue = lowField ? Number(draft[lowField.index] ?? "0") : 0;
+    const highValue = highField ? Number(draft[highField.index] ?? "0") : 0;
+    const signedBattleValue = (value: number, surprised = battleSurpriseMode) => {
+      const magnitude = Math.abs(value);
+      return surprised && magnitude > 0 ? -magnitude : magnitude;
+    };
+    const setRangeMode = (range: boolean) => {
+      if (!lowField || !highField) return;
+      setBattleRangeIntent(range);
+      const next = [...draft];
+      next[lowField.index] = String(signedBattleValue(lowValue));
+      next[highField.index] = String(range ? signedBattleValue(highValue || lowValue) : 0);
+      setDraft(next);
+    };
+    const setSurprise = (enabled: boolean) => {
+      setBattleSurpriseIntent(enabled);
+      const next = [...draft];
+      if (lowField) next[lowField.index] = String(signedBattleValue(lowValue, enabled));
+      if (highField) next[highField.index] = String(signedBattleValue(highValue, enabled));
+      setDraft(next);
+    };
+    return (
+      <section key={section.title} className="guided-edcd-section edcd-battle-section">
+        <header>
+          <span>{section.eyebrow}</span>
+          <h4>{section.title}</h4>
+        </header>
+        <fieldset className="edcd-battle-mode">
+          <legend>Battle selection</legend>
+          <label>
+            <input type="radio" name={`battle-range-mode-${rowId}`} checked={!battleRangeMode} onChange={() => setRangeMode(false)} />
+            Exact battle
+          </label>
+          <label>
+            <input type="radio" name={`battle-range-mode-${rowId}`} checked={battleRangeMode} onChange={() => setRangeMode(true)} />
+            Random battle range
+          </label>
+          <label className="edcd-battle-surprise-toggle">
+            <input type="checkbox" checked={battleSurpriseMode} onChange={(event) => setSurprise(event.currentTarget.checked)} />
+            Surprise the party
+          </label>
+        </fieldset>
+        {battleDraftIssue && <p className="field-warning" role="alert">{battleDraftIssue}</p>}
+        <div className="edcd-field-grid">
+          {lowField && renderBattleTargetField(lowField, battleRangeMode ? "Battle Range Low" : "Battle", battleSurpriseMode)}
+          {battleRangeMode && highField && renderBattleTargetField(highField, "Battle Range High", battleSurpriseMode)}
+          {additionalFields.map((field) => renderParameterField(field))}
+        </div>
+        <small className="field-help">
+          Surprise stores negative battle numbers so opposing forces act before the party.
+        </small>
+      </section>
+    );
+  }
+
+  function renderBattleTargetField(field: GuidedField, label: string, surprised: boolean) {
+    const rawValue = Number(draft[field.index] ?? "0");
+    const value = Math.abs(rawValue);
+    const options = edcdTargetOptions(project, "battle", catalog);
+    const targetIssue = targetIssues.find((issue) => issue.index === field.index);
+    return (
+      <label key={`${rowId}-${field.internalName}-${field.index}`} className={fieldClassName(field, true, targetIssue, {})}>
+        <span className="edcd-field-label-row" title={field.internalName}>
+          <span>{label}</span>
+        </span>
+        <EdcdSelectTargetField
+          project={project}
+          catalog={catalog}
+          label="battle"
+          targetKind="battle"
+          value={value}
+          options={options}
+          onChange={(nextValue) => setDraftValue(field.index, surprised ? -Math.abs(nextValue) : Math.abs(nextValue))}
+          onOpen={(entity) => onSelectEntity?.(entity)}
+        />
+        {targetIssue && (
+          <p className="field-warning">
+            This battle {targetIssue.value} does not exist yet. Create it or choose an existing battle.
+          </p>
+        )}
+      </label>
     );
   }
 
@@ -362,13 +493,16 @@ export function EdcdRowEditor({
     const levelIssue = levelField ? targetIssues.find((issue) => issue.index === levelField.index) : null;
     const mapOptions = teleportLevelOptions(project, destinationLevelType);
     const hasLevelValue = levelValue === -1 || mapOptions.some((option) => option.value === levelValue);
-    const jumpTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
+    const jumpTarget = teleportPreviewMapCoordinateTarget(project, shapeId, numericDraft, sourceLevelType, previewMap);
     const jumpMap = jumpTarget
       ? project.maps.find((candidate) => candidate.levelType === jumpTarget.levelType && candidate.index === jumpTarget.levelIndex) ?? null
       : null;
+    const reusablePreviewSuffix = !destinationLevelType && jumpTarget
+      ? " The stored teleport still uses the runtime's current map family."
+      : "";
     const jumpTitle = jumpTarget
       ? jumpMap
-        ? `Open ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y} on Maps.`
+        ? `Preview ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y}.${reusablePreviewSuffix}`
         : `No ${jumpTarget.levelType} level ${jumpTarget.levelIndex} exists for ${jumpTarget.x}, ${jumpTarget.y}.`
       : destinationLevelType
         ? "Choose a concrete level, X, and Y to preview this destination on Maps."
@@ -444,13 +578,26 @@ export function EdcdRowEditor({
             />
           )}
           {headingField && (
-            <CompactNumberField
-              field={headingField}
-              label="Starting Heading"
-              value={draft[headingField.index] ?? "1"}
-              disabled={guidedFieldPresentation(shapeId, headingField.internalName, numericDraft, opcode).disabled}
-              onChange={(value) => setDraftValue(headingField.index, value)}
-            />
+            <label className={fieldClassName(headingField, false, null, guidedFieldPresentation(shapeId, headingField.internalName, numericDraft, opcode))}>
+              <span title={headingField.internalName}>Starting Heading</span>
+              <select
+                disabled={guidedFieldPresentation(shapeId, headingField.internalName, numericDraft, opcode).disabled}
+                value={documentedEdcdOptionsForField(opcode, headingField.internalName)?.some((option) => option.value === Number(draft[headingField.index] ?? 1))
+                  ? draft[headingField.index] ?? "1"
+                  : `raw:${draft[headingField.index] ?? "1"}`}
+                onChange={(event) => {
+                  if (event.currentTarget.value.startsWith("raw:")) return;
+                  setDraftValue(headingField.index, Number(event.currentTarget.value));
+                }}
+              >
+                {!documentedEdcdOptionsForField(opcode, headingField.internalName)?.some((option) => option.value === Number(draft[headingField.index] ?? 1)) && (
+                  <option value={`raw:${draft[headingField.index] ?? "1"}`}>Imported heading {draft[headingField.index] ?? "1"}</option>
+                )}
+                {documentedEdcdOptionsForField(opcode, headingField.internalName)?.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
           )}
           <button
             type="button"
@@ -632,6 +779,22 @@ export function EdcdRowEditor({
       </label>
     );
   }
+}
+
+export function battleSelectionDraftIssue(
+  battleLow: number,
+  battleHigh: number,
+  rangeMode: boolean,
+  surpriseMode: boolean
+) {
+  const issues: string[] = [];
+  if (rangeMode && Math.abs(battleHigh) === 0) {
+    issues.push("Choose a nonzero Battle Range High so Classic Realmz can store the random range.");
+  }
+  if (surpriseMode && Math.abs(battleLow) === 0) {
+    issues.push("Choose a nonzero Battle or Battle Range Low so Classic Realmz can store the surprise sign.");
+  }
+  return issues.length > 0 ? issues.join(" ") : null;
 }
 
 function authorFieldHelp(text: string, label: string) {
@@ -1361,93 +1524,8 @@ function guidedFieldPresentation(shape: string, name: string, values: number[], 
 }
 
 function guidedModeOptionsForField(shape: string, name: string, opcode?: number): ModeOption[] | null {
-  const normalizedShape = normalizeShape(shape);
-  const normalizedName = normalizeField(name);
-  if (normalizedShape === "action-data-patching" && normalizedName === "levelorcache") {
-    return [
-      { value: -3, label: "Complex Encounter Script" },
-      { value: -2, label: "Simple Encounter Script" },
-      { value: 0, label: "Action Point on current/same land type" }
-    ];
-  }
-  if (normalizedShape === "action-data-patching" && normalizedName === "levelkind") {
-    return [
-      { value: 0, label: "Same land type / current AP context" },
-      { value: 1, label: "Land Level" },
-      { value: 2, label: "Dungeon Level" }
-    ];
-  }
-  if (normalizedShape === "action-data-patching" && normalizedName === "resultslot") {
-    return [
-      { value: 0, label: "Result slot 0" },
-      { value: 1, label: "Result slot 1" },
-      { value: 2, label: "Result slot 2" },
-      { value: 3, label: "Result slot 3" }
-    ];
-  }
-  if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 46) {
-    return [
-      { value: 0, label: "Quest is not set" },
-      { value: 1, label: "Quest is set" },
-      { value: 2, label: "Always branch" }
-    ];
-  }
-  if (normalizedShape === "force-branch" && normalizedName === "testb" && opcode === 38) {
-    return [
-      { value: 0, label: "Party has item" },
-      { value: 1, label: "Party does not have item" }
-    ];
-  }
-  if ((normalizedShape === "force-branch" || normalizedShape === "percent-branch") && normalizedName === "branchmode") {
-    return forceBranchDestinationOptions();
-  }
-  if ([
-    "false-true-branch",
-    "range-branch",
-    "random-branch",
-    "conditional-branch",
-    "misc-conditional-branch",
-    "item-branch",
-    "item-charge-branch",
-    "quest-value"
-  ].includes(normalizedShape) && normalizedName === "branchmode") {
-    return zeroBasedBranchDestinationOptions();
-  }
-  if (normalizedShape === "item-branch" && normalizedName === "missingbehavior") {
-    return [
-      { value: 0, label: "Use If Missing Target" },
-      { value: 1, label: "Continue Current Script" },
-      { value: 2, label: "Show String And Exit" }
-    ];
-  }
-  if (normalizedName === "isdungeon") {
-    return [
-      { value: 0, label: "Land map" },
-      { value: 1, label: "Dungeon map" }
-    ];
-  }
-  if (normalizedName === "darkstateplusone") {
-    return [
-      { value: 1, label: "Make light" },
-      { value: 2, label: "Make dark" }
-    ];
-  }
-  if (normalizedName === "shapemode") {
-    return [
-      { value: -1, label: "Keep current shape" },
-      { value: 0, label: "Set coordinates" },
-      { value: 1, label: "Offset rectangle" },
-      { value: 2, label: "Use paired shape details" }
-    ];
-  }
-  if (normalizedName === "revivepartyflag") {
-    return [
-      { value: 0, label: "Victory and treasure" },
-      { value: 5, label: "Victory only" },
-      { value: 10, label: "Revive after loss" }
-    ];
-  }
-  return null;
+  void shape;
+  return documentedEdcdOptionsForField(opcode, name);
 }
 
 function guidedSummaryForEdcd(
@@ -1498,7 +1576,13 @@ function guidedSummaryForEdcd(
     return `${messageSummary(project, values[0] ?? 0)} through ${messageSummary(project, values[1] ?? values[0] ?? 0)}.`;
   }
   if (normalized.includes("battle")) {
-    return `${battleRangeSummary(project, values[0] ?? 0, values[1] ?? 0)}${mediaTail(project, catalog, values[2] ?? 0, values[3] ?? 0)}.`;
+    const battle = battleRangeSummary(project, values[0] ?? 0, values[1] ?? 0);
+    if (normalized === "battle" && opcode === 2) {
+      const outcome = battleOutcomeSummary(project, catalog, values[2] ?? 0, values[4] ?? 0);
+      const message = values[3] ? ` after ${messageSummary(project, values[3])}` : "";
+      return `${battle}${message}; ${outcome}.`;
+    }
+    return `${battle}${mediaTail(project, catalog, values[2] ?? 0, values[3] ?? 0)}.`;
   }
   if (normalized === "item-branch") {
     return `Check for ${itemIdSummary(values[0] ?? 0)}, then route using ${branchModeLabel(values[1] ?? 0, "zero")}.`;
@@ -1612,7 +1696,20 @@ function battleRangeSummary(project: Project, low: number, high: number) {
   const battle = (id: number) => project.battles.find((record) => record.id === id);
   const startLabel = battle(start) ? `Battle ${start}` : `battle ${start}`;
   const endLabel = battle(end) ? `Battle ${end}` : `battle ${end}`;
-  return start === end ? `Start ${startLabel}` : `Start ${startLabel} through ${endLabel}`;
+  const prefix = low < 0 || high < 0 ? "Surprise the party, then start " : "Start ";
+  return start === end ? `${prefix}${startLabel}` : `${prefix}${startLabel} through ${endLabel}`;
+}
+
+function battleOutcomeSummary(project: Project, catalog: LibraryCatalog | null | undefined, soundOrMacro: number, outcome: number) {
+  if (outcome === 10) {
+    const macro = edcdTargetOptions(project, "macro", catalog).find((candidate) => candidate.value === Math.abs(soundOrMacro));
+    const destination = macro?.label ?? `Extra Action Point ${Math.abs(soundOrMacro)}`;
+    return `revive the party with 1 stamina after a loss and run ${destination}; award no victory points or treasure`;
+  }
+  const feedback = soundOrMacro ? ` Play ${soundSummary(project, catalog, soundOrMacro)} before combat.` : "";
+  if (outcome === 5) return `award victory points but no enemy treasure.${feedback}`.trim();
+  if (outcome === 0) return `award victory points and enemy treasure.${feedback}`.trim();
+  return `preserve imported battle outcome mode ${outcome}.${feedback}`.trim();
 }
 
 function coordSummary(value: number | undefined) {

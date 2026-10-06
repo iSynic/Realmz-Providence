@@ -44,9 +44,6 @@ export function itemIconReferences(
     });
   };
 
-  for (const option of itemOptions) {
-    addReference(option.iconId, option.label.replace(/\s+\(-?\d+\)$/, ""), `item ${option.value}`);
-  }
   for (const asset of project.assets ?? []) {
     if (asset.kind === "icon" || asset.resourceType.trim() === "cicn") {
       addReference(asset.resourceId, asset.label, "project icon");
@@ -54,6 +51,9 @@ export function itemIconReferences(
   }
   for (const asset of project.assetCatalog.icons ?? []) {
     addReference(asset.resourceId, asset.name || `cicn ${asset.resourceId}`, asset.source || "project catalog");
+  }
+  for (const option of itemOptions) {
+    addReference(option.iconId, option.label.replace(/\s+\(-?\d+\)$/, ""), `item ${option.value}`);
   }
   for (const asset of catalog?.assets ?? []) {
     const resourceType = (asset.resourceType ?? "").trim();

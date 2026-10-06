@@ -153,6 +153,8 @@
       "armor": -4,
       "typeFlags": [1, -1, 2, -2, 3, -3, 4, -4],
       "attacks": [[1, 8, 0, 0]],
+      "items": ["ownership-blade"],
+      "weapon": "ownership-blade",
       "stamina": 30,
       "staminaMax": 31,
       "exp": 29
@@ -178,6 +180,20 @@
       "description": "This item text was compiled from canonical Providence data.",
       "typeName": "scenarioItem",
       "cost": 1
+    },
+    {
+      "key": "ownership-blade",
+      "itemId": 902,
+      "unidentifiedName": "Plain Providence Blade",
+      "identifiedName": "Providence Blade",
+      "description": "A simple scenario-local weapon carried by the Providence Sentinel.",
+      "typeName": "meleeWeapon",
+      "itemCat0": 268435456,
+      "cost": 40,
+      "weight": 12,
+      "hands": 1,
+      "vSmall": 6,
+      "vLarge": 6
     }
   ],
   "treasures": [
@@ -239,7 +255,8 @@
       "percent": 100,
       "steps": [
         { "kind": "message", "message": "ownership-message" },
-        { "kind": "setQuestFlag", "quest": "ownership-proven" }
+        { "kind": "setQuestFlag", "quest": "ownership-proven" },
+        { "kind": "addSpecialCharacter", "monster": "ownership-sentinel" }
       ]
     },
     {

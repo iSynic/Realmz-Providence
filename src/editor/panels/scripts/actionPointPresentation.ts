@@ -3,6 +3,11 @@ import { normalizeStepOpcode } from "../../realmzActions";
 import type { Ed3ReachabilityRow, Project, SelectedEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import type { ScriptActionDefinition } from "./scriptActionCatalog";
+import {
+  scriptActionAllowedInAnyContext,
+  scriptActionContextRestriction,
+  type ScriptActionAuthoringContext
+} from "./scriptActionContexts";
 
 export type CombatMacroContextKind = "battle" | "monster" | "mixed";
 
@@ -150,9 +155,20 @@ export function humanActionValueLabel(label: string) {
   return clean && clean !== "Value" ? clean : "Value";
 }
 
+function actionPointAuthoringContexts(combatMacroContext?: CombatMacroContext | null): ScriptActionAuthoringContext[] {
+  if (combatMacroContext?.kind === "battle") return ["battle-macro"];
+  if (combatMacroContext?.kind === "monster") return ["monster-macro"];
+  if (combatMacroContext?.kind === "mixed") return ["battle-macro", "monster-macro"];
+  return ["action-point"];
+}
+
 export function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
-  if (definition.opcode === 121 && combatMacroContext) return "Combat macro action";
-  if (definition.opcode === 121) return "Macro-only imported action";
+  const restriction = scriptActionContextRestriction(definition.opcode);
+  if (restriction) {
+    return scriptActionAllowedInAnyContext(definition.opcode, actionPointAuthoringContexts(combatMacroContext))
+      ? "Context-specific action"
+      : "Context-only imported action";
+  }
   if ([84, 98, 99].includes(definition.opcode)) return "Legacy registration action";
   if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
   if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
@@ -163,9 +179,12 @@ export function actionAuthoringStateLabel(definition: ScriptActionDefinition, co
 }
 
 export function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
-  if (definition.opcode === 121) {
-    if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro. Providence edits the same CODE/ID and Action Settings while keeping Extra Action Point storage unchanged.";
-    return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
+  const restriction = scriptActionContextRestriction(definition.opcode);
+  if (restriction) {
+    const allowed = scriptActionAllowedInAnyContext(definition.opcode, actionPointAuthoringContexts(combatMacroContext));
+    return allowed
+      ? `${restriction.reason} Providence edits the same CODE/ID and Action Settings while keeping the script storage unchanged.`
+      : `${restriction.reason} This imported CODE/ID is preserved here; author this action from one of its supported runtime contexts.`;
   }
   if ([84, 98, 99].includes(definition.opcode)) {
     return "Divinity documents these registration actions without an authored ID or E-Code value. Placing the step runs the legacy registration behavior; modern open-source Realmz keeps related dispatchers but comments out enforcement.";

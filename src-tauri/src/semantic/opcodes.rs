@@ -2245,6 +2245,7 @@ mod tests {
             label: "test".to_string(),
             category: ActionCategory::Unknown,
             gosub: code < 0 && code != -14 && code != -23,
+            media_required_for_progression: None,
         }
     }
 

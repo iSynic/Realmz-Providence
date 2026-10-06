@@ -131,6 +131,7 @@ export function browserScenarioPackageFileName(project: Project, target: Scenari
 }
 
 export function expectedAuthoredScenarioManifestFiles(project: Project, target: ScenarioTarget) {
+  assertNativeRealmzCompatible(project);
   if (requiresCompatibilityAnnex(project)) {
     throw new Error("Expected authored scenario manifest files are only available for authored projects.");
   }
@@ -146,6 +147,7 @@ export function createBrowserScenarioPackageZip(
   if (target === "providence-portable-folder") {
     throw new Error("Browser scenario ZIP export expects a Mac Classic or Windows Realmz target.");
   }
+  assertNativeRealmzCompatible(project);
   const importedProject = requiresCompatibilityAnnex(project);
   const compatibilityAnnex = importedProject && rawSources ? new BrowserCompatibilityAnnex(rawSources) : null;
   if (importedProject && (!compatibilityAnnex || compatibilityAnnex.files().length === 0)) {
@@ -198,6 +200,23 @@ export function createBrowserScenarioPackageZip(
       targetCompatibility: bucketTargetCompatibility(targetCompatibilityIssues)
     }
   };
+}
+
+function assertNativeRealmzCompatible(project: Project) {
+  const runtime = project.remakeRuntime;
+  const bindingCount = runtime
+    ? Object.values(runtime.bindings).reduce((count, bindings) => count + Object.keys(bindings).length, 0)
+    : 0;
+  const reasons = [
+    ...(runtime?.semanticActions.length ? ["semantic actions"] : []),
+    ...(bindingCount > 0 ? ["Remake runtime bindings"] : [])
+  ];
+  if (reasons.length > 0) {
+    throw new Error(
+      `Native Realmz export is unavailable because this project uses Remake-only behavior: ${reasons.join(", ")}. `
+      + "Remove those features or export a Realmz Remake scenario."
+    );
+  }
 }
 
 function compileBrowserScenarioManifest(
@@ -293,7 +312,7 @@ function writeManagedResources(
   const updates: ResourceForkUpdate[] = [
     ...mapNameResourceUpdates(project, original),
     ...monsterIconOverrideUpdates(project, original, result),
-    ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, result),
+    ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, original, result),
     ...managedAssetResourceUpdates(project.assets ?? [], original, result)
   ];
   const removals = project.editorMetadata?.removedScenarioResources ?? [];
@@ -874,11 +893,13 @@ function monsterIconOverrideUpdates(project: Project, original: Uint8Array, resu
 function scenarioIconResourceUpdates(
   scenarioItems: ScenarioItemRecord[],
   scenarioIconResources: ScenarioIconResource[],
+  original: Uint8Array,
   result: ResourceExportResult
 ) {
   const referencedItemIcons = new Set(scenarioItems.filter((item) => item.iconId !== 0).map((item) => Math.abs(item.iconId)));
   const updates: ResourceForkUpdate[] = [];
   if (referencedItemIcons.size === 0) return updates;
+  const originalEntries = parseResourceFork(original);
   for (const resource of scenarioIconResources ?? []) {
     const resourceId = Math.abs(resource.resourceId);
     if (!referencedItemIcons.has(resourceId)) continue;
@@ -891,11 +912,15 @@ function scenarioIconResourceUpdates(
       result.resourceWarnings.push(`Scenario icon resource ${resource.resourceId} has invalid cicn data.`);
       continue;
     }
+    const existing = resource.imported
+      ? originalEntries.find((entry) => entry.resourceType === "cicn" && Math.abs(entry.id) === resourceId)
+      : null;
+    if (existing && bytesEqual(existing.data, data)) continue;
     updates.push({
       resourceType: "cicn",
       id: resourceId,
-      name: resource.label,
-      attributes: 0,
+      name: existing?.name ?? resource.label,
+      attributes: existing?.attributes ?? 0,
       data
     });
     result.writtenResources.push(`cicn ${resourceId}: custom item icon ${resource.label}`);

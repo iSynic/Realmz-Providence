@@ -1,10 +1,10 @@
+use super::record_bytes::{i16_be, i32_be, write_i16_be, write_i32_be};
 use crate::error::{ProvidenceError, Result};
 use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     Action, ActionCategory, Confidence, ExtraCodeRow, LevelType, MapCoordinate, Provenance,
     TriggerRecord, MAP_SIZE,
 };
-use super::record_bytes::{i16_be, i32_be, write_i16_be, write_i32_be};
 
 pub const DOOR_BYTES: usize = REALMZ_NATIVE_LAYOUT.action_point_record_bytes;
 pub const DOORS_PER_LEVEL: usize = REALMZ_NATIVE_LAYOUT.action_points_per_level;
@@ -260,6 +260,7 @@ fn describe_action(slot: usize, raw_code: i16, id: i16) -> Action {
         label: label.to_string(),
         category,
         gosub: raw_code < 0 && raw_code != -14 && raw_code != -23,
+        media_required_for_progression: None,
     }
 }
 
