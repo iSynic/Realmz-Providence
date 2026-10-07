@@ -11,6 +11,8 @@ import tarfile
 import zipfile
 from common import ROOT, digest, executable, external_directory, git_identity, output, run, write_json
 from music import install_music
+from notices import install_notices
+from windows_runtime import verify_static_crt
 
 BINARIES = ["providence-cli", "providence-native-adapter", "providence-rebuilt-preview",
             "providence-application-library"]
@@ -26,9 +28,16 @@ def build_native(target_root, runtime):
             run(["lipo", "-create", *[target_root / t / "release" / name for t in
                 ["aarch64-apple-darwin", "x86_64-apple-darwin"]], "-output", runtime / name])
     else:
-        run(["cargo", "build", "--locked", "--release", "--workspace"], env=environment)
+        arguments = ["cargo", "build", "--locked", "--release", "--workspace"]
+        binary_root = target_root / "release"
+        if platform.system() == "Windows":
+            environment["RUSTFLAGS"] = environment.get("RUSTFLAGS", "") + " -C target-feature=+crt-static"
+            arguments.extend(["--target", "x86_64-pc-windows-msvc"])
+            binary_root = target_root / "x86_64-pc-windows-msvc/release"
+        run(arguments, env=environment)
         for name in BINARIES:
-            shutil.copy2(target_root / "release" / executable(name), runtime / executable(name))
+            shutil.copy2(binary_root / executable(name), runtime / executable(name))
+        if platform.system() == "Windows": verify_static_crt(runtime, BINARIES)
 
 
 def verify_sources():
@@ -161,6 +170,7 @@ def main(args):
     runtime = export(args.godot, bundle)
     build_native(target, runtime)
     support(runtime, cache)
+    install_notices(runtime, args.godot)
     if platform.system() == "Darwin": sign_runtime(runtime)
     identity_manifest(runtime, identity, args.godot)
     if platform.system() == "Darwin":

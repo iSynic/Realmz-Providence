@@ -1,5 +1,12 @@
 # Third-party notices
 
+## Godot and Rust dependencies
+
+Native bundles include Godot's full engine and third-party copyright/license
+inventory in `third-party/godot-notices.json`. The locked Rust dependency
+licenses and source locations are retained under `third-party/rust` and
+`third-party/rust-dependencies.json`. Their original licenses remain in force.
+
 ## Divinity Manual and Red Dragon artwork
 
 The bundled Divinity Manual chapter artwork preserves the manual HTML, CSS and
