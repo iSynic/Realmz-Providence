@@ -55,11 +55,11 @@ def verify_sources():
         if digest(source / name) != expected: raise ValueError(f"Application support differs: {name}")
 
 
-def derive_library(runtime):
+def derive_library(runtime, binaries):
     request = {"id": 1, "method": "application-media.import-classic-library", "params": {
         "sourceDirectory": str(runtime / "Realmz Data"),
         "libraryRoot": str(runtime / "reference-libraries/realmz-classic")}}
-    result = subprocess.run([str(runtime / executable("providence-native-adapter")), "serve-demo"],
+    result = subprocess.run([str(binaries / executable("providence-native-adapter")), "serve-demo"],
         input=json.dumps(request) + "\n", capture_output=True, text=True, encoding="utf-8", timeout=180)
     result.check_returncode()
     response = json.loads(result.stdout)
@@ -70,13 +70,13 @@ def derive_library(runtime):
                    applicationMediaCatalogPath="../../rebuilt-support/media.json",
                    classicApplicationDataDirectory="../../Realmz Data")
     write_json(runtime / "reference-libraries/realmz-classic/rebuilt-package-context.json", context)
-    inspection = json.loads(output([runtime / executable("providence-cli"), "inspect-rebuilt-package-file",
+    inspection = json.loads(output([binaries / executable("providence-cli"), "inspect-rebuilt-package-file",
                                     runtime / "rebuilt-support/application.realmz2"]))
     if inspection["packageHash"] != context["applicationPackageHash"]:
         raise ValueError("Application package inspection differs from finalization context")
 
 
-def support(runtime, cache):
+def support(runtime, binaries, cache):
     verify_sources()
     shutil.copytree(ROOT / "godot/bundled/realmz-reference", runtime / "Realmz Data")
     shutil.copytree(ROOT / "godot/bundled/monster-library", runtime / "monster-library")
@@ -86,10 +86,10 @@ def support(runtime, cache):
     shutil.copytree(ROOT / "vendor", runtime / "third-party", ignore=shutil.ignore_patterns("src", "Cargo.toml", "Cargo.lock"))
     shutil.copy2(ROOT / "artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt", runtime / "FONT-NOTICE.txt")
     install_music(runtime / "music-preview", cache)
-    derive_library(runtime)
+    derive_library(runtime, binaries)
 
 
-def identity_manifest(runtime, identity, godot):
+def identity_manifest(runtime, resources, identity, godot):
     identities = {}
     for name in ["providence-cli", "providence-native-adapter", "providence-application-library"]:
         build = json.loads(output([runtime / executable(name), "build-identity"]))
@@ -97,10 +97,12 @@ def identity_manifest(runtime, identity, godot):
             raise ValueError(f"Embedded source identity mismatch: {name}: {build}")
         identities[name] = build
     editor_name = macos_executable(runtime.parent.parent) if platform.system() == "Darwin" else ""
-    files = {p.relative_to(runtime).as_posix(): digest(p) for p in sorted(runtime.rglob("*"))
-             if p.is_file() and p.name != editor_name}
-    write_json(runtime / "bundle-manifest.json", {"kind": "providence.native-release", "formatVersion": 1,
+    file_root = runtime.parent if editor_name else runtime
+    files = {p.relative_to(file_root).as_posix(): digest(p) for p in sorted(file_root.rglob("*"))
+             if p.is_file() and p.name != editor_name and "_CodeSignature" not in p.parts}
+    write_json(resources / "bundle-manifest.json", {"kind": "providence.native-release", "formatVersion": 1,
         "version": "0.6.0-beta.1", "source": identity, "platform": platform.system(),
+        "fileRoot": ".." if editor_name else ".",
         "godotVersion": output([godot, "--version"]), "buildIdentities": identities, "files": files,
         "macOSSeal": "The signed editor binary is covered by the application seal and release archive checksum." if editor_name else None})
 
@@ -139,13 +141,17 @@ def macos_executable(application):
     return name
 
 
-def sign_runtime(runtime):
-    for name in [*BINARIES, "music-preview/openmpt123"]:
-        run(["lipo", runtime / name, "-verify_arch", "arm64", "x86_64"])
-        run(["codesign", "--force", "--sign", "-", runtime / name])
-    manifest_path = runtime / "music-preview/runtime-manifest.json"
+def sign_runtime(runtime, resources):
+    helpers = runtime.parent / "Helpers"
+    helpers.mkdir()
+    decoder = helpers / "openmpt123"
+    shutil.move(resources / "music-preview/openmpt123", decoder)
+    for path in [*[runtime / name for name in BINARIES], decoder]:
+        run(["lipo", path, "-verify_arch", "arm64", "x86_64"])
+        run(["codesign", "--force", "--sign", "-", path])
+    manifest_path = resources / "music-preview/runtime-manifest.json"
     manifest = json.loads(manifest_path.read_text())
-    manifest["files"]["openmpt123"] = digest(runtime / "music-preview/openmpt123")
+    manifest["files"]["openmpt123"] = digest(decoder)
     write_json(manifest_path, manifest)
 
 
@@ -171,11 +177,13 @@ def main(args):
     bundle = destination / "bundle"
     bundle.mkdir(exist_ok=False)
     runtime = export(args.godot, bundle)
+    resources = runtime.parent / "Resources" if platform.system() == "Darwin" else runtime
+    resources.mkdir(exist_ok=True)
     build_native(target, runtime)
-    support(runtime, cache)
-    install_notices(runtime, args.godot)
-    if platform.system() == "Darwin": sign_runtime(runtime)
-    identity_manifest(runtime, identity, args.godot)
+    support(resources, runtime, cache)
+    install_notices(resources, args.godot)
+    if platform.system() == "Darwin": sign_runtime(runtime, resources)
+    identity_manifest(runtime, resources, identity, args.godot)
     if platform.system() == "Darwin":
         run(["codesign", "--force", "--sign", "-", bundle / "Providence.app"])
         run(["codesign", "--verify", "--deep", "--strict", bundle / "Providence.app"])

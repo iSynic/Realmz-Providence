@@ -319,7 +319,7 @@ func configured_application_library_root(explicit_root: String = "") -> String:
 	var development_root := str(ProjectSettings.get_setting(APPLICATION_LIBRARY_PATH_SETTING, "")).strip_edges()
 	if not development_root.is_empty():
 		return development_root.simplify_path()
-	var adjacent_root := OS.get_executable_path().get_base_dir().path_join(BUNDLED_APPLICATION_LIBRARY)
+	var adjacent_root := preload("res://src/packaged_paths.gd").resource_root().path_join(BUNDLED_APPLICATION_LIBRARY)
 	if FileAccess.file_exists(adjacent_root.path_join("classic-application-media.json")):
 		return adjacent_root.simplify_path()
 	var default_root := ProjectSettings.globalize_path(DEFAULT_APPLICATION_LIBRARY)
@@ -335,7 +335,7 @@ func bundled_classic_application_data_root() -> String:
 	var development_root := str(ProjectSettings.get_setting(CLASSIC_DATA_PATH_SETTING, "")).strip_edges()
 	if not development_root.is_empty() and _is_classic_data_root(development_root):
 		return development_root.simplify_path()
-	var adjacent_root := OS.get_executable_path().get_base_dir().path_join(BUNDLED_CLASSIC_DATA_DIRECTORY)
+	var adjacent_root := preload("res://src/packaged_paths.gd").resource_root().path_join(BUNDLED_CLASSIC_DATA_DIRECTORY)
 	if _is_classic_data_root(adjacent_root):
 		return adjacent_root.simplify_path()
 	var source_root := ProjectSettings.globalize_path("res://bundled/realmz-reference")

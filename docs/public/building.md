@@ -47,6 +47,10 @@ archive carries a SHA-256 receipt and an internal bundle manifest.
 macOS additionally requires both `aarch64-apple-darwin` and
 `x86_64-apple-darwin` Rust targets and the Xcode command-line tools. Packaging
 combines the sidecars with lipo and signs the finished universal app ad hoc.
+Executables live in `Contents/MacOS` and `Contents/Helpers`; reference data,
+libraries, music support and notices live in `Contents/Resources`.
+Windows release tools link the C runtime statically, so a separate Visual C++
+runtime installation is not required.
 Unix music preview builds a minimal static libopenmpt decoder using a C++
 compiler, make and pkg-config. It renders bounded PCM for Godot playback;
 stored MOD data remains unchanged. The matching decoder source is included.

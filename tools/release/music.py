@@ -74,9 +74,10 @@ def install_unix(destination, cache):
             with tarfile.open(archive) as source: source.extractall(unpack, filter="data")
             root = next(unpack.iterdir())
             environment = os.environ.copy()
+            environment.update(CFLAGS="-O2 -g0", CXXFLAGS="-O2 -g0")
             if architecture:
-                environment.update(CFLAGS=f"-arch {architecture} -mmacosx-version-min=11.0",
-                    CXXFLAGS=f"-arch {architecture} -mmacosx-version-min=11.0",
+                environment.update(CFLAGS=f"-O2 -g0 -arch {architecture} -mmacosx-version-min=11.0",
+                    CXXFLAGS=f"-O2 -g0 -arch {architecture} -mmacosx-version-min=11.0",
                     LDFLAGS=f"-arch {architecture} -mmacosx-version-min=11.0")
             flags = ["--disable-shared", "--enable-static", "--disable-examples", "--disable-tests",
                      "--disable-doxygen-doc", "--without-zlib", "--without-mpg123", "--without-ogg",

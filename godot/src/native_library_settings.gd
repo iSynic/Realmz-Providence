@@ -22,7 +22,7 @@ static func append_monster(arguments: PackedStringArray, path: String, explicit_
 	arguments.append(option)
 	arguments.append(directory)
 	if option == "--personal-monster-library-root":
-		var manifest := OS.get_executable_path().get_base_dir().path_join("monster-library/manifest.json")
+		var manifest := preload("res://src/packaged_paths.gd").resource_root().path_join("monster-library/manifest.json")
 		if not FileAccess.file_exists(manifest): manifest = ProjectSettings.globalize_path("res://bundled/monster-library/manifest.json")
 		if FileAccess.file_exists(manifest):
 			arguments.append("--monster-scrapbook-manifest")

@@ -121,14 +121,13 @@ func _matches(original: Dictionary) -> bool:
 static func decoder_path() -> String:
 	var override := OS.get_environment("PROVIDENCE_MUSIC_DECODER")
 	if not override.is_empty(): return override
-	var filename := "openmpt123.exe" if OS.get_name() == "Windows" else "openmpt123"
-	return ProjectSettings.globalize_path("res://bin/music-preview/" + filename) if OS.has_feature("editor") else OS.get_executable_path().get_base_dir().path_join("music-preview/" + filename)
+	return preload("res://src/packaged_paths.gd").music_decoder()
 
 
 static func decoder_valid(path: String) -> bool:
 	if OS.get_name() == "Windows":
 		return FileAccess.get_sha256(path) == EXE_HASH and FileAccess.file_exists(path.get_base_dir().path_join("openmpt-mpg123.dll"))
-	var manifest_path := path.get_base_dir().path_join("runtime-manifest.json")
+	var manifest_path := preload("res://src/packaged_paths.gd").music_manifest(path)
 	if not FileAccess.file_exists(manifest_path): return false
 	var manifest = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
 	if not manifest is Dictionary or manifest.get("version") != "0.8.9": return false
