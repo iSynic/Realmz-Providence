@@ -141,6 +141,7 @@ def macos_executable(application):
 
 def sign_runtime(runtime):
     for name in [*BINARIES, "music-preview/openmpt123"]:
+        run(["lipo", runtime / name, "-verify_arch", "arm64", "x86_64"])
         run(["codesign", "--force", "--sign", "-", runtime / name])
     manifest_path = runtime / "music-preview/runtime-manifest.json"
     manifest = json.loads(manifest_path.read_text())
@@ -152,8 +153,10 @@ def smoke_editor(bundle, runtime):
     name = "Providence.exe" if os.name == "nt" else "Providence"
     if platform.system() == "Darwin":
         name = macos_executable(bundle / "Providence.app")
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("PROVIDENCE_") and key != "CARGO_TARGET_DIR"}
     result = subprocess.run([str(runtime / name), "--headless", "--quit-after", "120"],
-        capture_output=True, text=True, encoding="utf-8", timeout=90)
+        cwd=runtime, env=environment, capture_output=True, text=True, encoding="utf-8", timeout=90)
     result.check_returncode()
     (bundle.parent / "startup-smoke.log").write_text(result.stdout + result.stderr, encoding="utf-8")
     if any(marker in result.stdout + result.stderr for marker in ["SCRIPT ERROR:", "Parse Error:", "ERROR:"]):
