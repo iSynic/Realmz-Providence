@@ -30,7 +30,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     env:
-      CARGO_TARGET_DIR: ${{ runner.temp }}/providence-target
       MACOSX_DEPLOYMENT_TARGET: '11.0'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -41,6 +40,9 @@ jobs:
         with:
           toolchain: '1.98.0'
           components: rustfmt, clippy
+      - name: External Cargo build directory
+        shell: bash
+        run: echo "CARGO_TARGET_DIR=$RUNNER_TEMP/providence-target" >> "$GITHUB_ENV"
       - name: Public source boundary
         run: python tools/release/check_public_source.py
       - name: Format and lint
