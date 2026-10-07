@@ -127,7 +127,8 @@ def archive_bundle(bundle, destination):
     elif system == "Darwin":
         run(["ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", bundle / "Providence.app", archive])
     else:
-        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as target:
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=7,
+                             strict_timestamps=False) as target:
             for path in sorted(bundle.rglob("*")):
                 if path.is_file(): target.write(path, "Providence/" + path.relative_to(bundle).as_posix())
     (destination / (archive.name + ".sha256")).write_text(f"{digest(archive)}  {archive.name}\n")
