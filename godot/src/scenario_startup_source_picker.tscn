@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/scenario_startup_source_picker.gd" type="Script" id="1"]
+
+[node name="StartupSourcePicker" type="ConfirmationDialog"]
+title = "Choose original startup file"
+size = Vector2i(900, 560)
+min_size = Vector2i(720, 460)
+transient = true
+exclusive = true
+script = ExtResource("1")
+ok_button_text = "Use original file"
+
+[node name="Content" type="VBoxContainer" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -16.0
+offset_bottom = -54.0
+theme_override_constants/separation = 10
+
+[node name="Context" type="Label" parent="Content"]
+layout_mode = 2
+text = "SECURITY · ORIGINAL STARTUP FILE"
+
+[node name="SourceSearch" type="LineEdit" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Find a retained filename…"
+
+[node name="Panes" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="SourceChoices" type="ItemList" parent="Content/Panes"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(340, 0)
+size_flags_vertical = 3
+
+[node name="SourceDetails" type="Label" parent="Content/Panes"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 2
+
+[node name="Paging" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+[node name="SourcePrevious" type="Button" parent="Content/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹ Previous"
+
+[node name="SourceCount" type="Label" parent="Content/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Loading retained files…"
+
+[node name="SourceNext" type="Button" parent="Content/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next ›"

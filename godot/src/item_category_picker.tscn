@@ -1,0 +1,361 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/item_category_picker.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+
+[node name="ItemCategoryPicker" type="Window"]
+title = "Choose item categories"
+size = Vector2i(1000, 740)
+min_size = Vector2i(800, 520)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+tooltip_text = "Selections change the draft only. Imported unlabelled category bits are retained."
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Destination" type="Label" parent="Margin/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="Search" type="LineEdit" parent="Margin/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Find category…"
+clear_button_enabled = true
+
+[node name="Count" type="Label" parent="Margin/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Categories" type="GridContainer" parent="Margin/Body/Scroll"]
+layout_mode = 2
+columns = 3
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+
+[node name="Category0" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Small Blunt Weapons"
+metadata/category_index = 0
+
+[node name="Category1" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Medium Blunt Weapons"
+metadata/category_index = 1
+
+[node name="Category2" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Large Blunt Weapons"
+metadata/category_index = 2
+
+[node name="Category3" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Very Small Bladed Weapons"
+metadata/category_index = 3
+
+[node name="Category4" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Small Bladed Weapons"
+metadata/category_index = 4
+
+[node name="Category5" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Medium Bladed Weapons"
+metadata/category_index = 5
+
+[node name="Category6" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Large Bladed Weapons"
+metadata/category_index = 6
+
+[node name="Category7" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Very Large Bladed Weapons"
+metadata/category_index = 7
+
+[node name="Category8" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Staffs"
+metadata/category_index = 8
+
+[node name="Category9" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Spears"
+metadata/category_index = 9
+
+[node name="Category10" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Pole Arms"
+metadata/category_index = 10
+
+[node name="Category11" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Ninja Style Weapons"
+metadata/category_index = 11
+
+[node name="Category12" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Normal Bows"
+metadata/category_index = 12
+
+[node name="Category13" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Cross Bows"
+metadata/category_index = 13
+
+[node name="Category14" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Darts"
+metadata/category_index = 14
+
+[node name="Category15" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Flasks Of Oil"
+metadata/category_index = 15
+
+[node name="Category16" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Throwing Knife"
+metadata/category_index = 16
+
+[node name="Category17" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Whips"
+metadata/category_index = 17
+
+[node name="Category18" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Quiver"
+metadata/category_index = 18
+
+[node name="Category19" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Waist / Belt"
+metadata/category_index = 19
+
+[node name="Category20" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Neck / Necklace"
+metadata/category_index = 20
+
+[node name="Category21" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Caps"
+metadata/category_index = 21
+
+[node name="Category22" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Soft Helm"
+metadata/category_index = 22
+
+[node name="Category23" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Small Helm"
+metadata/category_index = 23
+
+[node name="Category24" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Large Helm"
+metadata/category_index = 24
+
+[node name="Category25" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Small Shield"
+metadata/category_index = 25
+
+[node name="Category26" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Med Shield"
+metadata/category_index = 26
+
+[node name="Category27" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Large Shield"
+metadata/category_index = 27
+
+[node name="Category28" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Bracers"
+metadata/category_index = 28
+
+[node name="Category29" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Cloth Gloves"
+metadata/category_index = 29
+
+[node name="Category30" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Leather Gloves"
+metadata/category_index = 30
+
+[node name="Category31" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Metal Gloves"
+metadata/category_index = 31
+
+[node name="Category32" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Cloak / Cape"
+metadata/category_index = 32
+
+[node name="Category33" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Robe"
+metadata/category_index = 33
+
+[node name="Category34" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Padded Armor"
+metadata/category_index = 34
+
+[node name="Category35" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Leather Armor"
+metadata/category_index = 35
+
+[node name="Category36" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Chain Armor"
+metadata/category_index = 36
+
+[node name="Category37" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Banded Armor"
+metadata/category_index = 37
+
+[node name="Category38" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Plate Armor"
+metadata/category_index = 38
+
+[node name="Category39" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Soft Boots"
+metadata/category_index = 39
+
+[node name="Category40" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Hard Boots"
+metadata/category_index = 40
+
+[node name="Category41" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Throwing Hammer"
+metadata/category_index = 41
+
+[node name="Category42" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Throwing Stars"
+metadata/category_index = 42
+
+[node name="Category43" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Blunt Weapon"
+metadata/category_index = 43
+
+[node name="Category44" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Bladed Weapon"
+metadata/category_index = 44
+
+[node name="Category45" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Large Weapon"
+metadata/category_index = 45
+
+[node name="Category46" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Missile Weapon"
+metadata/category_index = 46
+
+[node name="Category47" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Item"
+metadata/category_index = 47
+
+[node name="Category48" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Scroll Case"
+metadata/category_index = 48
+
+[node name="Category49" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Broach / Pin"
+metadata/category_index = 49
+
+[node name="Category50" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Ring"
+metadata/category_index = 50
+
+[node name="Category51" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Potion"
+metadata/category_index = 51
+
+[node name="Category52" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Misc. Magic Item"
+metadata/category_index = 52
+
+[node name="Category53" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Special Object"
+metadata/category_index = 53
+
+[node name="Category54" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Ion Stone"
+metadata/category_index = 54
+
+[node name="Category55" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Book"
+metadata/category_index = 55
+
+[node name="Category56" type="CheckBox" parent="Margin/Body/Scroll/Categories"]
+layout_mode = 2
+text = "Scroll"
+metadata/category_index = 56
+
+[node name="Hint" type="Label" parent="Margin/Body"]
+visible = false
+layout_mode = 2
+text = "Multiple categories and unknown imported bits stay intact until you choose Use categories."
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="Margin/Body/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Cancel" type="Button" parent="Margin/Body/Actions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Cancel"
+
+[node name="UseCategories" type="Button" parent="Margin/Body/Actions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Use categories"
+

@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[node name="ScenarioNavigation" type="VBoxContainer"]
+theme_override_constants/separation = 8
+
+[node name="ScenarioFamilyTabs" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StartupTab" type="Button" parent="ScenarioFamilyTabs"]
+layout_mode = 2
+text = "Startup Info"
+
+[node name="RestrictionsTab" type="Button" parent="ScenarioFamilyTabs"]
+layout_mode = 2
+text = "Restrictions"
+
+[node name="ContactTab" type="Button" parent="ScenarioFamilyTabs"]
+layout_mode = 2
+text = "Contact Info"
+
+[node name="SecurityTab" type="Button" parent="ScenarioFamilyTabs"]
+layout_mode = 2
+text = "Security"
+
+[node name="GlobalMacrosTab" type="Button" parent="ScenarioFamilyTabs"]
+layout_mode = 2
+text = "Global Macros"
+
+[node name="RelatedEditors" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="RelatedEditors"]
+layout_mode = 2
+text = "RELATED EDITORS"
+theme_override_font_sizes/font_size = 10
+
+[node name="Assets" type="Button" parent="RelatedEditors"]
+layout_mode = 2
+text = "Assets"
+disabled = true
+tooltip_text = "The complete Assets workbench is not available yet."
+
+[node name="Spells" type="Button" parent="RelatedEditors"]
+layout_mode = 2
+text = "Spells"
+
+[node name="Races" type="Button" parent="RelatedEditors"]
+layout_mode = 2
+text = "Races"
+
+[node name="Castes" type="Button" parent="RelatedEditors"]
+layout_mode = 2
+text = "Castes"
+
+[node name="RelatedSecurity" type="Button" parent="RelatedEditors"]
+layout_mode = 2
+text = "Security"

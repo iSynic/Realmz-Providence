@@ -1,0 +1,3 @@
+# Raw licensed reference inputs are copied beside packaged executables by the
+# Windows packager. Keep them out of the PCK so one bundle does not carry two
+# identical copies. Source runs still resolve the absolute development path.

@@ -1,0 +1,181 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource path="res://src/scenario_workbench_frame.tscn" type="PackedScene" id="1"]
+[ext_resource path="res://src/scenario_startup_editor.gd" type="Script" id="2"]
+
+[node name="scenario_startup_editor" instance=ExtResource("1")]
+script = ExtResource("2")
+stable_route_id = "scenario.startup"
+projection_method = "scenario-startup.open"
+write_method = "scenario-startup.update"
+section_title = "Startup"
+
+[node name="Title" parent="Header" index="0"]
+text = "STARTUP"
+
+[node name="SectionHeading" parent="Body/FormPanel/Form" index="0"]
+text = "STARTUP · SCENARIO DRAFT"
+
+[node name="ApplySection" parent="Body/FormPanel/Form/Footer" index="0"]
+text = "Apply Startup"
+
+[node name="StartupFields" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+tooltip_text = "Land coordinates range from 0 to 89. The marker filename may differ from the display name."
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 22
+size_flags_horizontal = 3
+
+[node name="ScenarioNameField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/ScenarioNameField"]
+layout_mode = 2
+text = "SCENARIO NAME"
+theme_type_variation = &"ScenarioField"
+
+[node name="ScenarioName" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/ScenarioNameField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="MarkerFileField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/MarkerFileField"]
+layout_mode = 2
+text = "MARKER FILENAME"
+theme_type_variation = &"ScenarioField"
+
+[node name="MarkerFile" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/MarkerFileField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="RecommendedLevelField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/RecommendedLevelField"]
+layout_mode = 2
+text = "RECOMMENDED PARTY LEVEL"
+theme_type_variation = &"ScenarioField"
+
+[node name="RecommendedLevel" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/RecommendedLevelField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="MaximumLevelField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/MaximumLevelField"]
+layout_mode = 2
+text = "MAXIMUM PARTY LEVEL"
+theme_type_variation = &"ScenarioField"
+
+[node name="MaximumLevel" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/MaximumLevelField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="StartupLandField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupLandField"]
+layout_mode = 2
+text = "STARTUP LAND"
+theme_type_variation = &"ScenarioField"
+
+[node name="ChooseStartupLand" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupLandField"]
+layout_mode = 2
+text = "Choose land map…"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="CreatorUserCheckField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/CreatorUserCheckField"]
+layout_mode = 2
+text = "CREATOR / USER CHECK"
+theme_type_variation = &"ScenarioField"
+
+[node name="CreatorUserCheck" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/CreatorUserCheckField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="StartupXField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupXField"]
+layout_mode = 2
+text = "STARTUP X"
+theme_type_variation = &"ScenarioField"
+
+[node name="StartupX" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupXField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="StartupYField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupYField"]
+layout_mode = 2
+text = "STARTUP Y"
+theme_type_variation = &"ScenarioField"
+
+[node name="StartupY" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/StartupFields/StartupYField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="MakeStartupMapCurrent" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Open Startup Map"
+size_flags_horizontal = 0
+disabled = true
+
+[node name="Guidance" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+visible = false
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"
+
+[node name="EvidenceDisclosure" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Retained source and compatibility details"
+toggle_mode = true
+alignment = 0
+
+[node name="EvidenceDetails" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+visible = false
+
+[node name="SourceEvidence" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/EvidenceDetails"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ClassicRuleSource" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(260, 34)
+size_flags_horizontal = 0
+text = "Classic rule source…"
+disabled = true
+
+[node name="ClassicRuleReason" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"

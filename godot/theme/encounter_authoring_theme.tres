@@ -1,0 +1,35 @@
+[gd_resource type="Theme" load_steps=4 format=3]
+
+[sub_resource type="SystemFont" id="Mono"]
+font_names = PackedStringArray("JetBrains Mono", "Cascadia Mono", "Consolas")
+
+[sub_resource type="StyleBoxFlat" id="Panel"]
+bg_color = Color(0.063, 0.086, 0.106, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.16, 0.21, 0.25, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 12.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="Banner"]
+bg_color = Color(0.063, 0.165, 0.235, 1)
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 12.0
+content_margin_bottom = 12.0
+
+[resource]
+default_font = SubResource("Mono")
+default_font_size = 12
+TextEdit/colors/font_readonly_color = Color(0.84, 0.89, 0.94, 1)
+PanelContainer/styles/panel = SubResource("Panel")
+EligibilityBanner/base_type = &"PanelContainer"
+EligibilityBanner/styles/panel = SubResource("Banner")

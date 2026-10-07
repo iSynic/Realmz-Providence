@@ -1,0 +1,102 @@
+Providence vNext compatibility CLI
+
+Usage: providence-cli <COMMAND>
+
+Commands:
+  build-identity     Print the compiler's embedded revision and toolchain identity
+  verify-foundation  Validate and describe the bounded core foundation
+  project-new <project-id> <project-directory> [--application-data-directory <directory>]
+                     Create fresh authored portable truth without an annex
+  store-init <snapshot.json> <project-directory>
+                     Create portable truth and rebuildable local indexes
+  store-rebuild <project-directory>
+                     Rebuild and report local indexes from portable truth
+  compare-project-snapshots <first snapshot> <second snapshot>
+                     Compare migrated canonical truth while ignoring only project identity
+  compare-project-semantics <first snapshot> <second snapshot>
+                     Compare compile/reimport semantics while excluding source provenance
+  inspect-owned-byte-diff <fixed-record-family> <before file> <after file>
+  inspect-resource-fork-diff <before file> <after file> <four-byte resource type> <signed resource id>
+                     Refuse Classic fixed-record changes outside declared ownership
+  inspect-application-library <library-directory>
+                     Validate one machine-local Classic application-media store
+  inspect-reference-catalog <catalog-directory>
+                     Validate one machine-local Divinity reference catalog
+  inspect-rebuilt-package-file <package.realmz2 path>
+                     Revalidate and reimport one deterministic schema-v3 package
+  inspect-scenario-bootstrap <scenario startup path> <Data RI path>
+                     Verify campaign, start, and restriction bytes without writing
+  inspect-scenario-contact <Data CI path>
+                     Verify all 18 Str255 slots and the eight owned fields without writing
+  certify-scenario-contact <Data CI path> <field> <value>
+                     Edit one owned field in memory and prove all unowned slots remain exact
+  inspect-data-race <Data Race path>
+                     Verify the pinned 30-record native race table without copying it
+  inspect-data-caste <Data Caste path>
+                     Verify the pinned 30-record native caste table without copying it
+  inspect-custom-names <Custom Names path>
+                     Decode authoritative STR# 129 race and STR# 131 caste labels
+  inspect-standard-items <Data ID path> <Data ID.rsrc path>
+                     Verify the complete shared IDs 1..799 item catalog and texts
+  inspect-standard-spells <Data S path> <Custom Names path>
+                     Verify four shared spell classes and their 28 STR# name families
+  inspect-rebuilt-content <project.providence.json path>
+                     Compile and hash the exact schema-v3 content document without writing it
+  inspect-rebuilt-world <project.providence.json path>
+                     Compile and hash the bounded schema-v3 land world without writing it
+  inspect-scenario-items <Data NI path>
+                     Verify the complete scenario IDs 800..999 item catalog
+  inspect-rule-catalog <Data Race path> <Data Caste path> <Custom Names path>
+                     Verify both native tables and global labels project as one Rebuilt rule catalog
+  inspect-battle-catalog <Data BD path> <Data MD path> <Data SD2 path> <Data ED3 path>
+                     Verify exact no-edit inputs and project schema-v3 Battle definitions
+  inspect-treasure-catalog <Data TD path>
+                     Verify all complete 48-byte treasure rows without copying them
+  inspect-shop-catalog <Data SD path>
+                     Verify native 3002-byte shops and retained source residue without copying it
+  inspect-option-label-catalog <Data OD path>
+                     Verify all complete 25-byte option-label rows without copying them
+  inspect-mapstats-reference <landlook> <Map Stats path>
+                     Verify one exact built-in Map Stats source without copying or writing it
+  inspect-land-layout <Layout path>
+                     Verify one Classic 8 by 16 land Layout without copying it
+  inspect-player-maps <Data MD2 path>
+                     Verify exact Player Map rows and report runtime modes without copying them
+  inspect-player-map-names <Scenario.rsrc path>
+                     Verify exact STR# -102/-101 Player Map menu names without writing
+  inspect-cicn-resources <resource-fork path> [sample-resource-id]
+                     Decode and materialize every indexed cicn as PNG without copying or writing
+  inspect-pict-resources <resource-fork path> [sample-resource-id]
+                     Decode and materialize every bitmap PICT as PNG without copying or writing
+  inspect-snd-resources <resource-fork path> [sample-resource-id]
+                     Decode and materialize every supported sampled snd as WAV without copying or writing
+  inspect-dungeon-slice <scenario directory>
+                     Verify exact Data DL/Data DDD/Data RDD geometry without writing
+  inspect-joined-dungeon <scenario directory> [application-library-root]
+                     Join dungeon, action, encounter, Battle, Monster, and Message sources without writing
+  certify-extra-code-value <Data EDCD path> <row> <index> <target-id>
+                     Apply, compile, and reimport one signed scalar value in memory without writing
+  certify-extra-action-target <Data ED3 path> <row> <slot> <target-id>
+                     Apply, compile, and reimport one direct action target in memory without writing
+  certify-extra-action-create <Data ED3 path> <target-native-id>
+                     Create a dense no-op Extra Action Point target, compile, and reimport in memory without writing
+  certify-timed-door <Data TD3 path> <row> <target-extra-action-point-id>
+                     Apply, compile, and reimport one Timed Encounter door in memory without writing
+  certify-monster-death-macro <Data MD path> <row> <target-extra-action-point-id>
+                     Apply, compile, and reimport one Monster death macro in memory without writing
+  certify-extra-code-battle-range <Data EDCD path> <row> <low-id> <high-id>
+                     Apply, compile, and reimport one signed Battle range in memory without writing
+  certify-extra-code-branch <Data EDCD path> <row> <choice|force> <mode> <target-id>
+                     Apply, compile, and reimport one semantic branch pair in memory without writing
+  inspect-monster-catalog <Data MD path> <Data MD1 path> <Data MD-1 path> <Data DES path> <Data ED3 path>
+                     Verify no-edit inputs and enumerate unprojectable Monster rows without changing source
+  inspect-monster-scrapbook <Monster Scrap Book path>
+                     Verify protected 466-byte built-in templates without copying or writing
+  inspect-complex-catalog <Data ED2 path> <Data TD2 path> <Data EDCD path>
+                     Verify exact no-edit inputs and project schema-v3 Complex Encounter definitions and result programs
+  inspect-rogue-catalog <Data TD2 path>
+                     Verify exact no-edit input and project schema-v3 Rogue Encounter definitions
+  inspect-timed-catalog <Data TD3 path> <Data ED3 path>
+                     Verify exact no-edit inputs and project schema-v3 Timed Encounter definitions
+  inspect-simple-catalog <Data ED path> <Data SD2 path>
+                     Verify exact no-edit inputs and project schema-v3 messages, Simple Encounter definitions, and result programs

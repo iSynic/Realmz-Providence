@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[node name="MonsterFactsTooltip" type="PanelContainer"]
+mouse_filter = 2
+
+[node name="Facts" type="Label" parent="."]
+layout_mode = 2
+mouse_filter = 2

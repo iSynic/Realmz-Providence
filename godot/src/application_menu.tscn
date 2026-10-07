@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/application_menu.gd" type="Script" id="1"]
+
+[node name="ApplicationMenu" type="MenuBar"]
+custom_minimum_size = Vector2(330, 52)
+script = ExtResource("1")
+
+[node name="File" type="PopupMenu" parent="."]
+
+[node name="Edit" type="PopupMenu" parent="."]
+
+[node name="View" type="PopupMenu" parent="."]
+
+[node name="Navigate" type="PopupMenu" parent="."]
+
+[node name="Window" type="PopupMenu" parent="."]
+
+[node name="Help" type="PopupMenu" parent="."]

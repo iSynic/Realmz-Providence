@@ -1,0 +1,185 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/world_special_catalog.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+[ext_resource type="PackedScene" path="res://src/world_sections.tscn" id="3"]
+
+[node name="WorldSpecialCatalog" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("2")
+theme_override_constants/separation = 10
+script = ExtResource("1")
+
+[node name="WorldSections" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true
+selected_section = "LandTiles"
+
+[node name="SpecialHeading" type="Label" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+theme_type_variation = &"WorldHeading"
+text = "SPECIAL LAND ARTWORK"
+
+[node name="SpecialDestination" type="Label" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="Filters" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SpecialSource" type="OptionButton" parent="Filters"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 32)
+
+[node name="SpecialSearch" type="LineEdit" parent="Filters"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+placeholder_text = "Search artwork name or signed ID…"
+
+[node name="SpecialUnavailable" type="CheckBox" parent="Filters"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Show unavailable"
+
+[node name="SpecialImport" type="Button" parent="Filters"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Import artwork…"
+
+[node name="SpecialCount" type="Label" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Loading artwork…"
+theme_type_variation = &"WorldHint"
+
+[node name="Content" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="Catalog" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="SpecialGallery" type="ItemList" parent="Content/Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_columns = 0
+same_column_width = true
+fixed_column_width = 128
+icon_mode = 0
+fixed_icon_size = Vector2i(64, 64)
+max_text_lines = 2
+theme_override_constants/v_separation = 10
+theme_override_constants/h_separation = 8
+
+[node name="Pages" type="HBoxContainer" parent="Content/Catalog"]
+layout_mode = 2
+
+
+[node name="SpecialPrevious" type="Button" parent="Content/Catalog/Pages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Previous"
+disabled = true
+
+[node name="Spacer" type="Control" parent="Content/Catalog/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpecialNext" type="Button" parent="Content/Catalog/Pages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Next"
+disabled = true
+
+[node name="Details" type="PanelContainer" parent="Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 0)
+theme_type_variation = &"WorldSection"
+
+[node name="Body" type="VBoxContainer" parent="Content/Details"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SpecialName" type="Label" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 0)
+autowrap_mode = 2
+text = "Choose artwork to preview it"
+theme_type_variation = &"WorldTitle"
+
+[node name="SpecialArtwork" type="TextureRect" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(192, 192)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpecialDetails" type="Label" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 64)
+autowrap_mode = 2
+
+[node name="SpecialPlace" type="Button" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose for painting"
+disabled = true
+
+[node name="SpecialOpen" type="Button" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open artwork…"
+disabled = true
+
+[node name="UsedByHeading" type="Label" parent="Content/Details/Body"]
+layout_mode = 2
+text = "USED ON LAND MAPS"
+theme_type_variation = &"WorldUsesHeading"
+
+[node name="SpecialUses" type="ItemList" parent="Content/Details/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+custom_minimum_size = Vector2(320, 100)
+
+[node name="UsePages" type="HBoxContainer" parent="Content/Details/Body"]
+layout_mode = 2
+
+
+[node name="SpecialUsesPrevious" type="Button" parent="Content/Details/Body/UsePages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹"
+disabled = true
+
+[node name="SpecialUsesCount" type="Label" parent="Content/Details/Body/UsePages"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "No artwork selected"
+
+[node name="SpecialUsesNext" type="Button" parent="Content/Details/Body/UsePages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "›"
+disabled = true
+
+[node name="SpecialRecover" type="Button" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Check connection and refresh"
+

@@ -1,0 +1,174 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://src/global_macro_editor.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/global_macro_hook.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://src/global_macro_picker.tscn" id="3"]
+[ext_resource type="Theme" path="res://src/story_text_theme.tres" id="4"]
+[node name="Global Macros" type="VBoxContainer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+theme = ExtResource("4")
+script = ExtResource("1")
+[node name="GlobalMacroRouteHeader" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="Title" type="Label" parent="GlobalMacroRouteHeader"]
+layout_mode = 2
+theme_type_variation = "StoryMacroTitle"
+text = "GLOBAL MACROS"
+[node name="Subtitle" type="Label" parent="GlobalMacroRouteHeader"]
+visible = false
+layout_mode = 2
+text = ""
+[node name="GlobalMacroEditorSurface" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+[node name="GlobalMacroMasterDetail" type="HBoxContainer" parent="GlobalMacroEditorSurface"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+[node name="HookPanel" type="PanelContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail"]
+layout_mode = 2
+custom_minimum_size = Vector2(495, 0)
+[node name="Margin" type="MarginContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+[node name="HookScroll" type="ScrollContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin"]
+layout_mode = 2
+unique_name_in_owner = true
+horizontal_scroll_mode = 0
+[node name="GlobalMacroAssignments" type="VBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+[node name="Heading" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments"]
+layout_mode = 2
+text = "SCENARIO HOOKS"
+theme_type_variation = "StoryMacroHeading"
+
+[node name="StartGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+layout_mode = 2
+hook = "start"
+condition = "New adventure starts"
+
+[node name="DeathGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+layout_mode = 2
+hook = "death"
+condition = "Party is killed"
+
+[node name="QuitGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+layout_mode = 2
+hook = "quit"
+condition = "Player quits; excludes party death"
+
+[node name="ShopGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+layout_mode = 2
+hook = "shop"
+condition = "Shop button; excludes scripted entry"
+
+[node name="TempleGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+layout_mode = 2
+hook = "temple"
+condition = "Temple button"
+
+[node name="PreviewPanel" type="PanelContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Margin" type="MarginContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+[node name="PreviewLayout" type="VBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PreviewTitle" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "START · SCRIPT PREVIEW"
+theme_type_variation = "StoryStyleHeading"
+
+[node name="DraftSummary" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No unapplied hook changes"
+
+[node name="PreviewSteps" type="ItemList" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 336)
+size_flags_vertical = 3
+focus_mode = 2
+mouse_filter = 0
+theme_override_constants/v_separation = 6
+
+[node name="LinkedActions" type="HBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="OpenSelectedXAP" type="Button" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout/LinkedActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open assigned XAP"
+
+[node name="TraceSelectedXAP" type="Button" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout/LinkedActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Find uses / Trace…"
+
+[node name="Spacer" type="Control" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GlobalMacroSourceEvidence" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="GlobalMacroPreservationPolicy" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+
+[node name="GlobalMacroDraftValidation" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ApplyHooks" type="Button" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply hook changes"
+custom_minimum_size = Vector2(190, 34)
+
+[node name="DiscardHooks" type="Button" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discard"
+
+[node name="CompileGlobalMacroSlice" type="Button" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/PreviewPanel/Margin/PreviewLayout/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Validate + Compile"
+
+[node name="GlobalMacroPicker" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true

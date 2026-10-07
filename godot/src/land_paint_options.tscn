@@ -1,0 +1,170 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/land_paint_options.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_controls.tres" id="2"]
+
+[node name="LandPaintOptions" type="Window"]
+title = "Land paint and selection options"
+size = Vector2i(820, 560)
+min_size = Vector2i(760, 520)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+tooltip_text = "Painting replaces selected artwork, retains marker bands and Action Point records, and matches unmapped terrain by exact tile value. Options affect subsequent strokes."
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="Margin/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "PAINT OPTIONS"
+
+[node name="OptionsDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.69, 0.76, 1)
+
+[node name="Separator" type="HSeparator" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="Fields" type="GridContainer" parent="Margin/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 6
+
+[node name="ShapeLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Gesture"
+
+[node name="Shape" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 5
+selected = 0
+popup/item_0/text = "Freehand / cell"
+popup/item_1/text = "Line"
+popup/item_2/text = "Rectangle"
+popup/item_3/text = "Ellipse"
+popup/item_4/text = "Connected terrain"
+
+[node name="MatchLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Connected match"
+
+[node name="Match" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 0
+popup/item_0/text = "Exact value"
+popup/item_1/text = "Terrain family"
+popup/item_2/text = "Behavior"
+
+[node name="CombineLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Selection"
+
+[node name="Combine" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 0
+popup/item_0/text = "Replace"
+popup/item_1/text = "Add"
+popup/item_2/text = "Subtract"
+
+[node name="VariationLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Variation"
+
+[node name="Variation" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 0
+popup/item_0/text = "Single tile"
+popup/item_1/text = "Cycle selected palette tiles"
+popup/item_2/text = "Stable random palette tiles"
+
+[node name="FillLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Area"
+
+[node name="Filled" type="CheckButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Filled (off: outline)"
+
+[node name="ChanceLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Fill chance"
+
+[node name="Chance" type="SpinBox" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+suffix = "%"
+
+[node name="SeedLabel" type="Label" parent="Margin/Body/Fields"]
+layout_mode = 2
+text = "Random seed"
+
+[node name="Seed" type="SpinBox" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 4294967295.0
+value = 1234.0
+
+[node name="Replacement" type="CheckBox" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Replace only tile"
+
+[node name="ReplaceTile" type="SpinBox" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 200.0
+value = 1.0
+editable = false
+
+[node name="Help" type="Label" parent="Margin/Body"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+text = "Selected artwork is replaced. Ordinary marker bands and Action Point records are retained. Unknown families or behavior match the exact value. Options remain local until a gesture or reviewed area action is accepted."
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 2
+
+[node name="CancelOptions" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="UseOptions" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use options"

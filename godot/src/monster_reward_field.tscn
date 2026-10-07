@@ -1,0 +1,31 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/monster_record_field.gd" id="1"]
+[ext_resource type="StyleBox" path="res://theme/monster_input.tres" id="2"]
+[node name="MonsterRewardField" type="HBoxContainer" groups=["monster_record_fields"]]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+script = ExtResource("1")
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+[node name="Value" type="LineEdit" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+placeholder_text = "—"
+expand_to_text_length = false
+theme_override_styles/read_only = ExtResource("2")
+theme_override_font_sizes/font_size = 13
+
+[node name="Error" type="Label" parent="."]
+layout_mode = 2
+visible = false
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.75, 0.55, 1)
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2

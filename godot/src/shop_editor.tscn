@@ -1,0 +1,256 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/shop_editor.gd" type="Script" id="1"]
+[ext_resource type="PackedScene" path="res://src/economy_navigation.tscn" id="economy_nav"]
+[ext_resource type="Script" path="res://src/shop_source_browser.gd" id="shop_sources"]
+
+[node name="Shops" type="VBoxContainer"]
+custom_minimum_size = Vector2(820, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="EconomyNavigation" parent="." instance=ExtResource("economy_nav")]
+layout_mode = 2
+
+[node name="ShopWorkspace" type="HSplitContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 240
+
+[node name="ShopRecordBrowser" type="VBoxContainer" parent="ShopWorkspace"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+[node name="RecordStatus" type="Label" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "SHOP RECORDS"
+[node name="RecordSearch" type="LineEdit" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Find Shop number or state…"
+[node name="ProblemsOnly" type="CheckBox" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Problems only"
+tooltip_text = "Show actual Shops with findings, at any Shop number."
+[node name="ShowUnverified" type="CheckBox" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show unverified records"
+tooltip_text = "Inspect preserved source blocks and their callers. These blocks are not editable Shops."
+[node name="RecordList" type="ItemList" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UnverifiedRecords" type="VBoxContainer" parent="ShopWorkspace/ShopRecordBrowser"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("shop_sources")
+[node name="Status" type="Label" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords"]
+layout_mode = 2
+text = "UNVERIFIED SOURCE RECORDS"
+[node name="Records" type="ItemList" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_vertical = 3
+[node name="Details" type="Label" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords"]
+layout_mode = 2
+autowrap_mode = 2
+[node name="Actions" type="HBoxContainer" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords"]
+layout_mode = 2
+[node name="Callers" type="Button" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords/Actions"]
+layout_mode = 2
+text = "Callers…"
+disabled = true
+[node name="Refresh" type="Button" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords/Actions"]
+layout_mode = 2
+text = "Refresh"
+[node name="Paging" type="HBoxContainer" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords"]
+layout_mode = 2
+[node name="Previous" type="Button" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords/Paging"]
+layout_mode = 2
+text = "‹"
+disabled = true
+tooltip_text = "Previous source records"
+[node name="Page" type="Label" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords/Paging"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+[node name="Next" type="Button" parent="ShopWorkspace/ShopRecordBrowser/UnverifiedRecords/Paging"]
+layout_mode = 2
+text = "›"
+disabled = true
+tooltip_text = "Next source records"
+
+[node name="ShopWorkbenchScroll" type="ScrollContainer" parent="ShopWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="ShopWorkbench" type="VBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll"]
+custom_minimum_size = Vector2(540, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+[node name="ShopHeader" type="HBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+layout_mode = 2
+[node name="Title" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "SHOP EDITOR  ·  DATA SD"
+[node name="Callers" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Callers…"
+tooltip_text = "Find instructions that load or alter this Shop."
+[node name="NewShop" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Create the next available Shop record with zero defaults."
+text = "New Shop"
+[node name="ClearShop" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Clear every authored field while keeping this Shop identity."
+text = "Clear To Defaults"
+[node name="RecordIdentity" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "Select a Shop record"
+
+[node name="ShopSettings" type="HBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+layout_mode = 2
+[node name="InflationLabel" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopSettings"]
+layout_mode = 2
+text = "Inflation %"
+[node name="Inflation" type="LineEdit" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopSettings"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+editable = false
+[node name="RuntimeContext" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopSettings"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Definition only · caller sign and acceptance ranges are not Shop fields"
+horizontal_alignment = 2
+autowrap_mode = 2
+
+[node name="CategorySummary" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "No Shop selected."
+
+[node name="StockWorkspace" type="HSplitContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+custom_minimum_size = Vector2(0, 440)
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 270
+[node name="ItemPoolPanel" type="VBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+[node name="PoolHeading" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+layout_mode = 2
+text = "ITEM POOL"
+[node name="CategoryFilter" type="OptionButton" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+item_count = 6
+selected = 0
+popup/item_0/text = "All categories"
+popup/item_0/id = 0
+popup/item_1/text = "Weapons · slots 0–199"
+popup/item_1/id = 1
+popup/item_2/text = "Armor · slots 200–399"
+popup/item_2/id = 2
+popup/item_3/text = "Limb Armor · slots 400–599"
+popup/item_3/id = 3
+popup/item_4/text = "Magic · slots 600–799"
+popup/item_4/id = 4
+popup/item_5/text = "Supplies · slots 800–999"
+popup/item_5/id = 5
+[node name="ItemSearch" type="LineEdit" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+layout_mode = 2
+editable = false
+placeholder_text = "Search item pool…"
+[node name="ItemPool" type="ItemList" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+fixed_icon_size = Vector2i(32, 32)
+[node name="AddStock" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Add the selected item inside its matching stock category."
+text = "Add To Stock"
+[node name="OpenCatalogItem" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Open the selected item in the Item Editor. Unapplied Shop changes are guarded."
+text = "Open Item"
+
+[node name="ShopStockPanel" type="VBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="StockHeader" type="HBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel"]
+layout_mode = 2
+[node name="StockHeading" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SHOP STOCK"
+[node name="ClearStock" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockHeader"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Clear all item and quantity slots in the local Shop draft."
+text = "Clear Stock"
+[node name="ShopStock" type="ItemList" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+fixed_icon_size = Vector2i(32, 32)
+[node name="StockActions" type="HBoxContainer" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel"]
+layout_mode = 2
+[node name="ReplaceStock" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockActions"]
+layout_mode = 2
+disabled = true
+text = "Replace Item"
+[node name="Quantity" type="SpinBox" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockActions"]
+layout_mode = 2
+editable = false
+max_value = 255.0
+[node name="ClearSlot" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockActions"]
+layout_mode = 2
+disabled = true
+text = "Clear Slot"
+[node name="OpenRecordItem" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/StockWorkspace/ShopStockPanel/StockActions"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Open the selected stock item in the Item Editor. Unapplied Shop changes are guarded."
+text = "Open Item"
+
+[node name="RecordProblems" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "No Shop selected."
+[node name="DisabledReason" type="Label" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.94902, 0.788235, 0.298039, 1)
+text = "No Shop selected."
+[node name="ApplyShop" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Apply this Shop draft to the open project."
+text = "Apply Shop"

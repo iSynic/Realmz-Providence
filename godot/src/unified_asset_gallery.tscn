@@ -1,0 +1,60 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://src/personal_assets_panel.tscn" id="1"]
+
+[sub_resource type="StyleBoxEmpty" id="GalleryPanel"]
+
+[node name="UnifiedAssetGallery" instance=ExtResource("1")]
+unified_browser = true
+
+[node name="BrowseInset" parent="."]
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 8
+
+[node name="Browse" parent="BrowseInset"]
+theme_override_constants/separation = 8
+
+[node name="Heading" parent="BrowseInset/Browse"]
+visible = false
+
+[node name="SearchGroup" parent="BrowseInset/Browse"]
+theme_override_constants/margin_top = 8
+
+[node name="SearchLabel" parent="BrowseInset/Browse/SearchGroup/Fields"]
+visible = false
+
+[node name="Search" parent="BrowseInset/Browse/SearchGroup/Fields"]
+custom_minimum_size = Vector2(0, 30)
+
+[node name="FilterInset" parent="BrowseInset/Browse"]
+theme_override_constants/margin_top = 4
+
+[node name="Status" parent="BrowseInset/Browse"]
+custom_minimum_size = Vector2(0, 20)
+theme_override_font_sizes/font_size = 12
+vertical_alignment = 2
+
+[node name="GalleryGutter" parent="BrowseInset/Browse"]
+theme_override_constants/margin_top = 7
+size_flags_vertical = 3
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 0
+
+[node name="Gallery" parent="BrowseInset/Browse/GalleryGutter"]
+size_flags_vertical = 3
+max_text_lines = 3
+theme_override_font_sizes/font_size = 13
+theme_override_styles/panel = SubResource("GalleryPanel")
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+fit_content = false
+
+
+[node name="InspectorInset" parent="."]
+theme_override_constants/margin_right = 12
+
+[node name="Selection" parent="InspectorInset"]
+custom_minimum_size = Vector2(236, 0)
+
+[node name="PreviewHost" parent="InspectorInset/Selection"]
+custom_minimum_size = Vector2(236, 148)

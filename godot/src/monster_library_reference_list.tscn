@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/monster_library_reference_list.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_library_reference_row.tscn" id="2"]
+
+[node name="LibraryReferenceList" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("1")
+row_scene = ExtResource("2")
+
+[node name="Status" type="Label" parent="."]
+layout_mode = 2
+text = "—"
+autowrap_mode = 2
+
+[node name="Rows" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4

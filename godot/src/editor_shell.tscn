@@ -1,0 +1,128 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource path="res://src/editor_shell.gd" type="Script" id="1"]
+[ext_resource path="res://src/new_project_dialog.tscn" type="PackedScene" id="2"]
+[ext_resource path="res://src/scenario_import_dialog.tscn" type="PackedScene" id="3"]
+[ext_resource path="res://src/publish_targets_dialog.tscn" type="PackedScene" id="4"]
+[ext_resource path="res://src/domain_navigation.tscn" type="PackedScene" id="5"]
+[ext_resource path="res://src/inspector_panel.tscn" type="PackedScene" id="6"]
+[ext_resource path="res://src/document_workspace.tscn" type="PackedScene" id="7"]
+[ext_resource path="res://src/map_inspector.tscn" type="PackedScene" id="8"]
+[ext_resource path="res://src/command_palette.tscn" type="PackedScene" id="9"]
+[ext_resource path="res://src/rebuilt_preview_controller.tscn" type="PackedScene" id="10"]
+[ext_resource path="res://src/divinity_code_helper.tscn" type="PackedScene" id="11"]
+[ext_resource path="res://src/divinity_manual_reader.tscn" type="PackedScene" id="12"]
+[ext_resource path="res://src/encounter_route_tabs.tscn" type="PackedScene" id="13"]
+
+[node name="ProvidenceEditor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="DivinityCodeHelper" parent="." instance=ExtResource("11")]
+unique_name_in_owner = true
+
+[node name="DivinityManualReader" parent="." instance=ExtResource("12")]
+unique_name_in_owner = true
+
+[node name="Workspace" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="CommandBarHost" type="VBoxContainer" parent="Workspace"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PrimaryWorkspace" type="HSplitContainer" parent="Workspace"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 396
+
+[node name="ExplorerHost" type="VBoxContainer" parent="Workspace/PrimaryWorkspace"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DomainNavigation" parent="Workspace/PrimaryWorkspace/ExplorerHost" instance=ExtResource("5")]
+unique_name_in_owner = true
+
+[node name="DocumentAndInspector" type="HSplitContainer" parent="Workspace/PrimaryWorkspace"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+split_offset = 904
+
+[node name="DocumentHost" type="VBoxContainer" parent="Workspace/PrimaryWorkspace/DocumentAndInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EncounterRouteTabs" parent="Workspace/PrimaryWorkspace/DocumentAndInspector/DocumentHost" instance=ExtResource("13")]
+unique_name_in_owner = true
+
+[node name="DocumentWorkspace" parent="Workspace/PrimaryWorkspace/DocumentAndInspector/DocumentHost" instance=ExtResource("7")]
+unique_name_in_owner = true
+
+[node name="InspectorHost" type="VBoxContainer" parent="Workspace/PrimaryWorkspace/DocumentAndInspector"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="InspectorPanel" parent="Workspace/PrimaryWorkspace/DocumentAndInspector/InspectorHost" instance=ExtResource("6")]
+unique_name_in_owner = true
+
+[node name="MapInspector" parent="Workspace/PrimaryWorkspace/DocumentAndInspector/InspectorHost" instance=ExtResource("8")]
+unique_name_in_owner = true
+visible = false
+
+[node name="StatusBar" type="PanelContainer" parent="Workspace"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 22)
+
+[node name="Status" type="Label" parent="Workspace/StatusBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = "Starting native session…"
+
+[node name="CommandPalette" parent="." instance=ExtResource("9")]
+unique_name_in_owner = true
+
+[node name="RebuiltPreviewController" parent="." instance=ExtResource("10")]
+unique_name_in_owner = true
+
+[node name="NewProjectDialog" parent="." instance=ExtResource("2")]
+
+[node name="ScenarioImportDialog" parent="." instance=ExtResource("3")]
+
+[node name="PublishTargetsDialog" parent="." instance=ExtResource("4")]
+
+[node name="OpenProjectDialog" type="FileDialog" parent="."]
+title = "Open Providence Project"
+file_mode = 2
+access = 2
+use_native_dialog = true
+
+[node name="SaveAsProjectDialog" type="FileDialog" parent="."]
+title = "Save Providence Snapshot As"
+file_mode = 4
+access = 2
+use_native_dialog = true
+
+[node name="UnappliedChangesDialog" type="ConfirmationDialog" parent="."]
+title = "Unapplied changes"
+dialog_text = "You have unapplied edits. Apply them before continuing, discard them, or cancel to keep editing."
+dialog_autowrap = true
+ok_button_text = "Apply & Continue"
+cancel_button_text = "Keep Editing"

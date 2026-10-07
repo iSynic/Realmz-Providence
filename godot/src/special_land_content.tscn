@@ -1,0 +1,178 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://src/scenario_picture_content.tscn" id="1"]
+
+[node name="ScenarioMediaContent" instance=ExtResource("1")]
+
+[node name="Subtitle" parent="AssetsHeader/Row/AssetsHeaderCopy"]
+visible = false
+text = "Manage 32 × 32 cicn overlays that ship with this scenario and paint directly onto land maps."
+
+[node name="ImportPicture" parent="AssetsHeader/Row"]
+text = "⇧  Import Tile"
+tooltip_text = "Import a transparent image as a deterministic negative cicn resource."
+
+[node name="CustomLibrary" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="ReferenceAssets" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="Spacer" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="PicturesRoute" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="SoundsRoute" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="IconsRoute" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="TechnicalInventory" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="SpecialLandRoute" parent="AssetScopeBar/Row"]
+visible = false
+
+[node name="PictureKind" parent="ScenarioPictureFilters/Row"]
+popup/item_0/text = "Special Land Tiles"
+
+[node name="Title" parent="ScenarioPictureCatalog/Body/Heading"]
+text = "SHIPS WITH THIS SCENARIO"
+
+[node name="Text" parent="ScenarioPictureCatalog/Body/ScenarioPictureGuidance"]
+text = "Special Land Tiles are 32 × 32 cicn resources addressed by negative tile IDs. Realmz draws the landlook base tile under the transparent overlay."
+
+[node name="PictureGalleryAndInspector" parent="ScenarioPictureCatalog/Body"]
+split_offset = 650
+
+[node name="PictureGallery" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector"]
+custom_minimum_size = Vector2(520, 0)
+
+[node name="Scope" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery/Controls"]
+text = "SPECIAL LAND TILE CATALOG"
+
+[node name="ScenarioPictureGallery" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery"]
+fixed_icon_size = Vector2i(96, 96)
+fixed_column_width = 184
+max_columns = 6
+
+[node name="PictureSelectionInspector" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector"]
+custom_minimum_size = Vector2(300, 0)
+
+[node name="InspectorScroll" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector"]
+vertical_scroll_mode = 1
+
+[node name="PreviewPanel" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+custom_minimum_size = Vector2(0, 148)
+
+[node name="PicturePreview" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PreviewPanel/Stack"]
+custom_minimum_size = Vector2(250, 134)
+
+[node name="PictureResourceId" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/ResourceIdField"]
+min_value = -32768
+max_value = -1
+value = -100
+
+[node name="CompileScenarioPictures" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+text = "Validate + Compile Map and Scenario.rsrc"
+
+[node name="ReferenceLibraries" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+text = "Reference Libraries"
+toggle_mode = true
+disabled = true
+
+[node name="DivinityReference" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+text = "Divinity Reference"
+toggle_mode = true
+disabled = true
+
+[node name="DecodedRecords" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+text = "Decoded Records"
+toggle_mode = true
+disabled = true
+
+[node name="AdvancedInventory" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+text = "Advanced Inventory"
+toggle_mode = true
+disabled = true
+
+[node name="MissingSpecialLandTargets" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body" index="2"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.949020, 0.737255, 0.407843, 1)
+
+[node name="LandlookField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/LandlookField"]
+layout_mode = 2
+text = "PREVIEW LANDLOOK"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Row" type="HBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/LandlookField"]
+layout_mode = 2
+
+[node name="UseSpecialLandLandlook" type="CheckBox" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/LandlookField/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Override"
+button_pressed = true
+
+[node name="SpecialLandLandlook" type="SpinBox" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/LandlookField/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+min_value = -128
+max_value = 127
+
+[node name="BaseTileField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/BaseTileField"]
+layout_mode = 2
+text = "BASE TILE"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Row" type="HBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/BaseTileField"]
+layout_mode = 2
+
+[node name="UseSpecialLandBaseTile" type="CheckBox" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/BaseTileField/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Override"
+button_pressed = true
+
+[node name="SpecialLandBaseTile" type="SpinBox" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/BaseTileField/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+min_value = -32768
+max_value = 32767
+
+[node name="SelectSpecialLandForPainting" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Select for Painting"
+
+[node name="UsesHeading" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+text = "USED BY"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="SpecialLandUsedBy" type="RichTextLabel" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 92)
+bbcode_enabled = true

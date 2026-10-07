@@ -1,0 +1,543 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/tile_behavior_window.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+[ext_resource type="PackedScene" path="res://src/monster_reference_picker.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://src/landlook_tile_picker.tscn" id="4"]
+
+[ext_resource type="Script" path="res://src/land_tile_atlas.gd" id="5"]
+
+[node name="TileBehavior" type="Window"]
+title = "Tile behavior and combat expansion"
+size = Vector2i(880, 680)
+min_size = Vector2i(800, 640)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Margin/Body"]
+text = "TILE BEHAVIOR AND COMBAT EXPANSION"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.52, 0.74, 0.91, 1)
+
+[node name="BehaviorDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+text = ""
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Margin/Body/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Preview" type="HBoxContainer" parent="Margin/Body/Scroll/Content"]
+
+[node name="BehaviorTile" type="TextureRect" parent="Margin/Body/Scroll/Content/Preview"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 88)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="BehaviorTileName" type="Label" parent="Margin/Body/Scroll/Content/Preview"]
+unique_name_in_owner = true
+text = ""
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+
+[node name="Form" type="HBoxContainer" parent="Margin/Body/Scroll/Content"]
+theme_override_constants/separation = 24
+
+[node name="Mechanics" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form"]
+custom_minimum_size = Vector2(320, 0)
+
+[node name="MechanicsTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+text = "MOVEMENT AND FLAGS"
+theme_override_colors/font_color = Color(0.65, 0.89, 0.76, 1)
+
+[node name="Flags" type="GridContainer" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+columns = 2
+
+[node name="Solid" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Solid"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="Path" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Runtime path"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="Shore" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Shore / Water"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="Boat" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Boat required"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="Fly" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Fly / Float"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="Los" type="CheckButton" parent="Margin/Body/Scroll/Content/Form/Mechanics/Flags"]
+unique_name_in_owner = true
+text = "Blocks LOS"
+custom_minimum_size = Vector2(150, 30)
+
+[node name="SoundTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+text = "MOVEMENT SOUND"
+
+[node name="Sound" type="HBoxContainer" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+
+[node name="MovementSound" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Mechanics/Sound"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseMovementSound" type="Button" parent="Margin/Body/Scroll/Content/Form/Mechanics/Sound"]
+unique_name_in_owner = true
+text = "Choose…"
+
+[node name="Numbers" type="GridContainer" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+columns = 2
+
+[node name="TimeTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics/Numbers"]
+text = "TIME / MOVE"
+
+[node name="ForestTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics/Numbers"]
+text = "FOREST TYPE"
+
+[node name="MoveTime" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Mechanics/Numbers"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="Forest" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Mechanics/Numbers"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ClearTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+text = "TILE CLEAR TO"
+
+[node name="Clear" type="HBoxContainer" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+
+[node name="ClearTile" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Mechanics/Clear"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseClearTile" type="Button" parent="Margin/Body/Scroll/Content/Form/Mechanics/Clear"]
+unique_name_in_owner = true
+text = "Choose…"
+
+[node name="ClearHint" type="Label" parent="Margin/Body/Scroll/Content/Form/Mechanics"]
+text = "Clear To belongs to this tile. The shared level erase tile is a separate setting."
+autowrap_mode = 3
+
+[node name="Expansion" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form"]
+size_flags_horizontal = 3
+
+[node name="ExpansionTitle" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion"]
+text = "COMBAT MAP EXPANSION · 3 × 3"
+theme_override_colors/font_color = Color(0.94, 0.65, 0.45, 1)
+
+[node name="Grid" type="GridContainer" parent="Margin/Body/Scroll/Content/Form/Expansion"]
+columns = 3
+size_flags_horizontal = 3
+
+[node name="Cell0" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0/Box"]
+text = "ROW 1 · COL 1"
+
+[node name="CombatPreview0" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable0" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat0" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat0" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell0/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell1" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1/Box"]
+text = "ROW 1 · COL 2"
+
+[node name="CombatPreview1" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable1" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat1" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat1" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell1/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell2" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2/Box"]
+text = "ROW 1 · COL 3"
+
+[node name="CombatPreview2" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable2" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat2" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat2" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell2/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell3" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3/Box"]
+text = "ROW 2 · COL 1"
+
+[node name="CombatPreview3" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable3" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat3" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat3" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell3/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell4" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4/Box"]
+text = "ROW 2 · COL 2"
+
+[node name="CombatPreview4" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable4" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat4" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat4" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell4/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell5" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5/Box"]
+text = "ROW 2 · COL 3"
+
+[node name="CombatPreview5" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable5" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat5" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat5" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell5/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell6" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6/Box"]
+text = "ROW 3 · COL 1"
+
+[node name="CombatPreview6" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable6" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat6" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat6" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell6/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell7" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7/Box"]
+text = "ROW 3 · COL 2"
+
+[node name="CombatPreview7" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable7" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat7" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat7" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell7/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="Cell8" type="PanelContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid"]
+size_flags_horizontal = 3
+
+[node name="Box" type="VBoxContainer" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8"]
+
+[node name="Label" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8/Box"]
+text = "ROW 3 · COL 3"
+
+[node name="CombatPreview8" type="TextureRect" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CombatUnavailable8" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8/Box"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(40, 40)
+text = "Unavailable"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Combat8" type="SpinBox" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8/Box"]
+unique_name_in_owner = true
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = false
+size_flags_horizontal = 3
+
+[node name="ChooseCombat8" type="Button" parent="Margin/Body/Scroll/Content/Form/Expansion/Grid/Cell8/Box"]
+unique_name_in_owner = true
+text = "Choose tile…"
+
+[node name="ExpansionHint" type="Label" parent="Margin/Body/Scroll/Content/Form/Expansion"]
+text = "Each destination retains its exact combat tile identity. Zero leaves the expansion cell empty."
+autowrap_mode = 3
+
+[node name="ImpactTitle" type="Label" parent="Margin/Body/Scroll/Content"]
+text = "AFFECTED MAPS"
+theme_override_colors/font_color = Color(0.94, 0.80, 0.44, 1)
+
+[node name="BehaviorImpact" type="ItemList" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 86)
+
+[node name="BehaviorStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+text = "Review every affected map before Apply."
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+alignment = 2
+
+[node name="RetryCombatArtwork" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+visible = false
+text = "Retry artwork"
+
+[node name="CheckBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Check original result"
+
+[node name="DiscardBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Discard"
+
+[node name="CancelBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Cancel"
+
+[node name="ReviewBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Review impact…"
+
+[node name="ApplyBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Apply"
+
+[node name="BehaviorSoundPicker" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true
+
+[node name="BehaviorTilePicker" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+
+[node name="DiscardConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Discard tile behavior draft?"
+dialog_text = "Discard this draft and return to the map?"
+ok_button_text = "Discard"
+
+[node name="CombatArtAtlas" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+script = ExtResource("5")

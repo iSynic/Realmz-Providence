@@ -1,0 +1,20 @@
+[package]
+name = "providence-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+base64.workspace = true
+providence-core = { path = "../providence-core" }
+providence-rebuilt-package = { path = "../providence-rebuilt-package" }
+providence-storage = { path = "../providence-storage" }
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

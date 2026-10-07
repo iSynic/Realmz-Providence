@@ -1,0 +1,282 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource path="res://src/map_context_sidebar.gd" type="Script" id="1"]
+[node name="MapContextSidebar" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 7
+script = ExtResource("1")
+
+[node name="MapBrowserHeader" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MapBrowserHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SCENARIO MAPS"
+
+[node name="MapCount" type="Label" parent="MapBrowserHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 / 0"
+
+[node name="ChooseMap" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+text = "Choose a map…"
+text_overrun_behavior = 3
+
+[node name="MapRecordActions" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 2
+
+[node name="NewLand" type="Button" parent="MapRecordActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New Land"
+
+[node name="NewDungeon" type="Button" parent="MapRecordActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New Dungeon"
+
+[node name="DuplicateMap" type="Button" parent="MapRecordActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Duplicate"
+
+[node name="CurrentMapPanel" type="PanelContainer" parent="."]
+layout_mode = 2
+
+[node name="Body" type="VBoxContainer" parent="CurrentMapPanel"]
+layout_mode = 2
+
+[node name="CurrentMap" type="Label" parent="CurrentMapPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No map selected"
+text_overrun_behavior = 3
+
+[node name="CurrentMapMeta" type="Label" parent="CurrentMapPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Import or create a map to begin."
+
+[node name="LevelSetup" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Level setup…"
+
+[node name="ReconcileLevelSettings" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Reconcile level settings"
+
+[node name="MapToolsetHeading" type="Label" parent="."]
+layout_mode = 2
+text = "MAP TOOLS"
+
+[node name="MapToolset" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 2
+
+[node name="PaintTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Paint"
+
+[node name="SelectTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Select"
+
+[node name="BucketTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Bucket"
+
+[node name="WandTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Wand"
+
+[node name="StampTool" type="Button" parent="MapToolset"]
+tooltip_text = "Move to preview; release places the stamp. Escape cancels the current stroke."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Stamp"
+
+[node name="PanTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Pan"
+
+[node name="ActionPointsTool" type="Button" parent="MapToolset"]
+tooltip_text = "Click an empty cell to review a placement; click an existing Action Point to open it."
+toggle_mode = true
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+text = "Action Point"
+
+[node name="SampleTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Sample"
+
+[node name="EraseTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Erase"
+
+[node name="SmartTool" type="Button" parent="MapToolset"]
+tooltip_text = "Draw an accumulating terrain mask on the map. Apply commits the draft; Escape cancels the current stroke."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Smart Terrain"
+
+[node name="RandomAreaTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = false
+text = "Random Area"
+
+[node name="LandTilesTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = false
+text = "Land Tiles"
+
+[node name="PaintOptions" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Paint options…"
+
+[node name="TerrainMapping" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+text = "Terrain Mapping…"
+
+[node name="MagicTool" type="Button" parent="MapToolset"]
+tooltip_text = "Press a tile and drag to extend its supported terrain family or exact tile. Strokes accumulate until Apply; later strokes win where they overlap. Escape cancels the current stroke."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Magic"
+
+[node name="BrushControlsHost" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+visible = false
+
+[node name="MapPicker" type="PopupPanel" parent="."]
+unique_name_in_owner = true
+size = Vector2i(420, 510)
+
+[node name="PickerBody" type="VBoxContainer" parent="MapPicker"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 408.0
+offset_bottom = 498.0
+
+[node name="MapSearch" type="LineEdit" parent="MapPicker/PickerBody"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Filter maps by name or number…"
+clear_button_enabled = true
+
+[node name="MapTypeFilters" type="HBoxContainer" parent="MapPicker/PickerBody"]
+layout_mode = 2
+
+[node name="AllMaps" type="Button" parent="MapPicker/PickerBody/MapTypeFilters"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "All"
+
+[node name="LandMaps" type="Button" parent="MapPicker/PickerBody/MapTypeFilters"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Land"
+
+[node name="DungeonMaps" type="Button" parent="MapPicker/PickerBody/MapTypeFilters"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Dungeon"
+
+[node name="MapCollection" type="ItemList" parent="MapPicker/PickerBody"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 350)
+size_flags_vertical = 3
+allow_reselect = true
+
+[node name="MapEmptyState" type="Label" parent="MapPicker/PickerBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No maps match this view."
+horizontal_alignment = 1
+
+[connection signal="pressed" from="MapRecordActions/NewLand" to="." method="_on_new_land_pressed"]
+[connection signal="pressed" from="MapRecordActions/NewDungeon" to="." method="_on_new_dungeon_pressed"]
+[connection signal="pressed" from="MapRecordActions/DuplicateMap" to="." method="_on_duplicate_pressed"]
+[connection signal="pressed" from="MapToolset/PaintTool" to="." method="_on_paint_tool_pressed"]
+[connection signal="pressed" from="MapToolset/SelectTool" to="." method="_on_select_tool_pressed"]
+
+[connection signal="pressed" from="MapToolset/LandTilesTool" to="." method="_on_special_tiles_pressed"]
+[connection signal="text_changed" from="MapPicker/PickerBody/MapSearch" to="." method="_on_search_changed"]
+[connection signal="item_selected" from="MapPicker/PickerBody/MapCollection" to="." method="_on_collection_selected"]
+[connection signal="pressed" from="MapPicker/PickerBody/MapTypeFilters/AllMaps" to="." method="_set_level_filter" binds=["all"]]
+[connection signal="pressed" from="MapPicker/PickerBody/MapTypeFilters/LandMaps" to="." method="_set_level_filter" binds=["land"]]
+[connection signal="pressed" from="MapPicker/PickerBody/MapTypeFilters/DungeonMaps" to="." method="_set_level_filter" binds=["dungeon"]]

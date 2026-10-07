@@ -1,0 +1,37 @@
+[gd_scene format=3]
+
+[node name="Filters" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 34)
+theme_override_constants/separation = 6
+
+[node name="Kind" type="OptionButton" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(79, 30)
+size_flags_vertical = 4
+disabled = true
+tooltip_text = "This gallery currently shows icons. Other asset kinds are not connected here yet."
+item_count = 1
+selected = 0
+popup/item_0/text = "Icons"
+popup/item_0/id = 0
+
+[node name="Status" type="OptionButton" parent="."]
+custom_minimum_size = Vector2(150, 30)
+item_count = 3
+popup/item_0/text = "All status"
+popup/item_1/text = "Realmz-ready"
+popup/item_2/text = "Original only"
+[node name="CardSize" type="OptionButton" parent="."]
+custom_minimum_size = Vector2(110, 30)
+item_count = 3
+selected = 1
+popup/item_0/text = "Small"
+popup/item_1/text = "Medium"
+popup/item_2/text = "Large"
+[node name="PageSize" type="OptionButton" parent="."]
+custom_minimum_size = Vector2(110, 30)
+selected = 0
+item_count = 3
+popup/item_0/text = "25 / page"
+popup/item_1/text = "50 / page"
+popup/item_2/text = "100 / page"

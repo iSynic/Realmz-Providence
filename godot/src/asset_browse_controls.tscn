@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/asset_browse_controls.gd" id="1"]
+[node name="Paging" type="HBoxContainer"]
+script = ExtResource("1")
+theme_override_constants/separation = 8
+[node name="Previous" type="Button" parent="."]
+text = "Previous"
+[node name="Page" type="Label" parent="."]
+size_flags_horizontal = 3
+text = "No results"
+horizontal_alignment = 1
+[node name="Next" type="Button" parent="."]
+text = "Next"
+[node name="Status" type="OptionButton" parent="."]
+tooltip_text = "Filter prepared media or retained originals"
+item_count = 3
+popup/item_0/text = "All status"
+popup/item_1/text = "Realmz-ready"
+popup/item_2/text = "Original only"
+[node name="PageSize" type="OptionButton" parent="."]
+tooltip_text = "Assets per page"
+selected = 0
+item_count = 3
+popup/item_0/text = "25 / page"
+popup/item_1/text = "50 / page"
+popup/item_2/text = "100 / page"
+[node name="CardSize" type="OptionButton" parent="."]
+tooltip_text = "Thumbnail size"
+item_count = 3
+selected = 1
+popup/item_0/text = "Small"
+popup/item_1/text = "Medium"
+popup/item_2/text = "Large"

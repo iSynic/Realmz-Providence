@@ -1,0 +1,423 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="ButtonGroup" id="Filters"]
+
+[node name="ScenarioMediaContent" type="VBoxContainer"]
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="AssetsHeader" type="PanelContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 68)
+
+[node name="Row" type="HBoxContainer" parent="AssetsHeader"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AssetsHeaderCopy" type="VBoxContainer" parent="AssetsHeader/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Title" type="Label" parent="AssetsHeader/Row/AssetsHeaderCopy"]
+layout_mode = 2
+text = "Assets"
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+
+[node name="Subtitle" type="Label" parent="AssetsHeader/Row/AssetsHeaderCopy"]
+visible = false
+layout_mode = 2
+text = "Import, preview, replace, and locate scenario resources."
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="ImportPicture" type="Button" parent="AssetsHeader/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "⇧  Import"
+
+[node name="AssetScopeBar" type="PanelContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+
+[node name="Row" type="HFlowContainer" parent="AssetScopeBar"]
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="ScenarioAssets" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Scenario Assets"
+toggle_mode = true
+button_pressed = true
+
+[node name="CustomLibrary" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Custom Library"
+
+[node name="ReferenceAssets" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Reference Assets"
+
+[node name="Spacer" type="Control" parent="AssetScopeBar/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PicturesRoute" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Pictures"
+toggle_mode = true
+button_pressed = true
+
+[node name="SoundsRoute" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Sounds"
+
+[node name="IconsRoute" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Icons"
+
+[node name="TechnicalInventory" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Technical Inventory"
+disabled = true
+
+[node name="SpecialLandRoute" type="Button" parent="AssetScopeBar/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Special Land Tiles"
+
+[node name="ScenarioPictureFilters" type="PanelContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+
+[node name="Row" type="HBoxContainer" parent="ScenarioPictureFilters"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PictureSearch" type="LineEdit" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+size_flags_horizontal = 3
+placeholder_text = "Search assets…"
+
+[node name="PictureKind" type="OptionButton" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 0)
+item_count = 1
+popup/item_0/text = "Pictures"
+popup/item_0/id = 0
+selected = 0
+
+[node name="All" type="Button" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "All"
+toggle_mode = true
+button_group = SubResource("Filters")
+button_pressed = true
+disabled = false
+
+[node name="Previewable" type="Button" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Previewable"
+toggle_mode = true
+button_group = SubResource("Filters")
+button_pressed = false
+disabled = true
+
+[node name="Problem" type="Button" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Problem"
+toggle_mode = true
+button_group = SubResource("Filters")
+button_pressed = false
+disabled = true
+
+[node name="Missing" type="Button" parent="ScenarioPictureFilters/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Missing"
+toggle_mode = true
+button_group = SubResource("Filters")
+button_pressed = false
+disabled = true
+
+[node name="ScenarioPictureCatalog" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Body" type="VBoxContainer" parent="ScenarioPictureCatalog"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Heading" type="HBoxContainer" parent="ScenarioPictureCatalog/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Title" type="Label" parent="ScenarioPictureCatalog/Body/Heading"]
+layout_mode = 2
+text = "SCENARIO PICTURES"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Spacer" type="Control" parent="ScenarioPictureCatalog/Body/Heading"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResourceCount" type="Label" parent="ScenarioPictureCatalog/Body/Heading"]
+layout_mode = 2
+text = "0 PICT RESOURCES"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+unique_name_in_owner = true
+
+[node name="ScenarioPictureGuidance" type="PanelContainer" parent="ScenarioPictureCatalog/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+
+[node name="Text" type="Label" parent="ScenarioPictureCatalog/Body/ScenarioPictureGuidance"]
+layout_mode = 2
+text = "Scenario pictures use PICT IDs 30000–30128. PICT 30128 is reserved for the scenario splash."
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="PictureGalleryAndInspector" type="HSplitContainer" parent="ScenarioPictureCatalog/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 0
+
+[node name="PictureGallery" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 0)
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="Controls" type="HBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+
+[node name="Scope" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery/Controls"]
+layout_mode = 2
+text = "SHIPS WITH THIS SCENARIO"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="Spacer" type="Control" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery/Controls"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Density" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery/Controls"]
+layout_mode = 2
+text = "PREVIEW SIZE  SMALL    PER PAGE  100"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="ScenarioPictureGallery" type="ItemList" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureGallery"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+allow_reselect = true
+icon_mode = 0
+fixed_icon_size = Vector2i(150, 104)
+fixed_column_width = 170
+max_columns = 6
+same_column_width = true
+
+[node name="PictureSelectionInspector" type="PanelContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector"]
+layout_mode = 2
+custom_minimum_size = Vector2(340, 0)
+
+[node name="InspectorScroll" type="ScrollContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll"]
+layout_mode = 2
+theme_override_constants/separation = 7
+size_flags_horizontal = 3
+
+[node name="Eyebrow" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+text = "SELECTION INSPECTOR"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+
+[node name="PictureLabel" type="LineEdit" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Select a picture"
+
+[node name="PreviewPanel" type="PanelContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 190)
+
+[node name="Stack" type="CenterContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PreviewPanel"]
+layout_mode = 2
+
+[node name="PicturePreview" type="TextureRect" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PreviewPanel/Stack"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 176)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EmptyPreview" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PreviewPanel/Stack"]
+layout_mode = 2
+text = "No picture selected"
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+unique_name_in_owner = true
+horizontal_alignment = 1
+
+[node name="ResourceIdField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/ResourceIdField"]
+layout_mode = 2
+text = "RESOURCE ID"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="PictureResourceId" type="SpinBox" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/ResourceIdField"]
+layout_mode = 2
+unique_name_in_owner = true
+min_value = 30000
+max_value = 30128
+value = 30000
+
+[node name="DimensionsField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/DimensionsField"]
+layout_mode = 2
+text = "SOURCE IMAGE"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Dimensions" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/DimensionsField"]
+layout_mode = 2
+text = "—"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="PayloadField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PayloadField"]
+layout_mode = 2
+text = "CLASSIC PAYLOAD"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Payload" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PayloadField"]
+layout_mode = 2
+text = "—"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="SourceField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/SourceField"]
+layout_mode = 2
+text = "SOURCE"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Source" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/SourceField"]
+layout_mode = 2
+text = "—"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="ScopeField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/ScopeField"]
+layout_mode = 2
+text = "EXPORT SCOPE"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Scope" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/ScopeField"]
+layout_mode = 2
+text = "Scenario.rsrc"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="StatusField" type="VBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Label" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/StatusField"]
+layout_mode = 2
+text = "STATUS"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="Status" type="Label" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/StatusField"]
+layout_mode = 2
+text = "No picture selected"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="PictureActions" type="HBoxContainer" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ApplyPictureMetadata" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PictureActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply"
+
+[node name="Replace" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PictureActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Replace"
+disabled = true
+
+[node name="RemovePicture" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PictureActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Remove"
+
+[node name="FindUses" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body/PictureActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Find Uses"
+disabled = true
+
+[node name="CompileScenarioPictures" type="Button" parent="ScenarioPictureCatalog/Body/PictureGalleryAndInspector/PictureSelectionInspector/InspectorScroll/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Validate + Compile Scenario.rsrc"

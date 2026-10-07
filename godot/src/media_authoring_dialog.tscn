@@ -1,0 +1,456 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/media_authoring_dialog.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/media_review_uses.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://src/music_allocation.tscn" id="3"]
+
+[node name="MediaAuthoringDialog" type="Window"]
+title = "Media review"
+size = Vector2i(1080, 760)
+min_size = Vector2i(960, 680)
+visible = false
+transient = true
+exclusive = true
+script = ExtResource("1")
+
+[node name="Background" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Inset" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Body" type="VBoxContainer" parent="Inset"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Media review"
+theme_override_font_sizes/font_size = 20
+
+[node name="Destination" type="Label" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scenario"
+
+[node name="SourceRow" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/SourceRow"]
+layout_mode = 2
+text = "Source file"
+custom_minimum_size = Vector2(106, 0)
+
+[node name="Path" type="LineEdit" parent="Inset/Body/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Choose a PNG, WAV or UTF-8 file…"
+
+[node name="ChooseFile" type="Button" parent="Inset/Body/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Browse…"
+
+[node name="ReverseRow" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/ReverseRow"]
+layout_mode = 2
+text = "Reverse file"
+custom_minimum_size = Vector2(106, 0)
+
+[node name="ReversePath" type="LineEdit" parent="Inset/Body/ReverseRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Choose a PNG, WAV or UTF-8 file…"
+
+[node name="ChooseReverse" type="Button" parent="Inset/Body/ReverseRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Browse…"
+
+[node name="Fields" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MusicAllocation" parent="Inset/Body" instance=ExtResource("3")]
+unique_name_in_owner = true
+
+[node name="NameGroup" type="VBoxContainer" parent="Inset/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/Fields/NameGroup"]
+layout_mode = 2
+text = "NAME"
+theme_override_font_sizes/font_size = 11
+
+[node name="DraftName" type="LineEdit" parent="Inset/Body/Fields/NameGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FamilyGroup" type="VBoxContainer" parent="Inset/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/Fields/FamilyGroup"]
+layout_mode = 2
+text = "IMPORT AS"
+theme_override_font_sizes/font_size = 11
+
+[node name="Family" type="OptionButton" parent="Inset/Body/Fields/FamilyGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="OutputGroup" type="VBoxContainer" parent="Inset/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/Fields/OutputGroup"]
+layout_mode = 2
+text = "OUTPUT"
+theme_override_font_sizes/font_size = 11
+
+[node name="OutputMode" type="OptionButton" parent="Inset/Body/Fields/OutputGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="NumberGroup" type="VBoxContainer" parent="Inset/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/Fields/NumberGroup"]
+layout_mode = 2
+text = "RESOURCE NUMBER"
+theme_override_font_sizes/font_size = 11
+
+[node name="Number" type="SpinBox" parent="Inset/Body/Fields/NumberGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+value = 30000.0
+
+[node name="CollectionGroup" type="VBoxContainer" parent="Inset/Body/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Label" type="Label" parent="Inset/Body/Fields/CollectionGroup"]
+layout_mode = 2
+text = "COLLECTION"
+theme_override_font_sizes/font_size = 11
+
+[node name="Collection" type="OptionButton" parent="Inset/Body/Fields/CollectionGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="MoreCollections" type="Button" parent="Inset/Body/Fields/CollectionGroup"]
+unique_name_in_owner = true
+visible = false
+text = "Load more collections"
+[node name="Comparison" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="Source" type="VBoxContainer" parent="Inset/Body/Comparison"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Caption" type="Label" parent="Inset/Body/Comparison/Source"]
+layout_mode = 2
+text = "Current / Original"
+
+[node name="SourceFrame" type="PanelContainer" parent="Inset/Body/Comparison/Source"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(240, 168)
+
+[node name="Images" type="HBoxContainer" parent="Inset/Body/Comparison/Source/SourceFrame"]
+size_flags_vertical = 3
+[node name="Current" type="TextureRect" parent="Inset/Body/Comparison/Source/SourceFrame/Images"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CurrentReverse" type="TextureRect" parent="Inset/Body/Comparison/Source/SourceFrame/Images"]
+unique_name_in_owner = true
+visible = false
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CurrentText" type="TextEdit" parent="Inset/Body/Comparison/Source"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+editable = false
+wrap_mode = 1
+custom_minimum_size = Vector2(0, 90)
+
+[node name="SourceDetails" type="Label" parent="Inset/Body/Comparison/Source"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Proposed" type="VBoxContainer" parent="Inset/Body/Comparison"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Caption" type="Label" parent="Inset/Body/Comparison/Proposed"]
+layout_mode = 2
+text = "Proposed output"
+
+[node name="ProposedFrame" type="PanelContainer" parent="Inset/Body/Comparison/Proposed"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(240, 168)
+
+[node name="Images" type="HBoxContainer" parent="Inset/Body/Comparison/Proposed/ProposedFrame"]
+size_flags_vertical = 3
+[node name="Incoming" type="TextureRect" parent="Inset/Body/Comparison/Proposed/ProposedFrame/Images"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="IncomingReverse" type="TextureRect" parent="Inset/Body/Comparison/Proposed/ProposedFrame/Images"]
+unique_name_in_owner = true
+visible = false
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="OutputDetails" type="Label" parent="Inset/Body/Comparison/Proposed"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="Play" type="Button" parent="Inset/Body/Comparison/Proposed"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Play output"
+visible = false
+
+[node name="Text" type="TextEdit" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 160)
+wrap_mode = 1
+
+[node name="RasterSettings" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FitGroup" type="VBoxContainer" parent="Inset/Body/RasterSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/RasterSettings/FitGroup"]
+layout_mode = 2
+text = "FIT"
+theme_override_font_sizes/font_size = 11
+
+[node name="Fit" type="OptionButton" parent="Inset/Body/RasterSettings/FitGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="QualityGroup" type="VBoxContainer" parent="Inset/Body/RasterSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/RasterSettings/QualityGroup"]
+layout_mode = 2
+text = "SCALE QUALITY"
+theme_override_font_sizes/font_size = 11
+
+[node name="Quality" type="OptionButton" parent="Inset/Body/RasterSettings/QualityGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="TransparencyGroup" type="VBoxContainer" parent="Inset/Body/RasterSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/RasterSettings/TransparencyGroup"]
+layout_mode = 2
+text = "TRANSPARENT PIXELS"
+theme_override_font_sizes/font_size = 11
+
+[node name="Transparency" type="OptionButton" parent="Inset/Body/RasterSettings/TransparencyGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="ReductionGroup" type="VBoxContainer" parent="Inset/Body/RasterSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/RasterSettings/ReductionGroup"]
+layout_mode = 2
+text = "COLOR REDUCTION"
+theme_override_font_sizes/font_size = 11
+
+[node name="Reduction" type="OptionButton" parent="Inset/Body/RasterSettings/ReductionGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="CanvasGroup" type="VBoxContainer" parent="Inset/Body/RasterSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Inset/Body/RasterSettings/CanvasGroup"]
+layout_mode = 2
+text = "CANVAS"
+theme_override_font_sizes/font_size = 11
+
+[node name="Canvas" type="OptionButton" parent="Inset/Body/RasterSettings/CanvasGroup"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="LandSettings" type="HBoxContainer" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 12
+
+[node name="OverrideLandLook" type="CheckButton" parent="Inset/Body/LandSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Override land look"
+
+[node name="LandLook" type="SpinBox" parent="Inset/Body/LandSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -128.0
+max_value = 127.0
+
+[node name="OverrideBaseTile" type="CheckButton" parent="Inset/Body/LandSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Override base tile"
+
+[node name="BaseTile" type="SpinBox" parent="Inset/Body/LandSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="AffectedUses" parent="Inset/Body" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Impact" type="Label" parent="Inset/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review the destination before accepting."
+autowrap_mode = 3
+custom_minimum_size = Vector2(0, 48)
+
+[node name="Footer" type="HBoxContainer" parent="Inset/Body"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Cancel" type="Button" parent="Inset/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+custom_minimum_size = Vector2(100, 34)
+
+[node name="Spacer" type="Control" parent="Inset/Body/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Review" type="Button" parent="Inset/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review output"
+custom_minimum_size = Vector2(140, 34)
+
+[node name="Accept" type="Button" parent="Inset/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+disabled = true
+custom_minimum_size = Vector2(150, 34)
+
+[node name="SourceFile" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose media source"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png ; PNG image", "*.wav ; WAV sound", "*.mod ; Standard MOD music", "*.txt ; UTF-8 text")
+
+[node name="ReverseFile" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose media source"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.png ; PNG image", "*.wav ; WAV sound", "*.txt ; UTF-8 text")
+
+[node name="PrepareDelay" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 0.2
+one_shot = true
+
+[node name="Audio" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+

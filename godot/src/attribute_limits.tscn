@@ -1,0 +1,192 @@
+[gd_scene format=3]
+
+[node name="AttributeLimits" type="GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 8
+
+[node name="AttributeHeading" type="Label" parent="."]
+layout_mode = 2
+text = "ATTRIBUTE"
+theme_type_variation = "ItemFieldLabel"
+custom_minimum_size = Vector2(100, 0)
+size_flags_horizontal = 3
+
+[node name="MinimumHeading" type="Label" parent="."]
+layout_mode = 2
+text = "MINIMUM"
+theme_type_variation = "ItemFieldLabel"
+custom_minimum_size = Vector2(104, 0)
+horizontal_alignment = 1
+
+[node name="MaximumHeading" type="Label" parent="."]
+layout_mode = 2
+text = "MAXIMUM"
+theme_type_variation = "ItemFieldLabel"
+custom_minimum_size = Vector2(104, 0)
+horizontal_alignment = 1
+
+[node name="Brawn" type="Label" parent="."]
+layout_mode = 2
+text = "Brawn"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="BrawnMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Brawn · minimum"
+
+[node name="BrawnMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Brawn · maximum"
+
+[node name="Knowledge" type="Label" parent="."]
+layout_mode = 2
+text = "Knowledge"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="KnowledgeMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Knowledge · minimum"
+
+[node name="KnowledgeMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Knowledge · maximum"
+
+[node name="Judgement" type="Label" parent="."]
+layout_mode = 2
+text = "Judgement"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="JudgementMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Judgement · minimum"
+
+[node name="JudgementMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Judgement · maximum"
+
+[node name="Agility" type="Label" parent="."]
+layout_mode = 2
+text = "Agility"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="AgilityMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Agility · minimum"
+
+[node name="AgilityMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Agility · maximum"
+
+[node name="Vitality" type="Label" parent="."]
+layout_mode = 2
+text = "Vitality"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="VitalityMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Vitality · minimum"
+
+[node name="VitalityMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Vitality · maximum"
+
+[node name="Luck" type="Label" parent="."]
+layout_mode = 2
+text = "Luck"
+theme_type_variation = "ItemContext"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 0)
+
+[node name="LuckMinimum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 10]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Luck · minimum"
+
+[node name="LuckMaximum" type="SpinBox" parent="."]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeLimits", 11]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+tooltip_text = "Luck · maximum"
+

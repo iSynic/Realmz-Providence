@@ -1,0 +1,10 @@
+{
+  "kind": "providence.rebuilt-application-support",
+  "campaignId": "realmz-classic-application-library",
+  "compilerCommit": "1704ef6b1663eee578bb683b4994cba5cd8c2d88",
+  "license": "CC-BY-NC-SA-4.0",
+  "files": {
+    "application.realmz2": "bf1ff5de1d6fc5bd1d5ffff8d582797dfab885acfd9b20b4e02ce9040421e150",
+    "media.json": "9b54a3936924a1dd49c4545f780afdf9c3cf0feb2b56c5329f5b8012d94cce11"
+  }
+}

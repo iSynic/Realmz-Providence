@@ -1,0 +1,102 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Theme" path="res://theme/scenario_controls.tres" id="1"]
+[ext_resource type="Script" path="res://tools/scenario_control_specimen.gd" id="2"]
+[ext_resource type="Texture2D" path="res://theme/policy_checked.svg" id="3"]
+[ext_resource type="Texture2D" path="res://theme/policy_unchecked.svg" id="4"]
+
+[node name="ScenarioControlSpecimen" type="PanelContainer"]
+custom_minimum_size = Vector2(512, 610)
+theme = ExtResource("1")
+script = ExtResource("2")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Content"]
+layout_mode = 2
+text = "SCENARIO · CONTROL STATES"
+
+[node name="Fixture" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Controlled samples, not records · one real focus owner"
+autowrap_mode = 2
+
+[node name="Navigation" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+[node name="Navigate" type="Button" parent="Content/Navigation"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Spells"
+alignment = 0
+
+[node name="Unavailable" type="Button" parent="Content/Navigation"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Apply changes"
+alignment = 0
+
+[node name="FieldLabel" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Scenario name · read only"
+
+[node name="ScenarioName" type="LineEdit" parent="Content"]
+layout_mode = 2
+text = "The Long Road to Bywater"
+editable = false
+
+[node name="ChecklistLegend" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Selection is not a change to admission policy."
+
+[node name="AdmissionPolicy" type="ItemList" parent="Content"]
+custom_minimum_size = Vector2(0, 85)
+layout_mode = 2
+item_count = 3
+item_0/text = "02 Elf · allowed"
+item_0/icon = ExtResource("4")
+item_1/text = "01 Human · allowed"
+item_1/icon = ExtResource("4")
+item_2/text = "04 Orc · banned"
+item_2/icon = ExtResource("3")
+
+[node name="UnavailableReason" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Editing is not available in this workbench."
+
+[node name="Diagnostic" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioDiagnostic"
+text = "! Missing banned reference: classic.race.42"
+
+[node name="EvidenceDisclosure" type="Button" parent="Content"]
+layout_mode = 2
+toggle_mode = true
+text = "▸ Source evidence"
+alignment = 0
+
+[node name="Evidence" type="Label" parent="Content"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Data RI · source retained · read only"
+
+[node name="Keys" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Tab / Shift+Tab traverse; arrows select rows.
+Enter opens navigation; Space toggles disclosure.
+List Space/Enter never change bans. Text: select/copy.
+Hover: accent border 1px. Pressed: selection fill.
+Focus: accent border 2px, retained when pressed."
+
+[node name="Result" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+text = "Specimen only · no project commands"

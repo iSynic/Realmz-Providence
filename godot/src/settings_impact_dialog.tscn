@@ -1,0 +1,70 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/settings_impact_dialog.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="Boundary"]
+bg_color = Color(0.045, 0.065, 0.082, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.949, 0.788, 0.298, 1)
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+
+[node name="SettingsImpactDialog" type="ConfirmationDialog"]
+title = "Review shared settings change"
+size = Vector2i(720, 460)
+min_size = Vector2i(640, 400)
+exclusive = true
+transient = true
+ok_button_text = "Update listed actions"
+script = ExtResource("1")
+
+[node name="Body" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(688, 360)
+theme_override_constants/separation = 10
+
+[node name="ImpactHeading" type="Label" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+autowrap_mode = 2
+text = "Review affected actions"
+
+[node name="ImpactContext" type="Label" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ImpactChanges" type="Label" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Explanation" type="Label" parent="Body"]
+layout_mode = 2
+autowrap_mode = 2
+text = "These actions use the settings you changed. Review their resulting changes before applying this record."
+
+[node name="AffectedBoundary" type="PanelContainer" parent="Body"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Boundary")
+
+[node name="Scroll" type="ScrollContainer" parent="Body/AffectedBoundary"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="ImpactActions" type="VBoxContainer" parent="Body/AffectedBoundary/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="Scope" type="Label" parent="Body"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Make independent applies only this step’s settings change. Other edits in this record are still included. Cancel keeps your draft."

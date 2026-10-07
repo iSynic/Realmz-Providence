@@ -1,0 +1,283 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/treasure_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/victory_points.png" type="Texture2D" id="2"]
+
+[ext_resource type="PackedScene" path="res://src/economy_navigation.tscn" id="economy_nav"]
+
+[node name="Treasure" type="VBoxContainer"]
+custom_minimum_size = Vector2(820, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="EconomyNavigation" parent="." instance=ExtResource("economy_nav")]
+layout_mode = 2
+
+[node name="TreasureWorkspace" type="HSplitContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 240
+
+[node name="TreasureRecordBrowser" type="VBoxContainer" parent="TreasureWorkspace"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+[node name="RecordStatus" type="Label" parent="TreasureWorkspace/TreasureRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "TREASURE RECORDS"
+[node name="RecordSearch" type="LineEdit" parent="TreasureWorkspace/TreasureRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Find Treasure number or state…"
+[node name="RecordList" type="ItemList" parent="TreasureWorkspace/TreasureRecordBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TreasureWorkbenchScroll" type="ScrollContainer" parent="TreasureWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="TreasureWorkbench" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll"]
+custom_minimum_size = Vector2(540, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+[node name="TreasureHeader" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+layout_mode = 2
+[node name="Title" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "TREASURE EDITOR  ·  DATA TD"
+[node name="Callers" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Callers…"
+tooltip_text = "Find scripts and encounters that award this Treasure."
+disabled = true
+[node name="NewTreasure" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Create the next available Treasure record with zero defaults."
+text = "New Treasure"
+[node name="ClearTreasure" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Clear every authored field while keeping this Treasure identity."
+text = "Clear To Defaults"
+[node name="RecordIdentity" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "Select a Treasure record"
+
+[node name="RewardFields" type="GridContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+layout_mode = 2
+columns = 4
+theme_override_constants/h_separation = 24
+
+[node name="VictoryPointsCard" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields"]
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
+[node name="Label" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/VictoryPointsCard"]
+horizontal_alignment = 1
+layout_mode = 2
+text = "VICTORY POINTS"
+[node name="Value" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/VictoryPointsCard"]
+theme_override_constants/separation = 8
+layout_mode = 2
+[node name="VictoryPointsIcon" type="TextureRect" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/VictoryPointsCard/Value"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+texture = ExtResource("2")
+texture_filter = 1
+expand_mode = 3
+stretch_mode = 5
+[node name="Experience" type="LineEdit" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/VictoryPointsCard/Value"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="GoldCard" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields"]
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
+[node name="Label" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GoldCard"]
+horizontal_alignment = 1
+layout_mode = 2
+text = "GOLD"
+[node name="Value" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GoldCard"]
+theme_override_constants/separation = 8
+layout_mode = 2
+[node name="GoldIcon" type="TextureRect" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GoldCard/Value"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+tooltip_text = "Realmz Gold artwork · cicn 2002"
+[node name="Gold" type="LineEdit" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GoldCard/Value"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="GemsCard" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields"]
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
+[node name="Label" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GemsCard"]
+horizontal_alignment = 1
+layout_mode = 2
+text = "GEMS"
+[node name="Value" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GemsCard"]
+theme_override_constants/separation = 8
+layout_mode = 2
+[node name="GemsIcon" type="TextureRect" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GemsCard/Value"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+tooltip_text = "Realmz Gems artwork · cicn 2014"
+[node name="Gems" type="LineEdit" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/GemsCard/Value"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="JewelryCard" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields"]
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(144, 0)
+layout_mode = 2
+[node name="Label" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/JewelryCard"]
+horizontal_alignment = 1
+layout_mode = 2
+text = "JEWELRY"
+[node name="Value" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/JewelryCard"]
+theme_override_constants/separation = 8
+layout_mode = 2
+[node name="JewelryIcon" type="TextureRect" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/JewelryCard/Value"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+tooltip_text = "Realmz Jewelry artwork · cicn 2012"
+[node name="Jewelry" type="LineEdit" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/RewardFields/JewelryCard/Value"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+
+[node name="LootWorkspace" type="HSplitContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+custom_minimum_size = Vector2(0, 440)
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 270
+[node name="ItemPoolPanel" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+[node name="PoolHeading" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+text = "ITEM POOL"
+[node name="CategoryFilter" type="OptionButton" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+item_count = 1
+selected = 0
+popup/item_0/text = "All categories"
+popup/item_0/id = 0
+[node name="ItemSearch" type="LineEdit" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+editable = false
+placeholder_text = "Search item pool…"
+[node name="ItemPool" type="ItemList" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+fixed_icon_size = Vector2i(32, 32)
+[node name="ItemPoolStatus" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+text = "Loading item pool…"
+[node name="PoolPaging" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+[node name="PoolPrevious" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel/PoolPaging"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Previous"
+[node name="PoolNext" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel/PoolPaging"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Next"
+[node name="PoolRetry" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel/PoolPaging"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Retry"
+tooltip_text = "Reload the item pool without changing the Treasure draft."
+
+[node name="AddItem" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Add the selected item to the first open Treasure slot."
+text = "Add To Next Open Slot"
+[node name="OpenCatalogItem" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/ItemPoolPanel"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Open the selected item in the Item Editor. Unapplied Treasure changes are guarded."
+text = "Open Item"
+
+[node name="TreasureItemSlotPanel" type="VBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="SlotHeading" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel"]
+layout_mode = 2
+text = "20 ORDERED ITEM SLOTS"
+[node name="TreasureItemSlots" type="ItemList" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+fixed_icon_size = Vector2i(32, 32)
+[node name="SlotActions" type="HBoxContainer" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel"]
+layout_mode = 2
+[node name="ReplaceItem" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel/SlotActions"]
+layout_mode = 2
+disabled = true
+text = "Replace"
+[node name="ClearItem" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel/SlotActions"]
+layout_mode = 2
+disabled = true
+text = "Clear Slot"
+[node name="OpenRecordItem" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/LootWorkspace/TreasureItemSlotPanel/SlotActions"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Open the selected slot item in the Item Editor. Unapplied Treasure changes are guarded."
+text = "Open Item"
+
+[node name="RecordProblems" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "No Treasure selected."
+[node name="DisabledReason" type="Label" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.94902, 0.788235, 0.298039, 1)
+text = "No Treasure selected."
+[node name="ApplyTreasure" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Apply this Treasure draft to the open project."
+text = "Apply Treasure"

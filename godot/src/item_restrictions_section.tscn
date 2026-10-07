@@ -1,0 +1,504 @@
+[gd_scene format=3]
+
+[node name="Restrictions" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Classification" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemRestrictionsPanel"
+
+[node name="Body" type="VBoxContainer" parent="Classification"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Classification/Body"]
+layout_mode = 2
+text = "CLASSIFICATION"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="CategoryRow" type="HBoxContainer" parent="Classification/Body"]
+layout_mode = 2
+
+[node name="CategorySummary" type="Label" parent="Classification/Body/CategoryRow"]
+layout_mode = 2
+text = "No categories"
+
+[node name="ChooseCategories" type="Button" parent="Classification/Body/CategoryRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Specific" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemRestrictionsPanel"
+
+[node name="Body" type="VBoxContainer" parent="Specific"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Specific/Body"]
+layout_mode = 2
+text = "SPECIFIC RACE AND CASTE"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="References" type="GridContainer" parent="Specific/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="SpecificRaceField" type="VBoxContainer" parent="Specific/Body/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Specific/Body/References/SpecificRaceField"]
+layout_mode = 2
+text = "SPECIFIC RACE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="Row" type="HBoxContainer" parent="Specific/Body/References/SpecificRaceField"]
+layout_mode = 2
+
+[node name="SpecificRace" type="LineEdit" parent="Specific/Body/References/SpecificRaceField/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+placeholder_text = "None"
+
+[node name="ChooseSpecificRace" type="Button" parent="Specific/Body/References/SpecificRaceField/Row"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="SpecificCasteField" type="VBoxContainer" parent="Specific/Body/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Specific/Body/References/SpecificCasteField"]
+layout_mode = 2
+text = "SPECIFIC CASTE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="Row" type="HBoxContainer" parent="Specific/Body/References/SpecificCasteField"]
+layout_mode = 2
+
+[node name="SpecificCaste" type="LineEdit" parent="Specific/Body/References/SpecificCasteField/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+placeholder_text = "None"
+
+[node name="ChooseSpecificCaste" type="Button" parent="Specific/Body/References/SpecificCasteField/Row"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Limits" type="GridContainer" parent="."]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="CannotUse" type="PanelContainer" parent="Limits"]
+layout_mode = 2
+theme_type_variation = &"ItemRestrictionsPanel"
+
+[node name="Body" type="VBoxContainer" parent="Limits/CannotUse"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/CannotUse/Body"]
+layout_mode = 2
+text = "CANNOT USE"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Matrices" type="GridContainer" parent="Limits/CannotUse/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="RaceTypes" type="VBoxContainer" parent="Limits/CannotUse/Body/Matrices"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "RACE TYPES"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Bit0" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Short Race"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 0
+
+[node name="Bit1" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Elvish"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 1
+
+[node name="Bit2" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Half Breed"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 2
+
+[node name="Bit3" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Goblinoid"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 3
+
+[node name="Bit4" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Reptilian"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 4
+
+[node name="Bit5" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Nether Worldly"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 5
+
+[node name="Bit6" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Goodly Race"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 6
+
+[node name="Bit7" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Neutral Race"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 7
+
+[node name="Bit8" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Evil Race"
+metadata/mask_field = "raceRestrictions"
+metadata/mask_bit = 8
+
+[node name="CasteTypes" type="VBoxContainer" parent="Limits/CannotUse/Body/Matrices"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "CASTE TYPES"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Bit0" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Warrior Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 0
+
+[node name="Bit1" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Thief Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 1
+
+[node name="Bit2" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Archer Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 2
+
+[node name="Bit3" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Sorcerer Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 3
+
+[node name="Bit4" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Priest Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 4
+
+[node name="Bit5" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Enchanter Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 5
+
+[node name="Bit6" type="CheckBox" parent="Limits/CannotUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Warrior Wizard Castes"
+metadata/mask_field = "casteRestrictions"
+metadata/mask_bit = 6
+
+[node name="Hint" type="Label" parent="Limits/CannotUse/Body"]
+layout_mode = 2
+text = "Selected groups cannot use this item."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="OnlyUse" type="PanelContainer" parent="Limits"]
+layout_mode = 2
+theme_type_variation = &"ItemRestrictionsPanel"
+
+[node name="Body" type="VBoxContainer" parent="Limits/OnlyUse"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/OnlyUse/Body"]
+layout_mode = 2
+text = "ONLY USE"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Matrices" type="GridContainer" parent="Limits/OnlyUse/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="RaceTypes" type="VBoxContainer" parent="Limits/OnlyUse/Body/Matrices"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "RACE TYPES"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Bit0" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Short Race"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 0
+
+[node name="Bit1" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Elvish"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 1
+
+[node name="Bit2" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Half Breed"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 2
+
+[node name="Bit3" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Goblinoid"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 3
+
+[node name="Bit4" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Reptilian"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 4
+
+[node name="Bit5" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Nether Worldly"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 5
+
+[node name="Bit6" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Goodly Race"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 6
+
+[node name="Bit7" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Neutral Race"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 7
+
+[node name="Bit8" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/RaceTypes"]
+layout_mode = 2
+text = "Evil Race"
+metadata/mask_field = "raceClassOnly"
+metadata/mask_bit = 8
+
+[node name="CasteTypes" type="VBoxContainer" parent="Limits/OnlyUse/Body/Matrices"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "CASTE TYPES"
+theme_type_variation = &"ItemRestrictionsHeading"
+
+[node name="Bit0" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Warrior Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 0
+
+[node name="Bit1" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Thief Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 1
+
+[node name="Bit2" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Archer Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 2
+
+[node name="Bit3" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Sorcerer Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 3
+
+[node name="Bit4" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Priest Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 4
+
+[node name="Bit5" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Enchanter Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 5
+
+[node name="Bit6" type="CheckBox" parent="Limits/OnlyUse/Body/Matrices/CasteTypes"]
+layout_mode = 2
+text = "Warrior Wizard Castes"
+metadata/mask_field = "casteClassOnly"
+metadata/mask_bit = 6
+
+[node name="Hint" type="Label" parent="Limits/OnlyUse/Body"]
+layout_mode = 2
+text = "No selections means no group limit."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="UnknownBits" type="Label" parent="."]
+layout_mode = 2
+text = "Other imported flags are retained unless explicitly changed."
+
+[node name="AdvancedRestrictions" type="Button" parent="."]
+layout_mode = 2
+text = "Advanced values…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="RestrictionsAdvanced" type="VBoxContainer" parent="."]
+layout_mode = 2
+visible = false
+
+[node name="Hint" type="Label" parent="RestrictionsAdvanced"]
+layout_mode = 2
+text = "Changing a checkbox preserves other flags."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="AdvancedCategoryLowRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedCategoryLowRow"]
+layout_mode = 2
+text = "itemCategoryMaskLow"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedCategoryLow" type="SpinBox" parent="RestrictionsAdvanced/AdvancedCategoryLowRow"]
+layout_mode = 2
+min_value = -2147483648.0
+max_value = 2147483647.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "itemCategoryMaskLow"
+
+[node name="AdvancedCategoryHighRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedCategoryHighRow"]
+layout_mode = 2
+text = "itemCategoryMaskHigh"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedCategoryHigh" type="SpinBox" parent="RestrictionsAdvanced/AdvancedCategoryHighRow"]
+layout_mode = 2
+min_value = -2147483648.0
+max_value = 2147483647.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "itemCategoryMaskHigh"
+
+[node name="AdvancedRaceCannotRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedRaceCannotRow"]
+layout_mode = 2
+text = "raceRestrictions"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedRaceCannot" type="SpinBox" parent="RestrictionsAdvanced/AdvancedRaceCannotRow"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "raceRestrictions"
+
+[node name="AdvancedCasteCannotRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedCasteCannotRow"]
+layout_mode = 2
+text = "casteRestrictions"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedCasteCannot" type="SpinBox" parent="RestrictionsAdvanced/AdvancedCasteCannotRow"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "casteRestrictions"
+
+[node name="AdvancedRaceOnlyRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedRaceOnlyRow"]
+layout_mode = 2
+text = "raceClassOnly"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedRaceOnly" type="SpinBox" parent="RestrictionsAdvanced/AdvancedRaceOnlyRow"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "raceClassOnly"
+
+[node name="AdvancedCasteOnlyRow" type="HBoxContainer" parent="RestrictionsAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RestrictionsAdvanced/AdvancedCasteOnlyRow"]
+layout_mode = 2
+text = "casteClassOnly"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedCasteOnly" type="SpinBox" parent="RestrictionsAdvanced/AdvancedCasteOnlyRow"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "casteClassOnly"

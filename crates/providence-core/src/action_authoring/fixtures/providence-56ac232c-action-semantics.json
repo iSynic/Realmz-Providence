@@ -1,0 +1,4201 @@
+{
+  "schemaVersion": 2,
+  "donorCommit": "56ac232c22fc321a99cb819f1e2d8c3985ad479a",
+  "donorPaths": [
+    "src/editor/generated/opcodeEdcdCrosswalk.json",
+    "src/editor/components/EdcdRowEditor.tsx",
+    "src/editor/choiceDialogs.ts"
+  ],
+  "actions": [
+    {
+      "opcode": -23,
+      "title": "Alter Random Rectangle Information of a Land Level",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "random-region-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "level",
+          "label": "Land Level ID",
+          "help": "Land Level ID",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "randomRegion",
+          "label": "Rectangle Number To Alter",
+          "help": "Rectangle Number To Alter",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "percent",
+          "label": "New X ‘s In 10,000",
+          "help": "New X ‘s in 10,000 (0 = No Encounters, -1 = Set Invisible Encounter)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "battleLowOrKeep",
+          "label": "New Battle Range Low",
+          "help": "New Battle Range Low (-1 = No Change)",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "battleHighOrKeep",
+          "label": "New Battle Range High",
+          "help": "New Battle Range High (-1 = No Change)",
+          "targetFamily": "battle",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": -14,
+      "title": "Pick Inverse Characters",
+      "idLabel": "ID",
+      "idHelp": "",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 0,
+      "title": "Empty",
+      "idLabel": "ID",
+      "idHelp": "",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 1,
+      "title": "Display String",
+      "idLabel": "String Number To Display",
+      "idHelp": "String Number to Display",
+      "targetFamily": "message",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 2,
+      "title": "Battle",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "battle",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "battleLow",
+          "label": "Battle Number",
+          "help": "Battle Number: Low Battle Number for Range Battle",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "battleHigh",
+          "label": "Battle High",
+          "help": "High Battle Number for Range Battle",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "soundOrReviveLossMacro",
+          "label": "Sound To Play Before Battle",
+          "help": "Sound to play before battle. (Optional) X-AP on Revived Losses.",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "message",
+          "label": "String To Display Before Battle",
+          "help": "String to display before battle. (Optional)",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "revivePartyFlag",
+          "label": "Revive Party Flag",
+          "help": "Treasure award status / Party revive status.",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 3,
+      "title": "Player Option",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "choice",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "replyPolarity",
+          "label": "Reply Polarity",
+          "help": "1 = Yes: Continue 0 = No: Continue",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = Back Up, 1 = X-AP, 2 = Within Simple, 3 = Within Complex, 4 = Eliminate",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchTarget",
+          "label": "X-AP/Branch No. Of Encounter (0-3)",
+          "help": "X-AP/Branch No. Of Encounter (0-3)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "promptA",
+          "label": "Prompt, Left Side (Optional)",
+          "help": "Prompt, left side (Optional)",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "promptB",
+          "label": "Prompt, Right Side (Optional)",
+          "help": "Prompt, right side (Optional)",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 4,
+      "title": "Simple Encounter",
+      "idLabel": "Simple Encounter ID",
+      "idHelp": "Simple Encounter ID",
+      "targetFamily": "simple-encounter",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 5,
+      "title": "Complex Encounter",
+      "idLabel": "Complex Encounter ID",
+      "idHelp": "Complex Encounter ID",
+      "targetFamily": "complex-encounter",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 6,
+      "title": "Load shop",
+      "idLabel": "Shop ID",
+      "idHelp": "Shop ID",
+      "targetFamily": "shop",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 7,
+      "title": "Change Action Point Codes",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "confirmed-extra-ap-copy-source",
+      "formId": "action-data-patching",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "levelOrCache",
+          "label": "Level / Cache",
+          "help": "Land ID of Action Point codes to change. -2 = Replace Simple Encounter Script, -3 = Replace Complex Encounter Script",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "targetRecord",
+          "label": "Target Record",
+          "help": "AP / Simple Enc ID / Complex Enc ID To Modify",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "macro",
+          "label": "Macro",
+          "help": "Extra Action Point ID that contains the new codes",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "levelKind",
+          "label": "For AP Replacement",
+          "help": "For AP replacement: 0 = Default to same land type, 1= Land Level, 2 = Dungeon Level",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "resultSlot",
+          "label": "For Encounter Script Replacement",
+          "help": "For Encounter Script Replacement: Result Code to Replace (0-3) Script Tip: In effect, this allows you to replace the codes for any Action Point, Extra Action Point, Encounter Result Script with a different set of codes you have stored as an Extra Action Point. For replacement of standard action points, all other aspects of the Action Point such as the percent chance and the location it will move the party to remains unchanged.",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 8,
+      "title": "Same as Other Action Point",
+      "idLabel": "Same-map Action Point",
+      "idHelp": "This action's ID selects another Action Point on the current map and copies its action slots.",
+      "targetFamily": "same-map-action-point",
+      "writerStatus": "writer-ready-map-action-point-copy",
+      "evidenceStatus": "confirmed-same-map-action-point-copy",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 9,
+      "title": "Play Sound",
+      "idLabel": "ID",
+      "idHelp": "Sound ID of sound you wish to play.",
+      "targetFamily": "sound",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 10,
+      "title": "Give Treasure",
+      "idLabel": "Treasure ID",
+      "idHelp": "Treasure ID",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 11,
+      "title": "Give Victory Points",
+      "idLabel": "Amount Of Victory Points To Give",
+      "idHelp": "Amount of Victory Points to give.",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 12,
+      "title": "Change Land Tile",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "tile-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "level",
+          "label": "Level",
+          "help": "Land/Dungeon level of tile to change",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "xOrDungeonY",
+          "label": "X-Coordinate",
+          "help": "X-Coordinate",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "yOrDungeonX",
+          "label": "Y-Coordinate",
+          "help": "Y-Coordinate",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "tileValue",
+          "label": "New Tile ID",
+          "help": "New Tile ID",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "isDungeon",
+          "label": "Is Dungeon",
+          "help": "0 = Land Level, 1 = Dungeons",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 13,
+      "title": "Enable Action Point",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "confirmed-runtime-mutation-not-macro",
+      "formId": "trigger-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "level",
+          "label": "Land/Dungeon Level",
+          "help": "Land/Dungeon Level",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "singleTrigger",
+          "label": "Action Point Number",
+          "help": "Action Point Number",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "percent",
+          "label": "New % (Negative Value = Disabled)",
+          "help": "New % (Negative value = Disabled)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "rangeStartWithSign",
+          "label": "Action Point No. Low",
+          "help": "Action Point No. Low (Negative = Dungeon, Positive = Land)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "rangeEnd",
+          "label": "Action Point No. High",
+          "help": "Action Point No. High (Negative = Dungeon, Positive = Land)",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 14,
+      "title": "Pick Characters",
+      "idLabel": "Number Of Characters To Pick",
+      "idHelp": "Number of characters to pick",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 15,
+      "title": "Heal/Hurt Picked",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-link-semantics",
+      "formId": "damage-heal",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "multiplier",
+          "label": "Multiplier ( - Is Hurt )",
+          "help": "Multiplier ( - Is Hurt )",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "low",
+          "label": "Low Range",
+          "help": "Low Range",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "high",
+          "label": "High Range",
+          "help": "High Range",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound ---Optional---",
+          "help": "Sound ---Optional---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message ---Optional---",
+          "help": "Message ---Optional---",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 16,
+      "title": "Heal/Hurt Party",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-link-semantics",
+      "formId": "damage-heal",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "multiplier",
+          "label": "Multiplier ( - Is Hurt )",
+          "help": "Multiplier ( - Is Hurt )",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "low",
+          "label": "Low Range",
+          "help": "Low Range",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "high",
+          "label": "High Range",
+          "help": "High Range",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound ---Optional---",
+          "help": "Sound ---Optional---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message ---Optional---",
+          "help": "Message ---Optional---",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 17,
+      "title": "Cast Spell on Picked",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "spell-cast",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "spell",
+          "label": "Spell No. To Cast",
+          "help": "Spell No. to Cast",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "powerLevel",
+          "label": "Power Level",
+          "help": "Power Level",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "saveAdjust",
+          "label": "+/- % To DRVs Modifier",
+          "help": "+/- % To DRVs Modifier",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "forceAffect",
+          "label": "Force Affect",
+          "help": "1 = No chance for PCs to DRVs.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 18,
+      "title": "Cast Spell on Party",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "spell-cast",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "spell",
+          "label": "Spell No. To Cast",
+          "help": "Spell No. to Cast",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "powerLevel",
+          "label": "Power Level",
+          "help": "Power Level",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "saveAdjust",
+          "label": "+/- % To DRVs Modifier",
+          "help": "+/- % To DRVs Modifier",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "forceAffect",
+          "label": "Force Affect",
+          "help": "1 = No chance for PCs to DRVs.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 19,
+      "title": "Display Random String",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "random-message",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "messageLow",
+          "label": "Low String Range Number",
+          "help": "Low String Range Number",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "messageHigh",
+          "label": "High String Range Number",
+          "help": "High String Range Number",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 20,
+      "title": "Teleport",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "teleport",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "levelOrKeep",
+          "label": "Land ID To Teleport To",
+          "help": "Land ID to Teleport To (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "xOrKeep",
+          "label": "X-Coordinate (-1 = No Change)",
+          "help": "X-Coordinate (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "yOrKeep",
+          "label": "Y-Coordinate (-1 = No Change)",
+          "help": "Y-Coordinate (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound ---Optional---",
+          "help": "Sound ---Optional---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message ---Optional--- Script Tip",
+          "help": "Message ---Optional--- Script Tip : At first glance this code may seem of no use. Why not just use the Goto Level of an Action Point to move the party? Well, it's simple. You can use this in the scripts of Extra Action Points and Encounters as well. That's why, my man. Note: A value of -1 in E-Code 1, 2 or 3 will tell the game NOT to make any change. It will remain the current value in the game. Example: If you set E-Code to -1 and the party is on level 4 they will move to the new X: Y: position on Level 4.",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 21,
+      "title": "Branch on Possession of Specific Item",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "item-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "item",
+          "label": "Item ID To Check For",
+          "help": "Item ID To Check For",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "branchMode",
+          "label": "If Possessed, Branch To",
+          "help": "If Possessed, Branch To: 0 = X-AP, 1 = Simple Encounter, 2 = Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "missingBehavior",
+          "label": "Missing Behavior",
+          "help": "If Not Possessed, 0 = Branch as by Item 5, 1 = Continue Codes 2 = String & Exit",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "hasTarget",
+          "label": "X-AP/Encounter No. If Possessed",
+          "help": "X-AP/Encounter No. If Possessed.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "missingTarget",
+          "label": "Missing Target",
+          "help": "X-AP/Encounter No./String ID If Not Possessed.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 22,
+      "title": "Alter Item Status",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "item-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "item",
+          "label": "Item ID To Alter",
+          "help": "Item ID To Alter",
+          "targetFamily": "item",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "maxMatches",
+          "label": "Number Of Items To Affect",
+          "help": "Number of Items to Affect.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "mode",
+          "label": "To Do",
+          "help": "To Do: 1 = Drop, 2 = Charge, 3 = Change Item to Item ID",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "chargeDelta",
+          "label": "Charges To Add (- = Drain Charges)",
+          "help": "Charges To Add (- = Drain Charges)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "replacementItem",
+          "label": "New Item ID",
+          "help": "New Item ID",
+          "targetFamily": "item",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 23,
+      "title": "Alter Random Rectangle Information of a Land Level",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "random-region-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "level",
+          "label": "Land Level ID",
+          "help": "Land Level ID",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "randomRegion",
+          "label": "Rectangle Number To Alter",
+          "help": "Rectangle Number To Alter",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "percent",
+          "label": "New X ‘s In 10,000",
+          "help": "New X ‘s in 10,000 (0 = No Encounters, -1 = Set Invisible Encounter)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "battleLowOrKeep",
+          "label": "New Battle Range Low",
+          "help": "New Battle Range Low (-1 = No Change)",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "battleHighOrKeep",
+          "label": "New Battle Range High",
+          "help": "New Battle Range High (-1 = No Change)",
+          "targetFamily": "battle",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 24,
+      "title": "Exit Action Point And Keep Codes",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 25,
+      "title": "Exit Action Point and Delete Action Point",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 26,
+      "title": "Get Click",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 27,
+      "title": "Display Picture",
+      "idLabel": "Picture Resource ID To Display",
+      "idHelp": "Picture Resource ID to display",
+      "targetFamily": "picture",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 28,
+      "title": "Redraw Screen",
+      "idLabel": "ID",
+      "idHelp": "0 = Enable Camping 1 = Disable Camping",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 29,
+      "title": "Give / Display Map",
+      "idLabel": "Map Number To Give Or Display",
+      "idHelp": "Map Number to give or display.",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 30,
+      "title": "Pick on Check Vs. Attribute / Special Abilities",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "ability-check-pick",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "signedAbilityOrAttribute",
+          "label": "Signed Ability / Attribute",
+          "help": "What Attribute / Special Ability To Check (Negative = Set on Fail)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "adjustment",
+          "label": "+/- Modifer",
+          "help": "+/- Modifer (Negative values hurt success odds)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "sourceSet",
+          "label": "Who To Check",
+          "help": "Who to check: 0 = Picked, 1 = Everyone, 2 = Alive",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "attributeFlag",
+          "label": "Attribute Flag",
+          "help": "0 = Check Special Ability, 1 = Check Attribute Note: The +/- Modifier for checks vs. special abilities is a percentage check. Example: If the character has a 40% chance to perform an acrobatic act, they will be successful 40% of the time. If you have a Modifier of +20 they will be successful 60% of the time. Checks on attributes is base 25. Example: If a character has a agility score of 16, then 16 out of 25 times they will be successful on a check vs.. agility. If you put a modifier of -5 then they will only be successful 9 out of 25 times.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 31,
+      "title": "Branch on Check Vs. Attribute • Special Abilities",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "ability-check-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "abilityOrAttribute",
+          "label": "Ability / Attribute",
+          "help": "What Attribute / Special Ability To Check (Negative = Set on Fail)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "adjustment",
+          "label": "+/- Modifer",
+          "help": "+/- Modifer (Negative values hurt success odds)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "attributeFlag",
+          "label": "Attribute Flag",
+          "help": "0 = Check Special Ability, 1 = Check Attribute",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "successMacro",
+          "label": "Branch To X-AP On Success",
+          "help": "Branch to X-AP on Success",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "failureMacro",
+          "label": "Branch To X-AP On Fail Note",
+          "help": "Branch to X-AP on Fail Note: The +/- Modifier for checks vs. special abilities is a percentage check. Example: If the character has a 40% chance to perform an acrobatic act, they will be successful 40% of the time. If you have a Modifier of +20 they will be successful 60% of the time. Checks on attributes is base 25. Example: If a character has a agility score of 16, then 16 out of 25 times they will be successful on a check vs.. agility. If you put a modifier of -5 then they will only be successful 9 out of 25 times.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 32,
+      "title": "Offer Temple",
+      "idLabel": "Inflation Rate Of Temple",
+      "idHelp": "Inflation Rate of Temple (100 = 100% or Normal Prices)",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 33,
+      "title": "Take Gold",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "gold",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "signedAmount",
+          "label": "Signed Amount",
+          "help": "How Much Gold, Negative Value = Take Gems Instead",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "failureMarker",
+          "label": "Failure Marker",
+          "help": "0 = Cont If Poss, 1 = Cont If Not Poss, 2 = Force Branch, -1 = Goto Last Code If Not Poss",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "0 = X-AP, 1 = Within Simple, 2 = Within Complex",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "X-AP/Branch No. (0-3 For Branch)",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "Code/ID No. 0 = Top Code",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 34,
+      "title": "Break Encounter Loop (Usable only within encounters)",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 35,
+      "title": "Eliminate Simple Encounter Option",
+      "idLabel": "Simple Encounter Option",
+      "idHelp": "Simple Encounter Option (1 to 4) To Eliminate.",
+      "targetFamily": "simple-encounter",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 36,
+      "title": "Capture • Restore Party's Equipment",
+      "idLabel": "ID",
+      "idHelp": "0 = Restore Equipment, 1 = Capture Equipment",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 37,
+      "title": "Enter • Exit Dungeon",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "dungeon-move",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Mode",
+          "help": "0 = Goto Dungeon, 1 = Goto Land",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "level",
+          "label": "Dungeon / Land Level To Goto",
+          "help": "Dungeon / Land level to goto",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "x",
+          "label": "X-Coord",
+          "help": "X-Coord",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "y",
+          "label": "Y-Coord",
+          "help": "y-Coord",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "signedHeading",
+          "label": "Starting Heading",
+          "help": "Starting Heading: 1 = North, 2 = East, 3 = South, 4 = West. A negative heading value will cause the party to only have 3D view mode when they enter the dungeon. Note:",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 38,
+      "title": "Continue On Possession, Else Branch Within Encounters.",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "force-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Item ID To Check For",
+          "help": "Item ID to check for.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test B",
+          "help": "0 = Cont On Poss, 1 = Cont not Poss",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = X-AP, 1 = Within simple, 2 = Within complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "target",
+          "label": "X-AP/Branch No",
+          "help": "X-AP/Branch No. (0-3 if within encounter)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "slot",
+          "label": "Code No. (0 = Top Code/ID) E-Code",
+          "help": "Code No. (0 = top Code/ID) E-Code",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 39,
+      "title": "Extend Action Point Script",
+      "idLabel": "Extra Action Point",
+      "idHelp": "This action's ID selects an Extra Action Point to run.",
+      "targetFamily": "extra-action-point",
+      "writerStatus": "writer-ready-data-ed3-direct",
+      "evidenceStatus": "removed-edcd-shape",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 40,
+      "title": "Branch on Party Condition",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "party-condition-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "expectedState",
+          "label": "Expected State",
+          "help": "1 = Branch if condition exists, else continue script. 2 = Branch if condition does not exsist, else continue script.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "branchMode",
+          "label": "Type Of Branch",
+          "help": "Type of Branch: 0 = No Branch, 1 = X-AP, 2 = Simple Encounter, 3 = Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchTarget",
+          "label": "X-AP/Encounter No",
+          "help": "X-AP/Encounter No.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "condition",
+          "label": "Party Condition To Check For",
+          "help": "Party condition to check for. (0-8 See Key Code Menu)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 41,
+      "title": "Eliminate Other Encounter Choice",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "encounter-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "simpleEncounter",
+          "label": "Simple Encounter No",
+          "help": "Simple Encounter No.",
+          "targetFamily": "simple-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "oneBasedChoiceSlot",
+          "label": "Choice No. To Eliminate (1-4)",
+          "help": "Choice No. To Eliminate (1-4)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 42,
+      "title": "Branch on Percent Chance",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "percent-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "percent",
+          "label": "Percent",
+          "help": "Percent Chance of Doing Item #2, Else Continue Codes",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "successBehavior",
+          "label": "Success Behavior",
+          "help": "1 = Branch, 2 = Exit & Save Codes, -2 = Exit & Erase Codes",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = X-AP, 1 = Within Simple, 2 = Within Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "target",
+          "label": "X-AP/Branch No. (0-3)",
+          "help": "X-AP/Branch No. (0-3)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "slot",
+          "label": "Code No. (0 = Top Code/ID) E-Code",
+          "help": "Code No. (0 = Top Code/ID) E-Code",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 43,
+      "title": "Give Condition",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-link-semantics",
+      "formId": "condition",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "scope",
+          "label": "Affect Who",
+          "help": "Affect Who: 0 = Party, 1 = Picked, 2 = Alive",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "condition",
+          "label": "Condition",
+          "help": "Condition Number As Shown On Code Page",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "durationOrDelta",
+          "label": "Duration/Magnitude",
+          "help": "Duration/Magnitude (Negative Values Are Permanent)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound ---Optional---",
+          "help": "Sound ---Optional---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 44,
+      "title": "Eliminate Complex Encounter Choice",
+      "idLabel": "Branch To Eliminate (0-3)",
+      "idHelp": "Branch To Eliminate (0-3)",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 45,
+      "title": "Teleport Only",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "teleport",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "levelOrKeep",
+          "label": "Land Level ID (-1 = No Change)",
+          "help": "Land Level ID (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "xOrKeep",
+          "label": "X-Coord (-1 = No Change)",
+          "help": "X-Coord (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "yOrKeep",
+          "label": "Y-Coord (-1 = No Change)",
+          "help": "Y-Coord (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound ---Optional--- Note",
+          "help": "Sound ---Optional--- Note: A value of -1 in E-Code 1, 2 or 3 will tell the game NOT to make any change. It will remain the current value in the game. Example: If you set E-Code to -1 and the party is on level 4 they will move to the new X: Y: position on Level 4.",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message",
+          "help": "Optional message after teleport. Realmz consumes this field through the shared Teleport path.",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 46,
+      "title": "Branch on Quest (See code 72 for more options)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "force-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Quest ID To Branch On",
+          "help": "Quest ID To Branch On..",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test B",
+          "help": "0 = Continue On Quest Set, 1 = Continue If Not Set",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = X-AP, 1 = Within simple, 2 = Within complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "target",
+          "label": "X-AP/Branch No. (0-3)",
+          "help": "X-AP/Branch No. (0-3)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "slot",
+          "label": "Code No",
+          "help": "Code No. (0 = Top Code/ID) The E-Codes work the same as for",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 47,
+      "title": "Set • Clear Quest",
+      "idLabel": "Quest ID To Set/Clear",
+      "idHelp": "Quest ID to Set/Clear",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 48,
+      "title": "Selective Battle",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "split-from-generic-battle-variant",
+      "formId": "selective-battle",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "battleLow",
+          "label": "Low Range Of Battle ID",
+          "help": "Low Range of Battle ID",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "battleHigh",
+          "label": "High Range Of Battle ID",
+          "help": "High Range of Battle ID",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "sound",
+          "label": "Sound ---Optional---",
+          "help": "Sound ---Optional---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "message",
+          "label": "Message ---Optional---",
+          "help": "Message ---Optional---",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "treasure",
+          "label": "Treasure On Victory",
+          "help": "Treasure On Victory",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 49,
+      "title": "Offer Banking",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 50,
+      "title": "Pick On Race • Caste • Race Class • Caste Class • Gender",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "race-caste-gender-selector",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "selector",
+          "label": "Type",
+          "help": "Type: 0 = Race Check, 1 = Gender Check, 2 = Caste Check, 3 = Race Class Check, 4 = Caste Class Check",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "gender",
+          "label": "Gender To Pick",
+          "help": "Gender to Pick: 1 = Male, 2 = Female",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "raceCasteOrClass",
+          "label": "Race Caste / Class",
+          "help": "Race/Race Class/Caste/Caste Class to Pick: See Key Codes Menu",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "Not Used",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "livingOnly",
+          "label": "Who To Check",
+          "help": "Who to check: 0 = All, 1 = Alive Only",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 51,
+      "title": "Alter Shop",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "shop-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "shop",
+          "label": "Shop ID To Alter",
+          "help": "Shop ID To Alter",
+          "targetFamily": "shop",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "inflationDelta",
+          "label": "Alter Inflation Rate",
+          "help": "Alter Inflation Rate: +/- Percent",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "item",
+          "label": "Item ID To Add/Reduce",
+          "help": "Item ID To Add/Reduce",
+          "targetFamily": "item",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "stockDelta",
+          "label": "Number To Add/Reduce",
+          "help": "Number To Add/Reduce (Negative Value = reduce).",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 52,
+      "title": "Pick on Miscellaneous",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "character-selector",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "selector",
+          "label": "Selector",
+          "help": "Type Of Check, 0 = Move, 1 = Position, 2 = Item Poss, 3 = % Chance, 4 = Save Vs Attr, 5 = Save Vs Spell Type",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "value",
+          "label": "Value",
+          "help": "< Move, < Pos, Item ID, % Chance, Attr No., Spell Type No.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "sourceSet",
+          "label": "Source Set",
+          "help": "0 = Check All, 1 = Alive Only, 2 = Check picked only.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 53,
+      "title": "Pick on Character Caste",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "caste-selector",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "exactCaste",
+          "label": "Specific Caste Only",
+          "help": "Specific Caste Only: See Key Codes",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "casteGroup",
+          "label": "Caste Types",
+          "help": "Caste Types: 1=Fighter Types, 2=Magical Types, 3=Monk/Rogue",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "sourceSet",
+          "label": "Check",
+          "help": "Check: 0 = All, 1=Alive Only, 2=Check Picked Only",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 54,
+      "title": "Alter Time Encounter",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "timed-encounter-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "timedEncounter",
+          "label": "Time Encounter ID",
+          "help": "Time Encounter ID",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "percentOrKeep",
+          "label": "New % Chance Of Activation",
+          "help": "New % Chance Of Activation (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "incrementOrKeep",
+          "label": "New Day Increment (-1 = No Change)",
+          "help": "New Day Increment (-1 = No Change)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "resetDayFlag",
+          "label": "Reset Day Flag",
+          "help": "1 = Reset to current date",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "dayOffsetOrKeep",
+          "label": "Days To Add To Next Activation",
+          "help": "Days to add to next activation (-1 = No Change) What does -1 = No Change mean? Simply, if you don't want the current value to change, whatever it may be, just put a -1 here and the value currently in the timed encounter will remain.",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 55,
+      "title": "Branch on Picked",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "picked-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "pickedSelector",
+          "label": "Success On",
+          "help": "Success on: 0 = Any PC is picked, 1-6 = Specific is Picked, (-X) = X Number Picked or more.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "failureBehavior",
+          "label": "Type Of Branch",
+          "help": "Type of Branch: 0 = Exit Codes on Fail, 1 = Branch to X-AP on Fail, 2 = String & Exit on Fail",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "Not Used",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "successMacro",
+          "label": "X-AP On Success",
+          "help": "X-AP on Success",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "failureTarget",
+          "label": "Failure Target",
+          "help": "X-AP on Fail if Type of Branch = 1 / String ID on Fail",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 56,
+      "title": "Branch on Battle Outcome",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "split-from-generic-battle-variant",
+      "formId": "battle-outcome-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "battleLow",
+          "label": "Battle Number",
+          "help": "Battle Number: Low Battle Number for Range Battle",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "battleHigh",
+          "label": "Battle High",
+          "help": "High Battle Number for Range Battle",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "cowardMacro",
+          "label": "Coward Macro",
+          "help": "If defeated branch to X-AP, Else -1 = Backstep One",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound. (Optional)",
+          "help": "Sound. (Optional)",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message",
+          "help": "String ID to display prior to battle. (Optional) E-Codes 1 and 2 are the same as for Code 2.",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 57,
+      "title": "Change Land Tile Set",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "render-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "landlook",
+          "label": "Landlook",
+          "help": "0 = Plains, 3 = Subteranean, 4 = Castle, 5 = Desert, 9 = Swamp, 10 = Snow (When it's done)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "isDark",
+          "label": "Is Dark",
+          "help": "0 = Make level Daytime, 1 = Make level Dark",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "targetLandLevel",
+          "label": "Target Land Level",
+          "help": "Land level to alter. Because the tile sets may not be the same for each land level the only change that will really work with any amount of success is from Plains, Swamp or Underground to one another. You have to be very careful with this as many of the tiles may turn into something other than what you expect and special land tiles may be need to be changed as well. I put this in by request of users but personaly I don't think it will be of great use but here it is anyway. Only version 1.0.1 or higher of Divine Right will be able to activate this code.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 58,
+      "title": "Branch on Difficulty Level",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "force-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Test A",
+          "help": "Perform if Difficulty is X or Harder: (1 Easy, 2, 3, 4, 5 Hard) If Difficulty is X or Harder, Perfrom Item 2",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test B",
+          "help": "1 = Branch, 2 = Exit Codes & Save Codes, -2 = Exit Codes & Erase Codes",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = X-AP, 1 = Within Simple, 2 = Within Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "target",
+          "label": "X-AP/Branch No. (0-3)",
+          "help": "X-AP/Branch No. (0-3)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "slot",
+          "label": "Code No. (0 = Top Code/ID) E-Code",
+          "help": "Code No. (0 = Top Code/ID) E-Code",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 59,
+      "title": "Branch on Tile ID Check",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "force-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Test A",
+          "help": "Tile ID To Check For. If Party Is On Tile ID Perform Item 2",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test B",
+          "help": "1 = Branch, 2 = Exit Codes & Save Codes, -2 = Exit Codes & Erase Codes",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Mode",
+          "help": "0 = X-AP, 1 = Within Simple, 2 = Within Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "target",
+          "label": "X-AP/Branch No. (0-3)",
+          "help": "X-AP/Branch No. (0-3)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "slot",
+          "label": "Code No. (0 = Top Code/ID) E-Code",
+          "help": "Code No. (0 = Top Code/ID) E-Code",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 60,
+      "title": "Drop Party Money",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "party-money-state",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "moneyType",
+          "label": "Money Type",
+          "help": "Type To Take 1 = Gold, 2 = Gem, 3 = Jewelry",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "pickedOnly",
+          "label": "Take From",
+          "help": "Take from: 0 = ALL, 1 = Picked",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 61,
+      "title": "Shift Party X: and Y: Location",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "position-shift",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "legacyLevel",
+          "label": "Preserved Value 1",
+          "help": "Not Used",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 1,
+          "internalName": "xShift",
+          "label": "Shift X Amount +/- Number Of Steps",
+          "help": "Shift X Amount +/- Number of Steps",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "yShift",
+          "label": "Shift Y Amount +/- Number Of Steps",
+          "help": "Shift Y Amount +/- Number of Steps",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "randomize",
+          "label": "Randomize",
+          "help": "0 = Move Exact Distance, 1 = Random amount from 1 to Values",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 62,
+      "title": "Display Scrolling Text",
+      "idLabel": "Text ID To Display",
+      "idHelp": "Text ID To Display",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 63,
+      "title": "Alter Game Time",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "time-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Mode",
+          "help": "1 = Set Absolute Time, 2 = Offset Game Time",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "dayOrDelta",
+          "label": "Days",
+          "help": "Days",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "hourOrDelta",
+          "label": "Hours",
+          "help": "Hours",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "minuteOrDelta",
+          "label": "Minutes E-Code 1 Notes",
+          "help": "Minutes E-Code 1 Notes: Set Absolute Time will just change the current game time to the Days, Hours and Minutes specified. No checks for time encounters or any other events will take place. Offset Game Time will add the Days, Hours and Minutes to the current game time. Negative values will be subtracted from the game time so it is possible to go back in time. No checks for time encounters or any other events will take place.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 64,
+      "title": "Branch on Game Time",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "game-time-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "dayLimit",
+          "label": "Test Time",
+          "help": "Test Time: Day (-1 = Skips Test For Day)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "hourLimit",
+          "label": "Test Time",
+          "help": "Test Time: Hour (-1 = Skips Test For Hour)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "----------------------------",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "successMacro",
+          "label": "Success Macro",
+          "help": "X-AP To Branch To If Before or Equal To Test Time.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "failureMacro",
+          "label": "Failure Macro",
+          "help": "X-AP To Branch To If After Test Time. Note: a -1 in any field to skip the test on that portion. Example: a -1 in the Day field will only branch on the outcome of the HOUR and MINUTE test.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 65,
+      "title": "Award Random Item(s)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "random-items",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "countOrRandomLimit",
+          "label": "Number Of Items To Award",
+          "help": "Number of Items to Award: X items Negative X Value = Random Number from 1 to X",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "itemLow",
+          "label": "Low ID Of Random Items",
+          "help": "Low ID of Random Items",
+          "targetFamily": "item",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "itemHigh",
+          "label": "High ID Of Random Items",
+          "help": "High ID of Random Items",
+          "targetFamily": "item",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 66,
+      "title": "Set Camping Ability",
+      "idLabel": "ID",
+      "idHelp": "0 = Enable Camping 1 = Disable Camping",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 67,
+      "title": "Branch on Item Charges",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "item-charge-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "item",
+          "label": "Item ID To Check For",
+          "help": "Item ID To Check For",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "branchMode",
+          "label": "If Enough Charges, Branch To",
+          "help": "If Enough Charges, Branch To: 0 = X-AP, 1 = Simple, 2 = Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "minimumCharges",
+          "label": "Minimum Charges",
+          "help": "Number Of Charges Needed To Meet Requirement",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "successTarget",
+          "label": "Success Target",
+          "help": "X-AP/Encounter No. if charge requirement met. -1 = Continue Current Script Instead of Branching.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "failureTarget",
+          "label": "Failure Target",
+          "help": "X-AP/Encounter No. if charge requirement NOT met. -1 = Continue Current Script Instead of Branching.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 68,
+      "title": "Alter Party Fatigue",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "fatigue",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Mode",
+          "help": "1 = Set Fatigue to 100%, 2 = Set Fatigue to 0%, 3 = Calculate New Fatigue",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "unused",
+          "label": "Preserved Value 2",
+          "help": "Realmz does not consume this slot for fatigue changes; Providence preserves imported values.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 2,
+          "internalName": "percent",
+          "label": "Calculated Fatigue %",
+          "help": "Used when Mode calculates a new fatigue value; Realmz multiplies current fatigue by this percent.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 69,
+      "title": "Set Spell Casting • Recharging Flags",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "spell-flags",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "spellcasting",
+          "label": "Spellcasting",
+          "help": "0 = Turn Character Spell Casting ON, 1 = Turn Character Spell Casting Off",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "monstercasting",
+          "label": "Monstercasting",
+          "help": "0 = Turn Monster & NPC Spell Casting ON, 1 = Turn Monster & NPC Spell Casting Off",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "spellcharging",
+          "label": "Spellcharging",
+          "help": "0 = Turn Spell Point Recharging ON, 1 = Turn Spell Point Recharging Off",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "Not Used",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "ALWAYS set this field to a value of 1 (ONE)",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 70,
+      "title": "Save and Restory Party Postion",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "save-restore-position",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Mode",
+          "help": "1 = Save Current Postion. 2 = Send Party To Last Saved Position.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "unused",
+          "label": "Preserved Value 2",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 71,
+      "title": "Disable • Enable X: Y: Display",
+      "idLabel": "ID",
+      "idHelp": "0 = Turn X: Y: Display On. 1 = Turn X: Y: Display Off.",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 72,
+      "title": "Branch on Range of Quests",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "range-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Low Quest ID Range To Check",
+          "help": "Low Quest ID Range to Check",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "High Quest ID Range To Check",
+          "help": "High Quest ID Range to Check",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "falseBehavior",
+          "label": "REMARK",
+          "help": "REMARK: This will branch as dictated by #4 if all quests are set. Else script continues.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "branchMode",
+          "label": "Branch To",
+          "help": "Branch To: 0= X-AP, 1= Simple Ecounter, 2= Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "target",
+          "label": "X-AP ID / Ecounter ID To Branch To",
+          "help": "X-AP ID / Ecounter ID To Branch To",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 73,
+      "title": "Load Shop and Restrict Items Accepted",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "restricted-shop",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "shop",
+          "label": "Shop ID",
+          "help": "Shop ID (-ID = Go Directly To Shop)",
+          "targetFamily": "shop",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "range1Low",
+          "label": "Low Items ID To Accept #1",
+          "help": "Low Items ID To Accept #1",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "range1High",
+          "label": "High Items ID To Accept #1",
+          "help": "High Items ID To Accept #1",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "range2Low",
+          "label": "Low Items ID To Accept #2",
+          "help": "Low Items ID To Accept #2",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "range2High",
+          "label": "High Items ID To Accept #2 Example",
+          "help": "High Items ID To Accept #2 Example: If you wanted shop ID 12 to only deal with Armor and items 905 through 910 you would fill it out like such. #1: 12 #2: 200 #3: 400 #4: 905 #5: 910",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 74,
+      "title": "Take • Give Spell Points To Picked Characters",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-field-semantics",
+      "formId": "spell-points",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "signedRollCount",
+          "label": "Multiplier",
+          "help": "Absolute value controls how many random rolls are applied; negative values take spell points.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "lowOrSound",
+          "label": "Low Range / Sound",
+          "help": "Low random range. Realmz also plays this sound when the Play Sound flag is set.",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "high",
+          "label": "High Range",
+          "help": "High random range for spell point change.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "playSound",
+          "label": "Play Sound",
+          "help": "Non-zero plays the sound stored in Low Range / Sound.",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message",
+          "help": "Optional message after the spell point change.",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 75,
+      "title": "Branch on Spell Points",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "range-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Who To Test",
+          "help": "Who To Test: 1 = Picked Characters, 2 = All Alive Characters",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test B",
+          "help": "Amount 0f Spell Points Required For Branch:",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "falseBehavior",
+          "label": "False Behavior",
+          "help": "0 = Continue Script On Fail, 1 = Exit & Save Codes 0n Fail",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "branchMode",
+          "label": "On Success Branch To",
+          "help": "On Success Branch To: 0 = X-AP, 1 = Simple Encounter, 2 = Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "target",
+          "label": "X-AP / Encounter ID Note",
+          "help": "X-AP / Encounter ID Note: Alive Characters are those that are above 0 stamina and are not animated.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 76,
+      "title": "Increment • Decrement Quest Value",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "quest-value",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "quest",
+          "label": "Quest",
+          "help": "Which Quest Flag To Increment • Decrement",
+          "targetFamily": "quest",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "delta",
+          "label": "Amount To Add",
+          "help": "Amount to add: +/- 127. Valid value of Quest is -127 through +127. You can't decrease it to less than -127 or increase it to more than 127.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Auto Branch Type",
+          "help": "Auto Branch Type: 0 = None, 1 = X-AP, 2 = Simple Encounter 3 = Complex Encounter",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "threshold",
+          "label": "Threshold",
+          "help": "If Quest Value Is Ever Equal To Or Greater Than This Value Then Auto Branch:",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "target",
+          "label": "Target",
+          "help": "X-AP / Ecnounter ID For Auto Branch Note: You can set this to automaticaly branch to an X-AP or Encounter when the value is incremented to a value equal to or greater than the AUTO BRANCH VALUE set in item 4. It will make this test right after performing the increment in item 2.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 77,
+      "title": "Branch on Quest Value",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "false-true-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Quest Flag",
+          "help": "Quest flag to compare.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Test Value",
+          "help": "Realmz branches based on whether the quest flag is less than this value.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Type",
+          "help": "0 = Extra Action Point, 1 = Simple Encounter, 2 = Complex Encounter.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "falseTarget",
+          "label": "Less Than Target",
+          "help": "Target when the quest flag is less than the test value. Zero means no branch.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "trueTarget",
+          "label": "Equal Or Greater Target",
+          "help": "Target when the quest flag is equal to or greater than the test value. Zero means no branch.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 78,
+      "title": "Branch on Tile Parameters",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "false-true-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testA",
+          "label": "Attribute To Test For",
+          "help": "Attribute To Test For: 1 = Shoreline, 2 = Is/Needs Boat, 3 = Path, 4 = Blocks LOS, 5 = Need Fly/Float 6 = Special Type (Forests), 7 = Tile ID",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "testB",
+          "label": "Use Only For Type 7 Test",
+          "help": "Use Only For Type 7 Test: Tile ID for Specific Tile Check",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Type Of Branch",
+          "help": "Type of Branch: 0 = X-AP, 1 = Simple Encounter, 2 = Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "falseTarget",
+          "label": "False Target",
+          "help": "X-AP / Encounter ID If Test = FALSE (Enter 0 for No Branch)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "trueTarget",
+          "label": "X-AP / Encounter ID If Test = TRUE",
+          "help": "X-AP / Encounter ID If Test = TRUE (Enter 0 for No Branch)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 81,
+      "title": "Branch on Character Condition",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "condition-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "condition",
+          "label": "What Condition To Test",
+          "help": "What Condition To Test",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "characterSelector",
+          "label": "Character Selector",
+          "help": "0 = Check whole party, -1 = Check Picked, 1-6 Check character by position (1 = Top Character)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "String ID to Display on Fail. Will then Exit Without Branching to Item 5.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "trueMacro",
+          "label": "Branch To X-AP On Success",
+          "help": "Branch to X-AP on Success",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "falseMacro",
+          "label": "Branch To X-AP On Fail",
+          "help": "Branch to X-AP on Fail",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 82,
+      "title": "Turn Cleric Turning OFF.",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 83,
+      "title": "Turn Cleric Turning ON.",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 84,
+      "title": "Not Used",
+      "idLabel": "ID",
+      "idHelp": "",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 85,
+      "title": "Branch on Random",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "random-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "branchMode",
+          "label": "Type",
+          "help": "Type:0 = X-AP, 1 = Simple, 2 = Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "rangeLow",
+          "label": "Low Range Value",
+          "help": "Low Range Value.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "rangeHigh",
+          "label": "High Range Value",
+          "help": "High Range Value.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Sound --- Optional ---",
+          "help": "Sound --- Optional ---",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "message",
+          "label": "Message --- Optional ---",
+          "help": "Message --- Optional ---",
+          "targetFamily": "message",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 86,
+      "title": "Branch on Miscellaneous",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "split-from-ally-conditional-branch",
+      "formId": "misc-conditional-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testSelector",
+          "label": "Test",
+          "help": "Test: 0 = Caste Present, 1 = Race Present, 2 = Gender Present 3 = In Boat, 4 = Camping, 5 = Caste Class Present, 6 = Race Class Present, 7 = Total Party Levels, 8 = Picked Character Levels.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "signedTestValue",
+          "label": "Signed Test Value",
+          "help": "Caste, Race, Gender, Caste Class, Race Class: Code To Check For. A Negative Value = Test Picked Only. For Total Levels Test: Test = TRUE If Total Levels > X",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchMode",
+          "label": "Branch Type",
+          "help": "Branch Type: 0 = X-AP, 1 = Simple, 2 = Complex",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "trueTarget",
+          "label": "X-AP/Encounter No. If Test = TRUE",
+          "help": "X-AP/Encounter No. if Test = TRUE.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "falseTarget",
+          "label": "False Target",
+          "help": "X-AP/Encounter No. if Test = FALSE. 0 = Continue Codes Gender Codes: 1 = Male 2 = Female In Boat, Camping Test Test = TRUE if party is in a boat or camping. Caste, Race, Caste Class, Race Class: See Keycodes in Menu",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 87,
+      "title": "Branch on Special Character (NPC) Present",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "conditional-branch",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "testSelector",
+          "label": "Monster Number To Check For",
+          "help": "Monster number to check for.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "branchModeOrValue",
+          "label": "If Present, Branch To",
+          "help": "If Present, Branch To: 0 = X-AP, 1 = Simple Encounter, 2 = Complex Encounter",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "falseBehavior",
+          "label": "False Behavior",
+          "help": "If Not Present, 0 = Branch as in Item 2, 1 = Continue Codes 2 = Display String & Exit",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "trueTarget",
+          "label": "X-AP/Encounter No. If Present",
+          "help": "X-AP/Encounter No. If Present.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "falseTarget",
+          "label": "False Target",
+          "help": "X-AP/Encounter No./String ID If Not Present.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 88,
+      "title": "Drop Special Character from Party",
+      "idLabel": "Monster Number To Drop",
+      "idHelp": "Monster Number to Drop",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 89,
+      "title": "Add Special Character to Party",
+      "idLabel": "Monster Number",
+      "idHelp": "Monster Number",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 90,
+      "title": "Take Away Victory Points",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "party-state",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "amount",
+          "label": "How Much To Take",
+          "help": "How Much To Take",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "scope",
+          "label": "Scope",
+          "help": "0 = Each, 1 = Picked, 2 = Spread Around",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 91,
+      "title": "Drop All Equipment",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 92,
+      "title": "Alter Size of Random Rectangle",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "confirmed-multi-row-shape",
+      "formId": "random-region-shape-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "level",
+          "label": "Land/Dungeon Level Of Rectangle",
+          "help": "Land/Dungeon Level Of Rectangle",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "rect",
+          "label": "Rectangle Number",
+          "help": "Rectangle Number",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "isDungeon",
+          "label": "Is Dungeon",
+          "help": "0 = On Land, 1 = In a Dungeon",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "percentDelta",
+          "label": "+/- To Encounter %, Base 10,000",
+          "help": "+/- to Encounter %, Base 10,000",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "shapeMode",
+          "label": "Shape Mode",
+          "help": "-1 = No Change, 0 = Set Coordinates, 1 = Offset Rectangle 2 = Warp The E-Codes following the once attached to the",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 93,
+      "title": "Turn Compass On",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 94,
+      "title": "Turn Compass Off",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 95,
+      "title": "Change Look Direction",
+      "idLabel": "Direction To Face The Party",
+      "idHelp": "Direction to face the party. (Dungeons only) 1 = N, 2 = E, 3 = S, 4 = Wt, -1 = Random Direction.",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 96,
+      "title": "Force Party To Use 3D View In Dungeons",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 97,
+      "title": "Allow Use of 3D or 2D Look Down View In Dungeons",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 98,
+      "title": "Require Registration",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 99,
+      "title": "Get Scenario Registration",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 100,
+      "title": "End Battle",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 101,
+      "title": "Back Up Party",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 102,
+      "title": "Level Up Picked Characters",
+      "idLabel": "ID",
+      "idHelp": "None",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 103,
+      "title": "Continue/Set on Boat / Camping Status",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "boat-camp-state",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Mode",
+          "help": "1 = Continue codes if in boat, 2 = Continue if NOT in boat.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "statusValue",
+          "label": "Status Value",
+          "help": "1 = Continue codes if camping, 2 = Continue if NOT camping.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "branchModeOrBehavior",
+          "label": "Branch Mode / Behavior",
+          "help": "1 = Set boat status to IN BOAT, 2 = Set boat status to NOT IN BOAT.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "targetOrValueA",
+          "label": "Preserved Value 4",
+          "help": "Realmz does not consume this slot for boat/camp status; Providence preserves imported values.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "targetOrValueB",
+          "label": "Preserved Value 5",
+          "help": "Realmz does not consume this slot for boat/camp status; Providence preserves imported values.",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 104,
+      "title": "Disable Random Battles",
+      "idLabel": "ID",
+      "idHelp": "1 = Allow random battles, 0 = Disable random battles.",
+      "targetFamily": "battle",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 105,
+      "title": "Suspend • Activate Allies",
+      "idLabel": "ID",
+      "idHelp": "1 = Suspend Allies, 2 = Activate Allies",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 106,
+      "title": "Set Darkland / Line of Site Status",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "added-edcd-shape",
+      "formId": "dark-level-state",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "darkStatePlusOne",
+          "label": "Dark State Plus One",
+          "help": "1 = Make Current Land Level Light, 2 = Make Current Land Level Dark",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "stopIfAlready",
+          "label": "Stop If Already",
+          "help": "1 = Skip remainder of Action Point if no light change needed.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved LOS Value",
+          "help": "Divinity labels a line-of-sight value here, but the audited Realmz dispatcher only consumes the first two dark-level fields. Providence preserves this value.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved LOS Skip Value",
+          "help": "Divinity labels a line-of-sight skip value here, but the audited Realmz dispatcher only consumes the first two dark-level fields. Providence preserves this value.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 107,
+      "title": "Improved Selective Battle",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "split-from-generic-battle-variant",
+      "formId": "improved-selective-battle",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "battleLow",
+          "label": "Battle Low",
+          "help": "Battle ID -OR- Low Range of Random Battle",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "battleHigh",
+          "label": "Battle High",
+          "help": "High Range of Random Battle. ---Optional---",
+          "targetFamily": "battle",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "sound",
+          "label": "Sound (Optional)",
+          "help": "Sound (Optional)",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "message",
+          "label": "String ID (Optional)",
+          "help": "String ID (Optional)",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "cowardMacro",
+          "label": "Coward Macro",
+          "help": "X-AP to branch to on failure to achive victory.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 108,
+      "title": "Alter Picked Characters",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "selected-character-state",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "statSelector",
+          "label": "Alter",
+          "help": "Alter: 1 = Melee Attacks, 2 = Spells Attacks, 3 = Movement, 4 = Damage, 5 = SPs, 6 = Hand2Hand, 7 = Stamina, 8 = AR, 9 = ToHit, 10 = ProJo ToHit, 11 = Magic Resistance, 12 = Prestigue",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "delta",
+          "label": "Amount To Increase / Decrease",
+          "help": "Amount to increase / decrease: NOTE: This code will not decrease any stats to negative values unless it is valid. i.e. You can't reduce a character to negative stamina or spell points.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 111,
+      "title": "Return From Gosub",
+      "idLabel": "ID",
+      "idHelp": "Not Used",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 112,
+      "title": "POP The Stack",
+      "idLabel": "ID",
+      "idHelp": "Not Used",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 119,
+      "title": "Revive NPC After Combat",
+      "idLabel": "ID",
+      "idHelp": "Not Used",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    },
+    {
+      "opcode": 120,
+      "title": "Alter NPC • Monster During Combat",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "combat-monster-mutation",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "targetClass",
+          "label": "Target Type",
+          "help": "1 = NPC, 2 = Monster.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "monsterId",
+          "label": "NPC / Monster ID",
+          "help": "ID of the NPC or monster to alter.",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "count",
+          "label": "Count",
+          "help": "How many matching combatants to alter.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "replacementIcon",
+          "label": "New Icon ID",
+          "help": "New icon ID; -1 means no icon change.",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "traitorOverride",
+          "label": "New Traitor Value",
+          "help": "New traitor value; -1 means no traitor change.",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 121,
+      "title": "De-animate Lower Undead (Monster & Battle Macros Only)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "unused-edcd-load",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "unused0",
+          "label": "Preserved Value 1",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 1,
+          "internalName": "unused1",
+          "label": "Preserved Value 2",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 2,
+          "internalName": "unused2",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused3",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused4",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 122,
+      "title": "Cause Fumble (Monster Macro Only)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-link-semantics",
+      "formId": "fumble",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "message",
+          "label": "Message",
+          "help": "Message to Display on Fumble --Optional--",
+          "targetFamily": "message",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "sound",
+          "label": "Sound -- Optional --",
+          "help": "Sound -- Optional --",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "unused",
+          "label": "Preserved Value 5",
+          "help": "",
+          "targetFamily": null,
+          "preserved": true
+        }
+      ]
+    },
+    {
+      "opcode": 123,
+      "title": "Cause Rout (Monster & Battle Macros Only)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "rout",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "monster1",
+          "label": "Monster ID That Will Route",
+          "help": "Monster ID that will route",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "monster2",
+          "label": "Monster ID That Will Route",
+          "help": "Monster ID that will route",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "monster3",
+          "label": "Monster ID That Will Route",
+          "help": "Monster ID that will route",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "monster4",
+          "label": "Monster ID That Will Route",
+          "help": "Monster ID that will route",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "monster5",
+          "label": "Monster ID That Will Route",
+          "help": "Monster ID that will route",
+          "targetFamily": "monster",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 124,
+      "title": "Spawn Monster (Monster & Battle Macros Only)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "corrected-link-semantics",
+      "formId": "spawn",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "unused",
+          "label": "Preserved Value 1",
+          "help": "Type: 0 = Spawn Individual Monsters.",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 1,
+          "internalName": "monster",
+          "label": "Monster ID To Spawn",
+          "help": "Monster ID To Spawn",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "countOrRandomLimit",
+          "label": "Number To Spawn",
+          "help": "Number To Spawn (Neg = Random 1 to X)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "sound",
+          "label": "Spawn Sound",
+          "help": "Spawn Sound",
+          "targetFamily": "sound",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "traitorOverride",
+          "label": "Force Traiter Value",
+          "help": "Force Traiter Value: 0 = Default, 1-127 = Force Traiter Value",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 125,
+      "title": "Destroy Related Monsters (Monster & Battle Macros Only)",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "destroy-related",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "monsterId",
+          "label": "Monster ID To Destroy",
+          "help": "Monster ID to Destroy.",
+          "targetFamily": "monster",
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "maxCount",
+          "label": "Number Of Monsters To Destroy",
+          "help": "Number of monsters to destroy (0 = ALL)",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "unused",
+          "label": "Preserved Value 3",
+          "help": "-------------------",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 3,
+          "internalName": "unused",
+          "label": "Preserved Value 4",
+          "help": "-------------------",
+          "targetFamily": null,
+          "preserved": true
+        },
+        {
+          "index": 4,
+          "internalName": "includeTraitorSide",
+          "label": "Include Traitor Side",
+          "help": "1 = Force Kill Even If Allied To Party NOTE: Item 5. If a monster is set to be destroyed via a code 125, they will NOT be destroyed if they are allied to the party. However, if you set a value of 1 in item 5 they will be killed regardless.",
+          "targetFamily": null,
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 126,
+      "title": "Battle Macro Criteria",
+      "idLabel": "Parameter Row",
+      "idHelp": "This action's ID selects the parameter row used for its extra settings.",
+      "targetFamily": "parameter-row",
+      "writerStatus": "writer-ready-data-edcd",
+      "evidenceStatus": "source-audited-edcd-consumer",
+      "formId": "battle-macro",
+      "fields": [
+        {
+          "index": 0,
+          "internalName": "mode",
+          "label": "Activate On",
+          "help": "Activate on: 0 = After Round No. X, 1 = % Chance/ Per Round, 2 = Flee/Fail",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 1,
+          "internalName": "roundOrPercent",
+          "label": "Round No. / % Chance To Activate",
+          "help": "Round No. / % Chance to Activate",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 2,
+          "internalName": "repeatMode",
+          "label": "Activate",
+          "help": "Activate: 0 = Single Time, 1 = Check Each Round, 2 = Branch To Random Macro",
+          "targetFamily": null,
+          "preserved": false
+        },
+        {
+          "index": 3,
+          "internalName": "macroLow",
+          "label": "Macro No. -OR- Random Macro",
+          "help": "Macro No. -OR- Random Macro (Low Range)",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        },
+        {
+          "index": 4,
+          "internalName": "macroHigh",
+          "label": "Random Macro (High Range) Note",
+          "help": "Random Macro (High Range) Note: If you want this to activate a specific Macro, place that Macro number in item 4. If you want it to be one of a random range of Macros then use item 4 as the low range and item 5 as the high range.",
+          "targetFamily": "extra-action-point-or-encounter",
+          "preserved": false
+        }
+      ]
+    },
+    {
+      "opcode": 127,
+      "title": "Continue If Monster Present (Monster & Battle Macros Only)",
+      "idLabel": "Monster ID To Test",
+      "idHelp": "Monster ID To Test",
+      "targetFamily": "direct-id",
+      "writerStatus": "writer-gated-direct-target-family",
+      "evidenceStatus": "manual-or-direct-consumer",
+      "formId": null,
+      "fields": []
+    }
+  ]
+}

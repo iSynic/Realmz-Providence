@@ -1,0 +1,522 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="SystemFont" id="BodyFont"]
+font_names = PackedStringArray("Source Sans 3", "Segoe UI")
+
+[node name="RepairContent" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Background" type="Panel" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1
+anchor_bottom = 1
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Inset" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1
+anchor_bottom = 1
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Outer" type="VBoxContainer" parent="Inset"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="VBoxContainer" parent="Inset/Outer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Heading" type="Label" parent="Inset/Outer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Repair Action Settings"
+custom_minimum_size = Vector2(0, 24)
+
+[node name="Source" type="Label" parent="Inset/Outer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+
+[node name="Notice" type="PanelContainer" parent="Inset/Outer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 61)
+
+[node name="Content" type="VBoxContainer" parent="Inset/Outer/Notice"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NoticeTitle" type="Label" parent="Inset/Outer/Notice/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+
+[node name="NoticeBody" type="Label" parent="Inset/Outer/Notice/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="Stack" type="VBoxContainer" parent="Inset/Outer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Body" type="HBoxContainer" parent="Inset/Outer/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 18
+size_flags_vertical = 3
+
+[node name="Form" type="VBoxContainer" parent="Inset/Outer/Stack/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="TargetHeading" type="Label" parent="Inset/Outer/Stack/Body/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Target area"
+custom_minimum_size = Vector2(0, 18)
+
+[node name="Targets" type="HBoxContainer" parent="Inset/Outer/Stack/Body/Form"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MapKindField" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Targets"]
+layout_mode = 2
+custom_minimum_size = Vector2(132, 0)
+theme_override_constants/separation = 5
+
+[node name="MapKindLabel" type="Label" parent="Inset/Outer/Stack/Body/Form/Targets/MapKindField"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Map type"
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="MapKind" type="OptionButton" parent="Inset/Outer/Stack/Body/Form/Targets/MapKindField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+fit_to_longest_item = false
+
+[node name="MapField" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Targets"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/separation = 5
+size_flags_horizontal = 3
+
+[node name="MapLabel" type="Label" parent="Inset/Outer/Stack/Body/Form/Targets/MapField"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Map"
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Map" type="Button" parent="Inset/Outer/Stack/Body/Form/Targets/MapField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+text_overrun_behavior = 3
+
+[node name="AreaField" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Targets"]
+layout_mode = 2
+custom_minimum_size = Vector2(150, 0)
+theme_override_constants/separation = 5
+
+[node name="AreaLabel" type="Label" parent="Inset/Outer/Stack/Body/Form/Targets/AreaField"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Random area"
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Area" type="Button" parent="Inset/Outer/Stack/Body/Form/Targets/AreaField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+text_overrun_behavior = 3
+
+[node name="Chance" type="HBoxContainer" parent="Inset/Outer/Stack/Body/Form"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ChanceAdjustmentField" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Chance"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+theme_override_constants/separation = 5
+
+[node name="ChanceAdjustmentLabel" type="Label" parent="Inset/Outer/Stack/Body/Form/Chance/ChanceAdjustmentField"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Chance adjustment (points)"
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="ChanceAdjustment" type="LineEdit" parent="Inset/Outer/Stack/Body/Form/Chance/ChanceAdjustmentField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+placeholder_text = "Required"
+max_length = 128
+
+[node name="ChanceHelp" type="Label" parent="Inset/Outer/Stack/Body/Form/Chance"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+size_flags_horizontal = 3
+
+[node name="Shape" type="HBoxContainer" parent="Inset/Outer/Stack/Body/Form"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ShapeModeField" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Shape"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+theme_override_constants/separation = 5
+
+[node name="ShapeModeLabel" type="Label" parent="Inset/Outer/Stack/Body/Form/Shape/ShapeModeField"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Shape change"
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="ShapeMode" type="OptionButton" parent="Inset/Outer/Stack/Body/Form/Shape/ShapeModeField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+fit_to_longest_item = false
+
+[node name="ShapeHelp" type="Label" parent="Inset/Outer/Stack/Body/Form/Shape"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+size_flags_horizontal = 3
+
+[node name="ModeWarning" type="Label" parent="Inset/Outer/Stack/Body/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Changing the mode reuses these numbers. Review them before applying."
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="Bounds" type="HBoxContainer" parent="Inset/Outer/Stack/Body/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Bound0Field" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Bounds"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/separation = 5
+size_flags_horizontal = 3
+
+[node name="Bound0Label" type="Label" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound0Field"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Bound0" type="LineEdit" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound0Field"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+placeholder_text = "Required"
+max_length = 128
+
+[node name="Bound1Field" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Bounds"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/separation = 5
+size_flags_horizontal = 3
+
+[node name="Bound1Label" type="Label" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound1Field"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Bound1" type="LineEdit" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound1Field"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+placeholder_text = "Required"
+max_length = 128
+
+[node name="Bound2Field" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Bounds"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/separation = 5
+size_flags_horizontal = 3
+
+[node name="Bound2Label" type="Label" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound2Field"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Bound2" type="LineEdit" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound2Field"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+placeholder_text = "Required"
+max_length = 128
+
+[node name="Bound3Field" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Form/Bounds"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/separation = 5
+size_flags_horizontal = 3
+
+[node name="Bound3Label" type="Label" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound3Field"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+custom_minimum_size = Vector2(0, 16)
+
+[node name="Bound3" type="LineEdit" parent="Inset/Outer/Stack/Body/Form/Bounds/Bound3Field"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+placeholder_text = "Required"
+max_length = 128
+
+[node name="BoundsHelp" type="Label" parent="Inset/Outer/Stack/Body/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Enter whole-tile values for the selected shape change."
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="ErrorsScroll" type="ScrollContainer" parent="Inset/Outer/Stack/Body/Form"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Errors" type="Label" parent="Inset/Outer/Stack/Body/Form/ErrorsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+size_flags_horizontal = 3
+
+[node name="Divider" type="VSeparator" parent="Inset/Outer/Stack/Body"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Summary" type="VBoxContainer" parent="Inset/Outer/Stack/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(262, 0)
+theme_override_constants/separation = 14
+
+[node name="SummaryHeading" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "This repair"
+custom_minimum_size = Vector2(0, 18)
+
+[node name="Outcome" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="Scope" type="VBoxContainer" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Only" type="Button" parent="Inset/Outer/Stack/Body/Summary/Scope"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Only this action"
+toggle_mode = true
+
+[node name="Shared" type="Button" parent="Inset/Outer/Stack/Body/Summary/Scope"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Update shared actions"
+toggle_mode = true
+
+[node name="AffectsHeading" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Affects"
+
+[node name="Uses" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = ""
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="AllUses" type="Button" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "View all uses…"
+
+[node name="ScopeHelp" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="SummarySpacer" type="Control" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AfterHeading" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "After you apply"
+
+[node name="AfterHelp" type="Label" parent="Inset/Outer/Stack/Body/Summary"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Return to refreshed Issues.\nSave the scenario when you’re ready."
+theme_type_variation = &"ScenarioSecondary"
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="Recovery" type="VBoxContainer" parent="Inset/Outer/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RecoveryTitle" type="Label" parent="Inset/Outer/Stack/Recovery"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = ""
+
+[node name="RecoveryScroll" type="ScrollContainer" parent="Inset/Outer/Stack/Recovery"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RecoveryBody" type="Label" parent="Inset/Outer/Stack/Recovery/RecoveryScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+size_flags_horizontal = 3
+
+[node name="RecoveryButtons" type="HBoxContainer" parent="Inset/Outer/Stack/Recovery"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Footer" type="PanelContainer" parent="Inset/Outer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Commands" type="HBoxContainer" parent="Inset/Outer/Footer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Status" type="Label" parent="Inset/Outer/Footer/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Unapplied changes"
+theme_type_variation = &"ScenarioSecondary"
+size_flags_horizontal = 3
+
+[node name="Copy" type="Button" parent="Inset/Outer/Footer/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy Draft"
+
+[node name="Compare" type="Button" parent="Inset/Outer/Footer/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Compare Current Settings"
+
+[node name="Cancel" type="Button" parent="Inset/Outer/Footer/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+custom_minimum_size = Vector2(72, 32)
+
+[node name="Apply" type="Button" parent="Inset/Outer/Footer/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create & Return"
+custom_minimum_size = Vector2(137, 32)

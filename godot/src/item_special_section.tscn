@@ -1,0 +1,359 @@
+[gd_scene format=3]
+
+[node name="Special" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Primary" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemSpecialPanel"
+
+[node name="Body" type="VBoxContainer" parent="Primary"]
+tooltip_text = "Signed effect codes and unlabelled imported values remain editable."
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Primary/Body"]
+layout_mode = 2
+text = "PRIMARY EFFECT"
+theme_type_variation = &"ItemSpecialHeading"
+
+[node name="PrimaryGrid" type="GridContainer" parent="Primary/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Special1Field" type="VBoxContainer" parent="Primary/Body/PrimaryGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Primary/Body/PrimaryGrid/Special1Field"]
+layout_mode = 2
+text = "SPECIAL 1 · EXACT EFFECT"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Primary/Body/PrimaryGrid/Special1Field"]
+layout_mode = 2
+
+[node name="Special1" type="SpinBox" parent="Primary/Body/PrimaryGrid/Special1Field/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.0"
+
+[node name="ChooseSpecial1" type="Button" parent="Primary/Body/PrimaryGrid/Special1Field/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Special2Field" type="VBoxContainer" parent="Primary/Body/PrimaryGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Primary/Body/PrimaryGrid/Special2Field"]
+layout_mode = 2
+text = "SPELL / AMOUNT · SPECIAL 2"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Primary/Body/PrimaryGrid/Special2Field"]
+layout_mode = 2
+
+[node name="Special2" type="SpinBox" parent="Primary/Body/PrimaryGrid/Special2Field/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.1"
+
+[node name="ChooseSpecial2" type="Button" parent="Primary/Body/PrimaryGrid/Special2Field/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="PrimaryHint" type="Label" parent="Primary/Body"]
+visible = false
+layout_mode = 2
+text = "Named effects retain their signed code. Unknown values remain editable."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="Companion" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemSpecialPanel"
+
+[node name="Body" type="VBoxContainer" parent="Companion"]
+tooltip_text = "The amount belongs to the selected ability, monster type or condition. XAP items use Special 5 as the destination."
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Companion/Body"]
+layout_mode = 2
+text = "COMPANION EFFECTS"
+theme_type_variation = &"ItemSpecialHeading"
+
+[node name="CompanionGrid" type="GridContainer" parent="Companion/Body"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Special3Field" type="VBoxContainer" parent="Companion/Body/CompanionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Companion/Body/CompanionGrid/Special3Field"]
+layout_mode = 2
+text = "SPECIAL 3"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Companion/Body/CompanionGrid/Special3Field"]
+layout_mode = 2
+
+[node name="Special3" type="SpinBox" parent="Companion/Body/CompanionGrid/Special3Field/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.2"
+
+[node name="ChooseSpecial3" type="Button" parent="Companion/Body/CompanionGrid/Special3Field/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Special4Field" type="VBoxContainer" parent="Companion/Body/CompanionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Companion/Body/CompanionGrid/Special4Field"]
+layout_mode = 2
+text = "SPECIAL 4"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Companion/Body/CompanionGrid/Special4Field"]
+layout_mode = 2
+
+[node name="Special4" type="SpinBox" parent="Companion/Body/CompanionGrid/Special4Field/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.3"
+
+[node name="ChooseSpecial4" type="Button" parent="Companion/Body/CompanionGrid/Special4Field/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="Special5Field" type="VBoxContainer" parent="Companion/Body/CompanionGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Companion/Body/CompanionGrid/Special5Field"]
+layout_mode = 2
+text = "BONUS / AMOUNT · SPECIAL 5"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Companion/Body/CompanionGrid/Special5Field"]
+layout_mode = 2
+
+[node name="Special5" type="SpinBox" parent="Companion/Body/CompanionGrid/Special5Field/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.4"
+
+[node name="ChooseSpecial5" type="Button" parent="Companion/Body/CompanionGrid/Special5Field/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="CompanionHint" type="Label" parent="Companion/Body"]
+visible = false
+layout_mode = 2
+text = "The amount applies to the chosen ability, monster type or condition. XAP items use Special 5 as the destination."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="Charge" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemSpecialPanel"
+
+[node name="Body" type="VBoxContainer" parent="Charge"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Charge/Body"]
+layout_mode = 2
+text = "CHARGE BEHAVIOR"
+theme_type_variation = &"ItemSpecialHeading"
+
+[node name="ChargeGrid" type="GridContainer" parent="Charge/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="WeightPerChargeField" type="VBoxContainer" parent="Charge/Body/ChargeGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Charge/Body/ChargeGrid/WeightPerChargeField"]
+layout_mode = 2
+text = "WEIGHT PER CHARGE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Charge/Body/ChargeGrid/WeightPerChargeField"]
+layout_mode = 2
+
+[node name="WeightPerCharge" type="SpinBox" parent="Charge/Body/ChargeGrid/WeightPerChargeField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "weightPerCharge"
+
+[node name="DropOnEmpty" type="CheckBox" parent="Charge/Body/ChargeGrid"]
+layout_mode = 2
+text = "Drop on empty"
+metadata/field_name = "dropOnEmpty"
+
+[node name="Preview" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemSpecialPanel"
+
+[node name="Body" type="VBoxContainer" parent="Preview"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Preview/Body"]
+layout_mode = 2
+text = "EFFECT PREVIEW"
+theme_type_variation = &"ItemSpecialHeading"
+
+[node name="EffectPreview" type="Label" parent="Preview/Body"]
+layout_mode = 2
+text = "Select an item to inspect its behavior."
+
+[node name="AdvancedSpecial" type="Button" parent="Preview/Body"]
+layout_mode = 2
+text = "Advanced values…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="SpecialAdvanced" type="VBoxContainer" parent="."]
+layout_mode = 2
+visible = false
+
+[node name="AdvancedSpecial1Row" type="HBoxContainer" parent="SpecialAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SpecialAdvanced/AdvancedSpecial1Row"]
+layout_mode = 2
+text = "special.0"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedSpecial1" type="SpinBox" parent="SpecialAdvanced/AdvancedSpecial1Row"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.0"
+
+[node name="AdvancedSpecial2Row" type="HBoxContainer" parent="SpecialAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SpecialAdvanced/AdvancedSpecial2Row"]
+layout_mode = 2
+text = "special.1"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedSpecial2" type="SpinBox" parent="SpecialAdvanced/AdvancedSpecial2Row"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.1"
+
+[node name="AdvancedSpecial3Row" type="HBoxContainer" parent="SpecialAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SpecialAdvanced/AdvancedSpecial3Row"]
+layout_mode = 2
+text = "special.2"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedSpecial3" type="SpinBox" parent="SpecialAdvanced/AdvancedSpecial3Row"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.2"
+
+[node name="AdvancedSpecial4Row" type="HBoxContainer" parent="SpecialAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SpecialAdvanced/AdvancedSpecial4Row"]
+layout_mode = 2
+text = "special.3"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedSpecial4" type="SpinBox" parent="SpecialAdvanced/AdvancedSpecial4Row"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.3"
+
+[node name="AdvancedSpecial5Row" type="HBoxContainer" parent="SpecialAdvanced"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SpecialAdvanced/AdvancedSpecial5Row"]
+layout_mode = 2
+text = "special.4"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="AdvancedSpecial5" type="SpinBox" parent="SpecialAdvanced/AdvancedSpecial5Row"]
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+custom_minimum_size = Vector2(180, 32)
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "special.4"

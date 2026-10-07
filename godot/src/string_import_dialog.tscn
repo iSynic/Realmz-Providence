@@ -1,0 +1,157 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/string_import_dialog.gd" id="1"]
+[node name="Import Text Review" type="Window"]
+title = "Import Text · Review changes"
+size = Vector2i(1180, 720)
+min_size = Vector2i(1000, 600)
+visible = false
+exclusive = true
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Contents" type="VBoxContainer" parent="Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Margin/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "IMPORT TEXT · REVIEW"
+theme_type_variation = "StoryTitle"
+
+[node name="ImportSummary" type="Label" parent="Margin/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Divinity text import · original string IDs retained."
+autowrap_mode = 3
+
+[node name="ReviewBody" type="HSplitContainer" parent="Margin/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 300
+
+[node name="List" type="VBoxContainer" parent="Margin/Contents/ReviewBody"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(300, 0)
+
+[node name="ImportChanges" type="ItemList" parent="Margin/Contents/ReviewBody/List"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Pages" type="HBoxContainer" parent="Margin/Contents/ReviewBody/List"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ImportPrevious" type="Button" parent="Margin/Contents/ReviewBody/List/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹"
+
+[node name="ImportPage" type="Label" parent="Margin/Contents/ReviewBody/List/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="ImportNext" type="Button" parent="Margin/Contents/ReviewBody/List/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "›"
+
+[node name="Inspection" type="VBoxContainer" parent="Margin/Contents/ReviewBody"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CurrentHeading" type="Label" parent="Margin/Contents/ReviewBody/Inspection"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CURRENT TEXT"
+theme_type_variation = "StoryUsesHeading"
+
+[node name="ImportCurrent" type="TextEdit" parent="Margin/Contents/ReviewBody/Inspection"]
+unique_name_in_owner = true
+layout_mode = 2
+editable = false
+wrap_mode = 1
+size_flags_vertical = 3
+
+[node name="ReplacementHeading" type="Label" parent="Margin/Contents/ReviewBody/Inspection"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "IMPORTED TEXT"
+theme_type_variation = "StoryStyleHeading"
+
+[node name="ImportReplacement" type="TextEdit" parent="Margin/Contents/ReviewBody/Inspection"]
+unique_name_in_owner = true
+layout_mode = 2
+editable = false
+wrap_mode = 1
+size_flags_vertical = 3
+
+[node name="ImportFeedback" type="Label" parent="Margin/Contents/ReviewBody/Inspection"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ReviewAgain" type="Button" parent="Margin/Contents/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Prepare a new review"
+visible = false
+
+[node name="Hint" type="Label" parent="Margin/Contents/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel leaves every string unchanged"
+size_flags_horizontal = 3
+
+[node name="CancelImport" type="Button" parent="Margin/Contents/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="ApplyImport" type="Button" parent="Margin/Contents/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply all changes"
+disabled = true
+
+[node name="ImportFile" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose exported text to review"
+size = Vector2i(900, 600)
+file_mode = 0
+access = 2
+use_native_dialog = true
+filters = PackedStringArray("*.txt ; Text files")
+
+[node name="ExportFile" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Export saved strings"
+size = Vector2i(900, 600)
+file_mode = 4
+access = 2
+use_native_dialog = true
+current_file = "Scenario Strings.txt"
+filters = PackedStringArray("*.txt ; Text files")
+

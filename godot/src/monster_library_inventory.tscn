@@ -1,0 +1,107 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/monster_library_inventory.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_population_menu.tscn" id="2"]
+
+[node name="MonsterLibraryList" type="VBoxContainer"]
+custom_minimum_size = Vector2(265, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MONSTER LIBRARY"
+theme_override_font_sizes/font_size = 12
+[node name="PopulateScenario" parent="Header" instance=ExtResource("2")]
+layout_mode = 2
+[node name="NewLibrary" type="Button" parent="Header"]
+layout_mode = 2
+text = "New…"
+disabled = true
+
+[node name="LibrarySearch" type="LineEdit" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search monster library"
+tooltip_text = "Search the complete attached Monster Library, not just this page."
+[node name="LibraryStatus" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No Monster Library attached."
+autowrap_mode = 2
+
+[node name="OwnershipFilters" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="All" type="Button" parent="OwnershipFilters"]
+layout_mode = 2
+text = "All —"
+toggle_mode = true
+button_pressed = true
+[node name="BuiltIn" type="Button" parent="OwnershipFilters"]
+layout_mode = 2
+text = "Built-in —"
+toggle_mode = true
+[node name="Custom" type="Button" parent="OwnershipFilters"]
+layout_mode = 2
+text = "Custom —"
+toggle_mode = true
+
+[node name="History" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="UndoLibrary" type="Button" parent="History"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Undo Library"
+disabled = true
+tooltip_text = "Undo the last Library change. Scenario history is separate."
+[node name="RedoLibrary" type="Button" parent="History"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Redo Library"
+disabled = true
+tooltip_text = "Redo the last Library change. Scenario history is separate."
+
+[node name="SelectionCount" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+
+[node name="InventoryScroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+[node name="Rows" type="VBoxContainer" parent="InventoryScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Paging" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="Previous" type="Button" parent="Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Previous"
+disabled = true
+tooltip_text = "Previous page. Library selection is retained."
+[node name="Next" type="Button" parent="Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Next"
+disabled = true
+tooltip_text = "Next page. Library selection is retained."
+
+[node name="SearchDelay" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 0.25
+one_shot = true

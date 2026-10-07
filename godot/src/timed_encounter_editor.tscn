@@ -1,0 +1,892 @@
+[gd_scene load_steps=6 format=3]
+[ext_resource type="Script" path="res://src/timed_encounter_editor.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/encounter_reference_field.tscn" id="ref"]
+[ext_resource type="PackedScene" path="res://src/rogue_action_row.tscn" id="row"]
+[ext_resource type="Script" path="res://src/map_canvas.gd" id="cell"]
+[ext_resource type="Theme" path="res://theme/encounter_authoring_theme.tres" id="theme"]
+[node name="Timed Encounters" type="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+script = ExtResource("1")
+theme = ExtResource("theme")
+
+[node name="Master" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(208, 0)
+
+[node name="NewCopy" type="HBoxContainer" parent="Master"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NewEncounter" type="Button" parent="Master/NewCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "New"
+theme_override_font_sizes/font_size = 12
+
+[node name="CopyEncounter" type="Button" parent="Master/NewCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy"
+theme_override_font_sizes/font_size = 12
+
+[node name="EncounterSearch" type="LineEdit" parent="Master"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search ID or content…"
+
+[node name="CollectionCount" type="Label" parent="Master"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 encounters"
+theme_override_font_sizes/font_size = 12
+
+[node name="Pages" type="HBoxContainer" parent="Master"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PreviousPage" type="Button" parent="Master/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Previous"
+theme_override_font_sizes/font_size = 12
+
+[node name="NextPage" type="Button" parent="Master/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next"
+theme_override_font_sizes/font_size = 12
+
+[node name="EncounterCollection" type="ItemList" parent="Master"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+
+[node name="Detail" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RecordToolbar" type="HBoxContainer" parent="Detail"]
+layout_mode = 2
+
+[node name="EncounterIdentity" type="Label" parent="Detail/RecordToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Timed Encounter —"
+theme_override_font_sizes/font_size = 12
+
+[node name="Callers" type="Button" parent="Detail/RecordToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+disabled = true
+text = "Callers…"
+tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
+
+[node name="BodyScroll" type="ScrollContainer" parent="Detail"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Body" type="VBoxContainer" parent="Detail/BodyScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="EligibilityBannerPanel" type="PanelContainer" parent="Detail/BodyScroll/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_type_variation = "EligibilityBanner"
+
+[node name="EligibilityBanner" type="VBoxContainer" parent="Detail/BodyScroll/Body/EligibilityBannerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ScheduleSummary" type="Label" parent="Detail/BodyScroll/Body/EligibilityBannerPanel/EligibilityBanner"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Midnight Schedule"
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Eligibility" type="Label" parent="Detail/BodyScroll/Body/EligibilityBannerPanel/EligibilityBanner"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Columns" type="HBoxContainer" parent="Detail/BodyScroll/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SchedulePanel" type="PanelContainer" parent="Detail/BodyScroll/Body/Columns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="Schedule" type="VBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="LocationPanel" type="PanelContainer" parent="Detail/BodyScroll/Body/Columns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="Location" type="VBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ScheduleHeading" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Midnight Schedule"
+theme_override_font_sizes/font_size = 12
+
+[node name="DayRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DayRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/DayRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Day"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="Day" type="SpinBox" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/DayRow"]
+tooltip_text = "Runs when the current day equals this value."
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768
+max_value = 32767
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="DayHelp" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = "Runs only when the current day equals this value."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="IncrementRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IncrementRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/IncrementRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Increment"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="Increment" type="SpinBox" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/IncrementRow"]
+tooltip_text = "Added before chance and gates; zero does not advance the day."
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768
+max_value = 32767
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="IncrementHelp" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = "Added before chance and gates; 0 does not advance the day."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="ChanceRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ChanceRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/ChanceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Chance"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="Chance" type="SpinBox" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/ChanceRow"]
+tooltip_text = "Zero chance disables eligibility without removing the encounter."
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768
+max_value = 32767
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="ChanceHelp" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = "Zero chance retains the encounter but disables eligibility."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="ExtraAPRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ExtraAPRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/ExtraAPRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Extra AP to activate"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="ExtraAP" instance=ExtResource("ref") parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/ExtraAPRow"]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "door"
+author_label = "Extra Action Point"
+target_kind = "extra-action-point"
+none_value = -1
+
+[node name="RequiredItemRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RequiredItemRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/RequiredItemRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Required item"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="RequiredItem" instance=ExtResource("ref") parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/RequiredItemRow"]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "requiredItem"
+author_label = "Required item"
+target_kind = "item"
+none_value = -1
+
+[node name="RequiredQuestRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RequiredQuestRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/RequiredQuestRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Required quest"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="RequiredQuest" instance=ExtResource("ref") parent="Detail/BodyScroll/Body/Columns/SchedulePanel/Schedule/RequiredQuestRow"]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "requiredQuest"
+author_label = "Required quest"
+target_kind = "quest"
+none_value = -1
+
+[node name="LocationHeading" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Position Required"
+theme_override_font_sizes/font_size = 12
+
+[node name="PositionRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PositionRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/PositionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Position"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="Position" type="OptionButton" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/PositionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+popup/item_0/text = "Any location"
+popup/item_1/text = "Land"
+popup/item_2/text = "Dungeon"
+
+[node name="RequiredLevelRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RequiredLevelRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/RequiredLevelRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Required level"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="RequiredLevel" instance=ExtResource("ref") parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/RequiredLevelRow"]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "requiredLevel"
+author_label = "Required level"
+target_kind = "map"
+none_value = -1
+
+[node name="RectangleRow" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RectangleRowLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/RectangleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Random rectangle"
+custom_minimum_size = Vector2(148, 30)
+theme_override_font_sizes/font_size = 12
+
+[node name="Rectangle" instance=ExtResource("ref") parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/RectangleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "requiredRandomRect"
+author_label = "Random rectangle"
+target_kind = "random-rectangle"
+none_value = -1
+
+[node name="Axes" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ExactXLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/Axes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Exact X"
+theme_override_font_sizes/font_size = 12
+
+[node name="ExactX" type="SpinBox" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/Axes"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768
+max_value = 32767
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="ExactYLabel" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/Axes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Exact Y"
+theme_override_font_sizes/font_size = 12
+
+[node name="ExactY" type="SpinBox" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/Axes"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768
+max_value = 32767
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="LocationHelp" type="Label" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="MapActions" type="HBoxContainer" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ChooseMap" type="Button" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/MapActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose map…"
+theme_override_font_sizes/font_size = 12
+
+[node name="PickCell" type="Button" parent="Detail/BodyScroll/Body/Columns/LocationPanel/Location/MapActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pick map cell…"
+theme_override_font_sizes/font_size = 12
+
+[node name="ChecksAndUsesPanel" type="PanelContainer" parent="Detail/BodyScroll/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="ChecksAndUses" type="VBoxContainer" parent="Detail/BodyScroll/Body/ChecksAndUsesPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ChecksHeading" type="Label" parent="Detail/BodyScroll/Body/ChecksAndUsesPanel/ChecksAndUses"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Checks and Uses"
+theme_override_font_sizes/font_size = 12
+
+[node name="ChecksSummary" type="Label" parent="Detail/BodyScroll/Body/ChecksAndUsesPanel/ChecksAndUses"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="DormantHelp" type="Label" parent="Detail/BodyScroll/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Negative day remains dormant until rescheduled by an Action Point. Stored values stay intact."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="EncounterStatus" type="Label" parent="Detail"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="PreviewScope" type="Label" parent="Detail"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="DraftActions" type="HBoxContainer" parent="Detail"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="DraftState" type="Label" parent="Detail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No unapplied changes"
+size_flags_horizontal = 3
+
+[node name="CopyFrom" type="Button" parent="Detail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy From…"
+theme_override_font_sizes/font_size = 12
+
+[node name="RevertEncounter" type="Button" parent="Detail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Revert"
+theme_override_font_sizes/font_size = 12
+
+[node name="ApplyEncounter" type="Button" parent="Detail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+theme_override_font_sizes/font_size = 12
+
+[node name="ReferenceDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "Choose reference"
+size = Vector2i(760, 420)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="ReferenceDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 740.0
+offset_bottom = 400.0
+theme_override_constants/separation = 12
+
+[node name="ReferenceContext" type="Label" parent="ReferenceDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ReferenceSearch" type="LineEdit" parent="ReferenceDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search ID or content…"
+
+[node name="ReferenceCount" type="Label" parent="ReferenceDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+
+[node name="ReferenceResults" type="ItemList" parent="ReferenceDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 230)
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 12
+
+[node name="ReferencePreview" type="TextEdit" parent="ReferenceDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+editable = false
+wrap_mode = 1
+
+[node name="Actions" type="HBoxContainer" parent="ReferenceDialog/Body"]
+layout_mode = 2
+
+[node name="NewString" type="Button" parent="ReferenceDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "New String…"
+theme_override_font_sizes/font_size = 12
+
+[node name="MoreReferences" type="Button" parent="ReferenceDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next page"
+theme_override_font_sizes/font_size = 12
+
+[node name="NoneReference" type="Button" parent="ReferenceDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "None"
+theme_override_font_sizes/font_size = 12
+
+[node name="CancelReference" type="Button" parent="ReferenceDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+theme_override_font_sizes/font_size = 12
+
+[node name="UseReference" type="Button" parent="ReferenceDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use selected"
+theme_override_font_sizes/font_size = 12
+
+[node name="StringDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "New Scenario String"
+size = Vector2i(760, 370)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="StringDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 740.0
+offset_bottom = 350.0
+theme_override_constants/separation = 12
+
+[node name="StringText" type="TextEdit" parent="StringDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 140)
+size_flags_vertical = 3
+
+[node name="StringStatus" type="Label" parent="StringDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="StringDialog/Body"]
+layout_mode = 2
+
+[node name="CancelString" type="Button" parent="StringDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+theme_override_font_sizes/font_size = 12
+
+[node name="CreateString" type="Button" parent="StringDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create and Use"
+theme_override_font_sizes/font_size = 12
+
+[node name="CopyDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "Copy From Encounter"
+size = Vector2i(760, 350)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="CopyDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 740.0
+offset_bottom = 330.0
+theme_override_constants/separation = 12
+
+[node name="CopySource" type="OptionButton" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CopySummary" type="Label" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Scope1" type="CheckBox" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scope 1"
+button_pressed = true
+
+[node name="Scope2" type="CheckBox" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scope 2"
+button_pressed = false
+
+[node name="Scope3" type="CheckBox" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scope 3"
+button_pressed = false
+
+[node name="CopyBoundary" type="Label" parent="CopyDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy into Draft does not apply or save. Review the change, then Apply once."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="CopyDialog/Body"]
+layout_mode = 2
+
+[node name="CancelCopy" type="Button" parent="CopyDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+theme_override_font_sizes/font_size = 12
+
+[node name="AcceptCopy" type="Button" parent="CopyDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy into Draft"
+theme_override_font_sizes/font_size = 12
+
+[node name="ComparisonDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "Review current applied values and your retained draft"
+size = Vector2i(860, 460)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="ComparisonDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 840.0
+offset_bottom = 440.0
+theme_override_constants/separation = 12
+
+[node name="ComparisonHelp" type="Label" parent="ComparisonDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "The current encounter differs from your draft. Review before an intentional Apply. No command was replayed."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="ComparisonRows" type="Tree" parent="ComparisonDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 3
+column_titles_visible = true
+hide_root = true
+size_flags_vertical = 3
+column_title_0 = "Field"
+column_title_1 = "Currently applied"
+column_title_2 = "Your retained draft"
+
+[node name="ComparisonActions" type="HBoxContainer" parent="ComparisonDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="UseAppliedValues" type="Button" parent="ComparisonDialog/Body/ComparisonActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use applied values"
+theme_override_font_sizes/font_size = 12
+
+[node name="KeepComparedDraft" type="Button" parent="ComparisonDialog/Body/ComparisonActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Keep draft for review"
+theme_override_font_sizes/font_size = 12
+
+[node name="FailureDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "Encounter changes could not be confirmed"
+size = Vector2i(760, 300)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="FailureDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 740.0
+offset_bottom = 280.0
+theme_override_constants/separation = 12
+
+[node name="FailureText" type="Label" parent="FailureDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Your draft is retained."
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="FailureDialog/Body"]
+layout_mode = 2
+
+[node name="ReloadLatest" type="Button" parent="FailureDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reload Latest…"
+theme_override_font_sizes/font_size = 12
+
+[node name="CheckCurrent" type="Button" parent="FailureDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Check Current"
+theme_override_font_sizes/font_size = 12
+
+[node name="CloseFailure" type="Button" parent="FailureDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Keep Editing"
+theme_override_font_sizes/font_size = 12
+
+[node name="CellDialog" type="Window" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+title = "Choose exact map cell"
+size = Vector2i(920, 760)
+visible = false
+exclusive = true
+transient = true
+unresizable = true
+wrap_controls = false
+
+[node name="Body" type="VBoxContainer" parent="CellDialog"]
+layout_mode = 2
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 900.0
+offset_bottom = 740.0
+theme_override_constants/separation = 12
+
+[node name="CellCanvas" type="Control" parent="CellDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("cell")
+custom_minimum_size = Vector2(0, 540)
+size_flags_vertical = 3
+
+[node name="CellContext" type="Label" parent="CellDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+
+[node name="CellXRow" type="HBoxContainer" parent="CellDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CellXLabel" type="Label" parent="CellDialog/Body/CellXRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Exact X"
+theme_override_font_sizes/font_size = 12
+
+[node name="CellX" type="SpinBox" parent="CellDialog/Body/CellXRow"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0
+max_value = 89
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="CellYRow" type="HBoxContainer" parent="CellDialog/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CellYLabel" type="Label" parent="CellDialog/Body/CellYRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Exact Y"
+theme_override_font_sizes/font_size = 12
+
+[node name="CellY" type="SpinBox" parent="CellDialog/Body/CellYRow"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0
+max_value = 89
+allow_greater = false
+allow_lesser = false
+size_flags_horizontal = 3
+
+[node name="Actions" type="HBoxContainer" parent="CellDialog/Body"]
+layout_mode = 2
+
+[node name="CancelCell" type="Button" parent="CellDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+theme_override_font_sizes/font_size = 12
+
+[node name="AcceptCell" type="Button" parent="CellDialog/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use cell"
+theme_override_font_sizes/font_size = 12
+
+[connection signal="pressed" from="Detail/RecordToolbar/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]

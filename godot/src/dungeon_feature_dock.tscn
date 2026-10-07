@@ -1,0 +1,218 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/dungeon_feature_dock.gd" id="1"]
+
+[node name="DungeonFeatureDock" type="VBoxContainer"]
+tooltip_text = "AP, Note and revealed-secret markers are retained. Edit them in their owning tools."
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+script = ExtResource("1")
+
+[node name="Heading" type="Label" parent="."]
+theme_override_colors/font_color = Color(0.753, 0.643, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "DUNGEON FEATURES"
+
+[node name="SelectedDungeonCell" type="Label" parent="."]
+unique_name_in_owner = true
+autowrap_mode = 2
+text = "Select a Dungeon cell"
+
+[node name="Features" type="VBoxContainer" parent="."]
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="StructureHeading" type="Label" parent="Features"]
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+text = "STRUCTURE"
+
+[node name="WallRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="Wall" type="CheckBox" parent="Features/WallRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Wall"
+metadata/label = "Wall"
+
+[node name="WallPreview" type="TextureRect" parent="Features/WallRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HorizontalDoorRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="HorizontalDoor" type="CheckBox" parent="Features/HorizontalDoorRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Horizontal door"
+metadata/label = "Horizontal door"
+
+[node name="HorizontalDoorPreview" type="TextureRect" parent="Features/HorizontalDoorRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VerticalDoorRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="VerticalDoor" type="CheckBox" parent="Features/VerticalDoorRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Vertical door"
+metadata/label = "Vertical door"
+
+[node name="VerticalDoorPreview" type="TextureRect" parent="Features/VerticalDoorRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StairsRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="Stairs" type="CheckBox" parent="Features/StairsRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Stairs"
+metadata/label = "Stairs"
+
+[node name="StairsPreview" type="TextureRect" parent="Features/StairsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ColumnRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="Column" type="CheckBox" parent="Features/ColumnRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Column"
+metadata/label = "Column"
+
+[node name="ColumnPreview" type="TextureRect" parent="Features/ColumnRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArchwayRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="Archway" type="CheckBox" parent="Features/ArchwayRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Archway"
+metadata/label = "Archway"
+
+[node name="ArchwayPreview" type="TextureRect" parent="Features/ArchwayRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(24, 24)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MovementHeading" type="Label" parent="Features"]
+theme_override_colors/font_color = Color(0.61, 0.88, 0.73, 1)
+text = "MOVEMENT"
+
+[node name="NorthRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="North" type="CheckBox" parent="Features/NorthRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Allow north"
+metadata/label = "Allow north"
+
+[node name="EastRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="East" type="CheckBox" parent="Features/EastRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Allow east"
+metadata/label = "Allow east"
+
+[node name="SouthRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="South" type="CheckBox" parent="Features/SouthRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Allow south"
+metadata/label = "Allow south"
+
+[node name="WestRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="West" type="CheckBox" parent="Features/WestRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Allow west"
+metadata/label = "Allow west"
+
+[node name="VisibilityHeading" type="Label" parent="Features"]
+theme_override_colors/font_color = Color(0.753, 0.643, 1, 1)
+text = "VISIBILITY AND COMBAT"
+
+[node name="UnmappedRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="Unmapped" type="CheckBox" parent="Features/UnmappedRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Unmapped"
+metadata/label = "Unmapped"
+
+[node name="NoWallRow" type="HBoxContainer" parent="Features"]
+custom_minimum_size = Vector2(0, 27)
+
+[node name="NoWall" type="CheckBox" parent="Features/NoWallRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "No wall in battle"
+metadata/label = "No wall in battle"
+
+[node name="PreservedMarkers" type="Label" parent="."]
+visible = false
+autowrap_mode = 2
+text = "AP, Note and revealed-secret markers are preserved. Open their owner to edit."
+
+[node name="FeatureStatus" type="Label" parent="."]
+unique_name_in_owner = true
+autowrap_mode = 2
+text = "Feature changes stay in this draft until Apply."
+
+[node name="ReconcileFeatures" type="Button" parent="."]
+visible = false
+unique_name_in_owner = true
+text = "Reconcile original result"
+disabled = true
+
+[node name="ApplyDungeonPrimitive" type="Button" parent="."]
+unique_name_in_owner = true
+text = "Apply to selected cell"
+disabled = true
+
+[node name="ClearFeatures" type="Button" parent="."]
+unique_name_in_owner = true
+text = "Clear selected to wall"
+disabled = true
+
+[node name="DiscardFeatures" type="Button" parent="."]
+unique_name_in_owner = true
+text = "Discard"
+disabled = true
+

@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/monster_library_selection_row.gd" id="1"]
+
+[node name="MonsterLibrarySelectionRow" type="HBoxContainer"]
+size_flags_horizontal = 3
+script = ExtResource("1")
+
+[node name="Facts" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Name" type="Label" parent="Facts"]
+layout_mode = 2
+text_overrun_behavior = 3
+[node name="Ownership" type="Label" parent="Facts"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text_overrun_behavior = 3
+
+[node name="Target" type="Label" parent="."]
+layout_mode = 2
+text = "Destination plan unavailable"
+horizontal_alignment = 2

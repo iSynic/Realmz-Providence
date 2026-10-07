@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/rule_source_header.gd" id="1"]
+
+[node name="RuleSources" type="VBoxContainer"]
+layout_mode = 2
+script = ExtResource("1")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Row"]
+layout_mode = 2
+text = "Rules shown"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="SourceChoice" type="OptionButton" parent="Row"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 34)
+
+[node name="ConfigureSources" type="Button" parent="Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Configure in Scenario Startup"
+custom_minimum_size = Vector2(0, 34)
+
+[node name="SourceNotice" type="Label" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+autowrap_mode = 2
+theme_type_variation = "ItemContext"

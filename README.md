@@ -1,247 +1,153 @@
 # Realmz Providence
 
-**A modern scenario editor and creator for Realmz.**
+**A native scenario authoring toolkit for Realmz.**
 
-[Download the latest release](https://github.com/iSynic/Realmz-Providence/releases/latest) | [Release history](https://github.com/iSynic/Realmz-Providence/releases) | [CC BY-NC-SA 4.0 License](LICENSE)
+[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.1) · [All releases](https://github.com/iSynic/Realmz-Providence/releases) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
 
-![Realmz Providence editing City of Bywater in the Land and Dungeon Maps workbench](public/manual/gallery/land-dungeon-maps.png)
+![Providence Land Editor](docs/screenshots/maps-land.png)
 
-Providence turns Realmz scenario data into a connected set of visual authoring tools. Maps, Action Points, encounters, combat, rules, text, assets, validation, and export all live in one project instead of being spread across low-level record editors.
+Providence brings Realmz scenario creation to a native desktop editor built with
+Godot and Rust. Create a new scenario or import a Classic folder, edit its maps,
+scripts, encounters and media, then publish a Classic scenario or a compiled
+Realmz Rebuilt package.
 
-It is designed for two kinds of work:
-
-- creating new Realmz scenarios with modern, searchable authoring tools
-- importing existing scenarios, editing them safely, and exporting packages that Realmz can use
-
-Providence is not a clone of Divinity's interface. It presents the same game concepts around the author's intent: paint a road, choose a monster, preview a string, connect a door, or inspect a warning without first translating everything into raw file and record terminology.
+The original React/Tauri editor is preserved on
+[`legacy/tauri`](https://github.com/iSynic/Realmz-Providence/tree/legacy/tauri), with
+[v0.5.9](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.5.9) as its final
+web release. `main` now contains the native editor.
 
 ## Download
 
-The current release is **Realmz Providence 0.5.9**.
-
-This is the final planned React/Tauri release. This implementation is preserved on the [legacy/tauri maintenance branch](https://github.com/iSynic/Realmz-Providence/tree/legacy/tauri). The native Godot vNext implementation will move onto `main` after its acceptance checks; it is not included in this release.
-
-| Platform | Package |
+| Platform | Beta package |
 | --- | --- |
-| Windows x64 | Standard online setup, offline setup, or MSI |
-| Linux x64 | AppImage, Debian package, or RPM |
+| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-windows-x64.zip) |
+| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-macos-universal.zip) |
+| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-linux-x64.tar.gz) |
 
-The standard Windows setup is the primary installer. It downloads Microsoft WebView2 only when the runtime is not already installed. The separately named offline setup bundles WebView2 for disconnected systems.
+Extract the complete archive and launch **Providence**. Keep the included native
+tools and support directories alongside the application. The macOS beta is
+signed ad hoc and is not notarized. If macOS blocks its first launch, use Finder's
+**Open** command and the system's application approval controls.
 
-All installers are available on the [latest release page](https://github.com/iSynic/Realmz-Providence/releases/latest). The desktop application is the primary Providence experience; the browser build is also useful for development and browser-based project/package workflows.
+The Compatibility renderer requires OpenGL 3.3. Linux builds target x64 systems
+with glibc 2.35 or newer. A Rebuilt installation is optional for authoring and
+export; interactive playtest uses a separate compatible Rebuilt process.
 
-## Why Providence
+## Why Providence?
 
-- **Author in game concepts.** Action Point steps, encounter responses, monsters, treasure, map locations, and assets are labeled and edited by purpose instead of exposed only as CODE/ID pairs.
-- **See relationships before following them.** Search pickers, inline previews, usage links, and map markers keep referenced strings, battles, scripts, items, sounds, and destinations close to the field being edited.
-- **Build maps visually.** Landlook-aware palettes, named tiles and stamps, semantic roads, smart terrain, overlays, and direct Action Point placement make maps practical to create and revise.
-- **Work across the whole scenario.** Scenario setup, maps, scripts, encounters, combat, economy, rules, assets, text, diagnostics, and export share one normalized project model.
-- **Catch problems before Realmz does.** The linter reports broken references, missing resources, invalid ranges, script problems, export risks, and compatibility concerns with links back to the owning tool.
-- **Preserve what you did not edit.** Imported classic Mac data and unsupported source material remain available to the export pipeline instead of being silently discarded.
+- **Native desktop tools.** Compact workbenches, keyboard shortcuts, command
+  palette, contextual inspectors and direct navigation between linked records.
+- **Map creation.** Land and Dungeon painting, smart terrain, directional roads
+  and walls, special artwork stamps, random areas and player maps.
+- **Connected authoring.** Action Points and encounters link to messages,
+  battles, monsters, quests and rewards, with exact callers available through
+  Used By and Find Uses.
+- **Legacy preservation.** Imported scenarios retain source bytes and unrelated
+  resource data. Suspicious inherited values stay visible without automatic
+  reinterpretation.
+- **Useful validation.** Actionable findings are the default; Show all findings
+  exposes preservation details. Publish checks the selected export target.
+- **Shared compatibility core.** The Rust toolkit owns authored state and
+  compilation, keeping UI presentation separate from scenario semantics.
 
-## Authoring Tour
+## Authoring tour
 
-### Action Points and encounters
-
-Action Points are shown as ordered, named steps with focused controls for their actual parameters. Complex Encounters bring response conditions, item and magic choices, result scripts, and searchable target previews into one workbench.
-
-<table>
-  <tr>
-    <td width="50%"><img src="public/manual/gallery/action-points.png" alt="Action Point script authoring with named ordered steps"></td>
-    <td width="50%"><img src="public/manual/gallery/complex-encounters.png" alt="Complex Encounter response and result authoring"></td>
-  </tr>
-  <tr>
-    <td><strong>Action Points</strong><br>Choose actions by purpose, edit their settings, inspect destinations, and move between scripts and map locations.</td>
-    <td><strong>Complex Encounters</strong><br>Author visible responses, requirements, sounds, items, magic choices, and the scripts that run after each result.</td>
-  </tr>
-</table>
-
-### Combat and reusable assets
-
-Combat combines battle layout, scenario monsters, the reusable monster library, and monster previews. Assets are separated by how authors use them: bundled Scenario Assets, the reusable Custom Library, and the stock-ID Realmz Gallery.
+These screenshots show the native editor with a freshly imported **Trouble in
+the Sword Lands** scenario and the bundled stock reference library.
 
 <table>
-  <tr>
-    <td width="50%"><img src="public/manual/gallery/combat.png" alt="Battle grid and monster library authoring"></td>
-    <td width="50%"><img src="public/manual/gallery/assets.png" alt="Scenario Assets, Custom Library, and Realmz Gallery"></td>
-  </tr>
-  <tr>
-    <td><strong>Combat</strong><br>Build battle grids, browse monsters with their icons and statistics, and keep scenario-specific records separate from reusable library entries.</td>
-    <td><strong>Assets</strong><br>Import and preview pictures, icons, sounds, text, styled text, and raw resources, then copy only the material a scenario must bundle.</td>
-  </tr>
+<tr><td width="50%"><strong>Action Points</strong><br><img src="docs/screenshots/scripts-action-points.png" alt="Native Action Point editor"><br>Ordered script steps, trigger placement, result destinations and callers.</td><td width="50%"><strong>Complex Encounters</strong><br><img src="docs/screenshots/encounters-complex.png" alt="Native Complex Encounter editor"><br>Prompts, choices, conditions, spells and result scripts.</td></tr>
+<tr><td><strong>Monsters</strong><br><img src="docs/screenshots/combat-monsters.png" alt="Native Monster editor"><br>Scenario monsters, stock and personal libraries, difficulty sets and linked records.</td><td><strong>Battles</strong><br><img src="docs/screenshots/combat-battles.png" alt="Native Battle editor"><br>Combat layout, monster placement and battle settings.</td></tr>
+<tr><td><strong>Strings</strong><br><img src="docs/screenshots/text-messages.png" alt="Native String editor"><br>Messages, search, export checks and exact uses.</td><td><strong>Assets</strong><br><img src="docs/screenshots/assets.png" alt="Native asset gallery"><br>Scenario and reference media, previews and resource selection.</td></tr>
+<tr><td><strong>Spells</strong><br><img src="docs/screenshots/rules-spells.png" alt="Native Spell editor"><br>Stock copy sources, custom records, mechanics, sound and animation.</td><td><strong>Items</strong><br><img src="docs/screenshots/economy-items.png" alt="Native Item editor"><br>Item mechanics, restrictions, artwork and callers.</td></tr>
+<tr><td><strong>Validate</strong><br><img src="docs/screenshots/validate.png" alt="Native Validate workbench"><br>Grouped findings, affected counts and navigation to the source.</td><td><strong>Publish</strong><br><img src="docs/screenshots/publish.png" alt="Native Publish workbench"><br>Target readiness, export planning and output selection.</td></tr>
 </table>
 
-### Text and release readiness
+## What you can author
 
-Strings are searchable, editable, byte-aware, and linked to their uses throughout the scenario. Export gathers validation, target-package choices, source preservation, and generated files into a final readiness pass.
+### Maps and exploration
 
-<table>
-  <tr>
-    <td width="50%"><img src="public/manual/gallery/strings-text.png" alt="Searchable Realmz string authoring and usage links"></td>
-    <td width="50%"><img src="public/manual/gallery/export.png" alt="Scenario validation and export readiness workbench"></td>
-  </tr>
-  <tr>
-    <td><strong>Strings and Text</strong><br>Edit scenario messages and scrolling text, inspect byte limits and style resources, assign sounds, and follow usage links.</td>
-    <td><strong>Lint and Export</strong><br>Review actionable warnings, package contents, compatibility notes, and export targets before producing a Realmz scenario.</td>
-  </tr>
-</table>
-
-## What You Can Author
-
-### Maps and navigation
-
-- Land and dungeon levels with standard, custom, and special tiles
-- Landlook-specific palettes, larger semantic categories, stamps, and smart brushes
-- Roads, water, shorelines, mountains, forests, walls, doors, caves, and decorative terrain
-- Secret areas, hidden-walkable terrain, combat-clearing terrain, movement, and line-of-sight overlays
-- Player Maps, markers, map names, random rectangles, notes, and map-linked Action Points
-- Full-map quality-7 JPEG export at native tile resolution, plus scenario-wide ZIP export at the current editor scale with the enabled overlays; desktop exports use a Save dialog and report the saved path
+Edit Land and Dungeon levels with Paint, Bucket, Wand, stamps, selection tools,
+smart terrain and the Magic Brush. Place Action Points on the map, configure
+random encounter areas, edit land layouts, and manage special land artwork and
+player-map records. Export map JPEGs at native size or current zoom, with optional
+active overlays and a default quality of 70%.
 
 ### Scripts and narrative
 
-- Action Points, Extra Action Points, ordered script steps, branches, destinations, and settings-backed actions
-- The complete documented Realmz opcode range, including negative carry-through values
-- Scenario strings, string sounds, TEXT resources, styl resources, and scrolling text
-- Simple Encounters, Complex Encounters, rogue encounters, timed encounters, quests, and global macros
-- Searchable previews for strings, battles, treasures, shops, items, spells, and other referenced records
+Author map Action Points, reusable Extra Action Points, global hooks and quest
+flags. Work with simple, complex, rogue and timed encounters, messages and text
+resources. Follow typed links to their targets and callers rather than manually
+hunting for record numbers.
 
-### Combat, economy, and rules
+### Combat, economy and character rules
 
-- Battle maps, deployment grids, battle messages, and scenario monster selection
-- Scenario monsters plus a reusable Providence monster and monster-art library
-- Items, treasure tables, shops, rewards, and item families
-- Spells, races, castes, scenario overrides, startup restrictions, and scenario registration data
+Arrange battles and edit scenario monsters, their attacks, traits, spells,
+items, rewards and difficulty variants. Drag library monsters into the scenario,
+populate selections, or generate Monster/Mega variants in bulk. Edit treasure,
+shops, items, spells, races and castes; stock rules remain protected copy sources.
 
-### Assets and references
+### Media and reference material
 
-- Scenario pictures, CICN icons, sounds, TEXT, STR#, styl, special land tiles, and preserved raw resources
-- A global Custom Library with protected built-in custom art plus user-managed reusable assets
-- A Realmz Gallery for stock icons, sounds, and special land tiles that can be used by ID without bundling
-- Safe scenario ID allocation when a library asset must become scenario-owned
+Import and preview scenario pictures, sounds, icons, special land artwork and
+supported MOD music. Scenario resources shadow the bundled stock library by
+exact resource identity. The **Red Dragon** in the upper-left opens the formatted
+Divinity Manual, with chapters, links, search, zoom and navigation history.
 
-### Scenario generation
+## Project workflow
 
-Providence also includes a prompt-oriented Scenario JSON contract for generating complete project drafts without requiring a caller to construct the internal project model directly. The generation schema supports maps, semantic terrain, named tile placement, reusable stamps, Action Points, encounters, battles, treasure, shops, monsters, items, rules, assets, and deterministic ID allocation reports.
+1. Create a new project or inspect and import a Classic scenario folder.
+2. Configure the scenario's startup and rule sources when required.
+3. Edit maps, scripts, encounters, combat, rules and media.
+4. Apply local drafts; use Undo/Redo for committed authoring commands.
+5. Save the project. Retained original bytes remain available after reopening.
+6. Validate actionable findings and review any source-derived repairs.
+7. Publish a Classic folder, StuffIt archive or compiled Rebuilt package.
 
-Generated projects use the same validation and export paths as projects authored in the UI. Generation is a starting point, not a substitute for reviewing maps, scripts, balance, and compatibility in Providence.
+## Export formats and compatibility
 
-## Project Workflow
+**Classic folders** preserve the native Realmz file layout and resource forks.
+**StuffIt archives** package those files and forks for transfer to Classic Mac
+systems. The stored archive format has been exercised with StuffIt Expander 5.5
+and a Realmz 7.1.2 scenario import/play check; that check does not certify every
+scenario or every Classic reader.
 
-1. **Create or open a project.** Start fresh, open a `.providence.zip` package or `project.json`, or import an existing Realmz scenario folder.
-2. **Establish the scenario shell.** Set the title, startup behavior, restrictions, registration details, and target compatibility.
-3. **Build the world.** Author land and dungeon levels, Player Maps, routes, structures, terrain, and points of interest.
-4. **Connect behavior.** Place Action Points and build their scripts, encounters, battles, treasure, shops, and narrative text.
-5. **Add rules and media.** Customize monsters, items, spells, races, castes, icons, pictures, sounds, and other scenario-owned resources.
-6. **Lint the project.** Follow warnings to their owning editor and resolve missing references, invalid IDs, script gaps, and export blockers.
-7. **Export and test in Realmz.** Produce a Windows or classic Mac scenario package, then test the actual gameplay paths that matter to the scenario.
+**Rebuilt packages** are compiled scenario archives containing scenario-owned
+content and runtime contracts. They are not editor project snapshots or a copy
+of the game. Stock application support remains separate; a compatible Rebuilt
+runtime enforces the package's declared execution guards.
 
-The in-app **Documents** workbench contains the full Providence Authoring Manual. Its chapters explain each editor, the records it owns, practical workflows, validation behavior, and relevant compatibility details.
+The release gate checks known scenario imports, Save/reopen, byte-preserving
+Classic exports and actual Rebuilt archive validation. Legacy authoring errors,
+missing optional content and unfinished campaigns may remain diagnosed.
+**Import/export success is not proof that a campaign can be completed.**
 
-## Project Packages
+## Development
 
-A Providence project keeps structured authoring state and the material needed to build a Realmz scenario together. The main project document is `project.json`; desktop projects use a `.providence` project directory, and `.providence.zip` is the portable package format.
+See [Building Providence](docs/public/building.md) for prerequisites, native
+packaging and verification. See [Architecture and maintenance](docs/public/architecture.md)
+for ownership and contribution boundaries. GitHub Actions builds Windows x64,
+Linux x64 and universal macOS bundles from the same committed source.
 
-Imported raw sources remain part of the project so Providence can preserve source material that has not been replaced by an authored writer. Scenario Assets travel with the project and export when required. The Custom Library is a separate, growing Providence collection whose entries can be copied into any scenario.
-
-Keep project packages and exported Realmz scenarios under normal backup or version-control practices. Providence is still a pre-1.0 application, and exported scenarios should be tested in the Realmz runtime before release.
-
-## Compatibility Approach
-
-Realmz scenarios combine fixed binary records, classic Mac resource data, packed map structures, generated runtime files, and behavior that is sometimes defined by the game rather than Divinity's interface. Providence handles those layers conservatively without making them the center of the authoring experience.
-
-- Fields with supported writers are editable through normalized Providence tools.
-- Unsupported or intentionally untouched source files pass through unchanged.
-- Stock Realmz resources remain references when the runtime can resolve them by ID.
-- Custom resources are bundled only when the scenario needs to own them.
-- Validation distinguishes actionable authoring problems from preserved or informational material.
-- Fixture, round-trip, browser/desktop parity, and generated-scenario checks guard known export behavior.
-
-## Build From Source
-
-Providence uses React, TypeScript, and Vite for the editor, with Tauri and Rust for desktop integration and Realmz file handling.
-
-Prerequisites:
-
-- Node.js and npm
-- The stable Rust toolchain
-- Platform prerequisites required by [Tauri 2](https://v2.tauri.app/start/prerequisites/)
-
-Install dependencies and start the browser development build:
-
-```powershell
-npm ci
-npm run dev
-```
-
-The development server runs at `http://127.0.0.1:5178/`.
-
-Start the native desktop application:
-
-```powershell
-npm run desktop
-```
-
-Build the frontend or the complete desktop distribution:
-
-```powershell
-npm run build
-npm run dist
-```
-
-## Verification
-
-The full repository gate covers architecture boundaries, linting, unit tests, TypeScript, Action Point coverage, resource and terrain contracts, scenario generation, browser packages, the production build, and Rust tests:
-
-```powershell
-npm run check
-```
-
-Useful focused commands include:
-
-```powershell
-npm run typecheck
-npm run lint
-npm run test:unit
-npm run check:architecture
-npm run check:native-compiler-convergence
-npm run check:authoritative-compiler-closeout
-npm run check:browser-project-package
-npm run check:browser-scenario-package
-npm run smoke:scenario-generation
-npm run test:rust
-```
-
-The [Native Compiler v1 Contract](docs/native-compiler-v1-contract.md) defines the shared
-browser/desktop authority boundary and the parity gates required for native compiler changes.
-
-The committed manual gallery can be refreshed against a selected project with `npm run docs:capture-gallery -- --project <path>`.
-
-### Workspace storage
-
-Rust/Tauri builds, browser smoke profiles, and redirected GUI development-server logs are ignored, reproducible local artifacts, but they can grow substantially during sustained development. Audit them with `npm run audit:storage`, remove inactive browser profiles and stale GUI-server logs with `npm run clean:storage`, or also discard the full Rust/Tauri build cache with `npm run clean:storage:deep`. Recently written or still-open logs are left in place. The deep cleanup makes the next Rust build slower because dependencies must be rebuilt.
-
-The cleanup commands deliberately do not remove `tmp/oracle-runs` or `tmp/editor-smoke-runs`. Those directories contain compatibility evidence, and some archaeology scripts refer to named runs; apply a separate reviewed retention policy before pruning them.
-
-## Repository Layout
-
-| Path | Purpose |
+| Directory | Responsibility |
 | --- | --- |
-| `src/editor/` | React authoring workbenches, project commands, validation, and browser workflows |
-| `src-tauri/src/` | Tauri commands, Realmz codecs, import/export, project storage, and desktop integration |
-| `public/manual/gallery/` | Current screenshots used by the manual and README |
-| `docs/` | Compatibility evidence, format notes, generated audits, and release procedures |
-| `scripts/` | Contract checks, smoke suites, fixture reports, gallery capture, and release automation |
+| `crates/providence-core` | Canonical state, codecs, commands, references and compilation |
+| `crates/providence-storage` | Portable snapshots, blobs and durable project operations |
+| `crates/providence-native-adapter` | Native transport, jobs, filesystem and library integration |
+| `crates/providence-rebuilt-package` | Package contracts and archive validation |
+| `crates/providence-cli` | Headless import, inspection and compilation |
+| `godot/src` | Native scenes, workbenches and interaction state |
+| `godot/bundled`, `support/rebuilt` | Separately licensed stock support |
+| `tools/release` | Pinned downloads, packaging and public-source checks |
 
-## Status and Contributing
+## Status and licensing
 
-Providence is under active development. Version 0.5.0 supports substantial end-to-end scenario authoring and export, but a real Realmz scenario remains the final compatibility test. Bug reports should include the source scenario or a minimal project package, the owning editor, the affected record or coordinates, the expected Realmz behavior, and whether the problem occurs in the browser, desktop app, exported scenario, or game runtime.
+**v0.6.0-beta.1** is the first native beta. Please report problems with the exact
+version, scenario, tool and steps to reproduce. Include a screenshot or diagnostic
+when useful; do not include private project data unless you intend to share it.
 
-Before submitting code, keep changes scoped, run the relevant focused checks, and use `npm run check` when the affected surface crosses project, export, or shared-record boundaries. Refactors should also follow the [Codebase Stabilization Baseline](docs/codebase-stabilization-baseline.md), which defines the repository's ownership and no-behavior-change constraints.
-
-## License
-
-Realmz Providence is released under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE). This permits sharing and adaptation with attribution for non-commercial purposes, provided adaptations are distributed under the same license.
-
-Realmz is copyright (c) 1994 Tim Phillips. Providence includes and adapts Realmz-derived assets, documentation, formats, and reference material under the same CC BY-NC-SA 4.0 terms used by the modern Realmz project. Third-party dependencies and preserved historical reference material retain their own licenses and notices. See [NOTICE](NOTICE) for attribution and scope details.
-
-Providence does not claim ownership of original scenario content created by its users. Scenario packages can include Realmz-derived assets or reference material that remain subject to their applicable license terms.
+Original native Rust/Godot source is **GPL-3.0-or-later**. Realmz artwork, manuals
+and support data retain **CC BY-NC-SA 4.0** and original attribution; third-party
+source and the Theldrow-derived icon retain their own notices. See
+[SOURCE-LICENSE.md](SOURCE-LICENSE.md), [NOTICE](NOTICE) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

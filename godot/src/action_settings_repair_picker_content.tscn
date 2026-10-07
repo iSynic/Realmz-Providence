@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="SystemFont" id="BodyFont"]
+
+[node name="PickerContent" type="PanelContainer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Choices" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Search" type="LineEdit" parent="Choices"]
+layout_mode = 2
+placeholder_text = "Search…"
+max_length = 512
+
+[node name="Results" type="ItemList" parent="Choices"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Status" type="Label" parent="Choices"]
+layout_mode = 2
+theme_type_variation = &"ScenarioSecondary"
+theme_override_font_sizes/font_size = 13
+theme_override_fonts/font = SubResource("BodyFont")
+autowrap_mode = 3
+size_flags_vertical = 4
+
+[node name="Footer" type="HBoxContainer" parent="Choices"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Previous" type="Button" parent="Choices/Footer"]
+layout_mode = 2
+text = "Previous"
+
+[node name="Next" type="Button" parent="Choices/Footer"]
+layout_mode = 2
+text = "Next"
+
+[node name="Spacer" type="Control" parent="Choices/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Cancel" type="Button" parent="Choices/Footer"]
+layout_mode = 2
+text = "Cancel"
+
+[node name="Choose" type="Button" parent="Choices/Footer"]
+layout_mode = 2
+text = "Choose"

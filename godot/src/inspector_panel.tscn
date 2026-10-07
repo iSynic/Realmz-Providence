@@ -1,0 +1,149 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/inspector_panel.gd" type="Script" id="1"]
+
+[node name="InspectorPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="InspectorScroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="InspectorBody" type="VBoxContainer" parent="InspectorScroll"]
+custom_minimum_size = Vector2(272, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="InspectorHeader" type="HBoxContainer" parent="InspectorScroll/InspectorBody"]
+layout_mode = 2
+
+[node name="InspectorTitle" type="Label" parent="InspectorScroll/InspectorBody/InspectorHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "INSPECTOR  ·  LINKS / USES"
+
+[node name="InspectorMode" type="Label" parent="InspectorScroll/InspectorBody/InspectorHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 10
+text = "CELL"
+
+[node name="ReferenceHeading" type="Label" parent="InspectorScroll/InspectorBody"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 10
+text = "SELECTED FIELD / TARGET"
+
+[node name="CurrentReferenceTarget" type="Label" parent="InspectorScroll/InspectorBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No linked target"
+autowrap_mode = 2
+
+[node name="ReferencePath" type="GridContainer" parent="InspectorScroll/InspectorBody"]
+layout_mode = 2
+columns = 2
+
+[node name="SourceLabel" type="Label" parent="InspectorScroll/InspectorBody/ReferencePath"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+theme_override_font_sizes/font_size = 10
+text = "SOURCE"
+
+[node name="InspectorSource" type="Label" parent="InspectorScroll/InspectorBody/ReferencePath"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+text_overrun_behavior = 3
+
+[node name="FieldLabel" type="Label" parent="InspectorScroll/InspectorBody/ReferencePath"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+theme_override_font_sizes/font_size = 10
+text = "FIELD"
+
+[node name="InspectorField" type="Label" parent="InspectorScroll/InspectorBody/ReferencePath"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+text_overrun_behavior = 3
+
+[node name="ReferenceRepair" type="HBoxContainer" parent="InspectorScroll/InspectorBody"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ReferenceRepairTarget" type="SpinBox" parent="InspectorScroll/InspectorBody/ReferenceRepair"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Native target ID for the selected typed field."
+max_value = 32767.0
+editable = false
+
+[node name="RepairReference" type="Button" parent="InspectorScroll/InspectorBody/ReferenceRepair"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "No repair"
+
+[node name="EvidenceToggle" type="Button" parent="InspectorScroll/InspectorBody"]
+unique_name_in_owner = true
+layout_mode = 2
+toggle_mode = true
+text = "Source Evidence  ▸"
+alignment = 0
+
+[node name="EvidenceDetails" type="VBoxContainer" parent="InspectorScroll/InspectorBody"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="IdentityLabel" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+theme_override_font_sizes/font_size = 9
+text = "STABLE IDENTITY"
+
+[node name="InspectorIdentity" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "message:—"
+autowrap_mode = 2
+
+[node name="NativeFamilyLabel" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+theme_override_font_sizes/font_size = 9
+text = "NATIVE FAMILY"
+
+[node name="InspectorNativeFamily" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Data SD2 / Str255"
+autowrap_mode = 2
+
+[node name="OwnedBytesLabel" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+theme_override_font_sizes/font_size = 9
+text = "OWNED BYTES"
+
+[node name="InspectorOwnedBytes" type="Label" parent="InspectorScroll/InspectorBody/EvidenceDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "row 0…255"
+autowrap_mode = 2
+
+[connection signal="pressed" from="InspectorScroll/InspectorBody/ReferenceRepair/RepairReference" to="." method="_on_repair_pressed"]
+[connection signal="toggled" from="InspectorScroll/InspectorBody/EvidenceToggle" to="." method="_on_evidence_toggled"]

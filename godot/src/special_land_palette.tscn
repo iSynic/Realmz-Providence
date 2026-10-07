@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/special_land_palette.gd" id="1"]
+
+[node name="SpecialLandPalette" type="VBoxContainer"]
+layout_mode = 2
+script = ExtResource("1")
+theme_override_constants/separation = 8
+
+[node name="Search" type="LineEdit" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search name or signed ID…"
+clear_button_enabled = true
+
+[node name="Ownership" type="OptionButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="ShowUnavailable" type="CheckButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show unavailable"
+
+[node name="Count" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose artwork"
+autowrap_mode = 3
+
+[node name="Retry" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Retry / Check connection"
+visible = false
+
+[node name="Choices" type="ItemList" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(320, 320)
+size_flags_vertical = 3
+max_columns = 3
+fixed_column_width = 98
+fixed_icon_size = Vector2i(32, 32)
+icon_mode = 0
+texture_filter = 1
+
+[node name="Pages" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Previous" type="Button" parent="Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "◀"
+disabled = true
+
+[node name="PageHint" type="Label" parent="Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "64 / page · scroll for more"
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="Next" type="Button" parent="Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "▶"
+disabled = true
+
+[node name="Preview" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64, 64)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Details" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose artwork, then drag to paint."
+autowrap_mode = 3
+
+[node name="OpenReference" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open reference ↗"
+disabled = true
+

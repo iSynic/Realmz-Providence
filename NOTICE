@@ -1,54 +1,10 @@
-Realmz Providence
-Attribution and licensing notices
+Providence native source is copyright its contributors and licensed under
+GPL-3.0-or-later. See LICENSE. Vendored dependencies retain their own licenses.
 
-Realmz Providence code, documentation, and other original contributions are
-copyright (c) 2026 Mr. Pokeylope and Realmz Providence contributors. They are
-licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
-International Public License unless a file or directory states otherwise. The
-complete license is in LICENSE:
+Realmz and Divinity artwork, manuals and support data are copyright 1994
+Tim Phillips and their respective contributors. These resources retain
+CC BY-NC-SA 4.0 and their original notices; see LICENSE-REALMZ.txt and
+THIRD_PARTY_NOTICES.md. They are not relicensed by the native source grant.
 
-https://creativecommons.org/licenses/by-nc-sa/4.0/
-
-Realmz
-------
-
-Realmz is copyright (c) 1994 Tim Phillips. Realmz source code, binaries, game
-assets, and documentation were released by Tim Phillips for non-commercial use
-under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
-International license through the modern Realmz project. Providence includes,
-adapts, documents, and renders Realmz-derived formats and material. Providence
-changes are recorded in this repository's version history.
-
-Realmz Castle Realmz project:
-https://github.com/Realmz-Castle/realmz
-
-Historical reference material
------------------------------
-
-Preserved historical documents, including the bundled Divinity manual, retain
-the copyright and license notices embedded in those documents. The Providence
-license does not replace those notices or grant additional rights in that
-material.
-
-Third-party software
---------------------
-
-Third-party libraries and dependencies retain their respective licenses. Their
-license declarations and notices are distributed with the relevant dependency
-sources, packages, or release components. CC BY-NC-SA 4.0 does not replace the
-licenses of independently licensed third-party components.
-
-Providence uses chiptune3 (MIT) for browser AudioWorklet integration and its
-compiled libopenmpt component (OpenMPT BSD license) to preview standard MOD
-scenario music. Their source and license notices are available from:
-
-https://github.com/DrSnuggles/chiptune
-https://lib.openmpt.org/libopenmpt/
-
-User-authored scenarios
------------------------
-
-Providence does not claim copyright in original scenario content created by
-users. Authors are responsible for the rights to their original content and for
-complying with the licenses that apply to Realmz-derived assets or reference
-material included in an exported scenario.
+Application icon letterforms retain the separate Theldrow/Realmz font notice
+in artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt.

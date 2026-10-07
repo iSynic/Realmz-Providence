@@ -1,0 +1,64 @@
+[gd_scene format=3]
+
+[node name="IssuesNavigation" type="PanelContainer"]
+custom_minimum_size = Vector2(280, 0)
+theme_type_variation = &"IssuesPanel"
+
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="Body"]
+layout_mode = 2
+text = "VALIDATE & PUBLISH"
+
+[node name="Issues" type="Button" parent="Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_type_variation = &"IssuesPrimary"
+text = "Issues"
+
+[node name="Readiness" type="Button" parent="Body"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "This workbench is not available yet."
+disabled = true
+text = "Readiness"
+
+[node name="ExportPlan" type="Button" parent="Body"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "This workbench is not available yet."
+disabled = true
+text = "Export Plan"
+
+[node name="Benchmark" type="Button" parent="Body"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "This workbench is not available yet."
+disabled = true
+text = "Benchmark"
+
+[node name="DecodedRecords" type="Button" parent="Body"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "This workbench is not available yet."
+disabled = true
+text = "Decoded Records"
+
+[node name="TechnicalDetails" type="Button" parent="Body"]
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+tooltip_text = "This workbench is not available yet."
+disabled = true
+text = "Technical Details"
+
+[node name="ProjectHeading" type="Label" parent="Body"]
+layout_mode = 2
+text = "PROJECT"
+
+[node name="ProjectLabel" type="Label" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3

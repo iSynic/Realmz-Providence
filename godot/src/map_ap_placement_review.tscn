@@ -1,0 +1,69 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/map_ap_placement_review.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_controls.tres" id="2"]
+
+[node name="ActionPointPlacementReview" type="Window"]
+title = "Review Action Point placement"
+size = Vector2i(620,330)
+min_size = Vector2i(580,300)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="PlacementDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="PlacementImpact" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 2
+
+[node name="PlacementStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="RecoverPlacement" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Check original creation result"
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 2
+
+[node name="CancelPlacement" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="ReviewPlacement" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review again"
+
+[node name="CreateActionPoint" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Create Action Point"

@@ -1,0 +1,102 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/simple_encounter_copy_dialog.gd" type="Script" id="1"]
+
+[node name="SimpleEncounterCopyDialog" type="Window"]
+visible = false
+title = "Copy From Simple Encounter"
+initial_position = 1
+size = Vector2i(760, 620)
+min_size = Vector2i(620, 500)
+unresizable = false
+exclusive = false
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+theme_override_font_sizes/font_size = 18
+text = "COPY FROM ANOTHER ENCOUNTER"
+
+[node name="Target" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CURRENT DRAFT"
+
+[node name="SourceLabel" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+text = "Source encounter"
+
+[node name="Source" type="OptionButton" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Preview" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.490196, 0.792157, 0.635294, 1)
+text = "Choose a source to preview its contents."
+autowrap_mode = 2
+
+[node name="ScopeHeading" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "REPLACE IN CURRENT DRAFT"
+
+[node name="PromptSettings" type="CheckBox" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Prompt and encounter settings"
+
+[node name="Responses" type="CheckBox" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Four responses and result mappings"
+
+[node name="Programs" type="CheckBox" parent="Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "All four result programs and action settings"
+
+[node name="Warning" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.898039, 0.709804, 0.403922, 1)
+text = "Draft only."
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Layout"]
+layout_mode = 2
+
+[node name="Status" type="Label" parent="Margin/Layout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.941176, 0.603922, 0.509804, 1)
+
+[node name="Cancel" type="Button" parent="Margin/Layout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="Replace" type="Button" parent="Margin/Layout/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Replace Selected Sections"

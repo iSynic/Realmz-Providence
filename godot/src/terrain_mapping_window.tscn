@@ -1,0 +1,131 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://src/terrain_mapping_window.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+[ext_resource type="Script" path="res://src/terrain_mapping_samples.gd" id="3"]
+[node name="TerrainMapping" type="Window"]
+title = "Terrain Mapping"
+size = Vector2i(1100, 700)
+min_size = Vector2i(1040, 660)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 10
+[node name="Heading" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+text = "TERRAIN MAPPING"
+theme_override_colors/font_color = Color(1, 0.82, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+[node name="Explanation" type="Label" parent="Margin/Body"]
+text = "Mappings affect authoring only; artwork and runtime behavior stay unchanged."
+[node name="Layout" type="OptionButton" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+[node name="Families" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+[node name="Water" type="CheckBox" parent="Margin/Body/Families"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Water"
+[node name="Mountains" type="CheckBox" parent="Margin/Body/Families"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Mountains"
+[node name="Forest" type="CheckBox" parent="Margin/Body/Families"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Forest"
+[node name="Columns" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+[node name="Joins" type="VBoxContainer" parent="Margin/Body/Columns"]
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+[node name="SampleFamily" type="OptionButton" parent="Margin/Body/Columns/Joins"]
+unique_name_in_owner = true
+item_count = 3
+selected = 0
+popup/item_0/text = "Water · slopes, corners and stream mouths"
+popup/item_1/text = "Mountains · ground and water boundaries"
+popup/item_2/text = "Forest · corners and boundaries"
+[node name="SampleScroll" type="ScrollContainer" parent="Margin/Body/Columns/Joins"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="Samples" type="Control" parent="Margin/Body/Columns/Joins/SampleScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+texture_filter = 1
+script = ExtResource("3")
+[node name="Caption" type="Label" parent="Margin/Body/Columns/Joins"]
+text = "Touching pieces · selected slot outlined\nSource joins rendered with this map’s artwork"
+theme_override_font_sizes/font_size = 12
+[node name="Details" type="VBoxContainer" parent="Margin/Body/Columns"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+[node name="Title" type="Label" parent="Margin/Body/Columns/Details"]
+text = "TILE DETAILS AND EXCLUSIONS"
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+[node name="Search" type="LineEdit" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+placeholder_text = "Find tile by ID, name or material…"
+clear_button_enabled = true
+[node name="Tiles" type="ItemList" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 94)
+size_flags_vertical = 3
+[node name="NameLabel" type="Label" parent="Margin/Body/Columns/Details"]
+text = "Display name"
+[node name="TileName" type="LineEdit" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+max_length = 120
+[node name="MaterialLabel" type="Label" parent="Margin/Body/Columns/Details"]
+text = "Material"
+[node name="Material" type="LineEdit" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+max_length = 120
+[node name="CategoryLabel" type="Label" parent="Margin/Body/Columns/Details"]
+text = "Category display name · shared by this category"
+[node name="CategoryName" type="LineEdit" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+max_length = 120
+[node name="Exclude" type="CheckBox" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+text = "Exclude this slot from joining"
+[node name="TileHelp" type="Label" parent="Margin/Body/Columns/Details"]
+unique_name_in_owner = true
+autowrap_mode = 2
+text = "Names change independently of geometry."
+[node name="Status" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 2
+custom_minimum_size = Vector2(0, 42)
+[node name="Footer" type="HBoxContainer" parent="Margin/Body"]
+[node name="Retry" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+visible = false
+text = "Retry artwork"
+[node name="Recovery" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+visible = false
+text = "Check original result"
+[node name="Spacer" type="Control" parent="Margin/Body/Footer"]
+size_flags_horizontal = 3
+[node name="Cancel" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 34)
+text = "Cancel"
+[node name="Accept" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(270, 34)
+text = "Use reviewed layout"

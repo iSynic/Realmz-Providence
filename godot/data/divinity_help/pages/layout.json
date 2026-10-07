@@ -1,0 +1,4779 @@
+{
+  "schemaVersion": 1,
+  "donorCommit": "e65836c01b9d0a50ddeec20b62aa9ea8c1321836",
+  "manualSha256": "13e71dc27fe0bf84dd5a34046a595d5e26a4d2e9280d599ea1deb37fd93c6fcb",
+  "stylesheetSha256": "1b9c78e90c4d7fc59c280933a46697a8c545c730162edd9506ac8036582004de",
+  "browser": "151.0.7922.34",
+  "scale": 2,
+  "stripHeight": 1024,
+  "pages": [
+    {
+      "page": 1,
+      "title": "Getting Started",
+      "width": 578,
+      "height": 2066,
+      "links": [
+        {
+          "target": "#page-38",
+          "label": "PICT 2067, link to page 38",
+          "rects": [
+            [
+              273,
+              391,
+              32,
+              32
+            ]
+          ]
+        },
+        {
+          "target": "#page-2",
+          "label": "PICT 2019, link to page 2",
+          "rects": [
+            [
+              526,
+              2047,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2029.png",
+          "rect": [
+            77,
+            27,
+            425,
+            305
+          ]
+        },
+        {
+          "asset": "pict2067.png",
+          "rect": [
+            273,
+            391,
+            32,
+            32
+          ]
+        },
+        {
+          "asset": "pict2065.png",
+          "rect": [
+            282.5,
+            1367,
+            13,
+            16
+          ]
+        },
+        {
+          "asset": "pict2073.png",
+          "rect": [
+            282.5,
+            1458,
+            13,
+            16
+          ]
+        },
+        {
+          "asset": "pict2074.png",
+          "rect": [
+            281,
+            1543,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2061.png",
+          "rect": [
+            140,
+            1641,
+            298,
+            337
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2047,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2047,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-01-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 587262,
+          "sha256": "640b6015c2dc0815b8cc58b848940a4c184f6d13c68fca34333a04660fc385b6"
+        },
+        {
+          "asset": "page-01-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 233240,
+          "sha256": "f6f94b7024d750a1ef35202825344dba86ddfcc4403e03d66cc078b9c08234d8"
+        },
+        {
+          "asset": "page-01-02.png",
+          "y": 2048,
+          "height": 18,
+          "bytes": 2356,
+          "sha256": "c83566d0e2e8aff28727f46c7ff3c8b991d5880e9bf7ff18a71e189a8a07a88d"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "title": "Land Editor • Land Layout Editor",
+      "width": 578,
+      "height": 10149,
+      "links": [
+        {
+          "target": "#page-1",
+          "label": "PICT 2006, link to page 1",
+          "rects": [
+            [
+              36,
+              10129,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-3",
+          "label": "PICT 2019, link to page 3",
+          "rects": [
+            [
+              526,
+              10129,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2002.png",
+          "rect": [
+            260,
+            385,
+            58,
+            58
+          ]
+        },
+        {
+          "asset": "pict2004.png",
+          "rect": [
+            526,
+            503,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2003.png",
+          "rect": [
+            143,
+            657,
+            292,
+            292
+          ]
+        },
+        {
+          "asset": "pict2005.png",
+          "rect": [
+            273,
+            1191,
+            32,
+            32
+          ]
+        },
+        {
+          "asset": "pict2089.png",
+          "rect": [
+            36,
+            1339,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2007.png",
+          "rect": [
+            273,
+            1971,
+            32,
+            32
+          ]
+        },
+        {
+          "asset": "pict2008.png",
+          "rect": [
+            36,
+            2511,
+            126,
+            93
+          ]
+        },
+        {
+          "asset": "pict2009.png",
+          "rect": [
+            73.5,
+            3770,
+            431,
+            108
+          ]
+        },
+        {
+          "asset": "pict2010.png",
+          "rect": [
+            36,
+            4358,
+            130,
+            72
+          ]
+        },
+        {
+          "asset": "pict2011.png",
+          "rect": [
+            36,
+            4658,
+            192,
+            47
+          ]
+        },
+        {
+          "asset": "pict2012.svg",
+          "rect": [
+            125.5,
+            5353,
+            327,
+            191
+          ]
+        },
+        {
+          "asset": "pict2013.png",
+          "rect": [
+            73.5,
+            5828,
+            431,
+            108
+          ]
+        },
+        {
+          "asset": "pict2014.svg",
+          "rect": [
+            125.5,
+            6066,
+            327,
+            191
+          ]
+        },
+        {
+          "asset": "pict2017.svg",
+          "rect": [
+            138,
+            6457,
+            302,
+            178
+          ]
+        },
+        {
+          "asset": "pict2016.png",
+          "rect": [
+            36,
+            6905,
+            361,
+            108
+          ]
+        },
+        {
+          "asset": "pict2018.png",
+          "rect": [
+            36,
+            7787,
+            361,
+            75
+          ]
+        },
+        {
+          "asset": "pict2084.png",
+          "rect": [
+            36,
+            8174,
+            235,
+            140
+          ]
+        },
+        {
+          "asset": "pict2087.png",
+          "rect": [
+            36,
+            8632,
+            425,
+            152
+          ]
+        },
+        {
+          "asset": "pict2088.png",
+          "rect": [
+            36,
+            8830,
+            425,
+            210
+          ]
+        },
+        {
+          "asset": "pict2090.png",
+          "rect": [
+            36,
+            9156,
+            425,
+            305
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            10129,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            10129,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-02-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 193211,
+          "sha256": "2044c158b4914746aed83af063d507eaf08998ea4e86646936caf4a36892af73"
+        },
+        {
+          "asset": "page-02-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 943282,
+          "sha256": "427783b9e97ea30657a8204a92f71d4d08f532be6ca7c7b9114b1a3b4483a936"
+        },
+        {
+          "asset": "page-02-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 296083,
+          "sha256": "3a7feb54d37c0958840a7f0c545e5ee55764aed4194816d5e64b48dc0b0cd4cd"
+        },
+        {
+          "asset": "page-02-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 289801,
+          "sha256": "fb15d1bab30c0f21c840fdbb801374a833a4c46bdbfc29a7629c9203eb7ef2c0"
+        },
+        {
+          "asset": "page-02-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 292602,
+          "sha256": "acea1f2fd2e831845ac91f99f1ad7dbbba55fd206f77648a7f1e9f1d4755151a"
+        },
+        {
+          "asset": "page-02-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 192410,
+          "sha256": "79da9f9cb0eebbdb3c7e666d1034b8c38643fe3a0f16d96f6171f9796373f257"
+        },
+        {
+          "asset": "page-02-06.png",
+          "y": 6144,
+          "height": 1024,
+          "bytes": 202628,
+          "sha256": "600b275216b9a08535d9cc82f2d63e5a958ae8e3efa4e26ffd77ca27db99dba9"
+        },
+        {
+          "asset": "page-02-07.png",
+          "y": 7168,
+          "height": 1024,
+          "bytes": 296558,
+          "sha256": "7d82eed701fc5644c05779a3edc3b7bed78a06addd616b7bfb5ef36664d7442c"
+        },
+        {
+          "asset": "page-02-08.png",
+          "y": 8192,
+          "height": 1024,
+          "bytes": 954686,
+          "sha256": "0d98be9d5f2a34db2be0d62bfd4b8f0a6e7cfef6c51d78e82949fec645c511f7"
+        },
+        {
+          "asset": "page-02-09.png",
+          "y": 9216,
+          "height": 933,
+          "bytes": 296139,
+          "sha256": "f57d017f239452850b815d5d63b9ad9d7a0a71eafa2e422ce0f5819581374f47"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "title": "Scenario Startup Information",
+      "width": 578,
+      "height": 2160,
+      "links": [
+        {
+          "target": "#page-2",
+          "label": "PICT 2006, link to page 2",
+          "rects": [
+            [
+              36,
+              2140,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-4",
+          "label": "PICT 2019, link to page 4",
+          "rects": [
+            [
+              526,
+              2140,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2106.png",
+          "rect": [
+            36,
+            147,
+            481,
+            201
+          ]
+        },
+        {
+          "asset": "pict2104.png",
+          "rect": [
+            36,
+            1050,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2105.png",
+          "rect": [
+            36,
+            1688,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2140,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2140,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-03-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 244763,
+          "sha256": "4b94f118a4e6e7054cc2c1461f9fc7ffa6cffd2123bb190769a9928dc16accfa"
+        },
+        {
+          "asset": "page-03-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 393273,
+          "sha256": "1db60e4dd9b634c66217a0cdf09c142cd998b6f9a7111b4fdd584713565c7edb"
+        },
+        {
+          "asset": "page-03-02.png",
+          "y": 2048,
+          "height": 112,
+          "bytes": 13981,
+          "sha256": "fc08a8b462ea746358499e9751b0f2a10b178dfb796071e3cbaba27e2c9c8200"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "title": "Action Points • GOSUBs",
+      "width": 578,
+      "height": 2758,
+      "links": [
+        {
+          "target": "#page-3",
+          "label": "PICT 2006, link to page 3",
+          "rects": [
+            [
+              36,
+              2740,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-5",
+          "label": "PICT 2019, link to page 5",
+          "rects": [
+            [
+              526,
+              2740,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2022.png",
+          "rect": [
+            36,
+            49,
+            124,
+            92
+          ]
+        },
+        {
+          "asset": "pict2023.png",
+          "rect": [
+            36,
+            439,
+            151,
+            201
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2740,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2740,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-04-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 198156,
+          "sha256": "46c08987df75fd2bfda2a64c235a2ad1a9141548b7dfc0545aa14eeb377835b4"
+        },
+        {
+          "asset": "page-04-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 309569,
+          "sha256": "36b02bd49edf9d56b5369f33749c46521374875c1caf68b681faeaea91ac2b9f"
+        },
+        {
+          "asset": "page-04-02.png",
+          "y": 2048,
+          "height": 710,
+          "bytes": 211571,
+          "sha256": "be261db94db79228f0ceee76055260ffd11f5b4475e310ef084d6a564f5bec2c"
+        }
+      ]
+    },
+    {
+      "page": 5,
+      "title": "Scripting Codes    1 - 29",
+      "width": 578,
+      "height": 7598,
+      "links": [
+        {
+          "target": "#page-4",
+          "label": "PICT 2006, link to page 4",
+          "rects": [
+            [
+              36,
+              7578,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-6",
+          "label": "PICT 2019, link to page 6",
+          "rects": [
+            [
+              526,
+              7578,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            307,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            958,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2032.png",
+          "rect": [
+            36,
+            1497,
+            320,
+            22
+          ]
+        },
+        {
+          "asset": "pict2071.png",
+          "rect": [
+            36,
+            1539,
+            320,
+            22
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            1593,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            1740,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            1901,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            2174,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            2489,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            2720,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            2923,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            3112,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            3301,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            3504,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            3721,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            3896,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4127,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4344,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4561,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4764,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4939,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5310,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5611,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5814,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6073,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6332,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6549,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6808,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6997,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            7200,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            7375,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            7578,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            7578,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-05-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 219066,
+          "sha256": "a8522c75aad0dda329e7895305848237afcbf83b5b2482e079107c090fa77a09"
+        },
+        {
+          "asset": "page-05-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 240437,
+          "sha256": "f116c6a930a8807f2cfceda962e07a8514ed11be68fdaaae17b35256e36fe6ee"
+        },
+        {
+          "asset": "page-05-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 227355,
+          "sha256": "1d480649c3ed35e33d0d2f3110d42d383d23906b8c22e5b0681262990dac8d10"
+        },
+        {
+          "asset": "page-05-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 174680,
+          "sha256": "5ce8f0754cae4566958c478c9994f290282bf5f4bd92978eb20a192bb98c60d3"
+        },
+        {
+          "asset": "page-05-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 169771,
+          "sha256": "2523c033dde2e25d3f3c8f4e2c1e4c0802685d04de2522af6f300242854c4713"
+        },
+        {
+          "asset": "page-05-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 223039,
+          "sha256": "8d55d704a2d4eb57cfc43ada1fd427eb91ae66fa0bae05d1f1d9287ae878c283"
+        },
+        {
+          "asset": "page-05-06.png",
+          "y": 6144,
+          "height": 1024,
+          "bytes": 211400,
+          "sha256": "c79299f761c8f3f7ba289a67c8792aa2038fd48f9a706783a4ee8a604d12c80c"
+        },
+        {
+          "asset": "page-05-07.png",
+          "y": 7168,
+          "height": 430,
+          "bytes": 69817,
+          "sha256": "71ff77ee849fbbee3f544a10761544166799e0d9777b18a06d80992bcf8e3bc3"
+        }
+      ]
+    },
+    {
+      "page": 6,
+      "title": "Scripting Codes  30 - 59",
+      "width": 578,
+      "height": 8550,
+      "links": [
+        {
+          "target": "#page-5",
+          "label": "PICT 2006, link to page 5",
+          "rects": [
+            [
+              36,
+              8518,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-7",
+          "label": "PICT 2019, link to page 7",
+          "rects": [
+            [
+              526,
+              8518,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            475,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            874,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1049,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1294,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1455,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            1644,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1889,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            2176,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            2659,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            2834,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            3093,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            3268,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            3793,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            3996,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            4157,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            4430,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            4759,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            4948,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            5179,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            5382,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            5599,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            5788,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6019,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            6194,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            6607,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            6866,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            7195,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            7482,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            7965,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            8518,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            8518,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-06-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 252813,
+          "sha256": "05cbc499ed4cdb6673333454587d2b2754c0fc8b0bf2325c28c5db43ab0e68ac"
+        },
+        {
+          "asset": "page-06-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 211754,
+          "sha256": "8716fa00012ec768b3f6e5712dda0b2c214ca3d57d973e5de146654cd419b424"
+        },
+        {
+          "asset": "page-06-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 251247,
+          "sha256": "b34182f660a84b2e337673fbaa14a4046fed3bad9848b22caabde1ee1c45e874"
+        },
+        {
+          "asset": "page-06-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 222888,
+          "sha256": "6e7e7d43132a8508f8440d2f5ffbba1035fd15d638ae5a2924acebea71ed7c5d"
+        },
+        {
+          "asset": "page-06-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 198040,
+          "sha256": "17edf47be90754300cf85a52a0032d4ec325814e4b5f70962afb1591fc31fc5b"
+        },
+        {
+          "asset": "page-06-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 192322,
+          "sha256": "716fc3a470a74e7acda12830c288f2a2bfb129b445bbb295d81ba95caeb1dcf3"
+        },
+        {
+          "asset": "page-06-06.png",
+          "y": 6144,
+          "height": 1024,
+          "bytes": 254386,
+          "sha256": "8175d787ca09bc229b789f9837d6e904bc1b4f34319e5caf0a4fed47e497abde"
+        },
+        {
+          "asset": "page-06-07.png",
+          "y": 7168,
+          "height": 1024,
+          "bytes": 240464,
+          "sha256": "4bc3564b031d7e223b9ac011622f441437d4484c6fa1091612d1b04c30574e6c"
+        },
+        {
+          "asset": "page-06-08.png",
+          "y": 8192,
+          "height": 358,
+          "bytes": 77699,
+          "sha256": "07d282f13dbd741273b84593f4e4e0bb3e5618ebccff84f563d100e46261c028"
+        }
+      ]
+    },
+    {
+      "page": 7,
+      "title": "Scripting Codes  60 - 89",
+      "width": 578,
+      "height": 6790,
+      "links": [
+        {
+          "target": "#page-6",
+          "label": "PICT 2006, link to page 6",
+          "rects": [
+            [
+              36,
+              6771,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-8",
+          "label": "PICT 2019, link to page 8",
+          "rects": [
+            [
+              526,
+              6771,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2086.png",
+          "rect": [
+            36,
+            288,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            477,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            718,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1011,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1239,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1389,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2086.png",
+          "rect": [
+            36,
+            1539,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1806,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            1982,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            36,
+            2262,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            2425,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            51.5,
+            2575,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2086.png",
+          "rect": [
+            51.5,
+            2816,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            51.5,
+            3135,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            51.5,
+            3506,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2085.png",
+          "rect": [
+            51.5,
+            3773,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4092,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            51.5,
+            4411,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4717,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            4750,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5051,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5214,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5364,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5592,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            5833,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6191,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6445,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2028.png",
+          "rect": [
+            36,
+            6595,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            6771,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            6771,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-07-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 244291,
+          "sha256": "4fe84e94c45a33e3079afff4f5b35e5ba6c2f209ce51bfd7097206d52fc77527"
+        },
+        {
+          "asset": "page-07-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 223343,
+          "sha256": "1686b9d69050d832a12c4a084383e178767fe15bd5b40300c5300cea7dda7155"
+        },
+        {
+          "asset": "page-07-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 217153,
+          "sha256": "454b5e772bae4353e79fbcaee32a83a15173106f8f17b9ca62bbce55074fabc8"
+        },
+        {
+          "asset": "page-07-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 244659,
+          "sha256": "0f0e35422a7fe288d64c09caffd84619b0bd74ac818c79064c956216e637017e"
+        },
+        {
+          "asset": "page-07-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 260269,
+          "sha256": "a225b98f19c6c2190a3a8f5fb0da4c6514c7fc5bc3dd8d0bab3bf3f5142a1a9f"
+        },
+        {
+          "asset": "page-07-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 217558,
+          "sha256": "826a7ebbe7786f75d4900e7a253d5629bea571c72bcaa41c4c4ad1286d36eb27"
+        },
+        {
+          "asset": "page-07-06.png",
+          "y": 6144,
+          "height": 646,
+          "bytes": 117834,
+          "sha256": "24abc230b1bc9da99c4c09750c47e51d2372fd51cc0fdb21ab74e4fb964ba9c7"
+        }
+      ]
+    },
+    {
+      "page": 8,
+      "title": "Scripting Codes  90 - End",
+      "width": 578,
+      "height": 6601,
+      "links": [],
+      "images": [
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            14,
+            262,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            425,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            1121,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            1271,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            1421,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            1571,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            1864,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2040,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2203,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2366,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2529,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2770,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            2959,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            3122,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            3350,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            3565,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            3780,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4034,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4236,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4477,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4510,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4673,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            4862,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            5051,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            5227,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            5429,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            5618,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            5859,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            6191,
+            475,
+            3
+          ]
+        },
+        {
+          "asset": "pict2103.png",
+          "rect": [
+            51.5,
+            6406,
+            475,
+            3
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-08-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 232893,
+          "sha256": "2429c91409caa9c12f067a2946a87d56a07cfe8fa09a338f4a12c1a44df930d2"
+        },
+        {
+          "asset": "page-08-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 173600,
+          "sha256": "eb595967a00efe1a637d16715960e861b977035bc797a2d4606592da181ecc60"
+        },
+        {
+          "asset": "page-08-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 191955,
+          "sha256": "4cb632da5f7537da789985e1ee8f01b005466fe8d2c4d1b0c75f9cde197172d0"
+        },
+        {
+          "asset": "page-08-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 217636,
+          "sha256": "d02cd68b68f55d29c88b93ed70ff40c6cf463562ee2281fcfce561c8e4ba7364"
+        },
+        {
+          "asset": "page-08-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 230664,
+          "sha256": "853fdf6a824e89220f43f657bf49928a8ada9cfd43f976125f487b380eda2db7"
+        },
+        {
+          "asset": "page-08-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 238024,
+          "sha256": "4b6dce5f998b5dd949d9d673729c44eef6630a2238e05905e91744deb5902974"
+        },
+        {
+          "asset": "page-08-06.png",
+          "y": 6144,
+          "height": 457,
+          "bytes": 97616,
+          "sha256": "4c5afa3805174291d86682b1242b2b2da59737af1130b8316f13826fe8ee7fcb"
+        }
+      ]
+    },
+    {
+      "page": 9,
+      "title": "HUB",
+      "width": 578,
+      "height": 2025,
+      "links": [
+        {
+          "target": "#page-8",
+          "label": "PICT 2006, link to page 8",
+          "rects": [
+            [
+              36,
+              2007,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-10",
+          "label": "PICT 2019, link to page 10",
+          "rects": [
+            [
+              526,
+              2007,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2031.png",
+          "rect": [
+            36,
+            111,
+            293,
+            337
+          ]
+        },
+        {
+          "asset": "pict2027.png",
+          "rect": [
+            36,
+            788,
+            422,
+            417
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2007,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2007,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-09-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 176092,
+          "sha256": "782faf33150213bb8b6d16e782fb4b6e6fbd5219b2998aec00b0d83b22a32854"
+        },
+        {
+          "asset": "page-09-01.png",
+          "y": 1024,
+          "height": 1001,
+          "bytes": 115877,
+          "sha256": "db625e0ff247c353314c2e94ef7c7603403482b5cf39af346122262f51ed4dc9"
+        }
+      ]
+    },
+    {
+      "page": 10,
+      "title": "Battle Editor",
+      "width": 578,
+      "height": 1583,
+      "links": [
+        {
+          "target": "#page-9",
+          "label": "PICT 2006, link to page 9",
+          "rects": [
+            [
+              36,
+              1565,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-11",
+          "label": "PICT 2019, link to page 11",
+          "rects": [
+            [
+              526,
+              1565,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2025.png",
+          "rect": [
+            36,
+            475,
+            64,
+            64
+          ]
+        },
+        {
+          "asset": "pict2021.png",
+          "rect": [
+            76.5,
+            669,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2025.png",
+          "rect": [
+            36,
+            1021,
+            64,
+            64
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1565,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1565,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-10-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 362804,
+          "sha256": "35973da4a41d65566f46a002cb25914651b7bc532923962a43fdd99f3373dc9b"
+        },
+        {
+          "asset": "page-10-01.png",
+          "y": 1024,
+          "height": 559,
+          "bytes": 169110,
+          "sha256": "626ffe356bd7746b20773612d2ee1213fd87dc86959c4d7b1d74e84612b65cf2"
+        }
+      ]
+    },
+    {
+      "page": 11,
+      "title": "Monster Editor",
+      "width": 578,
+      "height": 4461,
+      "links": [
+        {
+          "target": "#page-10",
+          "label": "PICT 2006, link to page 10",
+          "rects": [
+            [
+              36,
+              4427,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-12",
+          "label": "PICT 2019, link to page 12",
+          "rects": [
+            [
+              526,
+              4427,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2024.png",
+          "rect": [
+            76.5,
+            279,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2030.png",
+          "rect": [
+            36,
+            3949,
+            282,
+            96
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            4427,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            4427,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-11-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 505174,
+          "sha256": "8821f1ed2bf1ccf096c50a085e23f34b3a10f45b7e299469a66074cf3e6b3cfe"
+        },
+        {
+          "asset": "page-11-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 325532,
+          "sha256": "aa4dc2ab118c7c8277065f3bbf4bdbc13bdde1279e6a1bb087eccdeb3b487bbf"
+        },
+        {
+          "asset": "page-11-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 364271,
+          "sha256": "69e5ef3bc4ec643fb644edbfc435d6fcfed495717bf42d0a288684e2f7bbb470"
+        },
+        {
+          "asset": "page-11-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 271086,
+          "sha256": "efbf5f875333af9dac95d1cb731ff9433563eeaa2ea0deffd2357168e1c4bee6"
+        },
+        {
+          "asset": "page-11-04.png",
+          "y": 4096,
+          "height": 365,
+          "bytes": 110395,
+          "sha256": "87c6dbdec97db8ea84910d62b6e52d4d62ff9ac773b95e9526fe61f4bac372a6"
+        }
+      ]
+    },
+    {
+      "page": 12,
+      "title": "Monster Scrapbook",
+      "width": 578,
+      "height": 1555,
+      "links": [
+        {
+          "target": "#page-13",
+          "label": "PICT 2006, link to page 13",
+          "rects": [
+            [
+              36,
+              1517,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-13",
+          "label": "PICT 2019, link to page 13",
+          "rects": [
+            [
+              526,
+              1517,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2077.png",
+          "rect": [
+            36,
+            139,
+            282,
+            115
+          ]
+        },
+        {
+          "asset": "pict2078.png",
+          "rect": [
+            36,
+            290,
+            425,
+            305
+          ]
+        },
+        {
+          "asset": "pict2079.png",
+          "rect": [
+            36,
+            935,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1517,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1517,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-12-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 496465,
+          "sha256": "9b09633b753915f184e46836905a674b42d9feff0e24b1df55f109113df683fd"
+        },
+        {
+          "asset": "page-12-01.png",
+          "y": 1024,
+          "height": 531,
+          "bytes": 381941,
+          "sha256": "8c595c9acdbe3583895273b982562784b2d156c088dc9b7337f8c847b02a8e36"
+        }
+      ]
+    },
+    {
+      "page": 13,
+      "title": "Treasure Editor",
+      "width": 578,
+      "height": 811,
+      "links": [
+        {
+          "target": "#page-12",
+          "label": "PICT 2006, link to page 12",
+          "rects": [
+            [
+              36,
+              777,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-14",
+          "label": "PICT 2019, link to page 14",
+          "rects": [
+            [
+              526,
+              777,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            777,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            777,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-13-00.png",
+          "y": 0,
+          "height": 811,
+          "bytes": 214579,
+          "sha256": "6a606e0525d01355da3ede117bfb0bbf017faaddfbb2aa4c343a541ae38dbefc"
+        }
+      ]
+    },
+    {
+      "page": 14,
+      "title": "Item Editor",
+      "width": 578,
+      "height": 3555,
+      "links": [
+        {
+          "target": "#page-13",
+          "label": "PICT 2006, link to page 13",
+          "rects": [
+            [
+              36,
+              3536,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-15",
+          "label": "PICT 2019, link to page 15",
+          "rects": [
+            [
+              526,
+              3536,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2094.png",
+          "rect": [
+            36,
+            54,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            3536,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            3536,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-14-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 470673,
+          "sha256": "544cf68d2abe9a5d976540391eb0daf3789274e17d2324b3d537724850741daa"
+        },
+        {
+          "asset": "page-14-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 336991,
+          "sha256": "021024b92df8e96acfb075a3175001171cff8b67f37f178a874ee8ed008fd292"
+        },
+        {
+          "asset": "page-14-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 358316,
+          "sha256": "f5c674758e6b78e870e08733f51049d08d8e455bfcce7fdc006028326d87e686"
+        },
+        {
+          "asset": "page-14-03.png",
+          "y": 3072,
+          "height": 483,
+          "bytes": 153962,
+          "sha256": "830d72dfcc3ac9c400d91ac2a0641888e306fbb03e80299ede236f30c2ec9f64"
+        }
+      ]
+    },
+    {
+      "page": 15,
+      "title": "Shop Editor",
+      "width": 578,
+      "height": 788,
+      "links": [
+        {
+          "target": "#page-14",
+          "label": "PICT 2006, link to page 14",
+          "rects": [
+            [
+              36,
+              768,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-16",
+          "label": "PICT 2019, link to page 16",
+          "rects": [
+            [
+              526,
+              768,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2046.png",
+          "rect": [
+            76.5,
+            111,
+            425,
+            303
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            768,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            768,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-15-00.png",
+          "y": 0,
+          "height": 788,
+          "bytes": 303535,
+          "sha256": "0e6f45d32228fefbb45a2050c570b33f303d888d63ba8060d76515799eaf89fd"
+        }
+      ]
+    },
+    {
+      "page": 16,
+      "title": "Simple Encounter Editor",
+      "width": 578,
+      "height": 1449,
+      "links": [
+        {
+          "target": "#page-15",
+          "label": "PICT 2006, link to page 15",
+          "rects": [
+            [
+              36,
+              1429,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-17",
+          "label": "PICT 2019, link to page 17",
+          "rects": [
+            [
+              526,
+              1429,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2033.png",
+          "rect": [
+            264,
+            293,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2034.png",
+          "rect": [
+            96,
+            389,
+            386,
+            462
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1429,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1429,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-16-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 132845,
+          "sha256": "685a49474057aa06dd2ca83f6a1670e10e9aaacb4269426c44708806f1e567cc"
+        },
+        {
+          "asset": "page-16-01.png",
+          "y": 1024,
+          "height": 425,
+          "bytes": 68137,
+          "sha256": "6bc6062b830cdcad801f90defe392cba9d255093d3d911ae13c2cbc720975b76"
+        }
+      ]
+    },
+    {
+      "page": 17,
+      "title": "Complex Encounter Editor",
+      "width": 578,
+      "height": 2689,
+      "links": [
+        {
+          "target": "#page-16",
+          "label": "PICT 2006, link to page 16",
+          "rects": [
+            [
+              36,
+              2669,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-18",
+          "label": "PICT 2019, link to page 18",
+          "rects": [
+            [
+              526,
+              2669,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2035.png",
+          "rect": [
+            36,
+            321,
+            352,
+            52
+          ]
+        },
+        {
+          "asset": "pict2049.png",
+          "rect": [
+            76.5,
+            475,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2037.png",
+          "rect": [
+            264,
+            1205,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2038.png",
+          "rect": [
+            264,
+            1301,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2039.png",
+          "rect": [
+            264,
+            1509,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2041.png",
+          "rect": [
+            264,
+            1731,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2042.png",
+          "rect": [
+            264,
+            1967,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2043.png",
+          "rect": [
+            36,
+            2119,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2044.png",
+          "rect": [
+            264,
+            2119,
+            50,
+            50
+          ]
+        },
+        {
+          "asset": "pict2045.png",
+          "rect": [
+            36,
+            2357,
+            257,
+            84
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2669,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2669,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-17-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 568389,
+          "sha256": "73fc744e60e648ad730d64cb787392d30b4305712cf54635cd18b2a4665762d3"
+        },
+        {
+          "asset": "page-17-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 314110,
+          "sha256": "6623fd3e90d9bb13a6ea0a0ecc2c10b49b361ade4d3f9318547fdcd172ef0253"
+        },
+        {
+          "asset": "page-17-02.png",
+          "y": 2048,
+          "height": 641,
+          "bytes": 197751,
+          "sha256": "53c6fc02c6019740f4830853b4a30ec193e697908fdd595e13959f8149107fff"
+        }
+      ]
+    },
+    {
+      "page": 18,
+      "title": "Rogue Encounter Editor",
+      "width": 578,
+      "height": 1916,
+      "links": [
+        {
+          "target": "#page-17",
+          "label": "PICT 2006, link to page 17",
+          "rects": [
+            [
+              36,
+              1882,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-19",
+          "label": "PICT 2019, link to page 19",
+          "rects": [
+            [
+              526,
+              1882,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2059.png",
+          "rect": [
+            76.5,
+            123,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2048.png",
+          "rect": [
+            36,
+            1497,
+            407,
+            59
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1882,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1882,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-18-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 356945,
+          "sha256": "8a6301b5ed72c00da72db784d62ed6c8c29f89e16fee7b2f28860b54d2c5c376"
+        },
+        {
+          "asset": "page-18-01.png",
+          "y": 1024,
+          "height": 892,
+          "bytes": 244799,
+          "sha256": "0e9e16b10c363f0b1df2550ad267c00aa4c8f3c831bfacb229909700150e46e9"
+        }
+      ]
+    },
+    {
+      "page": 19,
+      "title": "Time Encounter Editor",
+      "width": 578,
+      "height": 1357,
+      "links": [
+        {
+          "target": "#page-18",
+          "label": "PICT 2006, link to page 18",
+          "rects": [
+            [
+              36,
+              1337,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-20",
+          "label": "PICT 2019, link to page 20",
+          "rects": [
+            [
+              526,
+              1337,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2050.png",
+          "rect": [
+            36,
+            111,
+            405,
+            175
+          ]
+        },
+        {
+          "asset": "pict2051.png",
+          "rect": [
+            36,
+            1046,
+            405,
+            175
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1337,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1337,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-19-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 230387,
+          "sha256": "d71f712cee97858f73db56330d7b0c5c04be760af3cb5d5184a16596beef6445"
+        },
+        {
+          "asset": "page-19-01.png",
+          "y": 1024,
+          "height": 333,
+          "bytes": 61341,
+          "sha256": "2c9f500ed19189769e92445901ed937f879aac3bc216e6d3e3adb2a2681e208b"
+        }
+      ]
+    },
+    {
+      "page": 20,
+      "title": "Map Editor",
+      "width": 578,
+      "height": 2060,
+      "links": [
+        {
+          "target": "#page-19",
+          "label": "PICT 2006, link to page 19",
+          "rects": [
+            [
+              36,
+              2026,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-21",
+          "label": "PICT 2019, link to page 21",
+          "rects": [
+            [
+              526,
+              2026,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2076.png",
+          "rect": [
+            36,
+            125,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2053.png",
+          "rect": [
+            36,
+            1023,
+            196,
+            265
+          ]
+        },
+        {
+          "asset": "pict2054.png",
+          "rect": [
+            36,
+            1544,
+            114,
+            240
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2026,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2026,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-20-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 662874,
+          "sha256": "ab200850044beb145b37194d48d2978b33c8d276ab7dd695f561516d6c11b9c1"
+        },
+        {
+          "asset": "page-20-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 150526,
+          "sha256": "0fbae84f527cd7f332778d1c135929fd3b1a39287aace6c77fbe0fd0bc16f7c5"
+        },
+        {
+          "asset": "page-20-02.png",
+          "y": 2048,
+          "height": 12,
+          "bytes": 233,
+          "sha256": "ad4e40fe04e26b4afa6cbede124202f6ff9d7c5b7ec8fdb181a82a29eb423742"
+        }
+      ]
+    },
+    {
+      "page": 21,
+      "title": "Dungeon Editor",
+      "width": 578,
+      "height": 1735,
+      "links": [
+        {
+          "target": "#page-20",
+          "label": "PICT 2006, link to page 20",
+          "rects": [
+            [
+              36,
+              1715,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-22",
+          "label": "PICT 2019, link to page 22",
+          "rects": [
+            [
+              526,
+              1715,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2026.png",
+          "rect": [
+            36,
+            223,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2036.png",
+          "rect": [
+            36,
+            771,
+            18,
+            17
+          ]
+        },
+        {
+          "asset": "pict2047.png",
+          "rect": [
+            36,
+            813,
+            17,
+            17
+          ]
+        },
+        {
+          "asset": "pict2052.png",
+          "rect": [
+            36,
+            855,
+            15,
+            16
+          ]
+        },
+        {
+          "asset": "pict2056.png",
+          "rect": [
+            36,
+            897,
+            16,
+            15
+          ]
+        },
+        {
+          "asset": "pict2058.png",
+          "rect": [
+            36,
+            939,
+            17,
+            16
+          ]
+        },
+        {
+          "asset": "pict2066.png",
+          "rect": [
+            36,
+            981,
+            19,
+            18
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1715,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1715,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-21-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 606811,
+          "sha256": "2887b5eb395475dd88b83753ab88c6248d63658e47c88efd608dc5625bfdf995"
+        },
+        {
+          "asset": "page-21-01.png",
+          "y": 1024,
+          "height": 711,
+          "bytes": 209369,
+          "sha256": "829eecd31ccc86cf92629629dc28473707a008087cddb627b780c50592140b58"
+        }
+      ]
+    },
+    {
+      "page": 22,
+      "title": "Macros • Quests",
+      "width": 578,
+      "height": 3113,
+      "links": [
+        {
+          "target": "#page-21",
+          "label": "PICT 2006, link to page 21",
+          "rects": [
+            [
+              36,
+              3083,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-23",
+          "label": "PICT 2019, link to page 23",
+          "rects": [
+            [
+              526,
+              3083,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            3083,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            3083,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-22-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 215662,
+          "sha256": "633034d8b60d3da7af3b8f639d5345a62864b48256e41274342bab4086d81318"
+        },
+        {
+          "asset": "page-22-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 183187,
+          "sha256": "437294215ea4df43a7e2872bc81555931bd3c89fc885c64f6a91aad076cfe91e"
+        },
+        {
+          "asset": "page-22-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 255852,
+          "sha256": "b84510f60a87a2fa3bc69d8aaf717009664b7dc0ae9f70e90cd6f9b24e2974df"
+        },
+        {
+          "asset": "page-22-03.png",
+          "y": 3072,
+          "height": 41,
+          "bytes": 2735,
+          "sha256": "b48ab849144208038b974ec2b74c8b3f32f8838f7911f6448d69614c07a568e8"
+        }
+      ]
+    },
+    {
+      "page": 23,
+      "title": "Monster Mash",
+      "width": 578,
+      "height": 970,
+      "links": [
+        {
+          "target": "#page-22",
+          "label": "PICT 2006, link to page 22",
+          "rects": [
+            [
+              36,
+              936,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-24",
+          "label": "PICT 2019, link to page 24",
+          "rects": [
+            [
+              526,
+              936,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2055.png",
+          "rect": [
+            36,
+            189,
+            282,
+            96
+          ]
+        },
+        {
+          "asset": "pict2068.png",
+          "rect": [
+            76.5,
+            345,
+            425,
+            307
+          ]
+        },
+        {
+          "asset": "pict2057.png",
+          "rect": [
+            283,
+            810,
+            12,
+            15
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            936,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            936,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-23-00.png",
+          "y": 0,
+          "height": 970,
+          "bytes": 332772,
+          "sha256": "3996526234e554ed2ecf7a2a8fcbbc86a2475bf50d127310ca67c0169924f574"
+        }
+      ]
+    },
+    {
+      "page": 24,
+      "title": "Vault of Arcana",
+      "width": 578,
+      "height": 792,
+      "links": [
+        {
+          "target": "#page-23",
+          "label": "PICT 2006, link to page 23",
+          "rects": [
+            [
+              36,
+              772,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-25",
+          "label": "PICT 2019, link to page 25",
+          "rects": [
+            [
+              526,
+              772,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2060.png",
+          "rect": [
+            36,
+            153,
+            325,
+            74
+          ]
+        },
+        {
+          "asset": "pict2069.png",
+          "rect": [
+            76.5,
+            273,
+            425,
+            369
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            772,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            772,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-24-00.png",
+          "y": 0,
+          "height": 792,
+          "bytes": 236030,
+          "sha256": "0164490928f95683e8dc36c7ac22eb90ed55074902491465cd1fcc3b12926ccf"
+        }
+      ]
+    },
+    {
+      "page": 25,
+      "title": "Adding Monster & Item Icons",
+      "width": 578,
+      "height": 672,
+      "links": [
+        {
+          "target": "#page-24",
+          "label": "PICT 2006, link to page 24",
+          "rects": [
+            [
+              36,
+              652,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-26",
+          "label": "PICT 2019, link to page 26",
+          "rects": [
+            [
+              526,
+              652,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2020.png",
+          "rect": [
+            36,
+            195,
+            347,
+            243
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            652,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            652,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-25-00.png",
+          "y": 0,
+          "height": 672,
+          "bytes": 116264,
+          "sha256": "9b66a0f6ed2e4ab12fb4c12510d173f8d0081691f4b91f79ba38a61241e1a008"
+        }
+      ]
+    },
+    {
+      "page": 26,
+      "title": "Creating Special Land Tiles",
+      "width": 578,
+      "height": 1639,
+      "links": [
+        {
+          "target": "#page-25",
+          "label": "PICT 2006, link to page 25",
+          "rects": [
+            [
+              36,
+              1619,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-27",
+          "label": "PICT 2019, link to page 27",
+          "rects": [
+            [
+              526,
+              1619,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2062.png",
+          "rect": [
+            36,
+            217,
+            287,
+            243
+          ]
+        },
+        {
+          "asset": "pict2063.png",
+          "rect": [
+            36,
+            576,
+            353,
+            417
+          ]
+        },
+        {
+          "asset": "pict2064.png",
+          "rect": [
+            78.5,
+            1053,
+            421,
+            296
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1619,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1619,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-26-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 119380,
+          "sha256": "5564dfc7f0635ff9b2a1939636a6fe829c224fa31b770cc9c4a709490879c4d2"
+        },
+        {
+          "asset": "page-26-01.png",
+          "y": 1024,
+          "height": 615,
+          "bytes": 111801,
+          "sha256": "144ca5f7441677f15be6913baf6da589ca18cfa72dab114112326c84c2f24bdb"
+        }
+      ]
+    },
+    {
+      "page": 27,
+      "title": "Adding Pictures & Sounds To Your Scenario",
+      "width": 578,
+      "height": 2501,
+      "links": [
+        {
+          "target": "#page-26",
+          "label": "PICT 2006, link to page 26",
+          "rects": [
+            [
+              36,
+              2467,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-28",
+          "label": "PICT 2019, link to page 28",
+          "rects": [
+            [
+              526,
+              2467,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2072.png",
+          "rect": [
+            36,
+            141,
+            482,
+            202
+          ]
+        },
+        {
+          "asset": "pict2040.png",
+          "rect": [
+            36,
+            543,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2080.png",
+          "rect": [
+            36,
+            1231,
+            110,
+            53
+          ]
+        },
+        {
+          "asset": "pict2081.png",
+          "rect": [
+            36,
+            1343,
+            186,
+            219
+          ]
+        },
+        {
+          "asset": "pict2082.png",
+          "rect": [
+            36,
+            1623,
+            329,
+            201
+          ]
+        },
+        {
+          "asset": "pict2083.png",
+          "rect": [
+            36,
+            1912,
+            347,
+            243
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2467,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2467,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-27-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 516935,
+          "sha256": "003184a478896e2f53440fc49a280fbe9c3519bea65cb85c272996bf32d8617c"
+        },
+        {
+          "asset": "page-27-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 132716,
+          "sha256": "832d8eb8f0059c102ef754c982346540055a04d65d07c3e241b17250c7d15d0d"
+        },
+        {
+          "asset": "page-27-02.png",
+          "y": 2048,
+          "height": 453,
+          "bytes": 75424,
+          "sha256": "5599e60f7d51fda3f70fd08e95c525d2372619384e88528153cd6f8f9697a23f"
+        }
+      ]
+    },
+    {
+      "page": 28,
+      "title": "Standard Land Tile Editor",
+      "width": 578,
+      "height": 4929,
+      "links": [
+        {
+          "target": "#page-27",
+          "label": "PICT 2006, link to page 27",
+          "rects": [
+            [
+              36,
+              4895,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-29",
+          "label": "PICT 2019, link to page 29",
+          "rects": [
+            [
+              526,
+              4895,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2015.png",
+          "rect": [
+            36,
+            399,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2007.png",
+          "rect": [
+            273,
+            1715,
+            32,
+            32
+          ]
+        },
+        {
+          "asset": "pict2091.png",
+          "rect": [
+            36,
+            2457,
+            177,
+            122
+          ]
+        },
+        {
+          "asset": "pict2092.png",
+          "rect": [
+            36,
+            2603,
+            177,
+            122
+          ]
+        },
+        {
+          "asset": "pict2093.png",
+          "rect": [
+            36,
+            3029,
+            425,
+            122
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            4895,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            4895,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-28-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 904478,
+          "sha256": "c315a0a49705cade08dde5b9268adf3e5bd08cc807da684d4c910dc65f9f659c"
+        },
+        {
+          "asset": "page-28-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 300741,
+          "sha256": "1907abb387b61a6c14e1fd0e017c4d3f4610657050c8803710b09e2321b89c78"
+        },
+        {
+          "asset": "page-28-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 298123,
+          "sha256": "70d05e3b5c36ffcc38145539e5b15e3a9751c7d3b4141a4443e0fe2a8bfbf784"
+        },
+        {
+          "asset": "page-28-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 363315,
+          "sha256": "8ae49146305eac92814003da86f810b6994da012a39d00e07f2170c8e881d8d1"
+        },
+        {
+          "asset": "page-28-04.png",
+          "y": 4096,
+          "height": 833,
+          "bytes": 193915,
+          "sha256": "085fba589956083830249563eeed7333fec6f8de409ac28b2da5896f71971e0c"
+        }
+      ]
+    },
+    {
+      "page": 29,
+      "title": "Spell Editor",
+      "width": 578,
+      "height": 4022,
+      "links": [],
+      "images": [
+        {
+          "asset": "pict2001.png",
+          "rect": [
+            36,
+            237,
+            425,
+            340
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-29-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 404265,
+          "sha256": "ff2038546f1900b5f2e5ab208a041e025c0475a944decc9e834845bdd0ff20c2"
+        },
+        {
+          "asset": "page-29-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 349083,
+          "sha256": "e23164743786981b78ce7cd2fd52b8debb45e273bda4a22129e213463b7c2852"
+        },
+        {
+          "asset": "page-29-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 291599,
+          "sha256": "88bf1c300efc3ed7506135bf5a110cbf82ef8c6f40fec3e6b0e46c9f483bbd75"
+        },
+        {
+          "asset": "page-29-03.png",
+          "y": 3072,
+          "height": 950,
+          "bytes": 278155,
+          "sha256": "3f4397f7dbf9c6a91f5b356f91602bf89f2b608fc9a1163b76b2486971da619e"
+        }
+      ]
+    },
+    {
+      "page": 30,
+      "title": "Race Editor",
+      "width": 578,
+      "height": 4490,
+      "links": [],
+      "images": [
+        {
+          "asset": "pict2095.png",
+          "rect": [
+            36,
+            237,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2096.png",
+          "rect": [
+            36,
+            1939,
+            425,
+            263
+          ]
+        },
+        {
+          "asset": "pict2097.png",
+          "rect": [
+            36,
+            2422,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2098.png",
+          "rect": [
+            36,
+            3308,
+            425,
+            305
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-30-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 305665,
+          "sha256": "7894a95f4c91a8e03eab4023b78e4bca5ef93a87ab82f5e06e6e805cb1e65287"
+        },
+        {
+          "asset": "page-30-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 290889,
+          "sha256": "7a7518ab7ab316e090144dc340427c7138cfcdfa711013cc1896b6a6592ee7f2"
+        },
+        {
+          "asset": "page-30-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 433169,
+          "sha256": "245fffa26b68957f7c95e30579c53520aa69d54af628d4592eab8e49c669683b"
+        },
+        {
+          "asset": "page-30-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 414868,
+          "sha256": "26b9a5869da5bcdfc1b4e7c9d3778b64b0f30913fb7610c5d3c574bff86dc79b"
+        },
+        {
+          "asset": "page-30-04.png",
+          "y": 4096,
+          "height": 394,
+          "bytes": 100514,
+          "sha256": "aed74b014f3a946f617e8f0c615cb9aae03c684fca59ad0b9bb723d468a82b17"
+        }
+      ]
+    },
+    {
+      "page": 31,
+      "title": "Caste Editor",
+      "width": 578,
+      "height": 3969,
+      "links": [],
+      "images": [
+        {
+          "asset": "pict2099.png",
+          "rect": [
+            36,
+            209,
+            425,
+            306
+          ]
+        },
+        {
+          "asset": "pict2100.png",
+          "rect": [
+            36,
+            851,
+            425,
+            143
+          ]
+        },
+        {
+          "asset": "pict2101.png",
+          "rect": [
+            176.5,
+            3056,
+            225,
+            296
+          ]
+        },
+        {
+          "asset": "pict2102.png",
+          "rect": [
+            36,
+            3512,
+            425,
+            214
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-31-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 478104,
+          "sha256": "0625018da9f54e1b2b173759d92e818784e7d5cd7b4161806a2b3d538fb8429e"
+        },
+        {
+          "asset": "page-31-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 305844,
+          "sha256": "6328b2e6ba78e6b15492e041eee14d27dbcb29fc9d6af9b53981b8dc5edeaa93"
+        },
+        {
+          "asset": "page-31-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 296430,
+          "sha256": "7bedf8d74413a1cdea80c10dbfd835c21042c34e9e85cb74f2fa4e6d2689b28d"
+        },
+        {
+          "asset": "page-31-03.png",
+          "y": 3072,
+          "height": 897,
+          "bytes": 286553,
+          "sha256": "a98973f5f357034548f8a0e1aaccfe9d5fc136d079b173d8d6ab63045726130d"
+        }
+      ]
+    },
+    {
+      "page": 32,
+      "title": "Text Import • Export • Spell Checking",
+      "width": 578,
+      "height": 1249,
+      "links": [],
+      "images": [],
+      "strips": [
+        {
+          "asset": "page-32-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 271856,
+          "sha256": "0b39468b1754cb508fdcad31bf7b8458e1ae67d63ebcd3c218cc9511e18a71b3"
+        },
+        {
+          "asset": "page-32-01.png",
+          "y": 1024,
+          "height": 225,
+          "bytes": 50759,
+          "sha256": "8e9d62f0a0a8ff7c27a7688a77715342d378c2e0e9117b2727798e2a24808cdd"
+        }
+      ]
+    },
+    {
+      "page": 33,
+      "title": "Scenario Security • Registration Codes",
+      "width": 578,
+      "height": 1501,
+      "links": [
+        {
+          "target": "#page-32",
+          "label": "PICT 2006, link to page 32",
+          "rects": [
+            [
+              36,
+              1483,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-34",
+          "label": "PICT 2019, link to page 34",
+          "rects": [
+            [
+              526,
+              1483,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2072.png",
+          "rect": [
+            36,
+            157,
+            482,
+            202
+          ]
+        },
+        {
+          "asset": "pict2070.png",
+          "rect": [
+            76.5,
+            601,
+            425,
+            256
+          ]
+        },
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            1483,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            1483,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-33-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 300310,
+          "sha256": "1285e13128e4b980d8bb5187c931834cd7031759db6ae807b5738e1cf3f2f2f4"
+        },
+        {
+          "asset": "page-33-01.png",
+          "y": 1024,
+          "height": 477,
+          "bytes": 140067,
+          "sha256": "df3224dcb9b4acdaba767cc1806310f5f95c26f4848a3e070bb43fb4dd3c4067"
+        }
+      ]
+    },
+    {
+      "page": 34,
+      "title": "Things to check before you release your sceanrio",
+      "width": 578,
+      "height": 453,
+      "links": [
+        {
+          "target": "#page-33",
+          "label": "PICT 2006, link to page 33",
+          "rects": [
+            [
+              36,
+              437,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-35",
+          "label": "PICT 2019, link to page 35",
+          "rects": [
+            [
+              526,
+              437,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            437,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            437,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-34-00.png",
+          "y": 0,
+          "height": 453,
+          "bytes": 118650,
+          "sha256": "5f55244ad8a1fa23da01268156642b99160121b402889802c594ad928b9eceb8"
+        }
+      ]
+    },
+    {
+      "page": 35,
+      "title": "Realmz for Win95/98/NT4",
+      "width": 578,
+      "height": 450,
+      "links": [
+        {
+          "target": "#page-34",
+          "label": "PICT 2006, link to page 34",
+          "rects": [
+            [
+              14,
+              434,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-36",
+          "label": "PICT 2019, link to page 36",
+          "rects": [
+            [
+              548,
+              434,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            14,
+            434,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            548,
+            434,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-35-00.png",
+          "y": 0,
+          "height": 450,
+          "bytes": 117937,
+          "sha256": "ac839d3378f7dc7db4f174374e29b81d9a690678e0332fcb556e1ed5cea2c651"
+        }
+      ]
+    },
+    {
+      "page": 36,
+      "title": "Frequently Asked Questions",
+      "width": 578,
+      "height": 2641,
+      "links": [
+        {
+          "target": "#page-35",
+          "label": "PICT 2006, link to page 35",
+          "rects": [
+            [
+              36,
+              2515,
+              16,
+              16
+            ]
+          ]
+        },
+        {
+          "target": "#page-37",
+          "label": "PICT 2019, link to page 37",
+          "rects": [
+            [
+              526,
+              2599,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            36,
+            2515,
+            16,
+            16
+          ]
+        },
+        {
+          "asset": "pict2019.png",
+          "rect": [
+            526,
+            2599,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-36-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 263205,
+          "sha256": "b1fa1a6a191381370d202c4ada756fe3d4e03c606dec072a446d3ae672aece23"
+        },
+        {
+          "asset": "page-36-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 223668,
+          "sha256": "ceab6405973d384a5a6b13bb41b201a344cb4a5b303a84097ad9c325f74b022c"
+        },
+        {
+          "asset": "page-36-02.png",
+          "y": 2048,
+          "height": 593,
+          "bytes": 111159,
+          "sha256": "154636d7389543544b6f13c3f5d1682f0b369cb86b28e64b21a22639c41abd49"
+        }
+      ]
+    },
+    {
+      "page": 37,
+      "title": "Whats New?",
+      "width": 578,
+      "height": 8293,
+      "links": [],
+      "images": [
+        {
+          "asset": "pict2075.png",
+          "rect": [
+            281,
+            3943,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-37-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 247782,
+          "sha256": "1a76e3586dea8ee1df6793c513a14b933553564e480fc41a5283d3ef5a61930e"
+        },
+        {
+          "asset": "page-37-01.png",
+          "y": 1024,
+          "height": 1024,
+          "bytes": 348303,
+          "sha256": "7de7fd914d64ddcd2c9a24622fe3b752c7d13d64ce78964ced8d70ded90ea10b"
+        },
+        {
+          "asset": "page-37-02.png",
+          "y": 2048,
+          "height": 1024,
+          "bytes": 318854,
+          "sha256": "ff37d43ed2d4d2752c2d51daab01161fb5b18118ad824ede0bc86a47e2fb428e"
+        },
+        {
+          "asset": "page-37-03.png",
+          "y": 3072,
+          "height": 1024,
+          "bytes": 311052,
+          "sha256": "941a175a950995e97b4d89d7673fab639ceb049dcc1aa6284b6def09cb581aaa"
+        },
+        {
+          "asset": "page-37-04.png",
+          "y": 4096,
+          "height": 1024,
+          "bytes": 267127,
+          "sha256": "16c5b2b6c8f0b7d4804cb50adbecc04f0087bad2e51f37f5166f664c493f76c9"
+        },
+        {
+          "asset": "page-37-05.png",
+          "y": 5120,
+          "height": 1024,
+          "bytes": 268783,
+          "sha256": "5044779989e8a17bc24901df450f06591557f87a5a14ff859320179caca7f024"
+        },
+        {
+          "asset": "page-37-06.png",
+          "y": 6144,
+          "height": 1024,
+          "bytes": 300093,
+          "sha256": "c5198830510c15da312206230ee90492018acd8a2d8045431560c673302e9d85"
+        },
+        {
+          "asset": "page-37-07.png",
+          "y": 7168,
+          "height": 1024,
+          "bytes": 336572,
+          "sha256": "7f85744ca5980fb9c123d255b19e14e0da7f1d96aa48dc925a5c3a501db40b02"
+        },
+        {
+          "asset": "page-37-08.png",
+          "y": 8192,
+          "height": 101,
+          "bytes": 14340,
+          "sha256": "13dff8229e75c9757e7154059300508e4b2dda5f10d07ca226941a07b2b2d4c8"
+        }
+      ]
+    },
+    {
+      "page": 38,
+      "title": "Software License Agreement",
+      "width": 578,
+      "height": 2009,
+      "links": [
+        {
+          "target": "#page-1",
+          "label": "PICT 2006, link to page 1",
+          "rects": [
+            [
+              281,
+              1989,
+              16,
+              16
+            ]
+          ]
+        }
+      ],
+      "images": [
+        {
+          "asset": "pict2006.png",
+          "rect": [
+            281,
+            1989,
+            16,
+            16
+          ]
+        }
+      ],
+      "strips": [
+        {
+          "asset": "page-38-00.png",
+          "y": 0,
+          "height": 1024,
+          "bytes": 295265,
+          "sha256": "7031eb3e84fd5db2236e04c6251fae4e19c864e9b844b115b8087841ea58ac3f"
+        },
+        {
+          "asset": "page-38-01.png",
+          "y": 1024,
+          "height": 985,
+          "bytes": 360003,
+          "sha256": "b9e3690157ff3d95677d4983a3be5fc737031a8170c9023e75e544c591be1174"
+        }
+      ]
+    }
+  ],
+  "sourceAssets": {
+    "assets/pict2029.png": "38583849919e73de7379d3397891222bd86fdcec41e4506b35c454e4e659a738",
+    "assets/pict2061.png": "2e92583b5eb3da41ab7add1842e329a92b1b02dcba94532b20be1d72f6a3cf28",
+    "assets/pict2003.png": "a6323334311565ea639548dc53abdc4c9d01061f9af344438da8f7dac5d71f84",
+    "assets/pict2089.png": "5d8c40ada2cc36c813f9de3738435573c43c3c7bd7d9bb7e91236bb2ea5c754a",
+    "assets/pict2008.png": "00dedb834c019034cc701dcccb89efd8940eecbe7f0074a74f2b6b37397c6483",
+    "assets/pict2067.png": "44977728ac49ef9a552da0720479c99161959912ae5f05d70693d426493c1ddb",
+    "assets/pict2065.png": "db20ca1fcdf6c56eecc871ab8cd6efb9409606075f64618e87b6a9b2c42bef82",
+    "assets/pict2073.png": "b6e220a9869fd828b9a3b2fa1c6871654da4b62250678c0d93716996b73a4a7a",
+    "assets/pict2074.png": "b102341e52d6ba306a16b7336572ee081c1d6b54c14df50b0db821338c7cc0fa",
+    "assets/pict2006.png": "4e11872f602ed026f9c7172294e081dead92bcdab91d5b6b23f9442719c9118c",
+    "assets/pict2019.png": "d9cdfb7eea32ab051cc6ed3d175594c5a943d5b7a81bff039fa63016f259a7cf",
+    "assets/pict2002.png": "6e37c0de91775bbda9b22d2975ffd09beae8f08ff59ea32fca339203b3e0864c",
+    "assets/pict2004.png": "30c2e82c6d07c42ab562b468585f909c8adb81a3d0085800b087d431cc3ea0dc",
+    "assets/pict2005.png": "4468d020070cc9beb5930939c8b5758de5ad663aeb0773cb008a376486ffc1cf",
+    "assets/pict2007.png": "0f4ddb1ed7094e840ae2c83f66174d335611127f6b7d251031eaa832e910b55a",
+    "assets/pict2009.png": "7e2f1c6f00bdc213ccc9f33254e64a67d2c2b4699202c54852d896abcb4458bc",
+    "assets/pict2010.png": "d40922f546ca3a1fffd7479ce567878e2bd5d7f2d3ee8c7b9c3391a98fa8bc60",
+    "assets/pict2011.png": "967869c9e3caab300fcf8c5ecfd98fe2543e6d3f312d96258f31b785b551bcc8",
+    "assets/pict2012.svg": "5d7c269a5178fc566281a1da4ee8d72f275947d48683175927a584164759991c",
+    "assets/pict2013.png": "7e2f1c6f00bdc213ccc9f33254e64a67d2c2b4699202c54852d896abcb4458bc",
+    "assets/pict2014.svg": "54dd44f4bd1ce16d4c6f6fead453ec798c08fa60a5671582a4acda9305d7c66d",
+    "assets/pict2017.svg": "6f73788daf42cd7b1abae6b9e910a583738ac51dd1fab0691f5fdbba33d61f40",
+    "assets/pict2016.png": "bed4b669ab9e4793148e6c2db089c64686380740dbffb1d74a146aa424744e36",
+    "assets/pict2018.png": "7fe629505a3b2d90a12597fd10343aaf2f16007ee04a3535c740979c4cf7c24a",
+    "assets/pict2084.png": "c96c75d027748a8f815a19bdddd0ef5724b8e358b017d1935abd9c5721f8cc2e",
+    "assets/pict2087.png": "11b7497c6679583fbdf75cc6d5578147621c3a9cca6c0d93109a9018cafc03e0",
+    "assets/pict2088.png": "5ed48963b446f0d706285f3920df8b3d81e905ad919fa1275a564b56eb507702",
+    "assets/pict2090.png": "2adbc090be8823c392a2ce4563235078e73923378bcedff7f24e2b04f33c8103",
+    "assets/pict2106.png": "d8d93def66382c32c85b83564b988428c23c6f27023f1e40f9419db6b930ace1",
+    "assets/pict2104.png": "d31972cb424c88e968d269e3042f64049fc15978e22309499ac09f1a1e2d054f",
+    "assets/pict2105.png": "bafc132a4b6b816e0cda150dc8619ca37e161886f689af9c5268c5956107f464",
+    "assets/pict2022.png": "41b10f59920ce80874a3208de4bae969ea2063d7e49720ab4af5097c75b4bc01",
+    "assets/pict2023.png": "40a50878c8d5b194685b1fc5362688bcb85d6f0fe0e4fafa361d84d3860e613a",
+    "assets/pict2028.png": "09c901c068f8f44b50c24e736e1dcf42cf947f49dcd553e87fb47221b52fca64",
+    "assets/pict2032.png": "95c401a64ddc09bcf704a9a30283bcf80c8977ae53092c1fa958cf04acecd34d",
+    "assets/pict2071.png": "d2463d96ffe3e9acc92de46feaf15ba39440909ec6d6a0cb4d5f4af572ad630c",
+    "assets/pict2085.png": "09c901c068f8f44b50c24e736e1dcf42cf947f49dcd553e87fb47221b52fca64",
+    "assets/pict2086.png": "09c901c068f8f44b50c24e736e1dcf42cf947f49dcd553e87fb47221b52fca64",
+    "assets/pict2103.png": "09c901c068f8f44b50c24e736e1dcf42cf947f49dcd553e87fb47221b52fca64",
+    "assets/pict2031.png": "1943bf281284c88d4db9e005c51a7113787d748bc678762a45ef9449ca749368",
+    "assets/pict2027.png": "6f77e09c7fcbb21bf34f074a5c44a18ec5d4c020c2929048f064412cdbdb673d",
+    "assets/pict2025.png": "5e85c5843f2e9ddefeef3575ff1f28df90f0ba2d0ae037fc402442a0d11b88e9",
+    "assets/pict2021.png": "311942552a7b3f7aa216eb3b384270b9a1325543a229a110cfbbeb16fd73dbf1",
+    "assets/pict2024.png": "cdf6debc50f809a676bacc25e2423f20e83858aeb80177cfb1f28c43aaab9676",
+    "assets/pict2030.png": "83a53234d6bf10ab0cf028b9ff60359c0a2e677d0dad96e634c211e078baa0cd",
+    "assets/pict2077.png": "b9b4d63353b95ecc4d267b29e26174d4e85118847cfee848bbf8dc44f9c05a95",
+    "assets/pict2078.png": "15d0a993edbfa8ba0285c0bd15519a7bb206cbc2a07e424af2d8e565109dad39",
+    "assets/pict2079.png": "5900f2b044b0969a3c4e091c2b8cdbeba0dbfd29bec1257815e4dccb247e88ed",
+    "assets/pict2094.png": "80c8b8f1b8b303c9a3fd7458afd5822039873cc50b4c000c324ce17f420e9018",
+    "assets/pict2046.png": "14cfb08718825d4d2a31ed5a9515107fdb9d980d98476311ae0c2b4b7b604d2a",
+    "assets/pict2033.png": "ab618aff86572eee92a0ba7f776c8fdaf1f0a28c238ea599cbcf481ee3bfd797",
+    "assets/pict2034.png": "ca8ab1aba81f306a3e02fc096013b42620a34d4d96f08e52368e0316d985f16f",
+    "assets/pict2035.png": "f159b20c25350dc427938acf605e71142b12a5fc0b2918802b6987206fbac4ad",
+    "assets/pict2049.png": "cd8c3b1d6749fede02077e14729d3f50223bfff63db8daa05ec1d1f8d536e173",
+    "assets/pict2037.png": "ab618aff86572eee92a0ba7f776c8fdaf1f0a28c238ea599cbcf481ee3bfd797",
+    "assets/pict2038.png": "bfac7ceaba7333ba1f63157db0a797c715e71edb5ecb76b6583029511308473b",
+    "assets/pict2039.png": "ce6b4018b872892edb8eb921f01b43ebc37e5e370ed6620594e7d0b251428443",
+    "assets/pict2041.png": "d95ae217a3381f0ac5b2600618d8597d82d4eadc95195c1bb32a4fd003f33c5f",
+    "assets/pict2042.png": "d9bc0b2a3032020ea5f0e96a135938dbeb8af24c80b7d5c70d70e14b4cd9fe7a",
+    "assets/pict2043.png": "32e3637883a35ab6a6f1e25d233f4eb7e33741f082c973f0acc1154b64a3b779",
+    "assets/pict2044.png": "39aa51ae7643a99ebf0e520916ff303e2291154d2bb779e76d9f829d4ff523cc",
+    "assets/pict2045.png": "63d9dc70e6145e65404dc373084f9ddcb8f113a1ab7ce1bb401dfab03691a3dc",
+    "assets/pict2059.png": "a256940e44c32e9d02dca74360519d481a1be0193dacde132824f986d0b88062",
+    "assets/pict2048.png": "0a2a65c356d41fff99ffaf16ae4c56d0688d50244a1508358ec7334a04c55c13",
+    "assets/pict2050.png": "06dc9eb3badf63b29ed233eb6d5fe57f8b9d52f344508e6b04e8b6b7df0cc737",
+    "assets/pict2051.png": "b94a31aff9181fac35f271c49754435b5d4a87499314639567f9ff6689e108fa",
+    "assets/pict2076.png": "2dd7efd2a99fcc2af587e6529ac5c94b407d3014c4a12db6f20f61b27e05d25e",
+    "assets/pict2053.png": "9fe649a55b534c701c8634e3ba2b7a8d9f88eddb5fce67291a47d7c008a12e9d",
+    "assets/pict2054.png": "8dff5ff39ce4366a9fa92084841008fab22ec89ffa3f752c9c2996677700f4af",
+    "assets/pict2026.png": "bca1c13ca41dc94df49b7e388252e82fe047239119a85e8aece3922becab8827",
+    "assets/pict2036.png": "15b995336c4ae850aef97452bf3253a5f98fe3fbef00ce2ec5424515202bd36a",
+    "assets/pict2047.png": "c72bdfe25b55efa66bde72841ef8bec3060f0e2399e0b52a2dbdf01fcbf1e8e7",
+    "assets/pict2052.png": "c1b9caeb9aeace4e1b1a13cf405bafa54c69ffbeaa7271452897704323c520d4",
+    "assets/pict2056.png": "6697d98d9bc4e83e66c6e449e07cd26e693683a410bb1f74449b5eb1f1aac907",
+    "assets/pict2058.png": "9aa5b733dcf38a04d53ea587c7631f426c41c61c8d39c8a09342760d9ce72aab",
+    "assets/pict2066.png": "b18d0e171aa1e5e2ac40d31b0d9290607bed60f1a9f909d7beb25497e2691215",
+    "assets/pict2055.png": "83a53234d6bf10ab0cf028b9ff60359c0a2e677d0dad96e634c211e078baa0cd",
+    "assets/pict2068.png": "81f494470f4c25f84b321c6d7991e7bd8ed446fc93284c5f7d00fbe8f19c26af",
+    "assets/pict2057.png": "ad3958a461b5ca559b8438c35d20f27c715c8e312430c39f15adceadb3811b63",
+    "assets/pict2060.png": "9765510319655031664207a10e9d8d87c35ad6f40a7dc6d978eadc81157ace20",
+    "assets/pict2069.png": "af2f0c1d84140aa57d46ffd459ec68550c5fca6184e5ecd718d7d6915babb951",
+    "assets/pict2020.png": "2435ecfa8280c38febc9f9241d510e6b6a85a8aabc61ac5f862104b495b145e5",
+    "assets/pict2062.png": "3dac37c74609f772ea706f28ff61b3ace1131ca3877d3178fa7621ef32f6f671",
+    "assets/pict2063.png": "0990362dadf6fd602857ef920fbb70ed44022edc0ab6c9c24e9218b3af81b587",
+    "assets/pict2064.png": "fd367ee72f715af8d16d0d68e6b169b527615ff728eda0257aff1ce1477043ad",
+    "assets/pict2072.png": "e457a24d7c4fd2aa7b2d8d6be83ef4b0eb9fbf50310d9726afa62050f52a67f1",
+    "assets/pict2040.png": "8d7c851312305508ecb21f6f041e8150094d66cca2417c456487d3e6e74e5341",
+    "assets/pict2080.png": "1c451ced72ddd4054e3a6d6c5b0d701cb7920a34b9846b58c7a36082d86e06d8",
+    "assets/pict2081.png": "5cc93b93c2d8f1601f815e5119e77e8149efb67f4eab4bd6ace80077ff4ce628",
+    "assets/pict2082.png": "292e598da7a47f05efa3ea6b0924884db5770808950f841905d7ed8ac70214ba",
+    "assets/pict2083.png": "1c05a2b9e71cc14ac4809016a1e136d255fed5bc8a1c63c6b09e996d092a454d",
+    "assets/pict2015.png": "0be33cf8163783968fe00d64dfbb559a14591668572a4dd60f0f56e3e7c8590b",
+    "assets/pict2091.png": "ec67b37d99b09d7d10e52175e5ed137815444795a1f4789d4da59835d0c39f9d",
+    "assets/pict2092.png": "2ff6cbdec2a0f936e98b677c0317737c47d9305b084108439344dd21ac17c780",
+    "assets/pict2093.png": "75ea7cf455cd58f58b6cdab02f7978b05715f3bb5b22419faf3efad67fa9beea",
+    "assets/pict2001.png": "02571e4c3b5022ea279d7873a0ee166863690fda820261e21722b8ec010ac986",
+    "assets/pict2095.png": "a12d5514cf7e748ab1ef66f3dcb97ed434016ed9d9026c83090676549e867bd8",
+    "assets/pict2096.png": "d19351ff5973d9b0bec038c886fdc27fac0057c49b0922d81dfdcc95c775d9fd",
+    "assets/pict2097.png": "06d302a25514069cfb1b3393284640f8a4500fc52becf7c14b12c0c8db24a1d9",
+    "assets/pict2098.png": "3713588b7ed70824e5bee989632601fd588dfec0b5cbfc7ba1f7eedde590c013",
+    "assets/pict2099.png": "a2c9a88ed5a50055854ef788057688a5c970bb13eae3afb2d783b7b047d9a4af",
+    "assets/pict2100.png": "eb42500ff4d4a29db77a7bd5ab3ed0d97fe08143392d50e0898e057a36d75c06",
+    "assets/pict2101.png": "ed41dfd2fb1462886be66f7caf3d843837e64b99958e319505ead17e7e13b533",
+    "assets/pict2102.png": "1b2f76ebc01b4f1667b89b06018092954c816d5242b6bbb81a412b1738e0e5e5",
+    "assets/pict2070.png": "31acfce50183977b786ba860282decdfce9b1467846acaa6313db106ca5489fe",
+    "assets/pict2075.png": "ca2475d7e90d7ee73cb2a1dbf21b7dab24f5de21d7acb6f8e0386ec381e47239"
+  }
+}

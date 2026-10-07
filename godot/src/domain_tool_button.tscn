@@ -1,0 +1,41 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/domain_tool_button.gd" type="Script" id="1"]
+
+[node name="DomainToolButton" type="Button"]
+custom_minimum_size = Vector2(66, 46)
+size_flags_horizontal = 4
+toggle_mode = true
+script = ExtResource("1")
+
+[node name="Content" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Stack" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 0
+mouse_filter = 2
+
+[node name="Glyph" type="Label" parent="Content/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "◆"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[node name="Caption" type="Label" parent="Content/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 9
+text = "TOOL"
+horizontal_alignment = 1
+mouse_filter = 2
+
+[connection signal="toggled" from="." to="." method="_toggled"]

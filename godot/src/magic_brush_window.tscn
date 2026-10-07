@@ -1,0 +1,88 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/magic_brush_window.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+[node name="MagicBrush" type="VBoxContainer"]
+visible = false
+layout_mode = 2
+theme = ExtResource("2")
+theme_override_constants/separation = 8
+script = ExtResource("1")
+[node name="Title" type="Label" parent="."]
+layout_mode = 2
+text = "MAGIC BRUSH"
+theme_type_variation = &"WorldTitle"
+[node name="Sample" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Press a map tile to sample it; drag to continue."
+[node name="Tolerance" type="OptionButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 4
+selected = 0
+popup/item_0/text = "Literal · keep selected cells"
+popup/item_1/text = "Gentle · up to 1 cell"
+popup/item_2/text = "Balanced · up to 2 cells"
+popup/item_3/text = "Strong · up to 3 cells"
+[node name="ShowBefore" type="CheckButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show before"
+[node name="History" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="UndoStroke" type="Button" parent="History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Undo stroke"
+[node name="RedoStroke" type="Button" parent="History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Redo stroke"
+[node name="Actions" type="HBoxContainer" parent="."]
+layout_mode = 2
+[node name="Apply" type="Button" parent="Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Apply"
+disabled = true
+[node name="Cancel" type="Button" parent="Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel"
+[node name="Recover" type="Button" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Check original result"
+[node name="MagicDetails" type="VBoxContainer" parent="."]
+tooltip_text = "Each stroke locks its sampled tile or terrain family. Later strokes replace earlier ones where they overlap. Strokes accumulate until Apply. Escape cancels the current stroke; Cancel discards the draft."
+unique_name_in_owner = true
+layout_mode = 2
+theme = ExtResource("2")
+theme_override_constants/separation = 16
+[node name="Heading" type="Label" parent="MagicDetails"]
+layout_mode = 2
+text = "MAGIC · STAGED DRAFT"
+theme_type_variation = &"WorldTitle"
+[node name="Counts" type="Label" parent="MagicDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+[node name="Status" type="Label" parent="MagicDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+[node name="Legend" type="Label" parent="MagicDetails"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Gold: original strokes · green +: added · coral −: removed · blue ~: re-tiled neighbors"
+[node name="Help" type="Label" parent="MagicDetails"]
+visible = false
+layout_mode = 2
+autowrap_mode = 2
+text = "Each stroke keeps its sampled tile or supported terrain family. Later strokes win where they overlap.\n\nKeep drawing until Apply. Escape cancels only the current stroke; Cancel discards the whole draft."

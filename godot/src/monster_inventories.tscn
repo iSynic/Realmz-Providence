@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://src/monster_library_inventory.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_scenario_inventory.tscn" id="2"]
+
+[node name="MonsterInventories" type="HBoxContainer"]
+custom_minimum_size = Vector2(530, 0)
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="MonsterLibraryList" parent="." instance=ExtResource("1")]
+layout_mode = 2
+
+[node name="ScenarioMonsterList" parent="." instance=ExtResource("2")]
+layout_mode = 2

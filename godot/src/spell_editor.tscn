@@ -1,0 +1,1039 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://src/spell_editor.gd" id="1"]
+[ext_resource type="Script" path="res://src/spell_form.gd" id="2"]
+[ext_resource type="Theme" path="res://src/item_theme.tres" id="3"]
+[ext_resource type="PackedScene" path="res://src/character_navigation.tscn" id="4"]
+
+[node name="SpellEditor" type="HBoxContainer"]
+custom_minimum_size = Vector2(900, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+theme = ExtResource("3")
+
+[node name="Catalog" type="VBoxContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(270, 0)
+
+[node name="CatalogTitle" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "SPELLS"
+theme_type_variation = "ItemTitle"
+
+[node name="Routes" parent="Catalog" instance=ExtResource("4")]
+layout_mode = 2
+
+[node name="CatalogHelp" type="Label" parent="Catalog"]
+visible = false
+layout_mode = 2
+text = "Stock is a copy source. Custom is yours."
+autowrap_mode = 2
+theme_type_variation = "ItemContext"
+
+[node name="SpellClassFilter" type="OptionButton" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="SpellLevelFilter" type="OptionButton" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="SearchTitle" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "SEARCH NAME OR PACKED ID"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="ShowUnusedSpells" type="CheckButton" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Show unused slots"
+tooltip_text = "Show unnamed, empty spell slots with no callers. Populated and referenced spells remain visible."
+
+[node name="SpellSearch" type="LineEdit" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Name, ID or note…"
+clear_button_enabled = true
+
+[node name="SpellRecordStatus" type="Label" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open a project to browse spells."
+autowrap_mode = 2
+
+[node name="SpellRecordList" type="ItemList" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+custom_minimum_size = Vector2(270, 200)
+allow_reselect = true
+
+[node name="CatalogPages" type="HBoxContainer" parent="Catalog"]
+layout_mode = 2
+
+[node name="PreviousSpellsPage" type="Button" parent="Catalog/CatalogPages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹ Previous"
+
+[node name="CatalogPage" type="Label" parent="Catalog/CatalogPages"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="NextSpellsPage" type="Button" parent="Catalog/CatalogPages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Next ›"
+
+[node name="Main" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="RulesHeader" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RulesHeader"]
+layout_mode = 2
+text = "SPELL EDITOR"
+size_flags_horizontal = 3
+theme_type_variation = "ItemTitle"
+
+[node name="NewCustomSpell" type="Button" parent="Main/RulesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "New Custom…"
+
+[node name="CopyToCustomSpell" type="Button" parent="Main/RulesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Duplicate…"
+
+[node name="ClearScenarioCustom" type="Button" parent="Main/RulesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Clear Custom…"
+
+[node name="Subtitle" type="Label" parent="Main"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="IdentityRow" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="IdentityText" type="VBoxContainer" parent="Main/IdentityRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SpellIdentity" type="Label" parent="Main/IdentityRow/IdentityText"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Select a spell"
+theme_type_variation = "ItemName"
+
+[node name="SpellSource" type="Label" parent="Main/IdentityRow/IdentityText"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "No spell selected"
+theme_type_variation = "ItemContext"
+
+[node name="PreviousSpell" type="Button" parent="Main/IdentityRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹"
+
+[node name="NextSpell" type="Button" parent="Main/IdentityRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "›"
+
+[node name="DraftStatus" type="Label" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Changes stay local until Apply."
+
+[node name="SubmissionNotice" type="Label" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+autowrap_mode = 2
+
+[node name="CheckOriginalResult" type="Button" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Check original result"
+
+[node name="ReviewSavedVersion" type="Button" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Review saved version…"
+
+[node name="SpellDetailScroll" type="ScrollContainer" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SpellForm" type="HBoxContainer" parent="Main/SpellDetailScroll"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+script = ExtResource("2")
+
+[node name="Presentation" type="PanelContainer" parent="Main/SpellDetailScroll/SpellForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Margin" type="MarginContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation"]
+layout_mode = 2
+
+[node name="Fields" type="VBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="SectionHeading" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/SectionHeading"]
+layout_mode = 2
+text = "NAME, TEXT AND PRESENTATION"
+theme_type_variation = "ItemRestrictionsHeading"
+size_flags_horizontal = 3
+
+[node name="Values" type="PanelContainer" parent="Main/SpellDetailScroll/SpellForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Margin" type="MarginContainer" parent="Main/SpellDetailScroll/SpellForm/Values"]
+layout_mode = 2
+
+[node name="Fields" type="VBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="SectionHeading" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/SectionHeading"]
+layout_mode = 2
+text = "SPELL VALUES"
+theme_type_variation = "ItemEquipmentHeading"
+size_flags_horizontal = 3
+
+[node name="canRotate" type="CheckBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/SectionHeading"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Rotate"
+metadata/field_name = "canRotate"
+
+[node name="Target" type="PanelContainer" parent="Main/SpellDetailScroll/SpellForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.05
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Margin" type="MarginContainer" parent="Main/SpellDetailScroll/SpellForm/Target"]
+layout_mode = 2
+
+[node name="Fields" type="VBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="SectionHeading" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/SectionHeading"]
+layout_mode = 2
+text = "CLASS AND TARGET"
+theme_type_variation = "ItemSpecialHeading"
+size_flags_horizontal = 3
+
+[node name="NameTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "NAME"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="name" type="LineEdit" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "name"
+
+[node name="NameFeedback" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "255 MacRoman bytes maximum"
+theme_type_variation = "ItemContext"
+
+[node name="NoteTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "DESCRIPTION / NOTE · EDITOR ONLY"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="description" type="TextEdit" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+metadata/field_name = "description"
+
+[node name="soundStartTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "CASTING SOUND"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="soundStartControls" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="ChoosesoundStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "None · Choose…"
+text_overrun_behavior = 3
+
+[node name="PlaysoundStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "▶"
+disabled = true
+
+[node name="StopsoundStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "■"
+disabled = true
+
+[node name="OpensoundStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open"
+disabled = true
+
+[node name="soundEndTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "RESOLUTION SOUND"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="soundEndControls" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="ChoosesoundEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "None · Choose…"
+text_overrun_behavior = 3
+
+[node name="PlaysoundEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "▶"
+disabled = true
+
+[node name="StopsoundEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "■"
+disabled = true
+
+[node name="OpensoundEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/soundEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open"
+disabled = true
+
+[node name="lookStartTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "CAST ANIMATION"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="lookStartControls" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="ChooselookStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose animation…"
+text_overrun_behavior = 3
+size_flags_horizontal = 3
+
+[node name="PlaylookStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "▶"
+disabled = true
+
+[node name="StoplookStart" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "■"
+disabled = true
+
+[node name="lookStartFrames" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="lookStartFrame0" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame1" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame2" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame3" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame4" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame5" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame6" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartFrame7" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookStartFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookStartMeaning" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Exact eight-frame resource preview"
+autowrap_mode = 2
+theme_type_variation = "ItemContext"
+
+[node name="lookEndTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "RESOLUTION ANIMATION"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="lookEndControls" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="ChooselookEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose animation…"
+text_overrun_behavior = 3
+size_flags_horizontal = 3
+
+[node name="PlaylookEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "▶"
+disabled = true
+
+[node name="StoplookEnd" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "■"
+disabled = true
+
+[node name="lookEndFrames" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="lookEndFrame0" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame1" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame2" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame3" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame4" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame5" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame6" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndFrame7" type="TextureButton" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/lookEndFrames"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 32)
+ignore_texture_size = true
+stretch_mode = 5
+size_flags_horizontal = 3
+
+[node name="lookEndMeaning" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Exact eight-frame resource preview"
+autowrap_mode = 2
+theme_type_variation = "ItemContext"
+
+[node name="QueueTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+text = "QUEUE ICON"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="QueueControls" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields"]
+layout_mode = 2
+
+[node name="ChoosequeueIcon" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/QueueControls"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "0 · Blank · Choose…"
+
+[node name="QueuePreview" type="TextureRect" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/QueueControls"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40,40)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="OpenqueueIcon" type="Button" parent="Main/SpellDetailScroll/SpellForm/Presentation/Margin/Fields/QueueControls"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open"
+disabled = true
+
+[node name="rangeMinRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="rangeMinTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/rangeMinRow"]
+layout_mode = 2
+text = "Fixed Range"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="rangeMin" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/rangeMinRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "rangeMin"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="rangeMaxRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="rangeMaxTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/rangeMaxRow"]
+layout_mode = 2
+text = "Power Range"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="rangeMax" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/rangeMaxRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "rangeMax"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="toHitBonusRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="toHitBonusTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/toHitBonusRow"]
+layout_mode = 2
+text = "To Hit %"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="toHitBonus" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/toHitBonusRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "toHitBonus"
+min_value = -128
+max_value = 127
+custom_minimum_size = Vector2(86, 0)
+
+[node name="saveBonusRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="saveBonusTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/saveBonusRow"]
+layout_mode = 2
+text = "DRV %"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="saveBonus" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/saveBonusRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "saveBonus"
+min_value = -128
+max_value = 127
+custom_minimum_size = Vector2(86, 0)
+
+[node name="fixedTargetCountRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="fixedTargetCountTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/fixedTargetCountRow"]
+layout_mode = 2
+text = "No. of Attacks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="fixedTargetCount" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/fixedTargetCountRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "fixedTargetCount"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="resistanceAdjustRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="resistanceAdjustTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/resistanceAdjustRow"]
+layout_mode = 2
+text = "Resist / Level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="resistanceAdjust" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/resistanceAdjustRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "resistanceAdjust"
+min_value = -128
+max_value = 127
+custom_minimum_size = Vector2(86, 0)
+
+[node name="saveAdjustRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="saveAdjustTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/saveAdjustRow"]
+layout_mode = 2
+text = "DRV / Level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="saveAdjust" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/saveAdjustRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "saveAdjust"
+min_value = -128
+max_value = 127
+custom_minimum_size = Vector2(86, 0)
+
+[node name="cannotRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="cannotTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/cannotRow"]
+layout_mode = 2
+text = "Resistance checks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="cannot" type="OptionButton" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/cannotRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "cannot"
+
+[node name="costRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="costTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/costRow"]
+layout_mode = 2
+text = "Base SP Cost"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="cost" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/costRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "cost"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="damagePair" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="damageTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/damagePair"]
+layout_mode = 2
+text = "Fixed Damage · Lo/Hi"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="damageMin" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/damagePair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Fixed Damage Low"
+metadata/field_name = "damageMin"
+
+[node name="damageMax" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/damagePair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Fixed Damage High"
+metadata/field_name = "damageMax"
+
+[node name="powerDamagePair" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="powerDamageTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDamagePair"]
+layout_mode = 2
+text = "Power Damage · Lo/Hi"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="powerDamageMin" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDamagePair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Power Damage Low"
+metadata/field_name = "powerDamageMin"
+
+[node name="powerDamageMax" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDamagePair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Power Damage High"
+metadata/field_name = "powerDamageMax"
+
+[node name="durationPair" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="durationTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/durationPair"]
+layout_mode = 2
+text = "Fixed Duration · Lo/Hi"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="durationMin" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/durationPair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Fixed Duration Low"
+metadata/field_name = "durationMin"
+
+[node name="durationMax" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/durationPair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Fixed Duration High"
+metadata/field_name = "durationMax"
+
+[node name="powerDurationPair" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="powerDurationTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDurationPair"]
+layout_mode = 2
+text = "Power Duration · Lo/Hi"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="powerDurationMin" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDurationPair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Power Duration Low"
+metadata/field_name = "powerDurationMin"
+
+[node name="powerDurationMax" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/powerDurationPair"]
+layout_mode = 2
+unique_name_in_owner = true
+max_value = 255.0
+custom_minimum_size = Vector2(70,0)
+tooltip_text = "Power Duration High"
+metadata/field_name = "powerDurationMax"
+
+[node name="spellClassRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="spellClassTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/spellClassRow"]
+layout_mode = 2
+text = "Spell Class / Summon ID"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="spellClass" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/spellClassRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "spellClass"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="damageTypeRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields"]
+layout_mode = 2
+
+[node name="damageTypeTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/damageTypeRow"]
+layout_mode = 2
+text = "Damage Type"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="damageType" type="OptionButton" parent="Main/SpellDetailScroll/SpellForm/Values/Margin/Fields/damageTypeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "damageType"
+
+[node name="inCombatRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="inCombatTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/inCombatRow"]
+layout_mode = 2
+text = "Can cast in combat"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="inCombat" type="CheckBox" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/inCombatRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "inCombat"
+
+[node name="inCampRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="inCampTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/inCampRow"]
+layout_mode = 2
+text = "Can cast in camp"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="inCamp" type="CheckBox" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/inCampRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "inCamp"
+
+[node name="IdTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+text = "PACKED ID · IMMUTABLE"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="PackedSpellId" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="ClassTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+text = "CLASS / LEVEL / SLOT"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="ClassLevelSlot" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="targetTypeRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="targetTypeTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/targetTypeRow"]
+layout_mode = 2
+text = "Target type"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="targetType" type="OptionButton" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/targetTypeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "targetType"
+
+[node name="sizeRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="sizeTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/sizeRow"]
+layout_mode = 2
+text = "Spell size"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="size" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/sizeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "size"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="specialRow" type="HBoxContainer" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+
+[node name="specialTitle" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/specialRow"]
+layout_mode = 2
+text = "Spell effect"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="special" type="SpinBox" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields/specialRow"]
+layout_mode = 2
+unique_name_in_owner = true
+metadata/field_name = "special"
+min_value = 0
+max_value = 255
+custom_minimum_size = Vector2(86, 0)
+
+[node name="ChoosespellClass" type="Button" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose summon monster…"
+
+[node name="TargetMeaning" type="Label" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="TargetHelp" type="Button" parent="Main/SpellDetailScroll/SpellForm/Target/Margin/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open target help"
+
+[node name="UsesPanel" type="VBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="UsesHeader" type="HBoxContainer" parent="Main/UsesPanel"]
+layout_mode = 2
+
+[node name="UsedByCount" type="Label" parent="Main/UsesPanel/UsesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "USED BY · 0"
+size_flags_horizontal = 3
+theme_type_variation = "ItemUsesHeading"
+
+[node name="UsesPrevious" type="Button" parent="Main/UsesPanel/UsesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹"
+
+[node name="UsesNext" type="Button" parent="Main/UsesPanel/UsesHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "›"
+
+[node name="Uses" type="ItemList" parent="Main/UsesPanel"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0,44)
+
+[node name="DraftActions" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="CommitSpellEdit" type="Button" parent="Main/DraftActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply Spell"
+
+[node name="DiscardSpell" type="Button" parent="Main/DraftActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Discard"
+
+[node name="DraftHelp" type="Label" parent="Main/DraftActions"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="SoundPlayer" type="AudioStreamPlayer" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="SearchDelay" type="Timer" parent="."]
+layout_mode = 2
+wait_time = 0.2
+one_shot = true
+
+[node name="AnimationTimer" type="Timer" parent="Main/SpellDetailScroll/SpellForm"]
+layout_mode = 2
+unique_name_in_owner = true
+wait_time = 0.12

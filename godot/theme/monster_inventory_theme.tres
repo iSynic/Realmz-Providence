@@ -1,0 +1,30 @@
+[gd_resource type="Theme" load_steps=6 format=3]
+
+[sub_resource type="SystemFont" id="Mono"]
+font_names = PackedStringArray("JetBrains Mono", "Cascadia Mono", "Consolas")
+[sub_resource type="SystemFont" id="MonoBold"]
+font_names = PackedStringArray("JetBrains Mono", "Cascadia Mono", "Consolas")
+font_weight = 700
+[sub_resource type="StyleBoxFlat" id="Row"]
+bg_color = Color(0.043, 0.075, 0.106, 1)
+border_width_bottom = 1
+border_color = Color(0.133, 0.192, 0.247, 1)
+[sub_resource type="StyleBoxFlat" id="Hover"]
+bg_color = Color(0.067, 0.141, 0.196, 1)
+border_width_bottom = 1
+border_color = Color(0.133, 0.192, 0.247, 1)
+[sub_resource type="StyleBoxFlat" id="Selected"]
+bg_color = Color(0.071, 0.22, 0.29, 1)
+border_width_left = 3
+border_width_bottom = 1
+border_color = Color(0.169, 0.561, 0.847, 1)
+
+[resource]
+default_font = SubResource("Mono")
+default_font_size = 11
+MonsterName/base_type = &"Label"
+MonsterName/fonts/font = SubResource("MonoBold")
+Button/styles/normal = SubResource("Row")
+Button/styles/hover = SubResource("Hover")
+Button/styles/pressed = SubResource("Selected")
+Button/styles/hover_pressed = SubResource("Selected")

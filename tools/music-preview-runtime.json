@@ -1,0 +1,14 @@
+{
+  "kind": "providence.music-preview-runtime",
+  "formatVersion": 1,
+  "version": "0.8.9",
+  "platform": "windows-amd64",
+  "archiveUrl": "https://lib.openmpt.org/files/libopenmpt/bin/libopenmpt-0.8.9+release.bin.windows.zip",
+  "archiveSha256": "d20c7589b323013ce55d2198fd55f1a0586e66b98c7cede59dea7ee97460eb79",
+  "sourceUrl": "https://lib.openmpt.org/files/libopenmpt/src/libopenmpt-0.8.9+release.msvc.zip",
+  "sourceSha256": "8d3b3c14b92dd1fcbb31b2bf28ed917c1d3b529b0d9380562d5bdb6256d32bea",
+  "files": {
+    "openmpt123.exe": "9d809056e40e3d004b1ab9275081ee8ddb9d1874999369189d0ba172e7c3131c",
+    "openmpt-mpg123.dll": "877627a0e0e5988592e1a1d46ff0fc827a4936ffe8e25333dfbfa79234cea83f"
+  }
+}

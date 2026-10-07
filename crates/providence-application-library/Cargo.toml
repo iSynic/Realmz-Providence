@@ -1,0 +1,19 @@
+[package]
+name = "providence-application-library"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+providence-core = { path = "../providence-core" }
+providence-rebuilt-package = { path = "../providence-rebuilt-package" }
+png = "0.18"
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+zip.workspace = true
+
+[lints]
+workspace = true

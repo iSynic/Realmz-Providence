@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource path="res://src/special_land_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/world_special_catalog.tscn" type="PackedScene" id="2"]
+
+[node name="Special Land Tiles" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="WorldSpecialCatalog" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2

@@ -1,0 +1,96 @@
+name: Native builds
+
+on:
+  push:
+    branches: [main]
+    tags: ['v0.6.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            platform: windows-x64
+          - runner: ubuntu-22.04
+            platform: linux-x64
+          - runner: macos-14
+            platform: macos-universal
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/providence-target
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
+        with:
+          toolchain: '1.98.0'
+          components: rustfmt, clippy
+      - name: Public source boundary
+        run: python tools/release/check_public_source.py
+      - name: Format and lint
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Core, storage and adapter tests
+        run: cargo test --workspace --all-targets --locked
+      - name: macOS universal targets
+        if: runner.os == 'macOS'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Pinned Godot editor and export templates
+        run: python tools/release/bootstrap.py --cache "${{ runner.temp }}/providence-cache"
+      - name: Build complete native bundle
+        run: python tools/release/package.py --godot "${{ env.PROVIDENCE_GODOT_PATH }}" --target "${{ runner.temp }}/providence-target" --cache "${{ runner.temp }}/providence-cache" --output "${{ runner.temp }}/providence-release"
+      - name: Native startup and music boundaries
+        shell: bash
+        run: |
+          "$PROVIDENCE_GODOT_PATH" --headless --path godot --script res://tools/validate_startup_splash.gd
+          "$PROVIDENCE_GODOT_PATH" --headless --path godot --script res://tools/validate_music_pcm.gd
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Providence-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/providence-release/*.zip
+            ${{ runner.temp }}/providence-release/*.tar.gz
+            ${{ runner.temp }}/providence-release/*.sha256
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Verify archives and prepare corresponding source
+        run: |
+          cd release
+          cat *.sha256 > SHA256SUMS
+          sha256sum --check SHA256SUMS
+          git -C .. archive --format=tar.gz --prefix=Providence-${GITHUB_REF_NAME}/ --output="$PWD/Providence-${GITHUB_REF_NAME}-source.tar.gz" HEAD
+          sha256sum *-source.tar.gz >> SHA256SUMS
+      - name: Publish beta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/*.zip release/*.tar.gz release/SHA256SUMS --verify-tag --prerelease --title "Providence $GITHUB_REF_NAME" --notes-file docs/public/beta-release.md

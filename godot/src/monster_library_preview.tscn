@@ -1,0 +1,686 @@
+[gd_scene load_steps=8 format=3]
+[ext_resource type="PackedScene" path="res://src/monster_library_reference_list.tscn" id="7"]
+[ext_resource type="Script" path="res://src/monster_library_preview.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+[ext_resource type="StyleBox" path="res://theme/monster_section_panel.tres" id="3"]
+[ext_resource type="StyleBox" path="res://theme/monster_fact_panel.tres" id="4"]
+[ext_resource type="StyleBox" path="res://theme/monster_table_cell.tres" id="5"]
+[ext_resource type="StyleBox" path="res://theme/monster_table_header.tres" id="6"]
+[node name="ProtectedMonsterLibraryPreview" type="VBoxContainer"]
+custom_minimum_size = Vector2(828, 0)
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="OwnershipHeader" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Identity" type="VBoxContainer" parent="OwnershipHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EntryName" type="Label" parent="OwnershipHeader/Identity"]
+layout_mode = 2
+text = "Select a library entry."
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="Ownership" type="Label" parent="OwnershipHeader/Identity"]
+layout_mode = 2
+text = "PROTECTED BUILT-IN\nREFERENCE"
+custom_minimum_size = Vector2(206, 0)
+size_flags_horizontal = 0
+theme_override_styles/normal = ExtResource("6")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+
+[node name="OwnershipActions" type="VBoxContainer" parent="OwnershipHeader"]
+layout_mode = 2
+
+[node name="Row0" type="HBoxContainer" parent="OwnershipHeader/OwnershipActions"]
+layout_mode = 2
+alignment = 2
+
+[node name="Customize" type="Button" parent="OwnershipHeader/OwnershipActions/Row0"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Customize"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="CopyVariant" type="Button" parent="OwnershipHeader/OwnershipActions/Row0"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy To Library Variant"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="CopyScenario" type="Button" parent="OwnershipHeader/OwnershipActions/Row0"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy To Scenario"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="Row1" type="HBoxContainer" parent="OwnershipHeader/OwnershipActions"]
+layout_mode = 2
+alignment = 2
+
+[node name="ReplaceScenario" type="Button" parent="OwnershipHeader/OwnershipActions/Row1"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Replace Scenario"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="CopyAllSets" type="Button" parent="OwnershipHeader/OwnershipActions/Row1"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy To All Sets"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="CopyGenerate" type="Button" parent="OwnershipHeader/OwnershipActions/Row1"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy And Generate Variants"
+disabled = true
+theme_override_font_sizes/font_size = 11
+tooltip_text = "Library authoring and population are not connected in this read-only workbench."
+
+[node name="LibraryDescription" type="PanelContainer" parent="."]
+theme_override_styles/panel = ExtResource("3")
+size_flags_horizontal = 3
+
+[node name="Body" type="HBoxContainer" parent="LibraryDescription"]
+layout_mode = 2
+
+[node name="Portrait" type="TextureRect" parent="LibraryDescription/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 88)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Text" type="VBoxContainer" parent="LibraryDescription/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="LibraryDescription/Body/Text"]
+layout_mode = 2
+text = "Description"
+
+[node name="Description" type="Label" parent="LibraryDescription/Body/Text"]
+layout_mode = 2
+text = ""
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 88)
+autowrap_mode = 2
+
+[node name="StatsAndAttacks" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LibraryStats" type="PanelContainer" parent="StatsAndAttacks"]
+theme_override_styles/panel = ExtResource("3")
+size_flags_horizontal = 1
+
+[node name="Body" type="VBoxContainer" parent="StatsAndAttacks/LibraryStats"]
+layout_mode = 2
+custom_minimum_size = Vector2(204, 0)
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+text = "Stats"
+
+[node name="hitDice" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/hitDice"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/hitDice/Contents"]
+layout_mode = 2
+text = "HIT DICE"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/hitDice/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "hitDice"
+
+[node name="armor" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/armor"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/armor/Contents"]
+layout_mode = 2
+text = "ARMOR"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/armor/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "armor"
+
+[node name="agility" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/agility"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/agility/Contents"]
+layout_mode = 2
+text = "AGILITY"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/agility/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "agility"
+
+[node name="movementMax" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/movementMax"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/movementMax/Contents"]
+layout_mode = 2
+text = "MOVEMENT"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/movementMax/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "movementMax"
+
+[node name="attackCount" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/attackCount"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/attackCount/Contents"]
+layout_mode = 2
+text = "ATTACKS"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/attackCount/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "attackCount"
+
+[node name="magicAttackCount" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/magicAttackCount"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/magicAttackCount/Contents"]
+layout_mode = 2
+text = "MAGIC ATTACKS"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/magicAttackCount/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "magicAttackCount"
+
+[node name="spellPoints" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/spellPoints"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/spellPoints/Contents"]
+layout_mode = 2
+text = "SPELL POINTS"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/spellPoints/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "spellPoints"
+
+[node name="experience" type="PanelContainer" parent="StatsAndAttacks/LibraryStats/Body"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="StatsAndAttacks/LibraryStats/Body/experience"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="StatsAndAttacks/LibraryStats/Body/experience/Contents"]
+layout_mode = 2
+text = "EXPERIENCE"
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+
+[node name="Value" type="Label" parent="StatsAndAttacks/LibraryStats/Body/experience/Contents"]
+layout_mode = 2
+text = "—"
+metadata/field = "experience"
+
+[node name="LibraryAttacks" type="PanelContainer" parent="StatsAndAttacks"]
+theme_override_styles/panel = ExtResource("3")
+size_flags_horizontal = 3
+
+[node name="Body" type="VBoxContainer" parent="StatsAndAttacks/LibraryAttacks"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body"]
+layout_mode = 2
+text = "Attacks"
+
+[node name="AttackTable" type="GridContainer" parent="StatsAndAttacks/LibraryAttacks/Body"]
+layout_mode = 2
+columns = 4
+theme_override_constants/v_separation = 0
+theme_override_constants/h_separation = 0
+
+[node name="AttackHeader" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "ATTACK"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("6")
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 0
+
+[node name="DamageHeader" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "DAMAGE"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("6")
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 0
+
+[node name="FormHeader" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "FORM"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("6")
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 0
+
+[node name="SpecialHeader" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "SPECIAL"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("6")
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 0
+
+[node name="Attack0" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "Attack 1"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 0
+
+[node name="Damage0" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Form0" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Special0" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Attack1" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "Attack 2"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 0
+
+[node name="Damage1" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Form1" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Special1" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Attack2" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "Attack 3"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 0
+
+[node name="Damage2" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Form2" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Special2" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Attack3" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "Attack 4"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 0
+
+[node name="Damage3" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Form3" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Special3" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Attack4" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "Attack 5"
+custom_minimum_size = Vector2(86, 0)
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 0
+
+[node name="Damage4" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(74, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Form4" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(58, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="Special4" type="Label" parent="StatsAndAttacks/LibraryAttacks/Body/AttackTable"]
+layout_mode = 2
+text = "—"
+custom_minimum_size = Vector2(70, 0)
+size_flags_horizontal = 1
+theme_override_styles/normal = ExtResource("5")
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 2
+
+[node name="LibrarySpellsLoot" type="PanelContainer" parent="."]
+theme_override_styles/panel = ExtResource("3")
+size_flags_horizontal = 3
+
+[node name="Body" type="VBoxContainer" parent="LibrarySpellsLoot"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="LibrarySpellsLoot/Body"]
+layout_mode = 2
+text = "Spells And Loot"
+
+[node name="Columns" type="HBoxContainer" parent="LibrarySpellsLoot/Body"]
+layout_mode = 2
+
+[node name="SpellsColumn" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="VBoxContainer" parent="LibrarySpellsLoot/Body/Columns/SpellsColumn"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="LibrarySpellsLoot/Body/Columns/SpellsColumn/Contents"]
+layout_mode = 2
+text = "SPELLS"
+theme_override_font_sizes/font_size = 10
+
+[node name="Spells" parent="LibrarySpellsLoot/Body/Columns/SpellsColumn/Contents" instance=ExtResource("7")]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="ItemsColumn" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="VBoxContainer" parent="LibrarySpellsLoot/Body/Columns/ItemsColumn"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="LibrarySpellsLoot/Body/Columns/ItemsColumn/Contents"]
+layout_mode = 2
+text = "ITEMS"
+theme_override_font_sizes/font_size = 10
+
+[node name="Items" parent="LibrarySpellsLoot/Body/Columns/ItemsColumn/Contents" instance=ExtResource("7")]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="MoneyRewards" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="VBoxContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents"]
+layout_mode = 2
+text = "MONEY REWARDS"
+theme_override_font_sizes/font_size = 10
+
+[node name="GoldRow" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GoldRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+
+[node name="GoldIcon" type="TextureRect" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GoldRow/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GoldRow/Contents"]
+layout_mode = 2
+text = "Gold"
+size_flags_horizontal = 3
+
+[node name="Gold" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GoldRow/Contents"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_styles/normal = ExtResource("4")
+text = "—"
+unique_name_in_owner = true
+
+[node name="GemsRow" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GemsRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+
+[node name="GemsIcon" type="TextureRect" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GemsRow/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GemsRow/Contents"]
+layout_mode = 2
+text = "Gems"
+size_flags_horizontal = 3
+
+[node name="Gems" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/GemsRow/Contents"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_styles/normal = ExtResource("4")
+text = "—"
+unique_name_in_owner = true
+
+[node name="JewelryRow" type="PanelContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("4")
+
+[node name="Contents" type="HBoxContainer" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/JewelryRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+
+[node name="JewelryIcon" type="TextureRect" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/JewelryRow/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/JewelryRow/Contents"]
+layout_mode = 2
+text = "Jewelry"
+size_flags_horizontal = 3
+
+[node name="Jewelry" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents/JewelryRow/Contents"]
+layout_mode = 2
+custom_minimum_size = Vector2(38, 28)
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_styles/normal = ExtResource("4")
+text = "—"
+unique_name_in_owner = true
+
+[node name="RewardBehavior" type="Label" parent="LibrarySpellsLoot/Body/Columns/MoneyRewards/Contents"]
+layout_mode = 2
+text = "Realmz rolls 0..value for each reward type when this monster drops loot."
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+
+[node name="PreviewStatus" type="Label" parent="."]
+layout_mode = 2
+text = "Read-only library preview."
+unique_name_in_owner = true
+autowrap_mode = 2

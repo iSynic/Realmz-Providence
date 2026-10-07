@@ -1,0 +1,577 @@
+[gd_scene load_steps=8 format=3]
+[ext_resource type="Script" path="res://src/battle_editor.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_canvas.gd" id="2"]
+[ext_resource type="PackedScene" path="res://src/battle_reference_field.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://src/battle_reference_picker.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/battle_uses.tscn" id="5"]
+[ext_resource type="Script" path="res://src/battle_failure_window.gd" id="6"]
+[ext_resource type="PackedScene" path="res://src/battle_palette.tscn" id="7"]
+
+[node name="BattleEditor" type="HBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+script = ExtResource("1")
+
+[node name="BattleUses" parent="." instance=ExtResource("5")]
+
+[node name="Inventory" type="VBoxContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 0)
+
+[node name="BattleHeading" type="Label" parent="Inventory"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "BATTLES"
+
+[node name="BattleRecordStatus" type="Label" parent="Inventory"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open a project"
+
+[node name="BattleSearch" type="LineEdit" parent="Inventory"]
+clear_button_enabled = true
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Find Battle by ID…"
+
+[node name="BattleRecordList" type="ItemList" parent="Inventory"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+allow_reselect = true
+
+[node name="Pages" type="HBoxContainer" parent="Inventory"]
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="Inventory/Pages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹"
+
+[node name="Page" type="Label" parent="Inventory/Pages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Page 1"
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="Next" type="Button" parent="Inventory/Pages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "›"
+
+[node name="Author" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CombatTabs" type="HBoxContainer" parent="Author"]
+layout_mode = 2
+
+[node name="BattleTab" type="Button" parent="Author/CombatTabs"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Battles"
+toggle_mode = true
+button_pressed = true
+
+[node name="MonsterTab" type="Button" parent="Author/CombatTabs"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Monsters"
+
+[node name="LibraryTab" type="Button" parent="Author/CombatTabs"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Monster Library"
+
+[node name="Header" type="HBoxContainer" parent="Author"]
+layout_mode = 2
+
+[node name="BattleIdentity" type="Label" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Select or create a Battle"
+size_flags_horizontal = 3
+
+[node name="NewBattle" type="Button" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "New…"
+
+[node name="CopyBattle" type="Button" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy…"
+
+[node name="ClearBattle" type="Button" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Clear…"
+
+[node name="UsedBy" type="Button" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Used By"
+
+[node name="Preview" type="Button" parent="Author/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Preview"
+
+[node name="References" type="HBoxContainer" parent="Author"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DistanceGroup" type="VBoxContainer" parent="Author/References"]
+layout_mode = 2
+custom_minimum_size = Vector2(164, 0)
+
+[node name="DistanceLabel" type="Label" parent="Author/References/DistanceGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "DISTANCE"
+
+[node name="Distance" type="LineEdit" parent="Author/References/DistanceGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+
+[node name="DistanceHelp" type="Label" parent="Author/References/DistanceGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0 no spread · 1–30 usual"
+theme_override_font_sizes/font_size = 10
+
+[node name="BeforeGroup" type="VBoxContainer" parent="Author/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BeforeLabel" type="Label" parent="Author/References/BeforeGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "BEFORE STRING"
+
+[node name="Before" parent="Author/References/BeforeGroup" instance=ExtResource("3")]
+layout_mode = 2
+unique_name_in_owner = true
+field_key = "messageBefore"
+
+[node name="BeforeHelp" type="Label" parent="Author/References/BeforeGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+
+[node name="AfterGroup" type="VBoxContainer" parent="Author/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AfterLabel" type="Label" parent="Author/References/AfterGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "AFTER STRING"
+
+[node name="After" parent="Author/References/AfterGroup" instance=ExtResource("3")]
+layout_mode = 2
+unique_name_in_owner = true
+field_key = "messageAfter"
+
+[node name="AfterHelp" type="Label" parent="Author/References/AfterGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+
+[node name="MacroGroup" type="VBoxContainer" parent="Author/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MacroLabel" type="Label" parent="Author/References/MacroGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "ROUND MACRO"
+
+[node name="Macro" parent="Author/References/MacroGroup" instance=ExtResource("3")]
+layout_mode = 2
+unique_name_in_owner = true
+field_key = "battleMacro"
+
+[node name="MacroHelp" type="Label" parent="Author/References/MacroGroup"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Runs each round · negative XAP"
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+
+[node name="Body" type="HBoxContainer" parent="Author"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="PalettePanel" type="VBoxContainer" parent="Author/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+theme_override_constants/separation = 6
+
+[node name="Tools" type="HBoxContainer" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+
+[node name="SelectTool" type="Button" parent="Author/Body/PalettePanel/Tools"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Select"
+toggle_mode = true
+
+[node name="PaintTool" type="Button" parent="Author/Body/PalettePanel/Tools"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Paint"
+toggle_mode = true
+
+[node name="EraseTool" type="Button" parent="Author/Body/PalettePanel/Tools"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Erase"
+toggle_mode = true
+
+[node name="PaletteHeading" type="Label" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "SCENARIO MONSTERS"
+
+[node name="MonsterSet" type="OptionButton" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="SetHelp" type="Label" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Preview set · not a Battle field"
+theme_override_font_sizes/font_size = 10
+
+[node name="PaletteSearch" type="LineEdit" parent="Author/Body/PalettePanel"]
+clear_button_enabled = true
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Find scenario monsters…"
+
+[node name="ShowUnavailable" type="CheckBox" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Show unavailable"
+
+[node name="PaletteStatus" type="Label" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "No scenario monsters"
+theme_override_font_sizes/font_size = 10
+
+[node name="PaletteEmpty" type="Label" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+visible = false
+
+[node name="MonsterPalette" parent="Author/Body/PalettePanel" instance=ExtResource("7")]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+
+[node name="PalettePages" type="HBoxContainer" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+
+[node name="PalettePrevious" type="Button" parent="Author/Body/PalettePanel/PalettePages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "‹"
+
+[node name="PalettePage" type="Label" parent="Author/Body/PalettePanel/PalettePages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Page 1"
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="PaletteNext" type="Button" parent="Author/Body/PalettePanel/PalettePages"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "›"
+
+[node name="OpenPaletteMonster" type="Button" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open Monster"
+
+[node name="ForceFriends" type="CheckBox" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Force Friends brush"
+alignment = 1
+
+[node name="EmptyCellHelp" type="Label" parent="Author/Body/PalettePanel"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Monster 0 is the empty-cell value."
+theme_override_font_sizes/font_size = 10
+
+[node name="GridPanel" type="VBoxContainer" parent="Author/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GridHeader" type="HBoxContainer" parent="Author/Body/GridPanel"]
+layout_mode = 2
+
+[node name="GridHeading" type="Label" parent="Author/Body/GridPanel/GridHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "BATTLE GRID"
+size_flags_horizontal = 3
+
+[node name="OccupantCount" type="Label" parent="Author/Body/GridPanel/GridHeader"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0 / 100 occupants"
+
+[node name="BattleCanvas" type="Control" parent="Author/Body/GridPanel"]
+tooltip_text = "Arrows select; Enter acts; Delete erases; Escape cancels dragging."
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(492, 492)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 0
+script = ExtResource("2")
+
+[node name="GridHelp" type="Label" parent="Author/Body/GridPanel"]
+visible = false
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_font_sizes/font_size = 10
+
+[node name="Placement" type="VBoxContainer" parent="Author/Body"]
+tooltip_text = "Large monsters use their lower-right anchor. Erase targets the top visible occupant."
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+theme_override_constants/separation = 8
+
+[node name="PlacementIdentity" type="Label" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "No occupant selected"
+
+[node name="PlacementValue" type="Label" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+autowrap_mode = 2
+
+[node name="PlacementState" type="Label" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+autowrap_mode = 2
+
+[node name="Pictures" type="HBoxContainer" parent="Author/Body/Placement"]
+layout_mode = 2
+
+[node name="Facing" type="TextureRect" parent="Author/Body/Placement/Pictures"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 96)
+size_flags_horizontal = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Reverse" type="TextureRect" parent="Author/Body/Placement/Pictures"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 96)
+size_flags_horizontal = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="PictureLabels" type="HBoxContainer" parent="Author/Body/Placement"]
+layout_mode = 2
+
+[node name="FacingLabel" type="Label" parent="Author/Body/Placement/PictureLabels"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+text = "Facing"
+theme_override_font_sizes/font_size = 11
+
+[node name="ReverseLabel" type="Label" parent="Author/Body/Placement/PictureLabels"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+text = "Reverse"
+theme_override_font_sizes/font_size = 11
+
+[node name="AppearanceReason" type="Label" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+autowrap_mode = 2
+
+[node name="MonsterFacts" type="Label" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+autowrap_mode = 2
+
+[node name="ReplaceOccupant" type="Button" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Replace…"
+
+[node name="MoveOccupant" type="Button" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Move…"
+
+[node name="SelectedFriends" type="CheckBox" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Force Friends"
+alignment = 1
+
+[node name="ClearCell" type="Button" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Clear Cell"
+
+[node name="OpenSelectedMonster" type="Button" parent="Author/Body/Placement"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open Monster"
+
+[node name="PlacementExplanation" type="Label" parent="Author/Body/Placement"]
+visible = false
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 11
+
+[node name="Footer" type="HBoxContainer" parent="Author"]
+layout_mode = 2
+
+[node name="DraftStatus" type="Label" parent="Author/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "No Battle selected"
+size_flags_horizontal = 3
+autowrap_mode = 2
+
+[node name="Recovery" type="Button" parent="Author/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Check status"
+
+[node name="Discard" type="Button" parent="Author/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Discard"
+
+[node name="Apply" type="Button" parent="Author/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply"
+
+[node name="ReferencePicker" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+
+[node name="Impact" type="ConfirmationDialog" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+title = "Review Battle operation"
+size = Vector2i(760, 360)
+exclusive = true
+transient = true
+dialog_hide_on_ok = false
+ok_button_text = "Create draft"
+cancel_button_text = "Cancel"
+
+[node name="DraftGuard" type="ConfirmationDialog" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+title = "Unapplied Battle changes"
+size = Vector2i(680, 240)
+exclusive = true
+transient = true
+dialog_hide_on_ok = false
+ok_button_text = "Apply & Continue"
+cancel_button_text = "Keep Editing"
+
+[node name="Failure" type="Window" parent="."]
+script = ExtResource("6")
+layout_mode = 2
+unique_name_in_owner = true
+title = "Battle changes kept"
+size = Vector2i(800, 380)
+min_size = Vector2i(640, 280)
+visible = false
+exclusive = true
+transient = true
+
+[node name="Margin" type="MarginContainer" parent="Failure"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Failure/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FailureMessage" type="Label" parent="Failure/Margin/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Your draft is kept."
+size_flags_vertical = 3
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Failure/Margin/Body"]
+layout_mode = 2
+alignment = 2
+
+[node name="CloseFailure" type="Button" parent="Failure/Margin/Body/Actions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Close explanation"
+
+[node name="Compare" type="Button" parent="Failure/Margin/Body/Actions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Compare current"
+
+[node name="Recover" type="Button" parent="Failure/Margin/Body/Actions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Check status"
+
+[node name="SearchDelay" type="Timer" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+wait_time = 0.16
+one_shot = true
+
+[node name="PaletteDelay" type="Timer" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+wait_time = 0.16
+one_shot = true

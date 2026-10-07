@@ -1,0 +1,193 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/domain_navigation.gd" type="Script" id="1"]
+[ext_resource path="res://src/map_context_sidebar.tscn" type="PackedScene" id="2"]
+[ext_resource path="res://src/domain_tool_button.tscn" type="PackedScene" id="3"]
+
+[node name="DomainNavigation" type="PanelContainer"]
+custom_minimum_size = Vector2(380, 0)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="Layout" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="DomainRail" type="VBoxContainer" parent="Layout"]
+custom_minimum_size = Vector2(76, 0)
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="WorldGroup" type="Label" parent="Layout/DomainRail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 9
+text = "WORLD"
+horizontal_alignment = 1
+
+[node name="MapsDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+button_pressed = true
+glyph = "▦"
+caption = "MAPS"
+accent = Color(0.364706, 0.721569, 0.972549, 1)
+tooltip_text = "World · Land and Dungeon Maps"
+
+[node name="PlayerMapsDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⌖"
+caption = "PLAYER"
+accent = Color(0.505882, 0.658824, 1, 1)
+tooltip_text = "World · Player Maps"
+
+[node name="StoryGroup" type="Label" parent="Layout/DomainRail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 9
+text = "STORY"
+horizontal_alignment = 1
+
+[node name="ScriptsDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⌁"
+caption = "SCRIPTS"
+accent = Color(0.843137, 0.658824, 1, 1)
+tooltip_text = "Story · Action Points"
+
+[node name="TextDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "T"
+caption = "TEXT"
+accent = Color(0.941176, 0.780392, 0.368627, 1)
+tooltip_text = "Story · Strings"
+
+[node name="EncountersDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "◆"
+caption = "ENCOUNTER"
+accent = Color(0.941176, 0.545098, 0.447059, 1)
+tooltip_text = "Story · Encounters"
+
+[node name="SystemsGroup" type="Label" parent="Layout/DomainRail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 9
+text = "SYSTEMS"
+horizontal_alignment = 1
+
+[node name="ScenarioDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⚑"
+caption = "SCENARIO"
+accent = Color(0.654902, 0.823529, 0.552941, 1)
+tooltip_text = "Actors & Systems · Scenario"
+
+[node name="RulesDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⚙"
+caption = "CHARACTERS\n& MAGIC"
+accent = Color(0.772549, 0.647059, 1, 1)
+tooltip_text = "Characters & Magic · Spells, Races and Castes"
+
+[node name="CombatDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⚔"
+caption = "COMBAT"
+accent = Color(0.941176, 0.490196, 0.490196, 1)
+tooltip_text = "Actors & Systems · Combat"
+
+[node name="EconomyDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "¤"
+caption = "ECONOMY"
+accent = Color(0.890196, 0.764706, 0.407843, 1)
+tooltip_text = "Actors & Systems · Economy"
+
+[node name="MediaGroup" type="Label" parent="Layout/DomainRail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 9
+text = "MEDIA"
+horizontal_alignment = 1
+
+[node name="AssetsDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "▧"
+caption = "ASSETS"
+accent = Color(0.384314, 0.780392, 0.85098, 1)
+tooltip_text = "Media & Library · Assets"
+
+[node name="ReleaseGroup" type="Label" parent="Layout/DomainRail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 9
+text = "RELEASE"
+horizontal_alignment = 1
+
+[node name="LinterDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "!"
+caption = "VALIDATE"
+accent = Color(0.94902, 0.631373, 0.372549, 1)
+tooltip_text = "Validate & Publish · Problems and readiness"
+
+[node name="ExportDomain" parent="Layout/DomainRail" instance=ExtResource("3")]
+unique_name_in_owner = true
+glyph = "⇧"
+caption = "PUBLISH"
+accent = Color(0.454902, 0.823529, 0.603922, 1)
+tooltip_text = "Validate & Publish · Export"
+
+[node name="DomainSidebar" type="VBoxContainer" parent="Layout"]
+custom_minimum_size = Vector2(304, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="MapContextSidebar" parent="Layout/DomainSidebar" instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="DomainHeading" type="Label" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+theme_override_font_sizes/font_size = 16
+text = "LAND / DUNGEON MAPS"
+
+[node name="DomainSubtitle" type="Label" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = "Land levels, dungeon levels, layout, and tile painting."
+autowrap_mode = 2
+
+[node name="DomainRoutesScroll" type="ScrollContainer" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="DomainRoutes" type="VBoxContainer" parent="Layout/DomainSidebar/DomainRoutesScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProjectHeading" type="Label" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.545098, 0.596078, 1)
+theme_override_font_sizes/font_size = 11
+text = "PROJECT"
+
+[node name="ProjectSearch" type="LineEdit" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Find in project…"
+
+[node name="ProjectTree" type="Tree" parent="Layout/DomainSidebar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true

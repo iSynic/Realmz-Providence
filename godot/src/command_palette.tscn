@@ -1,0 +1,185 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource path="res://src/command_palette.gd" type="Script" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_command_palette"]
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
+bg_color = Color(0.027451, 0.039216, 0.054902, 0.99)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.176471, 0.270588, 0.352941, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="CommandPalette" type="PopupPanel"]
+theme_override_styles/panel = SubResource("StyleBox_command_palette")
+script = ExtResource("1")
+
+[node name="CommandPaletteBody" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(600, 410)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CommandPaletteHeader" type="HBoxContainer" parent="CommandPaletteBody"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CommandPaletteBody/CommandPaletteHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+theme_override_font_sizes/font_size = 14
+text = "COMMAND PALETTE"
+
+[node name="CloseHint" type="Label" parent="CommandPaletteBody/CommandPaletteHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Esc"
+
+[node name="CommandSearch" type="LineEdit" parent="CommandPaletteBody"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Type a command or entity…"
+clear_button_enabled = true
+
+[node name="CommandScopes" type="HBoxContainer" parent="CommandPaletteBody"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AllCommandsScope" type="Button" parent="CommandPaletteBody/CommandScopes"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_pressed = true
+text = "All"
+
+[node name="CommandsScope" type="Button" parent="CommandPaletteBody/CommandScopes"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+tooltip_text = "Scope filtering is not implemented. All results remain searchable."
+text = "Commands"
+
+[node name="EntitiesScope" type="Button" parent="CommandPaletteBody/CommandScopes"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+tooltip_text = "Entity search awaits bounded cross-family projections."
+text = "Entities"
+
+[node name="CommandResults" type="VBoxContainer" parent="CommandPaletteBody"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 3
+
+[node name="OpenCurrentMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="OpenCurrentMap" type="Button" parent="CommandPaletteBody/CommandResults/OpenCurrentMapRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Open current Land Map  ·  World / Maps"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/OpenCurrentMapRow"]
+layout_mode = 2
+text = "Enter"
+
+[node name="FitMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="FitMap" type="Button" parent="CommandPaletteBody/CommandResults/FitMapRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Map: Fit Canvas  ·  View / Map"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/FitMapRow"]
+layout_mode = 2
+text = "F"
+
+[node name="ToggleActionPointsRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ToggleActionPoints" type="Button" parent="CommandPaletteBody/CommandResults/ToggleActionPointsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Map: Toggle Action Point Overlays  ·  View / Map"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/ToggleActionPointsRow"]
+layout_mode = 2
+text = ""
+
+[node name="PaintSelectedTileRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PaintSelectedTile" type="Button" parent="CommandPaletteBody/CommandResults/PaintSelectedTileRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Map: Paint with Selected Tile  ·  Land Editor"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/PaintSelectedTileRow"]
+layout_mode = 2
+text = "P"
+
+[node name="StampSelectionRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StampSelection" type="Button" parent="CommandPaletteBody/CommandResults/StampSelectionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+disabled = true
+text = "Map: Stamp Selection  ·  Land Editor"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/StampSelectionRow"]
+layout_mode = 2
+text = ""
+
+[node name="RevealMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RevealMap" type="Button" parent="CommandPaletteBody/CommandResults/RevealMapRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+disabled = true
+text = "Reveal Map in Project Explorer  ·  Navigate"
+
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/RevealMapRow"]
+layout_mode = 2
+text = "Ctrl+Shift+R"
+
+[node name="CommandPaletteStatus" type="Label" parent="CommandPaletteBody"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "6 results · disabled commands explain why"
+
+[connection signal="text_changed" from="CommandPaletteBody/CommandSearch" to="." method="_on_search_changed"]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/OpenCurrentMapRow/OpenCurrentMap" to="." method="_request_command" binds=["map.open-current"]]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/FitMapRow/FitMap" to="." method="_request_command" binds=["map.fit"]]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/ToggleActionPointsRow/ToggleActionPoints" to="." method="_request_command" binds=["map.toggle-action-points"]]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/PaintSelectedTileRow/PaintSelectedTile" to="." method="_request_command" binds=["map.paint-selected-tile"]]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/StampSelectionRow/StampSelection" to="." method="_request_command" binds=["map.stamp-selection"]]
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/RevealMapRow/RevealMap" to="." method="_request_command" binds=["map.reveal-explorer"]]

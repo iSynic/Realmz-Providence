@@ -1,0 +1,1042 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realmz.app/contracts/realmz2-package-v5.schema.json",
+  "$comment": "Canonical schema bytes use LF line endings on every platform.",
+  "title": "Realmz Remake 2.0 package documents (schema v5)",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/content" },
+    { "$ref": "#/$defs/world" },
+    { "$ref": "#/$defs/scenario" },
+    { "$ref": "#/$defs/assets" }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "documentHeader": {
+      "type": "object",
+      "required": ["kind", "schemaVersion"]
+    },
+    "fileIntegrity": {
+      "type": "object",
+      "required": ["bytes", "sha256"],
+      "properties": {
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "required": [
+        "kind",
+        "format",
+        "formatVersion",
+        "schemaVersion",
+        "schemaHash",
+        "campaignId",
+        "contentId",
+        "name",
+        "compiler",
+        "engine",
+        "start",
+        "capabilities",
+        "files",
+        "packageHash"
+      ],
+      "properties": {
+        "kind": { "const": "realmz2.manifest" },
+        "format": { "const": "realmz2" },
+        "formatVersion": { "const": 2 },
+        "schemaVersion": { "const": 5 },
+        "schemaHash": { "$ref": "#/$defs/sha256" },
+        "campaignId": { "$ref": "#/$defs/identifier" },
+        "contentId": { "$ref": "#/$defs/sha256" },
+        "name": { "type": "string", "minLength": 1 },
+        "compiler": {
+          "type": "object",
+          "required": ["name", "version", "commit", "projectSchemaVersion", "projectOrigin"],
+          "properties": {
+            "name": { "const": "Providence" },
+            "version": { "type": "string", "minLength": 1 },
+            "commit": { "type": "string", "minLength": 1 },
+            "projectSchemaVersion": { "type": "integer", "minimum": 1 },
+            "projectOrigin": { "type": ["string", "object", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "engine": {
+          "type": "object",
+          "required": ["minimumVersion", "rulesVersion"],
+          "properties": {
+            "minimumVersion": { "type": "string", "minLength": 1 },
+            "rulesVersion": { "const": "realmz-classic-1" }
+          },
+          "additionalProperties": false
+        },
+        "start": {
+          "type": "object",
+          "required": ["mapId", "x", "y"],
+          "properties": {
+            "mapId": { "$ref": "#/$defs/identifier" },
+            "x": { "type": "integer", "minimum": 0 },
+            "y": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true
+        },
+        "files": {
+          "type": "object",
+          "required": ["content.json", "world.json", "scenario.json", "assets/index.json"],
+          "propertyNames": { "pattern": "^(content\\.json|world\\.json|scenario\\.json|assets/index\\.json|assets/media/[0-9a-f]{64}(\\.[a-z0-9]+)?)$" },
+          "additionalProperties": { "$ref": "#/$defs/fileIntegrity" }
+        },
+        "packageHash": { "$ref": "#/$defs/sha256" }
+      },
+      "additionalProperties": false
+    },
+    "integerArray": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "stringArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/identifier" }
+    },
+    "classicMonsterItemSlots": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 255 },
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "classicMonsterConditions": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": -128, "maximum": 127 },
+      "minItems": 40,
+      "maxItems": 40
+    },
+    "battleDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "monsterSlots", "distance", "messageBeforeId", "messageAfterId", "macroId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "classicId": { "type": "integer", "minimum": 0 },
+        "monsterSlots": { "type": "array", "maxItems": 169, "items": { "$ref": "#/$defs/battleMonsterSlot" } },
+        "distance": { "type": "integer" },
+        "messageBeforeId": { "type": "integer" },
+        "messageAfterId": { "type": "integer" },
+        "macroId": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "monsterSetDefinition": {
+      "type": "object",
+      "required": ["setId", "name", "monsters"],
+      "properties": {
+        "setId": { "enum": [-1, 1] },
+        "name": { "type": "string", "minLength": 1 },
+        "monsters": { "type": "array", "items": { "$ref": "#/$defs/monsterDefinition" } }
+      },
+      "additionalProperties": false
+    },
+    "battleMonsterSlot": {
+      "type": "object",
+      "required": ["x", "y", "monsterId", "invertTraitor"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "monsterId": { "$ref": "#/$defs/identifier" },
+        "invertTraitor": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "monsterAttackDefinition": {
+      "type": "object",
+      "required": ["damageMin", "damageMax", "soundOrType", "special"],
+      "properties": {
+        "damageMin": { "type": "integer" },
+        "damageMax": { "type": "integer" },
+        "soundOrType": { "type": "integer" },
+        "special": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "monsterDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "classicNameId", "name", "description", "notOnMenu", "hitDice", "staminaBonus", "agility", "movementMaximum", "armor", "magicResistance", "requiredWeapon", "magicToHit", "traitor", "size", "typeFlags", "attackCount", "magicAttackCount", "attacks", "damageBonus", "castPercent", "runPercent", "surrenderPercent", "missilePercent", "canSummon", "saves", "spellImmunities", "conditions", "money", "spellIds", "itemIds", "weaponId", "randomWeaponTable", "iconId", "spellPoints", "experience", "deathMacro"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 0 }, "classicNameId": { "type": "integer", "minimum": 0, "maximum": 255 }, "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" }, "notOnMenu": { "type": "boolean" },
+        "hitDice": { "type": "integer", "minimum": 0 }, "staminaBonus": { "type": "integer" }, "agility": { "type": "integer" }, "movementMaximum": { "type": "integer" }, "armor": { "type": "integer" }, "magicResistance": { "type": "integer" }, "requiredWeapon": { "type": "integer", "minimum": -128, "maximum": 127 }, "magicToHit": { "type": "integer", "minimum": -128, "maximum": 127 }, "traitor": { "type": "boolean" }, "size": { "type": "integer" },
+        "typeFlags": { "$ref": "#/$defs/integerArray" }, "attackCount": { "type": "integer" }, "magicAttackCount": { "type": "integer" }, "attacks": { "type": "array", "items": { "$ref": "#/$defs/monsterAttackDefinition" } }, "damageBonus": { "type": "integer" }, "castPercent": { "type": "integer" }, "runPercent": { "type": "integer" }, "surrenderPercent": { "type": "integer" }, "missilePercent": { "type": "integer" }, "canSummon": { "type": "integer" },
+        "saves": { "$ref": "#/$defs/integerArray" }, "spellImmunities": { "$ref": "#/$defs/integerArray" }, "conditions": { "$ref": "#/$defs/classicMonsterConditions" }, "money": { "$ref": "#/$defs/integerArray" }, "spellIds": { "$ref": "#/$defs/stringArray" }, "itemIds": { "$ref": "#/$defs/classicMonsterItemSlots" }, "weaponId": { "type": "string" }, "randomWeaponTable": { "type": "integer", "minimum": 0, "maximum": 32768 }, "iconId": { "type": "integer" }, "spellPoints": { "type": "integer" }, "experience": { "type": "integer" }, "deathMacro": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "itemDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "name", "unidentifiedName", "description", "iconId", "itemType", "strengthBonus", "blunt", "hands", "luckBonus", "movementBonus", "armorBonus", "magicResistanceBonus", "damageBonus", "spellPointBonus", "soundId", "weight", "cost", "initialCharges", "cursedItemId", "magical", "itemCategoryMaskLow", "itemCategoryMaskHigh", "raceRestrictions", "casteRestrictions", "specificRaceId", "specificCasteId", "raceClassOnly", "casteClassOnly", "versusSmall", "versusLarge", "heat", "cold", "electric", "versusUndead", "versusDemonDevil", "versusEvil", "special", "weightPerCharge", "dropOnEmpty"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer" }, "name": { "type": "string", "minLength": 1 }, "unidentifiedName": { "type": "string", "minLength": 1 }, "description": { "type": "string" },
+        "iconId": { "type": "integer" }, "itemType": { "type": "integer" }, "strengthBonus": { "type": "integer" }, "blunt": { "type": "integer" }, "hands": { "type": "integer" }, "luckBonus": { "type": "integer" }, "movementBonus": { "type": "integer" }, "armorBonus": { "type": "integer" }, "magicResistanceBonus": { "type": "integer" }, "damageBonus": { "type": "integer" }, "spellPointBonus": { "type": "integer" }, "soundId": { "type": "integer" }, "weight": { "type": "integer" }, "cost": { "type": "integer" }, "initialCharges": { "type": "integer" }, "cursedItemId": { "type": "string" }, "magical": { "type": "boolean" },
+        "itemCategoryMaskLow": { "type": "integer" }, "itemCategoryMaskHigh": { "type": "integer" }, "raceRestrictions": { "type": "integer" }, "casteRestrictions": { "type": "integer" }, "specificRaceId": { "type": "string" }, "specificCasteId": { "type": "string" }, "raceClassOnly": { "type": "integer" }, "casteClassOnly": { "type": "integer" },
+        "versusSmall": { "type": "integer" }, "versusLarge": { "type": "integer" }, "heat": { "type": "integer" }, "cold": { "type": "integer" }, "electric": { "type": "integer" }, "versusUndead": { "type": "integer" }, "versusDemonDevil": { "type": "integer" }, "versusEvil": { "type": "integer" }, "special": { "allOf": [{ "$ref": "#/$defs/integerArray" }], "minItems": 5, "maxItems": 5 }, "weightPerCharge": { "type": "integer" }, "dropOnEmpty": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "treasureDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "itemIds", "experience", "gold", "gems", "jewelry"],
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 0 }, "itemIds": { "$ref": "#/$defs/stringArray" }, "experience": { "type": "integer" }, "gold": { "type": "integer" }, "gems": { "type": "integer" }, "jewelry": { "type": "integer" } },
+      "additionalProperties": false
+    },
+    "shopStock": {
+      "type": "object",
+      "required": ["slot", "itemId", "quantity"],
+      "properties": { "slot": { "type": "integer", "minimum": 0, "maximum": 999 }, "itemId": { "$ref": "#/$defs/identifier" }, "quantity": { "type": "integer", "minimum": 0 } },
+      "additionalProperties": false
+    },
+    "shopDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "inflationPercent", "stock"],
+      "properties": { "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 0 }, "inflationPercent": { "type": "integer" }, "stock": { "type": "array", "items": { "$ref": "#/$defs/shopStock" } } },
+      "additionalProperties": false
+    },
+    "spellDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "name", "description", "rangeMin", "rangeMax", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetCount", "canRotate", "saveAdjust", "cannot", "resistanceAdjust", "cost", "damageMin", "damageMax", "powerDamageMin", "powerDamageMax", "durationMin", "durationMax", "powerDurationMin", "powerDurationMax", "lookStart", "lookEnd", "soundStart", "soundEnd", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 0 }, "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" },
+        "rangeMin": { "type": "integer" }, "rangeMax": { "type": "integer" }, "queueIcon": { "type": "integer" }, "toHitBonus": { "type": "integer" }, "saveBonus": { "type": "integer" }, "fixedTargetCount": { "type": "integer" }, "canRotate": { "type": "boolean" }, "saveAdjust": { "type": "integer" }, "cannot": { "type": "integer" }, "resistanceAdjust": { "type": "integer" }, "cost": { "type": "integer" }, "damageMin": { "type": "integer" }, "damageMax": { "type": "integer" }, "powerDamageMin": { "type": "integer" }, "powerDamageMax": { "type": "integer" }, "durationMin": { "type": "integer" }, "durationMax": { "type": "integer" }, "powerDurationMin": { "type": "integer" }, "powerDurationMax": { "type": "integer" }, "lookStart": { "type": "integer" }, "lookEnd": { "type": "integer" }, "soundStart": { "type": "integer" }, "soundEnd": { "type": "integer" }, "targetType": { "type": "integer" }, "size": { "type": "integer" }, "special": { "type": "integer" }, "damageType": { "type": "integer" }, "spellClass": { "type": "integer" }, "inCombat": { "type": "boolean" }, "inCamp": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "raceDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "name", "description", "eligibleCasteIds", "hitModifiers", "abilityBonuses", "saveBonuses", "attributeBonuses", "attributeLimits", "conditionLevels", "ageRanges", "ageChanges", "maximumAge", "doesNotDie", "baseMovement", "magicResistance", "twoHandBonus", "missileBonus", "baseAttacks", "maximumAttacks", "canRegenerate", "defaultIconSet", "itemCategoryMasks", "descriptorFlags"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 1, "maximum": 30 }, "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" }, "eligibleCasteIds": { "$ref": "#/$defs/stringArray" },
+        "hitModifiers": { "$ref": "#/$defs/integerArray" }, "abilityBonuses": { "$ref": "#/$defs/integerArray" }, "saveBonuses": { "$ref": "#/$defs/integerArray" }, "attributeBonuses": { "$ref": "#/$defs/integerArray" }, "attributeLimits": { "$ref": "#/$defs/integerArray" }, "conditionLevels": { "$ref": "#/$defs/integerArray" }, "ageRanges": { "type": "array", "items": { "$ref": "#/$defs/integerArray" } }, "ageChanges": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "array", "minItems": 15, "maxItems": 15, "items": { "type": "integer" } } },
+        "maximumAge": { "type": "integer" }, "doesNotDie": { "type": "boolean" }, "baseMovement": { "type": "integer" }, "magicResistance": { "type": "integer" }, "twoHandBonus": { "type": "integer" }, "missileBonus": { "type": "integer" }, "baseAttacks": { "type": "integer" }, "maximumAttacks": { "type": "integer" }, "canRegenerate": { "type": "boolean" }, "defaultIconSet": { "type": "integer" }, "itemCategoryMasks": { "$ref": "#/$defs/integerArray" }, "descriptorFlags": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "casteDefinition": {
+      "type": "object",
+      "required": ["id", "classicId", "name", "description", "eligibleRaceIds", "initialAbilityValues", "levelAbilityDice", "victoryThresholds", "saveBonuses", "attributeBonuses", "attributeLimits", "conditionLevels", "staminaDice", "strengthValues", "dodgeValues", "toHitValues", "missileValues", "handToHandValues", "spellcasterRows", "attackLevels", "startingItemIds", "casteClass", "minimumAgeGroup", "movementBonus", "magicResistanceMultiplier", "twoHandBonus", "maximumStaminaBonus", "bonusAttacks", "maximumAttacks", "startMoney", "canUseMissile", "getsMissileBonus", "defaultIcon", "itemCategoryMasks"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" }, "classicId": { "type": "integer", "minimum": 1, "maximum": 30 }, "name": { "type": "string", "minLength": 1 }, "description": { "type": "string" }, "eligibleRaceIds": { "$ref": "#/$defs/stringArray" },
+        "initialAbilityValues": { "$ref": "#/$defs/integerArray" }, "levelAbilityDice": { "$ref": "#/$defs/integerArray" }, "victoryThresholds": { "$ref": "#/$defs/integerArray" }, "saveBonuses": { "$ref": "#/$defs/integerArray" }, "attributeBonuses": { "$ref": "#/$defs/integerArray" }, "attributeLimits": { "$ref": "#/$defs/integerArray" }, "conditionLevels": { "$ref": "#/$defs/integerArray" }, "staminaDice": { "$ref": "#/$defs/integerArray" }, "strengthValues": { "$ref": "#/$defs/integerArray" }, "dodgeValues": { "$ref": "#/$defs/integerArray" }, "toHitValues": { "$ref": "#/$defs/integerArray" }, "missileValues": { "$ref": "#/$defs/integerArray" }, "handToHandValues": { "$ref": "#/$defs/integerArray" }, "spellcasterRows": { "type": "array", "items": { "$ref": "#/$defs/integerArray" } }, "attackLevels": { "$ref": "#/$defs/integerArray" }, "startingItemIds": { "$ref": "#/$defs/stringArray" },
+        "casteClass": { "type": "integer" }, "minimumAgeGroup": { "type": "integer" }, "movementBonus": { "type": "integer" }, "magicResistanceMultiplier": { "type": "integer" }, "twoHandBonus": { "type": "integer" }, "maximumStaminaBonus": { "type": "integer" }, "bonusAttacks": { "type": "integer" }, "maximumAttacks": { "type": "integer" }, "startMoney": { "type": "integer" }, "canUseMissile": { "type": "boolean" }, "getsMissileBonus": { "type": "boolean" }, "defaultIcon": { "type": "integer" }, "itemCategoryMasks": { "$ref": "#/$defs/integerArray" }
+      },
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "required": [
+        "kind",
+        "schemaVersion",
+        "campaign",
+        "messages",
+        "optionLabels",
+        "battles",
+        "monsters",
+        "monsterSets",
+        "monsterDescriptions",
+        "items",
+        "itemTexts",
+        "treasures",
+        "shops",
+        "simpleEncounters",
+        "complexEncounters",
+        "thiefEncounters",
+        "timedEncounters",
+        "spells",
+        "races",
+        "castes"
+      ],
+      "properties": {
+        "kind": { "const": "realmz2.content" },
+        "schemaVersion": { "const": 5 },
+        "campaign": {
+          "type": "object",
+          "required": ["id", "name", "version", "author", "contact", "description", "splashAssetId", "recommendedPartyLevels", "maximumPartyLevels", "guidanceAuthored", "restrictions"],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "name": { "type": "string", "minLength": 1 },
+            "version": { "type": "string" },
+            "author": { "type": "string" },
+            "contact": {
+              "type": "object",
+              "required": ["email", "web", "date", "fee"],
+              "properties": {
+                "email": { "type": "string" },
+                "web": { "type": "string" },
+                "date": { "type": "string" },
+                "fee": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "description": { "type": "string" },
+            "splashAssetId": { "type": "string" },
+            "recommendedPartyLevels": { "type": "integer", "minimum": 0 },
+            "maximumPartyLevels": { "type": "integer", "minimum": 0 },
+            "guidanceAuthored": { "type": "boolean" },
+            "restrictions": { "$ref": "#/$defs/campaignRestrictions" }
+          },
+          "additionalProperties": false
+        },
+        "messages": { "type": "array" },
+        "optionLabels": { "type": "array" },
+        "battles": { "type": "array", "items": { "$ref": "#/$defs/battleDefinition" } },
+        "monsters": { "type": "array", "items": { "$ref": "#/$defs/monsterDefinition" } },
+        "monsterSets": { "type": "array", "maxItems": 2, "items": { "$ref": "#/$defs/monsterSetDefinition" } },
+        "monsterDescriptions": { "type": "array" },
+        "items": { "type": "array", "items": { "$ref": "#/$defs/itemDefinition" } },
+        "itemTexts": { "type": "array" },
+        "treasures": { "type": "array", "items": { "$ref": "#/$defs/treasureDefinition" } },
+        "shops": { "type": "array", "items": { "$ref": "#/$defs/shopDefinition" } },
+        "simpleEncounters": { "type": "array", "items": { "$ref": "#/$defs/simpleEncounter" } },
+        "complexEncounters": { "type": "array", "items": { "$ref": "#/$defs/complexEncounter" } },
+        "thiefEncounters": { "type": "array", "items": { "$ref": "#/$defs/thiefEncounter" } },
+        "timedEncounters": { "type": "array", "items": { "$ref": "#/$defs/timedEncounter" } },
+        "spells": { "type": "array", "items": { "$ref": "#/$defs/spellDefinition" } },
+        "races": { "type": "array", "maxItems": 30, "items": { "$ref": "#/$defs/raceDefinition" } },
+        "castes": { "type": "array", "maxItems": 30, "items": { "$ref": "#/$defs/casteDefinition" } }
+      },
+      "additionalProperties": false
+    },
+    "campaignRestrictions": {
+      "type": "object",
+      "required": ["description", "maxPartySize", "maxLevel", "bannedRaces", "bannedCastes"],
+      "properties": {
+        "description": { "type": "string" },
+        "maxPartySize": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "maxLevel": { "type": "integer", "minimum": 0 },
+        "bannedRaces": { "$ref": "#/$defs/stringArray" },
+        "bannedCastes": { "$ref": "#/$defs/stringArray" }
+      },
+      "additionalProperties": false
+    },
+    "simpleEncounterResponse": {
+      "type": "object",
+      "required": ["id", "label", "resultProgramId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "type": "string", "minLength": 1 },
+        "resultProgramId": { "$ref": "#/$defs/identifier" }
+      },
+      "additionalProperties": false
+    },
+    "simpleEncounter": {
+      "type": "object",
+      "required": ["id", "promptMessageId", "responses", "canBackOut", "maxTimes", "casteSuccess"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "promptMessageId": { "type": "integer" },
+        "responses": { "type": "array", "items": { "$ref": "#/$defs/simpleEncounterResponse" }, "minItems": 1, "maxItems": 4 },
+        "canBackOut": { "type": "boolean" },
+        "maxTimes": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "casteSuccess": { "type": "integer", "minimum": -128, "maximum": 127 }
+      },
+      "additionalProperties": false
+    },
+    "complexEncounter": {
+      "type": "object",
+      "required": ["id", "promptMessageId", "actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "canBackOut", "thief", "maxTimes", "casteSuccess", "thiefSuccess", "thiefFail", "texts"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "promptMessageId": { "type": "integer" },
+        "actionResult": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "wordResult": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "groups": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 8, "maxItems": 8 },
+        "spellIds": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 10, "maxItems": 10 },
+        "spellResults": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 10, "maxItems": 10 },
+        "itemIds": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 5, "maxItems": 5 },
+        "itemResults": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 5, "maxItems": 5 },
+        "canBackOut": { "type": "boolean" },
+        "thief": { "type": "boolean" },
+        "maxTimes": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "casteSuccess": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "thiefSuccess": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "thiefFail": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "texts": { "type": "array", "items": { "type": "string", "maxLength": 40 }, "minItems": 9, "maxItems": 9 }
+      },
+      "additionalProperties": false
+    },
+    "thiefEncounter": {
+      "type": "object",
+      "required": ["id", "typeFlags", "modifiers", "successCodes", "failureCodes", "successText", "failureText", "successSounds", "failureSounds", "spellId", "lowDamage", "highDamage", "tumblers", "prompts", "promptSounds"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "typeFlags": { "type": "array", "items": { "type": "boolean" }, "minItems": 10, "maxItems": 10 },
+        "modifiers": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 8, "maxItems": 8 },
+        "successCodes": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 8, "maxItems": 8 },
+        "failureCodes": { "type": "array", "items": { "type": "integer", "minimum": -128, "maximum": 127 }, "minItems": 8, "maxItems": 8 },
+        "successText": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 8, "maxItems": 8 },
+        "failureText": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 8, "maxItems": 8 },
+        "successSounds": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 8, "maxItems": 8 },
+        "failureSounds": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 8, "maxItems": 8 },
+        "spellId": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "lowDamage": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "highDamage": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "tumblers": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "prompts": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 3, "maxItems": 3 },
+        "promptSounds": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 3, "maxItems": 3 }
+      },
+      "additionalProperties": false
+    },
+    "timedEncounter": {
+      "type": "object",
+      "required": ["id", "day", "increment", "chancePercent", "classicMacroId", "programId", "requiredLevel", "requiredRandomRectangle", "requiredX", "requiredY", "requiredItemId", "requiredQuestId", "locationKind"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "day": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "increment": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "chancePercent": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "classicMacroId": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "programId": { "$ref": "#/$defs/identifier" },
+        "requiredLevel": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "requiredRandomRectangle": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "requiredX": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "requiredY": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "requiredItemId": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "requiredQuestId": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "locationKind": { "enum": ["any", "land", "dungeon"] }
+      },
+      "additionalProperties": false
+    },
+    "topologyEdge": {
+      "type": "object",
+      "required": ["kind", "passable", "blocksLos", "doorId", "secretId", "initiallyDiscovered"],
+      "properties": {
+        "kind": { "enum": ["open", "wall", "door", "secret", "archway", "map-boundary"] },
+        "passable": { "type": "boolean" },
+        "blocksLos": { "type": "boolean" },
+        "doorId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "secretId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "initiallyDiscovered": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "topologyFeature": {
+      "type": "object",
+      "required": ["id", "kind", "state", "orientation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["door", "secret", "stairs", "column", "unmapped", "note", "action-point", "archway", "no-wall-in-battle"] },
+        "state": { "type": ["string", "null"] },
+        "orientation": { "enum": ["horizontal", "vertical", "north", "east", "south", "west", null] }
+      },
+      "additionalProperties": false
+    },
+    "randomRectangle": {
+      "type": "object",
+      "required": ["id", "top", "left", "bottom", "right", "chanceTenThousand", "battleRange", "randomDoors", "randomDoorPercent", "only", "option", "soundId", "textId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "top": { "type": "integer", "minimum": 0 },
+        "left": { "type": "integer", "minimum": 0 },
+        "bottom": { "type": "integer", "minimum": 0 },
+        "right": { "type": "integer", "minimum": 0 },
+        "chanceTenThousand": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "battleRange": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 2, "maxItems": 2 },
+        "randomDoors": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 3, "maxItems": 3 },
+        "randomDoorPercent": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "minItems": 3, "maxItems": 3 },
+        "only": { "type": "boolean" },
+        "option": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "soundId": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "textId": { "type": "integer", "minimum": -32768, "maximum": 32767 }
+      },
+      "additionalProperties": false
+    },
+    "worldTransition": {
+      "type": "object",
+      "required": ["id", "source", "target"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "source": {
+          "type": "object",
+          "required": ["mapId", "edge"],
+          "properties": {
+            "mapId": { "$ref": "#/$defs/identifier" },
+            "edge": { "enum": ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"] }
+          },
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "required": ["mapId", "edge"],
+          "properties": {
+            "mapId": { "$ref": "#/$defs/identifier" },
+            "edge": { "enum": ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["id", "programId", "classicRecordIndex", "mapId", "coordinate", "active", "chancePercent", "postActionLocation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "programId": { "$ref": "#/$defs/identifier" },
+        "classicRecordIndex": { "type": "integer", "minimum": 0 },
+        "mapId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "coordinate": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["x", "y"],
+              "properties": { "x": { "type": "integer", "minimum": 0 }, "y": { "type": "integer", "minimum": 0 } },
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
+        },
+        "active": { "type": "boolean" },
+        "chancePercent": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "postActionLocation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["mapId", "coordinate"],
+              "properties": {
+                "mapId": { "$ref": "#/$defs/identifier" },
+                "coordinate": {
+                  "type": "object",
+                  "required": ["x", "y"],
+                  "properties": {
+                    "x": { "type": "integer", "minimum": 0 },
+                    "y": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "battleTerrainTile": {
+      "type": "object",
+      "required": ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "combatBuild"],
+      "properties": {
+        "tile": { "type": "integer", "minimum": 0, "maximum": 400 },
+        "sound": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "time": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "solid": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "shore": { "type": "boolean" },
+        "needBoat": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "isPath": { "type": "boolean" },
+        "los": { "type": "boolean" },
+        "flyFloat": { "type": "boolean" },
+        "forest": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "combatBuild": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "type": "integer", "minimum": -32768, "maximum": 32767 }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "battleTerrainSet": {
+      "type": "object",
+      "required": ["id", "landlook", "baseTile", "tiles"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "landlook": { "type": ["integer", "null"] },
+        "baseTile": { "type": ["integer", "null"] },
+        "tiles": {
+          "type": "array",
+          "minItems": 201,
+          "maxItems": 401,
+          "items": { "$ref": "#/$defs/battleTerrainTile" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "compactTopologyEdge": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        { "enum": ["open", "wall", "door", "secret", "archway", "map-boundary"] },
+        { "type": "integer", "minimum": 0, "maximum": 7 },
+        { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] }
+      ],
+      "items": false
+    },
+    "compactTopologyFeature": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "prefixItems": [
+        { "$ref": "#/$defs/identifier" },
+        { "enum": ["door", "secret", "stairs", "column", "unmapped", "note", "action-point", "archway", "no-wall-in-battle"] },
+        { "type": ["string", "null"] },
+        { "enum": ["horizontal", "vertical", "north", "east", "south", "west", null] }
+      ],
+      "items": false
+    },
+    "compactCell": {
+      "$comment": "Row-major tuple: terrainId, movementCost, semantic bit flags, movementSoundId, triggerIds, randomRectIds, N/E/S/W edges, features, renderTile, tilesetId, overlayAssetId, Classic boatRequirement, blockedAttemptTimeclicks.",
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "prefixItems": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "integer", "minimum": 0 },
+        { "type": "integer", "minimum": 0, "maximum": 511 },
+        { "type": ["integer", "null"] },
+        { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        { "type": "array", "items": { "$ref": "#/$defs/identifier" }, "uniqueItems": true },
+        { "type": "array", "minItems": 4, "maxItems": 4, "items": { "$ref": "#/$defs/compactTopologyEdge" } },
+        { "type": "array", "items": { "$ref": "#/$defs/compactTopologyFeature" }, "uniqueItems": true },
+        { "type": "integer" },
+        { "$ref": "#/$defs/identifier" },
+        { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        { "type": "integer", "minimum": 0, "maximum": 2 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "items": false
+    },
+    "compactLandTileProfile": {
+      "$comment": "Replacement land-tile facts: terrainId, movementCost, semantic bit flags, movementSoundId, renderTile, Classic boatRequirement, blockedAttemptTimeclicks.",
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "prefixItems": [
+        { "$ref": "#/$defs/identifier" },
+        { "type": "integer", "minimum": 0 },
+        { "type": "integer", "minimum": 0, "maximum": 511 },
+        { "type": ["integer", "null"] },
+        { "type": "integer", "minimum": 1 },
+        { "type": "integer", "minimum": 0, "maximum": 2 },
+        { "type": "integer", "minimum": 0 }
+      ],
+      "items": false
+    },
+    "map": {
+      "type": "object",
+      "required": ["id", "name", "levelType", "levelIndex", "width", "height", "metadata", "topologyFormat", "cells", "boatReplacementProfiles", "randomRectangles"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string" },
+        "levelType": { "enum": ["land", "dungeon"] },
+        "levelIndex": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "metadata": {
+          "type": "object",
+          "required": ["dark", "usesLos", "landlook", "baseScale", "battleTerrainSetId"],
+          "properties": {
+            "dark": { "type": "boolean" },
+            "usesLos": { "type": "boolean" },
+            "landlook": { "type": ["integer", "null"] },
+            "baseScale": { "type": ["integer", "null"] },
+            "battleTerrainSetId": {
+              "anyOf": [
+                { "$ref": "#/$defs/identifier" },
+                { "type": "null" }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "topologyFormat": { "const": "realmz2.compact-cell-rows.v2" },
+        "cells": { "type": "array", "items": { "$ref": "#/$defs/compactCell" }, "minItems": 1 },
+        "boatReplacementProfiles": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["removed", "placed"],
+              "properties": {
+                "removed": { "$ref": "#/$defs/compactLandTileProfile" },
+                "placed": { "$ref": "#/$defs/compactLandTileProfile" }
+              },
+              "additionalProperties": false
+            },
+            { "type": "null" }
+          ]
+        },
+        "randomRectangles": { "type": "array", "items": { "$ref": "#/$defs/randomRectangle" } }
+      },
+      "additionalProperties": false
+    },
+    "world": {
+      "type": "object",
+      "required": ["kind", "schemaVersion", "battleTerrainSets", "maps", "playerMaps", "triggers", "transitions", "landLayout", "timedEncounters"],
+      "properties": {
+        "kind": { "const": "realmz2.world" },
+        "schemaVersion": { "const": 5 },
+        "battleTerrainSets": { "type": "array", "items": { "$ref": "#/$defs/battleTerrainSet" } },
+        "maps": { "type": "array", "items": { "$ref": "#/$defs/map" }, "minItems": 1 },
+        "playerMaps": { "type": "array", "items": { "$ref": "#/$defs/playerMap" }, "maxItems": 20 },
+        "triggers": { "type": "array", "items": { "$ref": "#/$defs/trigger" } },
+        "transitions": { "type": "array", "items": { "$ref": "#/$defs/worldTransition" } },
+        "landLayout": {},
+        "timedEncounters": { "type": "array", "items": { "$ref": "#/$defs/timedEncounter" } }
+      },
+      "additionalProperties": false
+    },
+    "playerMapRect": {
+      "type": "object",
+      "required": ["top", "left", "bottom", "right"],
+      "properties": {
+        "top": { "type": "integer" },
+        "left": { "type": "integer" },
+        "bottom": { "type": "integer" },
+        "right": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "playerMapMarker": {
+      "type": "object",
+      "required": ["classicIconId", "iconAssetId", "x", "y"],
+      "properties": {
+        "classicIconId": { "type": "integer" },
+        "iconAssetId": { "$ref": "#/$defs/identifier" },
+        "x": { "type": "integer" },
+        "y": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "playerMap": {
+      "type": "object",
+      "required": ["id", "classicId", "name", "unavailableName", "mode", "mapId", "start", "iconSize", "pictureAssetId", "scrollingTextAssetId", "partyMarkerAssetId", "pictureRect", "markers", "note"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "classicId": { "type": "integer", "minimum": 0, "maximum": 19 },
+        "name": { "type": "string", "minLength": 1 },
+        "unavailableName": { "type": "string" },
+        "mode": { "enum": ["scrolling-text", "picture", "land-crop", "dungeon-crop"] },
+        "mapId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "start": {
+          "type": "object",
+          "required": ["x", "y"],
+          "properties": {
+            "x": { "type": "integer" },
+            "y": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "iconSize": { "type": "integer", "minimum": 1 },
+        "pictureAssetId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "scrollingTextAssetId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "partyMarkerAssetId": { "anyOf": [{ "$ref": "#/$defs/identifier" }, { "type": "null" }] },
+        "pictureRect": { "$ref": "#/$defs/playerMapRect" },
+        "markers": { "type": "array", "items": { "$ref": "#/$defs/playerMapMarker" }, "maxItems": 10 },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "classicInstruction": {
+      "type": "object",
+      "required": ["kind", "slot", "rawOpcode", "opcode", "id", "gosub", "extraCode"],
+      "properties": {
+        "kind": { "const": "classicAction" },
+        "slot": { "type": "integer", "minimum": 0 },
+        "rawOpcode": { "type": "integer" },
+        "opcode": { "type": "integer" },
+        "id": { "type": "integer" },
+        "gosub": { "type": "boolean" },
+        "extraCode": { "type": ["array", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "callScenarioActionInstruction": {
+      "type": "object",
+      "required": ["kind", "actionId", "arguments", "result"],
+      "properties": {
+        "kind": { "const": "callScenarioAction" },
+        "actionId": { "$ref": "#/$defs/identifier" },
+        "arguments": { "type": "object", "additionalProperties": { "$ref": "#/$defs/safeExpression" } },
+        "result": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "scenarioProgram": {
+      "type": "object",
+      "required": ["id", "ownerKind", "ownerId", "instructions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "ownerKind": { "enum": ["trigger", "extra-action-point", "simple-encounter-result", "complex-encounter-result"] },
+        "ownerId": { "$ref": "#/$defs/identifier" },
+        "instructions": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": { "oneOf": [{ "$ref": "#/$defs/classicInstruction" }, { "$ref": "#/$defs/callScenarioActionInstruction" }] }
+        }
+      },
+      "additionalProperties": false
+    },
+    "safeExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": { "kind": { "const": "literal" }, "value": {} },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "scope", "stateScope", "ownerId", "name"],
+          "properties": {
+            "kind": { "const": "variable" },
+            "scope": { "enum": ["parameter", "local", "persistent", "context"] },
+            "stateScope": { "type": ["string", "null"] },
+            "ownerId": { "type": ["string", "null"] },
+            "name": { "$ref": "#/$defs/identifier" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "values"],
+          "properties": { "kind": { "const": "array" }, "values": { "type": "array", "maxItems": 256, "items": { "$ref": "#/$defs/safeExpression" } } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "fields"],
+          "properties": { "kind": { "const": "record" }, "fields": { "type": "object", "additionalProperties": { "$ref": "#/$defs/safeExpression" } } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "operator", "operand"],
+          "properties": { "kind": { "const": "unary" }, "operator": { "enum": ["not", "-"] }, "operand": { "$ref": "#/$defs/safeExpression" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "operator", "left", "right"],
+          "properties": {
+            "kind": { "const": "binary" },
+            "operator": { "enum": ["==", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "and", "or"] },
+            "left": { "$ref": "#/$defs/safeExpression" },
+            "right": { "$ref": "#/$defs/safeExpression" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "object", "member"],
+          "properties": { "kind": { "const": "member" }, "object": { "$ref": "#/$defs/safeExpression" }, "member": { "$ref": "#/$defs/identifier" } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "operation", "collection", "itemName", "predicate"],
+          "properties": {
+            "kind": { "const": "collection" },
+            "operation": { "enum": ["count", "any", "all", "first"] },
+            "collection": { "$ref": "#/$defs/safeExpression" },
+            "itemName": { "type": ["string", "null"] },
+            "predicate": { "anyOf": [{ "$ref": "#/$defs/safeExpression" }, { "type": "null" }] }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "safeInstruction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "capability", "arguments", "result"],
+          "properties": {
+            "kind": { "const": "operation" },
+            "capability": { "$ref": "#/$defs/identifier" },
+            "arguments": { "type": "object", "additionalProperties": { "$ref": "#/$defs/safeExpression" } },
+            "result": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/callScenarioActionInstruction" },
+        {
+          "type": "object",
+          "required": ["kind", "scope", "stateScope", "ownerId", "name", "value"],
+          "properties": {
+            "kind": { "const": "setValue" },
+            "scope": { "enum": ["local", "persistent"] },
+            "stateScope": { "type": ["string", "null"] },
+            "ownerId": { "type": ["string", "null"] },
+            "name": { "$ref": "#/$defs/identifier" },
+            "value": { "$ref": "#/$defs/safeExpression" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "condition", "target"],
+          "properties": { "kind": { "const": "jumpIfFalse" }, "condition": { "$ref": "#/$defs/safeExpression" }, "target": { "type": "integer", "minimum": 0, "maximum": 4096 } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "target"],
+          "properties": { "kind": { "const": "jump" }, "target": { "type": "integer", "minimum": 0, "maximum": 4096 } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "itemName", "collection", "endTarget"],
+          "properties": { "kind": { "const": "beginForEach" }, "itemName": { "$ref": "#/$defs/identifier" }, "collection": { "$ref": "#/$defs/safeExpression" }, "endTarget": { "type": "integer", "minimum": 0, "maximum": 4096 } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "beginTarget"],
+          "properties": { "kind": { "const": "nextForEach" }, "beginTarget": { "type": "integer", "minimum": 0, "maximum": 4096 } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": { "kind": { "const": "return" }, "value": { "anyOf": [{ "$ref": "#/$defs/safeExpression" }, { "type": "null" }] } },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "outcome"],
+          "properties": { "kind": { "const": "halt" }, "outcome": {} },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "safeProgram": {
+      "type": "object",
+      "required": ["format", "instructions"],
+      "properties": {
+        "format": { "const": "realmz.safe-bytecode.v1" },
+        "instructions": { "type": "array", "maxItems": 4096, "items": { "$ref": "#/$defs/safeInstruction" } }
+      },
+      "additionalProperties": false
+    },
+    "scenarioAction": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "visibility",
+        "category",
+        "abiVersion",
+        "implementationVersion",
+        "stateSchemaVersion",
+        "parameters",
+        "returnType",
+        "allowedContexts",
+        "requiredCapabilities",
+        "persistentState",
+        "backend",
+        "program"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "visibility": { "enum": ["public", "private"] },
+        "category": {},
+        "abiVersion": { "type": "integer", "minimum": 1 },
+        "implementationVersion": { "type": "integer", "minimum": 1 },
+        "stateSchemaVersion": { "type": "integer", "minimum": 1 },
+        "parameters": { "type": "array", "maxItems": 256 },
+        "returnType": {},
+        "allowedContexts": { "type": "array", "minItems": 1 },
+        "requiredCapabilities": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "persistentState": {},
+        "backend": { "const": "safe" },
+        "program": { "$ref": "#/$defs/safeProgram" }
+      },
+      "additionalProperties": false
+    },
+    "applicationHooks": {
+      "type": "object",
+      "required": ["startGame", "partyDeath", "endAdventure", "shop", "temple"],
+      "properties": {
+        "startGame": { "type": ["string", "null"], "minLength": 1, "maxLength": 255 },
+        "partyDeath": { "type": ["string", "null"], "minLength": 1, "maxLength": 255 },
+        "endAdventure": { "type": ["string", "null"], "minLength": 1, "maxLength": 255 },
+        "shop": { "type": ["string", "null"], "minLength": 1, "maxLength": 255 },
+        "temple": { "type": ["string", "null"], "minLength": 1, "maxLength": 255 }
+      },
+      "additionalProperties": false
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["kind", "schemaVersion", "applicationHooks", "programs", "scenarioActions", "stateDefinitions", "migrations"],
+      "properties": {
+        "kind": { "const": "realmz2.scenario" },
+        "extraCodeTail": { "type": "object", "required": ["rowId", "availableBytes"], "properties": { "rowId": { "type": "integer", "minimum": 0 }, "availableBytes": { "type": "integer", "minimum": 1, "maximum": 9 } }, "additionalProperties": false },
+        "schemaVersion": { "const": 5 },
+        "applicationHooks": { "$ref": "#/$defs/applicationHooks" },
+        "programs": { "type": "array", "items": { "$ref": "#/$defs/scenarioProgram" } },
+        "scenarioActions": { "type": "array", "items": { "$ref": "#/$defs/scenarioAction" } },
+        "stateDefinitions": { "type": "array" },
+        "migrations": { "type": "array" }
+      },
+      "additionalProperties": false
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "label", "kind", "scenarioMusicSlot", "bytes", "sha256", "path", "tileWidth", "tileHeight", "columns", "rows", "landlook", "baseTile"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "label": { "type": "string" },
+        "kind": { "type": "string", "minLength": 1 },
+        "mimeType": { "type": ["string", "null"] },
+        "resourceType": { "type": ["string", "null"] },
+        "resourceId": { "type": ["integer", "null"] },
+        "scenarioMusicSlot": { "type": ["integer", "null"], "minimum": 1, "maximum": 3 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "path": { "type": "string", "pattern": "^assets/media/[0-9a-f]{64}(\\.[a-z0-9]+)?$" },
+        "width": { "type": ["integer", "null"], "minimum": 0 },
+        "height": { "type": ["integer", "null"], "minimum": 0 },
+        "durationMs": { "type": ["integer", "null"], "minimum": 0 },
+        "sampleRate": { "type": ["integer", "null"], "minimum": 0 },
+        "channels": { "type": ["integer", "null"], "minimum": 0 },
+        "tileWidth": { "type": ["integer", "null"], "minimum": 1 },
+        "tileHeight": { "type": ["integer", "null"], "minimum": 1 },
+        "columns": { "type": ["integer", "null"], "minimum": 1 },
+        "rows": { "type": ["integer", "null"], "minimum": 1 },
+        "landlook": { "type": ["integer", "null"] },
+        "baseTile": { "type": ["integer", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "assets": {
+      "type": "object",
+      "required": ["kind", "schemaVersion", "assets"],
+      "properties": {
+        "kind": { "const": "realmz2.assets" },
+        "schemaVersion": { "const": 5 },
+        "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } }
+      },
+      "additionalProperties": false
+    }
+  }
+}

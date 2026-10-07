@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/music_allocation.gd" id="1"]
+
+[node name="MusicAllocation" type="VBoxContainer"]
+visible = false
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="Title" type="Label" parent="."]
+text = "SCENARIO MUSIC · EXACT MOD"
+tooltip_text = "Supports standard 31-sample MOD files."
+theme_type_variation = "ItemBehaviorHeading"
+
+[node name="MusicSlot" type="OptionButton" parent="."]
+unique_name_in_owner = true
+tooltip_text = "Supports standard 31-sample MOD files."
+custom_minimum_size = Vector2(0, 34)
+
+[node name="ReplaceMusic" type="CheckButton" parent="."]
+unique_name_in_owner = true
+text = "Replace the selected occupied slot"
+custom_minimum_size = Vector2(0, 34)
+
+[node name="MusicAllocationStatus" type="Label" parent="."]
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="Format" type="Label" parent="."]
+visible = false
+text = ""
+autowrap_mode = 3

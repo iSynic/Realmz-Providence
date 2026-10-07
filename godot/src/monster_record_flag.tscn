@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/monster_record_field.gd" id="1"]
+[sub_resource type="StyleBoxFlat" id="CheckStyle"]
+bg_color = Color(0.043, 0.078, 0.106, 1)
+border_color = Color(0.36, 0.49, 0.59, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+content_margin_left = 0.0
+content_margin_right = 0.0
+content_margin_top = 0.0
+content_margin_bottom = 0.0
+[node name="MonsterRecordFlag" type="HBoxContainer" groups=["monster_record_fields"]]
+size_flags_horizontal = 3
+script = ExtResource("1")
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 2
+[node name="Value" type="CheckBox" parent="."]
+layout_mode = 2
+disabled = true
+custom_minimum_size = Vector2(0, 22)
+theme_override_font_sizes/font_size = 11
+theme_override_styles/normal = SubResource("CheckStyle")
+theme_override_styles/disabled = SubResource("CheckStyle")
+theme_override_styles/hover = SubResource("CheckStyle")
+theme_override_styles/pressed = SubResource("CheckStyle")
+theme_override_styles/hover_pressed = SubResource("CheckStyle")

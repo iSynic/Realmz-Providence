@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/scenario_icon_editor.gd" type="Script" id="1"]
+
+[node name="Scenario Icons" type="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1")

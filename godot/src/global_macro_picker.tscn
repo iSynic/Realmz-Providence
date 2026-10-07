@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://src/monster_reference_picker.tscn" id="1"]
+[ext_resource type="Script" path="res://src/global_macro_picker.gd" id="2"]
+[node name="GlobalMacroPicker" instance=ExtResource("1")]
+title = "Choose Extra Action Point"
+size = Vector2i(1040, 620)
+script = ExtResource("2")

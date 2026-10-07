@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[node name="ActionPointPlacement" type="VBoxContainer"]
+tooltip_text = "Click an empty cell to review a new Action Point placement; click an existing AP to open it."
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="."]
+layout_mode = 2
+text = "ACTION POINT · PLACE ON MAP"
+theme_override_colors/font_color = Color(0.62,0.82,1,1)
+
+[node name="Instructions" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = "Click an empty cell to place an Action Point."
+tooltip_text = "Click an existing Action Point to open its script. Escape returns to Select."
+autowrap_mode = 3
+
+[node name="HistoryHint" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = ""
+autowrap_mode = 3

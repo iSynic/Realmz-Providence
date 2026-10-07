@@ -1,2 +1,8 @@
-docs/generated/** text eol=lf
-src/editor/generated/** text eol=lf
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.icns binary
+*.realmz2 binary
+# These are byte-pinned native resources and package schema mirrors.
+godot/bundled/** -text
+contracts/** -text

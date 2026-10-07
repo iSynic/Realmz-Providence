@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe277"/>
+      <stop offset="1" stop-color="#c78312"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="29" fill="#111820" stroke="#d6a83a" stroke-width="2"/>
+  <path d="M12 42C6 34 7 23 15 15M52 42c6-8 5-19-3-27M15 42c-4-2-7-5-9-9m43 9c4-2 7-5 9-9M17 37c-4-1-7-3-10-6m40 6c4-1 7-3 10-6M18 31c-4 0-7-1-10-3m38 3c4 0 7-1 10-3M19 25c-4 1-7 0-10-1m36 1c4 1 7 0 10-1M21 20c-4 1-7 1-10 1m32-1c4 1 7 1 10 1" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round"/>
+  <path d="m32 12 4 9 10 1-8 7 3 10-9-5-9 5 3-10-8-7 10-1z" fill="url(#gold)" stroke="#70440a" stroke-width="1.2"/>
+  <text x="32" y="53" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="700" fill="#f3c44e" stroke="#5c3608" stroke-width="0.6">VP</text>
+</svg>

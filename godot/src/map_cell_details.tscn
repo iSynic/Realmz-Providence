@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[node name="MapCellDetails" type="AcceptDialog"]
+title = "Technical cell details"
+min_size = Vector2i(420, 420)
+size = Vector2i(420, 700)
+unresizable = false
+transient = true
+exclusive = true
+ok_button_text = "Close"

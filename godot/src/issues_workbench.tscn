@@ -1,0 +1,326 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/issues_workbench.gd" id="1"]
+
+[sub_resource type="ButtonGroup" id="Severity"]
+
+[node name="Issues" type="PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_type_variation = &"IssuesRoot"
+script = ExtResource("1")
+
+[node name="Body" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DiagnosticRoutes" type="HBoxContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IssuesRoute" type="Button" parent="Body/DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Issues"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="RecordsRoute" type="Button" parent="Body/DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Decoded Records"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="EvidenceRoute" type="Button" parent="Body/DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Technical Details"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="Purpose" type="Label" parent="Body"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_type_variation = &"ItemContext"
+
+[node name="FindingsAndContext" type="HBoxContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="Findings" type="PanelContainer" parent="Body/FindingsAndContext"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_type_variation = &"IssuesPanel"
+
+[node name="Catalog" type="VBoxContainer" parent="Body/FindingsAndContext/Findings"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Body/FindingsAndContext/Findings/Catalog/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SCENARIO PROBLEMS"
+theme_type_variation = &"StoryMacroHeading"
+size_flags_horizontal = 3
+
+[node name="CheckAgain" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Check Again"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="ReviewImport" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review imported content…"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="Counts" type="Label" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open a scenario to check for problems."
+theme_type_variation = &"ItemContext"
+
+[node name="ReadinessBoundary" type="Label" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Export readiness: Publish"
+theme_type_variation = &"ItemContext"
+autowrap_mode = 3
+
+[node name="SearchRow" type="HBoxContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SearchProblems" type="LineEdit" parent="Body/FindingsAndContext/Findings/Catalog/SearchRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search problems, owners and fields..."
+
+[node name="ClearFilters" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/SearchRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clear filters"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="BackToGroups" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/SearchRow"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Back to groups"
+
+[node name="Severity" type="HBoxContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ShowAll" type="CheckButton" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show all findings"
+tooltip_text = "Include unused empty slots and retained data details."
+
+[node name="All" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "All"
+toggle_mode = true
+button_group = SubResource("Severity")
+custom_minimum_size = Vector2(108,30)
+
+[node name="Errors" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Errors"
+toggle_mode = true
+button_group = SubResource("Severity")
+custom_minimum_size = Vector2(108,30)
+
+[node name="Warnings" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Warnings"
+toggle_mode = true
+button_group = SubResource("Severity")
+custom_minimum_size = Vector2(108,30)
+
+[node name="Information" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Information"
+toggle_mode = true
+button_group = SubResource("Severity")
+custom_minimum_size = Vector2(108,30)
+
+[node name="CategoryFilter" type="OptionButton" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0,30)
+
+[node name="FindingScroll" type="ScrollContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="FindingRows" type="VBoxContainer" parent="Body/FindingsAndContext/Findings/Catalog/FindingScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="PagingHost" type="VBoxContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SelectedProblemInspector" type="PanelContainer" parent="Body/FindingsAndContext"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+custom_minimum_size = Vector2(480,0)
+theme_type_variation = &"IssuesPanel"
+
+[node name="InspectorBody" type="VBoxContainer" parent="Body/FindingsAndContext/SelectedProblemInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="InspectorHeading" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FINDING DETAILS"
+theme_type_variation = &"ItemHeading"
+
+[node name="InspectorScroll" type="ScrollContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Context" type="VBoxContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
+
+[node name="FindingSource" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Select a problem"
+theme_type_variation = &"ItemName"
+autowrap_mode = 3
+
+[node name="FindingSeverity" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="FindingMessage" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="FindingGuidance" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="DestinationPanel" type="PanelContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ItemThumbnail"
+custom_minimum_size = Vector2(0,128)
+
+[node name="Destination" type="VBoxContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DestinationPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="DestinationHeading" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DestinationPanel/Destination"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "DESTINATION"
+theme_type_variation = &"ItemUsesHeading"
+
+[node name="FindingDestination" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DestinationPanel/Destination"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="OpenFinding" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DestinationPanel/Destination"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open owning field"
+custom_minimum_size = Vector2(0, 30)
+disabled = true
+
+[node name="DiagnosticActions" type="HBoxContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="FindUses" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DiagnosticActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Find uses / Trace..."
+custom_minimum_size = Vector2(0, 30)
+disabled = true
+
+[node name="OpenRecords" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/DiagnosticActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Decoded record..."
+custom_minimum_size = Vector2(0, 30)
+disabled = true
+
+[node name="ReturnMeaning" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="FindingContext" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="DiagnosticReason" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="ReturnContext" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="OpenEvidence" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Technical Details..."
+custom_minimum_size = Vector2(0, 30)
+disabled = true

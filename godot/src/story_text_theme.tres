@@ -1,0 +1,4 @@
+[gd_resource type="Theme" script_class="" load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/story_text_theme.gd" id="1"]
+[resource]
+script = ExtResource("1")

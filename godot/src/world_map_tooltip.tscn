@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/world_controls.tres" type="Theme" id="1"]
+
+[node name="WorldMapTooltip" type="PanelContainer"]
+mouse_filter = 2
+theme = ExtResource("1")
+theme_type_variation = &"WorldSection"
+
+[node name="Facts" type="Label" parent="."]
+custom_minimum_size = Vector2(320,0)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"WorldHint"
+autowrap_mode = 2

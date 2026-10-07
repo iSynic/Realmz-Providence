@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/monster_custom_library.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_record_form.tscn" id="2"]
+
+[node name="CustomMonsterLibraryDetail" type="VBoxContainer"]
+size_flags_horizontal = 3
+script = ExtResource("1")
+
+[node name="Actions" type="HBoxContainer" parent="."]
+layout_mode = 2
+alignment = 2
+
+[node name="ReplaceScenario" type="Button" parent="Actions"]
+layout_mode = 2
+text = "Replace Scenario"
+disabled = true
+tooltip_text = "Library-to-scenario replacement is not connected."
+
+[node name="NewVariant" type="Button" parent="Actions"]
+layout_mode = 2
+text = "New Variant"
+disabled = true
+tooltip_text = "Library authoring is not connected."
+
+[node name="RemoveEntry" type="Button" parent="Actions"]
+layout_mode = 2
+text = "Delete Library Entry"
+disabled = true
+tooltip_text = "Library deletion and restore are not connected."
+
+[node name="Ownership" type="Label" parent="."]
+layout_mode = 2
+text = "Custom Library Entry · read-only"
+autowrap_mode = 2
+
+[node name="RecordBody" parent="." instance=ExtResource("2")]
+layout_mode = 2

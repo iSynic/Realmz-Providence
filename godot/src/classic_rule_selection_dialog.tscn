@@ -1,0 +1,171 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://src/classic_rule_selection_dialog.gd" type="Script" id="1"]
+
+[node name="ClassicRuleSelection" type="Window"]
+title = "Classic rule source"
+size = Vector2i(820, 516)
+min_size = Vector2i(820, 516)
+visible = false
+transient = true
+exclusive = true
+script = ExtResource("1")
+
+[node name="Surface" type="PanelContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"RuleSurface"
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Destination" type="Label" parent="Margin/Content"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "SCENARIO · CLASSIC RULE SOURCE"
+autowrap_mode = 2
+theme_type_variation = &"ScenarioHeading"
+
+[node name="Purpose" type="Label" parent="Margin/Content"]
+visible = false
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose the rules this scenario should use in Rebuilt. The imported Realmz files remain unchanged."
+autowrap_mode = 2
+custom_minimum_size = Vector2(0, 16)
+theme_type_variation = &"RuleContext"
+
+[node name="SavedChoice" type="Label" parent="Margin/Content"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Saved choice: Not configured"
+autowrap_mode = 2
+custom_minimum_size = Vector2(0, 16)
+theme_type_variation = &"RuleSaved"
+
+[node name="PolicyRow" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PolicyRowLabel" type="Label" parent="Margin/Content/PolicyRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(85, 36)
+text = "Rule source"
+
+[node name="RuleSource" type="OptionButton" parent="Margin/Content/PolicyRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+size_flags_horizontal = 3
+
+[node name="SlotRow" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SlotRowLabel" type="Label" parent="Margin/Content/SlotRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(124, 34)
+text = "Castle menu slot"
+
+[node name="MenuSlot" type="SpinBox" parent="Margin/Content/SlotRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 34)
+min_value = 0.0
+max_value = 32767.0
+value = 10.0
+
+[node name="NoSlot" type="Label" parent="Margin/Content/SlotRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 34)
+text = "—"
+theme_type_variation = &"RuleContext"
+visible = false
+
+[node name="PolicyExplanation" type="Label" parent="Margin/Content"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Slots 1–19 use application rules. Slots 20 and above use each scenario table when present, otherwise\napplication rules."
+autowrap_mode = 2
+custom_minimum_size = Vector2(0, 36)
+theme_type_variation = &"RuleContext"
+
+[node name="PreviewPanel" type="PanelContainer" parent="Margin/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 66)
+theme_type_variation = &"RulePreview"
+
+[node name="PreviewMargin" type="MarginContainer" parent="Margin/Content/PreviewPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Preview" type="Label" parent="Margin/Content/PreviewPanel/PreviewMargin"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose a rule source to preview its effect."
+autowrap_mode = 2
+theme_type_variation = &"RuleSaved"
+
+[node name="Status" type="Label" parent="Margin/Content"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Escape / Cancel leaves the saved choice unchanged."
+autowrap_mode = 2
+theme_type_variation = &"RuleContext"
+
+[node name="Spacer" type="Control" parent="Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 10
+
+[node name="CopyChoice" type="Button" parent="Margin/Content/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(146, 36)
+text = "Copy choice"
+visible = false
+
+[node name="ReloadSaved" type="Button" parent="Margin/Content/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(146, 36)
+text = "Reload saved choice"
+visible = false
+
+[node name="Cancel" type="Button" parent="Margin/Content/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(146, 36)
+text = "Cancel"
+
+[node name="ApplyChoice" type="Button" parent="Margin/Content/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(146, 36)
+text = "Apply choice"
+disabled = true
+theme_type_variation = &"ScenarioPrimary"

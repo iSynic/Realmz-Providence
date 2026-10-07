@@ -1,0 +1,54 @@
+# Classic 491816ad60037394f92c428e99c004494d3c28b3, src/realmz_orig/newland.c.
+# Every cataloged non-settings action: opcode source-line argument-role.
+# Preserved means the pinned consumer does not read ID, including disabled registration code.
+# Monster tags compare monster.name/holdover.name; 89 instead seeks a Data MD record.
+-14 1927 value
+0 108 preserved
+1 1434 message
+4 1573 simple-encounter
+5 1635 complex-encounter
+6 1703 shop
+8 1817 same-map-action-point
+9 1826 sound
+10 1830 treasure
+11 1843 value
+14 1919 value
+24 2336 preserved
+25 2341 preserved
+26 2352 preserved
+27 2356 picture
+28 2383 preserved
+29 2403 player-map
+32 2562 value
+34 2583 preserved
+35 2590 value
+36 2597 value
+39 2747 extra-action-point
+44 2834 value
+47 3070 quest
+49 3133 preserved
+62 3609 text-resource
+66 2387 value
+71 2210 value
+82 1385 preserved
+83 1378 preserved
+84 1365 preserved
+88 1112 monster-tag
+89 1054 monster
+91 1017 preserved
+93 938 preserved
+94 927 preserved
+95 916 value
+96 900 preserved
+97 889 preserved
+98 874 preserved
+99 845 preserved
+100 768 preserved
+101 778 preserved
+102 788 preserved
+104 827 value
+105 831 value
+111 110 preserved
+112 118 preserved
+119 292 preserved
+127 611 monster-tag

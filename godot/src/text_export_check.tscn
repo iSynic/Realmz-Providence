@@ -1,0 +1,116 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/text_export_check.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/text_resource_dialog.tscn" id="2"]
+[node name="Export Check" type="HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+split_offset = 430
+script = ExtResource("1")
+[node name="ExportIssueBrowser" type="VBoxContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 0)
+theme_override_constants/separation = 10
+[node name="ExportCheckHeader" type="Label" parent="ExportIssueBrowser"]
+layout_mode = 2
+text = "CHECK TEXT EXPORT"
+theme_type_variation = "StoryTitle"
+[node name="ExportSummary" type="Label" parent="ExportIssueBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+[node name="IssueSearch" type="LineEdit" parent="ExportIssueBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Filter name, number or complete text…"
+[node name="IssueFilters" type="HBoxContainer" parent="ExportIssueBrowser"]
+layout_mode = 2
+[node name="IssueFamily" type="OptionButton" parent="ExportIssueBrowser/IssueFilters"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 4
+selected = 0
+popup/item_0/text = "All text families"
+popup/item_0/id = 0
+popup/item_1/text = "Strings"
+popup/item_1/id = 1
+popup/item_2/text = "Option Labels"
+popup/item_2/id = 2
+popup/item_3/text = "Scrolling TEXT"
+popup/item_3/id = 3
+[node name="IncludeClean" type="CheckButton" parent="ExportIssueBrowser/IssueFilters"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Include clean"
+[node name="ExportIssueTable" type="ItemList" parent="ExportIssueBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+[node name="IssueCount" type="Label" parent="ExportIssueBrowser"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+[node name="Paging" type="HBoxContainer" parent="ExportIssueBrowser"]
+layout_mode = 2
+[node name="Previous" type="Button" parent="ExportIssueBrowser/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Previous"
+[node name="Refresh" type="Button" parent="ExportIssueBrowser/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Refresh"
+[node name="Next" type="Button" parent="ExportIssueBrowser/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next"
+[node name="ExportIssueDetail" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+[node name="IssueIdentity" type="Label" parent="ExportIssueDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "StoryTitle"
+[node name="Scope" type="Label" parent="ExportIssueDetail"]
+layout_mode = 2
+text = "Classic text encoding and byte limits · this check does not certify runtime readiness."
+autowrap_mode = 3
+[node name="MessagePreview" type="TextEdit" parent="ExportIssueDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
+[node name="IssueDetails" type="Label" parent="ExportIssueDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+[node name="IssueIndex" type="SpinBox" parent="ExportIssueDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 1.0
+value = 1.0
+prefix = "Issue"
+editable = false
+[node name="RepairExplanation" type="Label" parent="ExportIssueDetail"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Open the exact owning field, correct the text and Apply. Back returns to these filters; Refresh checks the saved project again. No characters are replaced automatically."
+[node name="IssueActions" type="HBoxContainer" parent="ExportIssueDetail"]
+layout_mode = 2
+[node name="OpenOwner" type="Button" parent="ExportIssueDetail/IssueActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open owning field →"
+disabled = true
+[node name="FilterTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 0.2
+one_shot = true
+[node name="TextRepair" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true

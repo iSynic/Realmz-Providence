@@ -1,0 +1,25 @@
+[package]
+name = "providence-native-adapter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+providence-application-library = { path = "../providence-application-library" }
+providence-core = { path = "../providence-core" }
+providence-rebuilt-package = { path = "../providence-rebuilt-package" }
+providence-storage = { path = "../providence-storage" }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+base64.workspace = true
+tempfile.workspace = true
+png = "0.18.1"
+stuffit = { path = "../../vendor/stuffit", default-features = false }
+encoding_rs = "=0.8.35"
+
+[dev-dependencies]
+
+[lints]
+workspace = true

@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/item_operation_review.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+[node name="ItemOperationReview" type="Window"]
+size = Vector2i(850, 560)
+min_size = Vector2i(720, 460)
+visible = false
+exclusive = true
+transient = true
+theme = ExtResource("2")
+script = ExtResource("1")
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+[node name="Destination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+[node name="DestinationControls" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="Label" type="Label" parent="Margin/Body/DestinationControls"]
+layout_mode = 2
+text = "Custom Item ID"
+[node name="DestinationId" type="SpinBox" parent="Margin/Body/DestinationControls"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 900.0
+max_value = 999.0
+value = 900.0
+[node name="ReviewDestination" type="Button" parent="Margin/Body/DestinationControls"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review This ID"
+[node name="Summary" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+[node name="Affected" type="RichTextLabel" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 2
+[node name="Cancel" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+[node name="UseDraft" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use This Destination"

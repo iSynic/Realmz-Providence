@@ -1,0 +1,149 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/scenario_workbench_frame.tscn" type="PackedScene" id="1"]
+[ext_resource path="res://src/scenario_restrictions_editor.gd" type="Script" id="2"]
+
+[ext_resource path="res://src/scenario_restriction_matrix.gd" type="Script" id="3"]
+
+[node name="scenario_restrictions_editor" instance=ExtResource("1")]
+script = ExtResource("2")
+stable_route_id = "scenario.restrictions"
+projection_method = "scenario-restrictions.open"
+write_method = "scenario-restrictions.update"
+section_title = "Restrictions"
+
+[node name="Title" parent="Header" index="0"]
+text = "RESTRICTIONS"
+
+[node name="SectionHeading" parent="Body/FormPanel/Form" index="0"]
+text = "RESTRICTIONS · SCENARIO DRAFT"
+
+[node name="ApplySection" parent="Body/FormPanel/Form/Footer" index="0"]
+text = "Apply Restrictions"
+
+[node name="Limits" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+columns = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 16
+
+[node name="MaximumPartySizeField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits/MaximumPartySizeField"]
+layout_mode = 2
+text = "MAXIMUM PARTY SIZE · 1–6"
+theme_type_variation = &"ScenarioField"
+
+[node name="MaximumPartySize" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits/MaximumPartySizeField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="MaximumCharacterLevelField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits/MaximumCharacterLevelField"]
+layout_mode = 2
+text = "MAXIMUM CHARACTER LEVEL · 0 = NONE"
+theme_type_variation = &"ScenarioField"
+
+[node name="MaximumCharacterLevel" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Limits/MaximumCharacterLevelField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+
+[node name="Checklists" type="HBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="RaceSection" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/RaceSection"]
+layout_mode = 2
+text = "RACES THAT CANNOT PLAY"
+theme_type_variation = &"ScenarioHeading"
+
+[node name="RaceFilter" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/RaceSection"]
+layout_mode = 2
+placeholder_text = "Filter race names or IDs…"
+clear_button_enabled = true
+
+[node name="RaceChecklist" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/RaceSection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 240)
+columns = 2
+script = ExtResource("3")
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 4
+
+[node name="RaceMissingReferences" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/RaceSection"]
+layout_mode = 2
+autowrap_mode = 2
+theme_type_variation = &"ScenarioDiagnostic"
+
+[node name="CasteSection" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Heading" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/CasteSection"]
+layout_mode = 2
+text = "CASTES THAT CANNOT PLAY"
+theme_type_variation = &"ScenarioHeading"
+
+[node name="CasteFilter" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/CasteSection"]
+layout_mode = 2
+placeholder_text = "Filter caste names or IDs…"
+clear_button_enabled = true
+
+[node name="CasteChecklist" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/CasteSection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 240)
+columns = 2
+script = ExtResource("3")
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 4
+
+[node name="CasteMissingReferences" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/Checklists/CasteSection"]
+layout_mode = 2
+autowrap_mode = 2
+theme_type_variation = &"ScenarioDiagnostic"
+
+[node name="MessageLabel" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "RESTRICTION MESSAGE"
+theme_type_variation = &"ScenarioField"
+
+[node name="RestrictionMessage" type="TextEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 96)
+wrap_mode = 1
+
+[node name="ClearRestrictions" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Clear restrictions draft"
+size_flags_horizontal = 0
+
+[node name="Guidance" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Checked = cannot play."
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"
+
+[node name="EvidenceDisclosure" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Retained source and compatibility details"
+toggle_mode = true
+alignment = 0
+
+[node name="EvidenceDetails" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+visible = false
+
+[node name="SourceEvidence" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/EvidenceDetails"]
+layout_mode = 2
+autowrap_mode = 2

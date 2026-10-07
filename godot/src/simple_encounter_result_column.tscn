@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[node name="ResultColumn" type="PanelContainer"]
+custom_minimum_size = Vector2(215, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Steps" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="Heading" type="Label" parent="Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "RESULT"
+[node name="Step1" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step2" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step3" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step4" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step5" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step6" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step7" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step8" type="Button" parent="Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0

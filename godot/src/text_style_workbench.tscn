@@ -1,0 +1,145 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/text_style_workbench.gd" id="1"]
+[node name="StyleWorkbench" type="VBoxContainer"]
+script = ExtResource("1")
+size_flags_vertical = 3
+
+[node name="Toolbar" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StyleBold" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "B"
+toggle_mode = true
+custom_minimum_size = Vector2(34, 30)
+
+[node name="StyleItalic" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "I"
+toggle_mode = true
+custom_minimum_size = Vector2(34, 30)
+
+[node name="StyleUnderline" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "U"
+toggle_mode = true
+custom_minimum_size = Vector2(34, 30)
+
+[node name="StyleFont" type="OptionButton" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(185, 30)
+
+[node name="StyleSize" type="SpinBox" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 255.0
+value = 12.0
+suffix = "pt"
+custom_minimum_size = Vector2(105, 30)
+
+[node name="StyleColor" type="ColorPickerButton" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+color = Color(0, 0, 0, 1)
+edit_alpha = false
+custom_minimum_size = Vector2(82, 30)
+text = "Color…"
+
+[node name="ApplySelection" type="Button" parent="Toolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply to selection"
+disabled = true
+
+[node name="TextPanes" type="HSplitContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 620
+
+[node name="Draft" type="TextEdit" parent="TextPanes"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(400, 240)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+wrap_mode = 1
+tab_input_mode = false
+deselect_on_focus_loss_enabled = false
+
+[node name="PreviewBox" type="VBoxContainer" parent="TextPanes"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(340, 240)
+
+[node name="PreviewTitle" type="Label" parent="TextPanes/PreviewBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "AUTHOR PREVIEW · APPROXIMATION"
+theme_type_variation = "StoryStyleHeading"
+
+[node name="AuthorPreview" type="RichTextLabel" parent="TextPanes/PreviewBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+selection_enabled = true
+scroll_active = true
+
+[node name="SelectionStatus" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+theme_type_variation = "ItemContext"
+
+[node name="RangesHeader" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RangeTitle" type="Label" parent="RangesHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FORMATTING RANGES"
+size_flags_horizontal = 3
+theme_type_variation = "StoryStyleHeading"
+
+[node name="AddStyleRange" type="Button" parent="RangesHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Add at caret"
+
+[node name="EditStyleRange" type="Button" parent="RangesHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Edit selected range"
+disabled = true
+
+[node name="RemoveStyleRange" type="Button" parent="RangesHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Remove selected range"
+disabled = true
+
+[node name="StyleRanges" type="ItemList" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 82)
+
+[node name="FormattingNotice" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+theme_type_variation = "ItemContext"
+
+[node name="StyleTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+wait_time = 0.25
+one_shot = true
+

@@ -1,0 +1,163 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://src/discovery_view.gd" id="1"]
+[ext_resource type="Theme" path="res://src/discovery_theme.tres" id="2"]
+[ext_resource type="Font" path="res://theme/authoring_heading.tres" id="3"]
+[sub_resource type="ButtonGroup" id="Scopes"]
+[node name="Discovery" type="Window"]
+title = "Scenario Search"
+size = Vector2i(1300, 740)
+min_size = Vector2i(900, 600)
+visible = false
+transient = true
+script = ExtResource("1")
+theme = ExtResource("2")
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_bottom = 18
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 12
+[node name="Heading" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryHeading"
+text = "SEARCH AND LINKS"
+[node name="Query" type="LineEdit" parent="Margin/Body"]
+unique_name_in_owner = true
+placeholder_text = "Find name, exact ID, alias, or authored text…"
+[node name="Filters" type="HBoxContainer" parent="Margin/Body"]
+[node name="Scope" type="HBoxContainer" parent="Margin/Body/Filters"]
+unique_name_in_owner = true
+[node name="Scenario" type="Button" parent="Margin/Body/Filters/Scope"]
+custom_minimum_size = Vector2(124, 32)
+toggle_mode = true
+button_group = SubResource("Scopes")
+text = "Scenario"
+button_pressed = true
+[node name="MyLibrary" type="Button" parent="Margin/Body/Filters/Scope"]
+custom_minimum_size = Vector2(124, 32)
+toggle_mode = true
+button_group = SubResource("Scopes")
+text = "My Library"
+[node name="Stock" type="Button" parent="Margin/Body/Filters/Scope"]
+custom_minimum_size = Vector2(124, 32)
+toggle_mode = true
+button_group = SubResource("Scopes")
+text = "Stock"
+[node name="Docs" type="Button" parent="Margin/Body/Filters/Scope"]
+custom_minimum_size = Vector2(124, 32)
+toggle_mode = true
+button_group = SubResource("Scopes")
+text = "Docs"
+[node name="Kind" type="OptionButton" parent="Margin/Body/Filters"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(230, 32)
+size_flags_horizontal = 3
+[node name="Back" type="Button" parent="Margin/Body/Filters"]
+unique_name_in_owner = true
+text = "Back"
+[node name="Refresh" type="Button" parent="Margin/Body/Filters"]
+unique_name_in_owner = true
+text = "Refresh"
+[node name="Status" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+text = "Open a project to search."
+[node name="LinkActions" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+[node name="UsedBy" type="Button" parent="Margin/Body/LinkActions"]
+unique_name_in_owner = true
+text = "Used By"
+toggle_mode = true
+[node name="Uses" type="Button" parent="Margin/Body/LinkActions"]
+unique_name_in_owner = true
+text = "Uses"
+toggle_mode = true
+[node name="Trace" type="Button" parent="Margin/Body/LinkActions"]
+unique_name_in_owner = true
+text = "Trace callers"
+toggle_mode = true
+[node name="Panes" type="HSplitContainer" parent="Margin/Body"]
+size_flags_vertical = 3
+split_offset = -90
+[node name="Rows" type="Tree" parent="Margin/Body/Panes"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+size_flags_horizontal = 3
+hide_root = true
+[node name="Preview" type="VBoxContainer" parent="Margin/Body/Panes"]
+tooltip_text = "Single-click previews; Enter opens the owning record. Escape closes this window."
+custom_minimum_size = Vector2(360, 0)
+size_flags_horizontal = 3
+[node name="PreviewTitle" type="Label" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryTitle"
+autowrap_mode = 3
+[node name="PreviewContext" type="Label" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+autowrap_mode = 3
+[node name="Detail" type="RichTextLabel" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 190)
+size_flags_horizontal = 3
+[node name="FollowHeading" type="Label" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+theme_type_variation = &"ChangesHeading"
+text = "FOLLOW THE SCENARIO"
+[node name="SearchLinks" type="HBoxContainer" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+[node name="SearchUsedBy" type="Button" parent="Margin/Body/Panes/Preview/SearchLinks"]
+unique_name_in_owner = true
+text = "Used By"
+[node name="SearchUses" type="Button" parent="Margin/Body/Panes/Preview/SearchLinks"]
+unique_name_in_owner = true
+text = "Uses"
+[node name="Callers" type="VBoxContainer" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+[node name="Caller1" type="Button" parent="Margin/Body/Panes/Preview/Callers"]
+custom_minimum_size = Vector2(0, 58)
+alignment = 0
+autowrap_mode = 3
+[node name="Caller2" type="Button" parent="Margin/Body/Panes/Preview/Callers"]
+custom_minimum_size = Vector2(0, 58)
+alignment = 0
+autowrap_mode = 3
+[node name="Caller3" type="Button" parent="Margin/Body/Panes/Preview/Callers"]
+custom_minimum_size = Vector2(0, 58)
+alignment = 0
+autowrap_mode = 3
+[node name="OpenSource" type="Button" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+text = "Open exact source"
+[node name="Footer" type="HBoxContainer" parent="Margin/Body"]
+[node name="OpenTarget" type="Button" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+text = "Open resolved target"
+[node name="TraceBranch" type="Button" parent="Margin/Body/Panes/Preview"]
+unique_name_in_owner = true
+text = "Trace this caller"
+[node name="PreviewHint" type="Label" parent="Margin/Body/Panes/Preview"]
+visible = false
+unique_name_in_owner = true
+autowrap_mode = 3
+text = "Single-click previews. Enter opens the owning record.
+Escape closes this window and restores focus."
+[node name="PreviewRemainder" type="Control" parent="Margin/Body/Panes/Preview"]
+size_flags_vertical = 3
+[node name="Previous" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "Previous"
+[node name="Next" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "Next"
+[node name="Spacer" type="Control" parent="Margin/Body/Footer"]
+size_flags_horizontal = 3
+[node name="OpenRecord" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "Open record"
+[node name="Close" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "Close"

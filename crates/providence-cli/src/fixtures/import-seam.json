@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "firstMigrationSeam": {
+    "nativePath": "Data SD2",
+    "recordBytes": 256
+  },
+  "repositories": [
+    {
+      "role": "classic-source-oracle",
+      "repository": "https://github.com/Realmz-Castle/realmz",
+      "commit": "491816ad60037394f92c428e99c004494d3c28b3"
+    }
+  ]
+}

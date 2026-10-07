@@ -1,0 +1,159 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/item_artwork_picker.gd" id="1"]
+
+[node name="ItemArtworkPicker" type="PanelContainer"]
+custom_minimum_size = Vector2(1120, 540)
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Margin/Content"]
+layout_mode = 2
+text = "Use artwork in an item"
+theme_override_font_sizes/font_size = 22
+
+[node name="Columns" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="Destinations" type="VBoxContainer" parent="Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Prompt" type="Label" parent="Margin/Content/Columns/Destinations"]
+layout_mode = 2
+text = "Choose a scenario item"
+
+[node name="DestinationSearch" type="LineEdit" parent="Margin/Content/Columns/Destinations"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+placeholder_text = "Search by item name or number…"
+
+[node name="DestinationItems" type="ItemList" parent="Margin/Content/Columns/Destinations"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+max_text_lines = 2
+theme_override_constants/v_separation = 12
+
+[node name="Paging" type="HBoxContainer" parent="Margin/Content/Columns/Destinations"]
+layout_mode = 2
+
+[node name="ResultCount" type="Label" parent="Margin/Content/Columns/Destinations/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PreviousItems" type="Button" parent="Margin/Content/Columns/Destinations/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Previous"
+disabled = true
+
+[node name="NextItems" type="Button" parent="Margin/Content/Columns/Destinations/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next"
+disabled = true
+
+[node name="Comparison" type="VBoxContainer" parent="Margin/Content/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="SelectedItemName" type="Label" parent="Margin/Content/Columns/Comparison"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose a scenario item"
+autowrap_mode = 3
+
+[node name="Pictures" type="HBoxContainer" parent="Margin/Content/Columns/Comparison"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Current" type="VBoxContainer" parent="Margin/Content/Columns/Comparison/Pictures"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Caption" type="Label" parent="Margin/Content/Columns/Comparison/Pictures/Current"]
+layout_mode = 2
+text = "Current"
+
+[node name="CurrentPicture" type="TextureRect" parent="Margin/Content/Columns/Comparison/Pictures/Current"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 144)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CurrentPictureState" type="Label" parent="Margin/Content/Columns/Comparison/Pictures/Current"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Proposed" type="VBoxContainer" parent="Margin/Content/Columns/Comparison/Pictures"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ProposedCaption" type="Label" parent="Margin/Content/Columns/Comparison/Pictures/Proposed"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "After applying"
+
+[node name="ProposedPicture" type="TextureRect" parent="Margin/Content/Columns/Comparison/Pictures/Proposed"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 144)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PickerStatus" type="Label" parent="Margin/Content/Columns/Comparison"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="ReviewCurrentItem" type="Button" parent="Margin/Content/Columns/Comparison"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Review current item"
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Content"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 12
+
+[node name="CancelArtwork" type="Button" parent="Margin/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="ApplyArtwork" type="Button" parent="Margin/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply Artwork"
+disabled = true
+
+[connection signal="text_changed" from="Margin/Content/Columns/Destinations/DestinationSearch" to="." method="_on_search"]
+[connection signal="text_submitted" from="Margin/Content/Columns/Destinations/DestinationSearch" to="." method="_on_search_submitted"]
+[connection signal="item_selected" from="Margin/Content/Columns/Destinations/DestinationItems" to="." method="_select_item"]
+[connection signal="pressed" from="Margin/Content/Columns/Destinations/Paging/PreviousItems" to="." method="_on_previous"]
+[connection signal="pressed" from="Margin/Content/Columns/Destinations/Paging/NextItems" to="." method="_on_next"]
+[connection signal="pressed" from="Margin/Content/Columns/Comparison/ReviewCurrentItem" to="." method="_on_review"]
+[connection signal="pressed" from="Margin/Content/Actions/CancelArtwork" to="." method="_on_cancel"]
+[connection signal="pressed" from="Margin/Content/Actions/ApplyArtwork" to="." method="_on_apply"]

@@ -1,0 +1,74 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/import_repair_dialog.gd" id="1"]
+
+[node name="ImportRepair" type="Window"]
+title = "Review imported content"
+size = Vector2i(940, 640)
+min_size = Vector2i(820, 500)
+visible = false
+exclusive = true
+transient = true
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Status" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+text = "Checking retained scenario content…"
+
+[node name="Guidance" type="Label" parent="Margin/Body"]
+layout_mode = 2
+text = "Authored edits are kept unless you select their replacement."
+tooltip_text = "Apply recovers the reviewed content as one undoable change. Cancel leaves the project unchanged."
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Entries" type="VBoxContainer" parent="Margin/Body/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Previous"
+
+[node name="Page" type="Label" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+
+[node name="Next" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next"
+
+[node name="Cancel" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="Apply" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply Recovery"

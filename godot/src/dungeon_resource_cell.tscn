@@ -1,0 +1,46 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/dungeon_resource_cell.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/dungeon_feature_dock.tscn" id="2"]
+
+[node name="DungeonResourceCell" type="Window"]
+title = "Edit Dungeon stamp features"
+size = Vector2i(640, 700)
+min_size = Vector2i(600, 640)
+visible = false
+exclusive = true
+transient = true
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FeatureDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="FeatureDock" parent="Margin/Body/Scroll" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CancelFeatures" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"

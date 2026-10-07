@@ -1,0 +1,16 @@
+pub(super) const FORMAT_ONE: u16 = 1;
+pub(super) const FORMAT_TWO: u16 = 2;
+pub(super) const FORMAT_TWO_PREFIX_BYTES: usize = 6;
+pub(super) const SOUND_COMMAND: u16 = 0x0050;
+pub(super) const BUFFER_COMMAND: u16 = 0x0051;
+pub(super) const DATA_OFFSET_FLAG: u16 = 0x8000;
+pub(super) const STANDARD_HEADER_BYTES: usize = 22;
+pub(super) const EXTENDED_HEADER_BYTES: usize = 64;
+pub(super) const COMPRESSED_HEADER_BYTES: usize = 64;
+pub(super) const MAX_COMMANDS: usize = 1024;
+pub(super) const MAX_PCM_BYTES: usize = 64 * 1024 * 1024;
+pub(super) const MACE_THREE_TO_ONE: u16 = 3;
+pub(super) const FIXED_COMPRESSION: u16 = 0xffff;
+pub(super) const NOT_COMPRESSED: u16 = 0;
+pub(super) const FORMAT_TWOS: u32 = u32::from_be_bytes(*b"twos");
+pub(super) const FORMAT_SOWT: u32 = u32::from_be_bytes(*b"sowt");

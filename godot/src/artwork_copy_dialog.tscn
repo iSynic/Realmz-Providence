@@ -1,0 +1,96 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/artwork_copy_dialog.gd" id="1"]
+
+[node name="ArtworkCopyDialog" type="ConfirmationDialog"]
+unique_name_in_owner = true
+title = "Copy to Scenario"
+size = Vector2i(780, 610)
+ok_button_text = "Copy"
+script = ExtResource("1")
+
+[node name="Content" type="VBoxContainer" parent="."]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 768.0
+offset_bottom = 550.0
+
+[node name="Explanation" type="Label" parent="Content"]
+layout_mode = 2
+text = "Unused nonzero picture number required."
+
+[node name="CopyNumber" type="SpinBox" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="CheckCopyNumber" type="Button" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Check Number"
+
+[node name="Comparison" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Incoming" type="VBoxContainer" parent="Content/Comparison"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Caption" type="Label" parent="Content/Comparison/Incoming"]
+layout_mode = 2
+text = "From My Library"
+
+[node name="CopyIncoming" type="TextureRect" parent="Content/Comparison/Incoming"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(128, 128)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Existing" type="VBoxContainer" parent="Content/Comparison"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Caption" type="Label" parent="Content/Comparison/Existing"]
+layout_mode = 2
+text = "Existing artwork"
+
+[node name="CopyExisting" type="TextureRect" parent="Content/Comparison/Existing"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(128, 128)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CopyExistingName" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="ViewUses" type="Button" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "View Item Uses"
+disabled = true
+
+[node name="ItemUses" type="ItemList" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 100)
+visible = false
+
+[node name="MoreUses" type="Button" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show More Uses"
+visible = false
+
+[node name="OpenItem" type="Button" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open Item"
+disabled = true
+visible = false

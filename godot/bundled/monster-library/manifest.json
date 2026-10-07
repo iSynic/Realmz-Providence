@@ -1,0 +1,13 @@
+{
+  "kind": "providence.bundled-monster-scrapbook",
+  "formatVersion": 1,
+  "nativeName": "Monster Scrap Book",
+  "byteLength": 93666,
+  "sha256": "fcf1afd726fdc1a08f72ee2393872a8d2d2bda4ffcf1a4b98236feb40daff46c",
+  "recordBytes": 466,
+  "recordCount": 201,
+  "evidenceRevision": "56ac232c22fc321a99cb819f1e2d8c3985ad479a",
+  "evidencePath": "public/bundled-libraries/divinity/Divinity Data/Monster Scrap Book",
+  "license": "CC BY-NC-SA 4.0",
+  "attribution": "Realmz and Divinity, copyright Tim Phillips"
+}

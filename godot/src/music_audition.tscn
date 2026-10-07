@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/music_audition.gd" id="1"]
+
+[node name="MusicAudition" type="PanelContainer"]
+visible = false
+script = ExtResource("1")
+
+[node name="Inset" type="MarginContainer" parent="."]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Body" type="VBoxContainer" parent="Inset"]
+tooltip_text = "Playback stops at the end, after ten minutes, or when the selection changes."
+theme_override_constants/separation = 10
+
+[node name="PlaybackStatus" type="Label" parent="Inset/Body"]
+unique_name_in_owner = true
+text = "Ready · press Play"
+autowrap_mode = 3
+
+[node name="PlaybackProgress" type="ProgressBar" parent="Inset/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 6)
+show_percentage = false
+
+[node name="Commands" type="HBoxContainer" parent="Inset/Body"]
+theme_override_constants/separation = 8
+
+[node name="PlayMusic" type="Button" parent="Inset/Body/Commands"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+size_flags_horizontal = 3
+text = "Play Music"
+
+[node name="StopMusic" type="Button" parent="Inset/Body/Commands"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+size_flags_horizontal = 3
+text = "Stop Music"
+disabled = true
+
+[node name="PreviewNote" type="Label" parent="Inset/Body"]
+visible = false
+text = "Preview plays once, up to ten minutes. Selection changes stop playback."
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 11
+
+[node name="ModuleDetails" type="Label" parent="Inset/Body"]
+unique_name_in_owner = true
+text = "Standard 31-sample MOD · Exact source retained"
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 11
+
+[node name="MusicAudio" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true

@@ -1,0 +1,58 @@
+# Every author-visible raw integer field at the zero-valued baseline after mode-inactive fields are excluded.
+# opcode key disposition source
+# confirmed-numeric: the established author task is entry of a quantity, coordinate, threshold, or signed delta.
+# Fields with a semantic value picker are intentionally absent from this raw-control inventory.
+# conditional-reference-at-baseline: zero disables the reference; an enabled mode already exposes the content picker.
+# runtime-decision-required: the authoring control depends on one of the explicitly unresolved Classic/Rebuilt contracts.
+11 targetNativeId confirmed-numeric newland.c:1843
+12 xOrDungeonY confirmed-numeric newland.c:1852
+12 yOrDungeonX confirmed-numeric newland.c:1852
+13 percent confirmed-numeric newland.c:1881
+15 multiplier confirmed-numeric newland.c:1941
+15 low confirmed-numeric newland.c:1941
+15 high confirmed-numeric newland.c:1941
+16 multiplier confirmed-numeric newland.c:1954
+16 low confirmed-numeric newland.c:1954
+16 high confirmed-numeric newland.c:1954
+17 powerLevel confirmed-numeric newland.c:1966
+17 saveAdjust confirmed-numeric newland.c:1966
+18 powerLevel confirmed-numeric newland.c:1991
+18 saveAdjust confirmed-numeric newland.c:1991
+22 maxMatches confirmed-numeric newland.c:3684
+30 adjustment confirmed-numeric newland.c:2415
+31 adjustment confirmed-numeric newland.c:2491
+32 targetNativeId confirmed-numeric newland.c:2562
+33 signedAmount confirmed-numeric newland.c:2569
+37 x confirmed-numeric newland.c:2664
+37 y confirmed-numeric newland.c:2664
+42 percent confirmed-numeric newland.c:2806
+43 durationOrDelta confirmed-numeric newland.c:2840
+51 inflationDelta confirmed-numeric newland.c:3183
+51 stockDelta confirmed-numeric newland.c:3183
+52 value confirmed-numeric newland.c:3197
+61 xShift confirmed-numeric newland.c:3624
+61 yShift confirmed-numeric newland.c:3624
+63 dayOrDelta confirmed-numeric newland.c:3491
+63 hourOrDelta confirmed-numeric newland.c:3491
+63 minuteOrDelta confirmed-numeric newland.c:3491
+65 countOrRandomLimit confirmed-numeric newland.c:3548
+67 minimumCharges confirmed-numeric newland.c:2122
+73 range1Low conditional-reference-at-baseline newland.c:2938
+73 range1High conditional-reference-at-baseline newland.c:2938
+73 range2Low conditional-reference-at-baseline newland.c:2938
+73 range2High conditional-reference-at-baseline newland.c:2938
+74 signedRollCount confirmed-numeric newland.c:2978
+74 lowOrSound confirmed-numeric newland.c:2978
+74 high confirmed-numeric newland.c:2978
+75 testB confirmed-numeric newland.c:3011
+76 delta confirmed-numeric newland.c:123
+77 testB confirmed-numeric newland.c:164
+90 amount confirmed-numeric newland.c:1030
+92 percentDelta confirmed-numeric newland.c:949
+92 shapeX1 confirmed-numeric newland.c:949
+92 shapeY1 confirmed-numeric newland.c:949
+92 shapeX2 confirmed-numeric newland.c:949
+92 shapeY2 confirmed-numeric newland.c:949
+108 delta confirmed-numeric newland.c:624
+124 countOrRandomLimit confirmed-numeric newland.c:430
+126 roundOrPercent confirmed-numeric newland.c:584

@@ -1,0 +1,337 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://src/string_editor.gd" id="1"]
+[ext_resource type="Theme" path="res://src/story_text_theme.tres" id="2"]
+[ext_resource type="PackedScene" path="res://src/string_import_dialog.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://src/string_catalog.tscn" id="catalog"]
+[node name="String Editor" type="VBoxContainer"]
+custom_minimum_size = Vector2(900, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Header" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StringEditorHeader" type="Label" parent="Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "STRINGS"
+theme_type_variation = "StoryTitle"
+size_flags_horizontal = 3
+
+[node name="FindLong" type="Button" parent="Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Find long strings"
+
+[node name="ImportText" type="Button" parent="Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Import Text…"
+
+[node name="TextAuthoringTabs" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StringEditorTab" type="Button" parent="TextAuthoringTabs"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Strings"
+
+[node name="OptionLabelsTab" type="Button" parent="TextAuthoringTabs"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Option Labels"
+visible = false
+
+[node name="ExportCheckTab" type="Button" parent="TextAuthoringTabs"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Check Text Export"
+
+[node name="GoFind" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="GoLabel" type="Label" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Go to string"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="GoToString" type="SpinBox" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+max_value = 32767.0
+
+[node name="Go" type="Button" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Go"
+
+[node name="OccurrenceSearch" type="LineEdit" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+size_flags_horizontal = 3
+placeholder_text = "Find an occurrence in all strings…"
+clear_button_enabled = true
+
+[node name="FindFirst" type="Button" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Find First"
+
+[node name="FindNext" type="Button" parent="GoFind"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Find Next"
+
+[node name="OccurrenceStatus" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Enter text, then Find First"
+autowrap_mode = 3
+
+[node name="Body" type="HSplitContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 330
+
+[node name="StringNavigator" type="VBoxContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(330, 0)
+
+[node name="InventoryActions" type="HBoxContainer" parent="Body/StringNavigator"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="NewString" type="Button" parent="Body/StringNavigator/InventoryActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ New String"
+size_flags_horizontal = 3
+
+[node name="DuplicateString" type="Button" parent="Body/StringNavigator/InventoryActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Duplicate"
+size_flags_horizontal = 3
+
+[node name="MessageSearch" type="LineEdit" parent="Body/StringNavigator"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Filter by number or text…"
+clear_button_enabled = true
+
+[node name="DocumentStatus" type="Label" parent="Body/StringNavigator"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open a project to author Strings."
+autowrap_mode = 3
+theme_type_variation = "ItemContext"
+
+[node name="RetryRead" type="Button" parent="Body/StringNavigator"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Retry loading"
+visible = false
+
+[node name="MessageCollection" parent="Body/StringNavigator" instance=ExtResource("catalog")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+
+[node name="MessagePaging" type="HBoxContainer" parent="Body/StringNavigator"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PreviousMessagePage" type="Button" parent="Body/StringNavigator/MessagePaging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹"
+
+[node name="MessagePageStatus" type="Label" parent="Body/StringNavigator/MessagePaging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0–0 of 0"
+size_flags_horizontal = 3
+horizontal_alignment = 1
+
+[node name="NextMessagePage" type="Button" parent="Body/StringNavigator/MessagePaging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "›"
+
+[node name="MessageEditor" type="VBoxContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MessageHeader" type="HBoxContainer" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MessageIdentity" type="Label" parent="Body/MessageEditor/MessageHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No string selected"
+size_flags_horizontal = 3
+theme_type_variation = "StoryTitle"
+
+[node name="MessageMeta" type="Label" parent="Body/MessageEditor/MessageHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 characters · 0 uses"
+theme_type_variation = "ItemContext"
+
+[node name="ClearString" type="Button" parent="Body/MessageEditor/MessageHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clear Text"
+
+[node name="MessageText" type="TextEdit" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 240)
+placeholder_text = "Write the text shown to the player…"
+wrap_mode = 1
+
+[node name="ByteStatus" type="Label" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="SoundContext" type="Label" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = "ItemContext"
+
+[node name="SelectCharacter" type="Button" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Select character"
+visible = false
+
+[node name="SoundLink" type="VBoxContainer" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+[node name="SoundHeader" type="HBoxContainer" parent="Body/MessageEditor/SoundLink"]
+layout_mode = 2
+[node name="SoundHeading" type="Label" parent="Body/MessageEditor/SoundLink/SoundHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "StoryStyleHeading"
+text = "SOUND STEPS IN MESSAGE CALLERS"
+[node name="OpenSoundOwner" type="Button" parent="Body/MessageEditor/SoundLink/SoundHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Edit in owning step…"
+[node name="LinkedSounds" type="ItemList" parent="Body/MessageEditor/SoundLink"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+
+[node name="UsedByHeader" type="HBoxContainer" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="UsesHeading" type="Label" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "USED BY"
+size_flags_horizontal = 3
+theme_type_variation = "StoryUsesHeading"
+
+[node name="UsesStatus" type="Label" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 callers"
+
+[node name="PreviousUses" type="Button" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹"
+
+[node name="NextUses" type="Button" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "›"
+
+[node name="OpenSelectedUse" type="Button" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open Selected Use"
+
+[node name="AllCallers" type="Button" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "All callers"
+
+[node name="TraceCallers" type="Button" parent="Body/MessageEditor/UsedByHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Trace"
+
+[node name="MessageUsedBy" type="ItemList" parent="Body/MessageEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 140)
+
+[node name="Actions" type="HBoxContainer" parent="Body/MessageEditor"]
+tooltip_text = "Apply changes the open project; Save writes it to disk."
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ApplyString" type="Button" parent="Body/MessageEditor/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply String"
+
+[node name="DiscardString" type="Button" parent="Body/MessageEditor/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discard"
+
+[node name="SaveHint" type="Label" parent="Body/MessageEditor/Actions"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply updates this project · Save writes it to disk"
+size_flags_horizontal = 3
+theme_type_variation = "ItemContext"
+
+[node name="ExportText" type="Button" parent="Body/MessageEditor/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Export Text…"
+
+
+[node name="FeedbackTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true
+wait_time = 0.2
+[node name="SearchTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true
+wait_time = 0.2
+[node name="OccurrenceTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+one_shot = true
+wait_time = 0.2
+
+[node name="StringImportDialog" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true

@@ -1,0 +1,455 @@
+[gd_scene format=3]
+
+[node name="Equipment" type="VBoxContainer"]
+tooltip_text = "Negative bonuses are allowed."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Panels" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Equipping" type="PanelContainer" parent="Panels"]
+layout_mode = 2
+
+size_flags_horizontal = 3
+theme_type_variation = &"ItemEquipmentPanel"
+
+[node name="Body" type="VBoxContainer" parent="Panels/Equipping"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Panels/Equipping/Body"]
+layout_mode = 2
+text = "EQUIPPING"
+theme_type_variation = &"ItemEquipmentHeading"
+
+[node name="EquipmentGrid" type="GridContainer" parent="Panels/Equipping/Body"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="StrengthBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/StrengthBonusField"]
+layout_mode = 2
+text = "STRENGTH"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/StrengthBonusField"]
+layout_mode = 2
+
+[node name="StrengthBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/StrengthBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "strengthBonus"
+
+[node name="HandsField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/HandsField"]
+layout_mode = 2
+text = "HANDS"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/HandsField"]
+layout_mode = 2
+
+[node name="Hands" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/HandsField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "hands"
+
+[node name="LuckBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/LuckBonusField"]
+layout_mode = 2
+text = "LUCK"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/LuckBonusField"]
+layout_mode = 2
+
+[node name="LuckBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/LuckBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "luckBonus"
+
+[node name="MovementBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/MovementBonusField"]
+layout_mode = 2
+text = "MOVEMENT"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/MovementBonusField"]
+layout_mode = 2
+
+[node name="MovementBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/MovementBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "movementBonus"
+
+[node name="ArmorBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/ArmorBonusField"]
+layout_mode = 2
+text = "ARMOR"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/ArmorBonusField"]
+layout_mode = 2
+
+[node name="ArmorBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/ArmorBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "armorBonus"
+
+[node name="MagicResistanceBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/MagicResistanceBonusField"]
+layout_mode = 2
+text = "MAGIC RESISTANCE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/MagicResistanceBonusField"]
+layout_mode = 2
+
+[node name="MagicResistanceBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/MagicResistanceBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "magicResistanceBonus"
+
+[node name="SpellPointBonusField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/SpellPointBonusField"]
+layout_mode = 2
+text = "SPELL POINTS"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/SpellPointBonusField"]
+layout_mode = 2
+
+[node name="SpellPointBonus" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/SpellPointBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "spellPointBonus"
+
+[node name="WeightField" type="VBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Equipping/Body/EquipmentGrid/WeightField"]
+layout_mode = 2
+text = "WEIGHT"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Equipping/Body/EquipmentGrid/WeightField"]
+layout_mode = 2
+
+[node name="Weight" type="SpinBox" parent="Panels/Equipping/Body/EquipmentGrid/WeightField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "weight"
+
+[node name="Damage" type="PanelContainer" parent="Panels"]
+layout_mode = 2
+
+size_flags_horizontal = 3
+theme_type_variation = &"ItemDamagePanel"
+
+[node name="Body" type="VBoxContainer" parent="Panels/Damage"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Panels/Damage/Body"]
+layout_mode = 2
+text = "DAMAGE AND RESISTANCES"
+theme_type_variation = &"ItemDamageHeading"
+
+[node name="DamageGrid" type="GridContainer" parent="Panels/Damage/Body"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="DamageBonusField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/DamageBonusField"]
+layout_mode = 2
+text = "DAMAGE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/DamageBonusField"]
+layout_mode = 2
+
+[node name="DamageBonus" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/DamageBonusField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "damageBonus"
+
+[node name="BluntField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/BluntField"]
+layout_mode = 2
+text = "BLUNT"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/BluntField"]
+layout_mode = 2
+
+[node name="Blunt" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/BluntField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "blunt"
+
+[node name="VersusSmallField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/VersusSmallField"]
+layout_mode = 2
+text = "VERSUS SMALL"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/VersusSmallField"]
+layout_mode = 2
+
+[node name="VersusSmall" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/VersusSmallField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "versusSmall"
+
+[node name="VersusLargeField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/VersusLargeField"]
+layout_mode = 2
+text = "VERSUS LARGE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/VersusLargeField"]
+layout_mode = 2
+
+[node name="VersusLarge" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/VersusLargeField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "versusLarge"
+
+[node name="HeatField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/HeatField"]
+layout_mode = 2
+text = "HEAT"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/HeatField"]
+layout_mode = 2
+
+[node name="Heat" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/HeatField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "heat"
+
+[node name="ColdField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/ColdField"]
+layout_mode = 2
+text = "COLD"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/ColdField"]
+layout_mode = 2
+
+[node name="Cold" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/ColdField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "cold"
+
+[node name="ElectricField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/ElectricField"]
+layout_mode = 2
+text = "ELECTRIC"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/ElectricField"]
+layout_mode = 2
+
+[node name="Electric" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/ElectricField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "electric"
+
+[node name="VersusUndeadField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/VersusUndeadField"]
+layout_mode = 2
+text = "VERSUS UNDEAD"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/VersusUndeadField"]
+layout_mode = 2
+
+[node name="VersusUndead" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/VersusUndeadField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "versusUndead"
+
+[node name="VersusDemonDevilField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/VersusDemonDevilField"]
+layout_mode = 2
+text = "VERSUS DEMON / DEVIL"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/VersusDemonDevilField"]
+layout_mode = 2
+
+[node name="VersusDemonDevil" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/VersusDemonDevilField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "versusDemonDevil"
+
+[node name="VersusEvilField" type="VBoxContainer" parent="Panels/Damage/Body/DamageGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Panels/Damage/Body/DamageGrid/VersusEvilField"]
+layout_mode = 2
+text = "VERSUS EVIL"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="Panels/Damage/Body/DamageGrid/VersusEvilField"]
+layout_mode = 2
+
+[node name="VersusEvil" type="SpinBox" parent="Panels/Damage/Body/DamageGrid/VersusEvilField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "versusEvil"
+
+[node name="SignedHint" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = "Negative bonuses are allowed."
+theme_type_variation = &"ItemContext"

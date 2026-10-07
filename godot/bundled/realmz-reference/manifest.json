@@ -1,0 +1,128 @@
+{
+  "kind": "providence.bundled-realmz-reference",
+  "formatVersion": 1,
+  "license": "CC BY-NC-SA 4.0",
+  "attribution": "Realmz, copyright 1994 by Tim Phillips",
+  "sourceRepository": "https://github.com/iSynic/RealmzRevisited",
+  "sourceCommit": "0c19b9159ae1d982147f4dc5a3fd465b65a4e244",
+  "donorRepository": "https://github.com/iSynic/Realmz-Providence",
+  "donorCommit": "56ac232c22fc321a99cb819f1e2d8c3985ad479a",
+  "sourceDirectory": "public/bundled-libraries/realmz-reference",
+  "files": [
+    {
+      "name": "Combat Data BD",
+      "bytes": 8104,
+      "sha256": "cfce17721f4090265ff9a986deb88fb95f740958cc5f7db14f42dff5c8dae56a"
+    },
+    {
+      "name": "Custom Names.rsrc",
+      "bytes": 8800,
+      "sha256": "d75bcee3f6c16d1bdb13e7c7eaf17b2e784d7a9df36a275e4dee4e27b269fc84"
+    },
+    {
+      "name": "Data AD",
+      "bytes": 882,
+      "sha256": "2db5422bb858d8eaf24218d0b1828537a77b888b070367296e4f2ef6f0c138a0"
+    },
+    {
+      "name": "Data Caste",
+      "bytes": 17280,
+      "sha256": "9511b8230ddb9588ce5d08dee47fa0d1ffd4b8e8b3ae77ecc50ad3bb25823d06"
+    },
+    {
+      "name": "Data Caste.rsrc",
+      "bytes": 377,
+      "sha256": "71b27babd1e1955b066f59db054d3910a471fbc9579a9d95e24a6bb4c056ccaa"
+    },
+    {
+      "name": "Data Castle BD",
+      "bytes": 8104,
+      "sha256": "76bf196e111141b92190314b8b56cd4786bc37abb2d89bdbd43c5cf559fcf8d5"
+    },
+    {
+      "name": "Data Desert BD",
+      "bytes": 8104,
+      "sha256": "1c0c17cf40ef14d05fa3e77d918ce1aa7e2d5eb7df91490c1d68d4b8564491b3"
+    },
+    {
+      "name": "Data ID",
+      "bytes": 80000,
+      "sha256": "a64ad1fb64933ecca45de2cbf84b9e0415337ae045c71f2c0c56770af84e80ad"
+    },
+    {
+      "name": "Data ID.rsrc",
+      "bytes": 55880,
+      "sha256": "2c9063b7b54f0d5a5be3e7bd4954c6b46e5585e5028073236197ca6fb3864afa"
+    },
+    {
+      "name": "Data P BD",
+      "bytes": 8104,
+      "sha256": "4ca7f4b8e8a31f1374d61a65a770220785b04129f7678b5a1e7d06e971c8cca0"
+    },
+    {
+      "name": "Data Race",
+      "bytes": 28800,
+      "sha256": "22d1ec93dfb2504eaf43e92fcaeb80ca6c1ce35a9ef109c0158e17405f5ddebe"
+    },
+    {
+      "name": "Data Race.rsrc",
+      "bytes": 378,
+      "sha256": "7ae2f25ffb0a6bdc3507da36a935e48cb0fd4583f16d3efcefbf18e4fdd8a199"
+    },
+    {
+      "name": "Data S",
+      "bytes": 15750,
+      "sha256": "e503f55325e27465edfb7950867c4d115b16fc4c5cd7fe25824b46a56bb83ca2"
+    },
+    {
+      "name": "Data S.rsrc",
+      "bytes": 377,
+      "sha256": "b23eed04d29c2e53b1a999f6cc73464e27e6ba7ac70386213d94a160576ad65b"
+    },
+    {
+      "name": "Data Snow BD",
+      "bytes": 8104,
+      "sha256": "564d944bcbb9f4060db58784bdfb1dc468fef9e891e63e62b41fdfe5cd764b2e"
+    },
+    {
+      "name": "Data SUB BD",
+      "bytes": 8104,
+      "sha256": "33e88f4c0926e076276cd5920d1604fabc0e1349fa219495620253b6253516c5"
+    },
+    {
+      "name": "Data Swamp BD",
+      "bytes": 8104,
+      "sha256": "6e1f5950cdd74b250678b751b43466be8a330bd4a47df3c60135683960db9f58"
+    },
+    {
+      "name": "LICENSE-REALMZ.txt",
+      "bytes": 17056,
+      "sha256": "7272b50634d6411f774b41294c02a5e530262f425ef5a2b6586c62de32c05366"
+    },
+    {
+      "name": "Portraits.rsrc",
+      "bytes": 359006,
+      "sha256": "b627417cac3e213f6a651a479e5caebb5cebff3bc0f0217e73b84911e37cf4b7"
+    },
+    {
+      "name": "README.md",
+      "bytes": 942,
+      "sha256": "36416b078782847121a4fe26d476020f3b8f73cf9f3ec19ae80b6b846fb3dcfa"
+    },
+    {
+      "name": "Scenario Names.rsrc",
+      "bytes": 3592,
+      "sha256": "e7e6ba880700c9714953615540b82da45255c30c3998ee9537969269306eddbc"
+    },
+    {
+      "name": "Tacticals.rsrc",
+      "bytes": 372358,
+      "sha256": "f2f2ef053107895c3fbd7e26b0f92ae3bfeb685d698858c14e260c168b319f50"
+    },
+    {
+      "name": "The Family Jewels.rsrc",
+      "bytes": 7472258,
+      "sha256": "2f21229c910fb8ff03f73c969f8e4895afda954fcdf31730204736cc79ede2d9"
+    }
+  ]
+}

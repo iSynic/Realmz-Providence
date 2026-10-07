@@ -1,0 +1,55 @@
+{
+  "contractVersion": 1,
+  "schemaVersion": 3,
+  "schemaHash": "05ced7b000683f53e6220b9ac8f7d41c801e7e2c78c874287c2ae694b585273d",
+  "owner": "contract:corrected-action-runtime-v1",
+  "sourceActions": [
+    { "slot": 0, "rawOpcode": 52, "targetNativeId": 200 },
+    { "slot": 1, "rawOpcode": 55, "targetNativeId": 201 },
+    { "slot": 2, "rawOpcode": 68, "targetNativeId": 202 },
+    { "slot": 3, "rawOpcode": 81, "targetNativeId": 203 },
+    { "slot": 4, "rawOpcode": 90, "targetNativeId": 204 }
+  ],
+  "extraCodeRows": [
+    { "nativeId": 200, "values": [4, 1, 2, 0, 0] },
+    { "nativeId": 201, "values": [-2, 0, 0, 0, 0] },
+    { "nativeId": 202, "values": [3, 25, 0, 0, 0] },
+    { "nativeId": 203, "values": [1, 6, 0, 0, 0] },
+    { "nativeId": 204, "values": [7, 1, 0, 0, 0] }
+  ],
+  "expectedInstructions": [
+    { "kind": "classicAction", "slot": 0, "rawOpcode": 52, "opcode": 52, "id": 200, "gosub": false, "extraCode": [4, 1, 2, 0, 0] },
+    { "kind": "classicAction", "slot": 1, "rawOpcode": 55, "opcode": 55, "id": 201, "gosub": false, "extraCode": [-2, 0, 0, 0, 0] },
+    { "kind": "classicAction", "slot": 2, "rawOpcode": 68, "opcode": 68, "id": 202, "gosub": false, "extraCode": [3, 25, 0, 0, 0] },
+    { "kind": "classicAction", "slot": 3, "rawOpcode": 81, "opcode": 81, "id": 203, "gosub": false, "extraCode": [1, 6, 0, 0, 0] },
+    { "kind": "classicAction", "slot": 4, "rawOpcode": 90, "opcode": 90, "id": 204, "gosub": false, "extraCode": [7, 1, 0, 0, 0] }
+  ],
+  "expectedProjectionSha256": "f33358ee3ad0781bfb98304936ebd35aae17357456407a1116ad2534ffc494ff",
+  "runtimeExpectations": [
+    {
+      "opcode": 52,
+      "caseId": "picked-only-candidate-set",
+      "correctedBehavior": "Snapshot the incoming picked set, evaluate only those candidates, and replace the picked set with the matches."
+    },
+    {
+      "opcode": 55,
+      "caseId": "negative-selector-is-at-least",
+      "correctedBehavior": "Selector -2 succeeds when at least two characters are picked."
+    },
+    {
+      "opcode": 68,
+      "caseId": "percentage-is-second-word",
+      "correctedBehavior": "Calculate mode with 25 in E-Code 2 computes current fatigue times 25 divided by 100, multiplying before truncation."
+    },
+    {
+      "opcode": 81,
+      "caseId": "one-based-party-position",
+      "correctedBehavior": "Selector 6 tests party index 5; an empty picked group fails."
+    },
+    {
+      "opcode": 90,
+      "caseId": "picked-distribution",
+      "correctedBehavior": "Distribution 1 subtracts the amount only from picked characters, independent of the action slot."
+    }
+  ]
+}

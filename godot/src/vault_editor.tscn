@@ -1,0 +1,225 @@
+[gd_scene load_steps=7 format=3]
+[ext_resource type="PackedScene" path="res://src/artwork_item_target.tscn" id="6"]
+[ext_resource type="Script" path="res://src/vault_editor.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/item_artwork_picker.tscn" id="2"]
+[ext_resource type="Script" path="res://src/artwork_gallery.gd" id="3"]
+
+[ext_resource type="PackedScene" path="res://src/artwork_copy_dialog.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/artwork_filters.tscn" id="5"]
+
+[node name="Vault of Arcana" type="HBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+script = ExtResource("1")
+
+[node name="BrowseInset" type="MarginContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_right = 0
+
+[node name="Browse" type="VBoxContainer" parent="BrowseInset"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="BrowseInset/Browse"]
+layout_mode = 2
+text = "Vault of Arcana"
+theme_override_font_sizes/font_size = 20
+
+[node name="Instruction" type="Label" parent="BrowseInset/Browse"]
+visible = false
+layout_mode = 2
+text = ""
+
+[node name="SearchGroup" type="MarginContainer" parent="BrowseInset/Browse"]
+layout_mode = 2
+
+[node name="Fields" type="VBoxContainer" parent="BrowseInset/Browse/SearchGroup"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SearchLabel" type="Label" parent="BrowseInset/Browse/SearchGroup/Fields"]
+layout_mode = 2
+text = "SEARCH VAULT OF ARCANA"
+
+[node name="VaultSearch" type="LineEdit" parent="BrowseInset/Browse/SearchGroup/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search Vault of Arcana…"
+clear_button_enabled = true
+
+[node name="FilterInset" type="MarginContainer" parent="BrowseInset/Browse"]
+layout_mode = 2
+
+[node name="Filters" parent="BrowseInset/Browse/FilterInset" instance=ExtResource("5")]
+layout_mode = 2
+visible = false
+
+[node name="VaultStatus" type="Label" parent="BrowseInset/Browse"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="GalleryGutter" type="MarginContainer" parent="BrowseInset/Browse"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ArtworkGallery" type="ItemList" parent="BrowseInset/Browse/GalleryGutter"]
+script = ExtResource("3")
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+max_columns = 5
+fixed_column_width = 172
+fixed_icon_size = Vector2i(96, 96)
+icon_mode = 0
+texture_filter = 1
+theme_override_constants/v_separation = 16
+
+[node name="Paging" type="HBoxContainer" parent="BrowseInset/Browse"]
+layout_mode = 2
+
+[node name="ShownArtwork" type="Label" parent="BrowseInset/Browse/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShowMoreArtwork" type="Button" parent="BrowseInset/Browse/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show More"
+disabled = true
+
+[node name="InspectorInset" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="Selection" type="VBoxContainer" parent="InspectorInset"]
+layout_mode = 2
+custom_minimum_size = Vector2(248, 0)
+theme_override_constants/separation = 16
+
+[node name="TopInset" type="Control" parent="InspectorInset/Selection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+visible = false
+
+[node name="Caption" type="Label" parent="InspectorInset/Selection"]
+layout_mode = 2
+text = "SELECTED ARTWORK"
+
+[node name="SelectionBox" type="PanelContainer" parent="InspectorInset/Selection"]
+layout_mode = 2
+
+[node name="Labels" type="VBoxContainer" parent="InspectorInset/Selection/SelectionBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="InspectorInset/Selection/SelectionBox/Labels"]
+layout_mode = 2
+text = "SELECTION"
+
+[node name="ArtworkName" type="Label" parent="InspectorInset/Selection/SelectionBox/Labels"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose a picture"
+
+[node name="ItemTarget" parent="InspectorInset/Selection" instance=ExtResource("6")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Matte" type="PanelContainer" parent="InspectorInset/Selection"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 160)
+
+[node name="Center" type="CenterContainer" parent="InspectorInset/Selection/Matte"]
+layout_mode = 2
+
+[node name="SelectedArtwork" type="TextureRect" parent="InspectorInset/Selection/Matte/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(128, 128)
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ArtworkDimensions" type="Label" parent="InspectorInset/Selection"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="PreviewLabel" type="Label" parent="InspectorInset/Selection"]
+layout_mode = 2
+text = "Preview size"
+visible = false
+
+[node name="Zoom" type="HBoxContainer" parent="InspectorInset/Selection"]
+layout_mode = 2
+
+[node name="One" type="Button" parent="InspectorInset/Selection/Zoom"]
+layout_mode = 2
+text = "1×"
+size_flags_horizontal = 3
+
+[node name="Two" type="Button" parent="InspectorInset/Selection/Zoom"]
+layout_mode = 2
+text = "2×"
+size_flags_horizontal = 3
+
+[node name="Four" type="Button" parent="InspectorInset/Selection/Zoom"]
+layout_mode = 2
+text = "4×"
+size_flags_horizontal = 3
+
+[node name="CopyToScenario" type="Button" parent="InspectorInset/Selection"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Copy to Scenario…"
+disabled = true
+
+[node name="UseInItem" type="Button" parent="InspectorInset/Selection"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use in Item…"
+disabled = true
+
+[node name="Ownership" type="Label" parent="InspectorInset/Selection"]
+visible = false
+layout_mode = 2
+text = "Copying adds artwork to this scenario. The supplied original stays unchanged."
+autowrap_mode = 3
+
+[node name="CopyDialog" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+
+[node name="PickerWindow" type="Window" parent="."]
+unique_name_in_owner = true
+title = "Use artwork in an item"
+size = Vector2i(1120, 540)
+visible = false
+force_native = true
+transient = true
+exclusive = true
+unresizable = true
+
+[node name="ItemArtworkPicker" parent="PickerWindow" instance=ExtResource("2")]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[connection signal="text_changed" from="BrowseInset/Browse/SearchGroup/Fields/VaultSearch" to="." method="_on_search"]
+[connection signal="item_selected" from="BrowseInset/Browse/GalleryGutter/ArtworkGallery" to="." method="_select_artwork"]
+[connection signal="pressed" from="BrowseInset/Browse/Paging/ShowMoreArtwork" to="." method="_show_more"]
+[connection signal="pressed" from="InspectorInset/Selection/UseInItem" to="." method="_use_in_item"]
+[connection signal="pressed" from="InspectorInset/Selection/Zoom/One" to="." method="_zoom" binds=[1]]
+[connection signal="pressed" from="InspectorInset/Selection/Zoom/Two" to="." method="_zoom" binds=[2]]
+[connection signal="pressed" from="InspectorInset/Selection/Zoom/Four" to="." method="_zoom" binds=[4]]

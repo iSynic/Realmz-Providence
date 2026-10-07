@@ -1,0 +1,13 @@
+Theldrow is the original bitmap interface font embedded in Realmz.
+
+Realmz Rebuilt uses the FONT 1601 glyph bitmap and metrics from the pinned
+Realmz Castle source tree under the project's non-commercial Realmz artwork
+license. The generated BMFont atlas and descriptor are derived assets for use
+inside Realmz Rebuilt and are not separately licensed for reuse.
+
+Source repository: Realmz-Castle/realmz
+Source commit: 491816ad60037394f92c428e99c004494d3c28b3
+Source file: base/Realmz/Data Files/The Family Jewels.rsrc
+Source resource: FONT 1601, Theldrow
+Source resource payload SHA-256:
+cda33a0e5f352d7d38d8fdfcc64b71db10a23fcfd9d8c7a699fa1646ffcab553

@@ -1,0 +1,320 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/random_region_dock.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_reference_picker.tscn" id="2"]
+
+[node name="RandomRegionDock" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(340, 0)
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="RegionHeading" type="Label" parent="Margin/Body"]
+layout_mode = 2
+text = "ENCOUNTER REGIONS"
+theme_override_colors/font_color = Color(0.65, 0.94, 0.79, 1)
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 15
+
+[node name="RegionSlots" type="OptionButton" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RegionPriority" type="Label" parent="Margin/Body"]
+layout_mode = 2
+text = "Higher slots take priority in overlaps."
+theme_override_colors/font_color = Color(0.96, 0.78, 0.38, 1)
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="SpatialActions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="DrawRegion" type="Button" parent="Margin/Body/SpatialActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Draw bounds…"
+toggle_mode = true
+size_flags_horizontal = 3
+
+[node name="RevealRegion" type="Button" parent="Margin/Body/SpatialActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reveal"
+size_flags_horizontal = 3
+
+[node name="LeaveRegions" type="Button" parent="Margin/Body/SpatialActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Canvas"
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Fields" type="VBoxContainer" parent="Margin/Body/Scroll"]
+tooltip_text = "Door percentages accept -100 to 100. Imported values remain until edited."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="Bounds" type="GridContainer" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+columns = 2
+
+[node name="LeftLabel" type="Label" parent="Margin/Body/Scroll/Fields/Bounds"]
+layout_mode = 2
+text = "LEFT"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionLeft" type="SpinBox" parent="Margin/Body/Scroll/Fields/Bounds"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -32768
+max_value = 32767
+step = 1
+
+[node name="TopLabel" type="Label" parent="Margin/Body/Scroll/Fields/Bounds"]
+layout_mode = 2
+text = "TOP"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionTop" type="SpinBox" parent="Margin/Body/Scroll/Fields/Bounds"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -32768
+max_value = 32767
+step = 1
+
+[node name="RightLabel" type="Label" parent="Margin/Body/Scroll/Fields/Bounds"]
+layout_mode = 2
+text = "RIGHT EDGE"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionRight" type="SpinBox" parent="Margin/Body/Scroll/Fields/Bounds"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -32768
+max_value = 32767
+step = 1
+
+[node name="BottomLabel" type="Label" parent="Margin/Body/Scroll/Fields/Bounds"]
+layout_mode = 2
+text = "BOTTOM EDGE"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionBottom" type="SpinBox" parent="Margin/Body/Scroll/Fields/Bounds"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -32768
+max_value = 32767
+step = 1
+
+[node name="Edges" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "Right / Bottom are exclusive edges; valid bounds 0–90."
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 10
+
+[node name="ChanceLabel" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "CHANCE / 10000 · -1 = XAP DOORS"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionChance" type="SpinBox" parent="Margin/Body/Scroll/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -32768
+max_value = 32767
+step = 1
+
+[node name="OptionLabel" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "OPTION"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="RegionOption" type="SpinBox" parent="Margin/Body/Scroll/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -128
+max_value = 127
+step = 1
+
+[node name="BattleLabel" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "BATTLE RANGE"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="Battles" type="HBoxContainer" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+
+[node name="BattleLow" type="Button" parent="Margin/Body/Scroll/Fields/Battles"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Low · Choose…"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="BattleHigh" type="Button" parent="Margin/Body/Scroll/Fields/Battles"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "High · Choose…"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="SoundIdLabel" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "SOUND"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="SoundId" type="Button" parent="Margin/Body/Scroll/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "None · Choose…"
+text_overrun_behavior = 3
+
+[node name="TextIdLabel" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "MESSAGE"
+theme_override_colors/font_color = Color(0.61, 0.81, 1, 1)
+
+[node name="TextId" type="Button" parent="Margin/Body/Scroll/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "None · Choose…"
+text_overrun_behavior = 3
+
+[node name="RegionOnly" type="CheckBox" parent="Margin/Body/Scroll/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Only this region can fire"
+
+[node name="DoorHeading" type="Label" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+text = "XAP DOORS · − REPEAT / + ONCE"
+theme_override_colors/font_color = Color(0.81, 0.69, 0.99, 1)
+
+[node name="DoorRow0" type="HBoxContainer" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+
+[node name="Door0" type="Button" parent="Margin/Body/Scroll/Fields/DoorRow0"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1 · None · Choose…"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="DoorPercent0" type="SpinBox" parent="Margin/Body/Scroll/Fields/DoorRow0"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+min_value = -32768
+max_value = 32767
+step = 1
+custom_minimum_size = Vector2(86, 0)
+
+[node name="DoorRow1" type="HBoxContainer" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+
+[node name="Door1" type="Button" parent="Margin/Body/Scroll/Fields/DoorRow1"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "2 · None · Choose…"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="DoorPercent1" type="SpinBox" parent="Margin/Body/Scroll/Fields/DoorRow1"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+min_value = -32768
+max_value = 32767
+step = 1
+custom_minimum_size = Vector2(86, 0)
+
+[node name="DoorRow2" type="HBoxContainer" parent="Margin/Body/Scroll/Fields"]
+layout_mode = 2
+
+[node name="Door2" type="Button" parent="Margin/Body/Scroll/Fields/DoorRow2"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "3 · None · Choose…"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+
+[node name="DoorPercent2" type="SpinBox" parent="Margin/Body/Scroll/Fields/DoorRow2"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+min_value = -32768
+max_value = 32767
+step = 1
+custom_minimum_size = Vector2(86, 0)
+
+[node name="DoorHelp" type="Label" parent="Margin/Body/Scroll/Fields"]
+visible = false
+layout_mode = 2
+text = "Door percentages accept −100 to 100. Imported values remain until edited."
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 10
+
+[node name="RegionStatus" type="Label" parent="Margin/Body"]
+layout_mode = 2
+text = "Choose a slot to create or edit."
+theme_override_colors/font_color = Color(0.96, 0.78, 0.38, 1)
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="ClearRegion" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clear…"
+
+[node name="ApplyRegion" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+size_flags_horizontal = 3
+
+[node name="DiscardRegion" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discard"
+
+[node name="ReconcileRegion" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reconcile original result"
+visible = false
+
+[node name="ClearConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Clear encounter region"
+visible = false
+exclusive = true
+transient = true
+dialog_text = "Clear this region from the map? The slot becomes reusable. Undo restores it."
+
+[node name="RegionReferencePicker" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+

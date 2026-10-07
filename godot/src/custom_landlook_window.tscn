@@ -1,0 +1,254 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://src/custom_landlook_window.gd" id="1"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="2"]
+[ext_resource type="Script" path="res://src/land_tile_atlas.gd" id="3"]
+[node name="CustomLandlook" type="Window"]
+title = "Create or customize Landlook"
+size = Vector2i(880, 680)
+min_size = Vector2i(800, 640)
+visible = false
+transient = true
+exclusive = true
+theme = ExtResource("2")
+script = ExtResource("1")
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CREATE OR CUSTOMIZE LANDLOOK"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.52, 0.74, 0.91, 1)
+
+[node name="CustomDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Operation" type="OptionButton" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 2
+selected = 0
+popup/item_0/text = "Create from template"
+popup/item_0/id = 0
+popup/item_1/text = "Import artwork"
+popup/item_1/id = 1
+
+[node name="SourceFields" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="SourceLabel" type="Label" parent="Margin/Body/SourceFields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SOURCE TEMPLATE"
+
+[node name="SourceTemplate" type="OptionButton" parent="Margin/Body/SourceFields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Allocation" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Custom6" type="Button" parent="Margin/Body/Allocation"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Custom 1"
+toggle_mode = true
+size_flags_horizontal = 3
+
+[node name="Custom7" type="Button" parent="Margin/Body/Allocation"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Custom 2"
+toggle_mode = true
+size_flags_horizontal = 3
+
+[node name="Custom8" type="Button" parent="Margin/Body/Allocation"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Custom 3"
+toggle_mode = true
+size_flags_horizontal = 3
+
+[node name="Options" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="ReplaceCustom" type="CheckBox" parent="Margin/Body/Options"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Replace occupied destination after review"
+
+[node name="AssignMap" type="CheckBox" parent="Margin/Body/Options"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use on this map"
+
+[node name="ImportFields" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+
+[node name="ImportMode" type="OptionButton" parent="Margin/Body/ImportFields"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 3
+selected = 0
+popup/item_0/text = "Full atlas · 640 × 320"
+popup/item_0/id = 0
+popup/item_1/text = "Block · multiples of 32"
+popup/item_1/id = 1
+popup/item_2/text = "One tile · 32 × 32"
+popup/item_2/id = 2
+
+[node name="SourceRow" type="HBoxContainer" parent="Margin/Body/ImportFields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="SourcePath" type="LineEdit" parent="Margin/Body/ImportFields/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Choose a PNG source…"
+size_flags_horizontal = 3
+
+[node name="ChooseImage" type="Button" parent="Margin/Body/ImportFields/SourceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose image…"
+
+[node name="OriginRow" type="HBoxContainer" parent="Margin/Body/ImportFields"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="TileLabel" type="Label" parent="Margin/Body/ImportFields/OriginRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Start at tile"
+
+[node name="TargetTile" type="SpinBox" parent="Margin/Body/ImportFields/OriginRow"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 200.0
+value = 1.0
+custom_minimum_size = Vector2(120, 0)
+
+[node name="Geometry" type="Label" parent="Margin/Body/ImportFields/OriginRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "20 columns × 10 rows · protected tiles 60, 61"
+
+[node name="PreviewRow" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="CustomAtlas" type="TextureRect" parent="Margin/Body/PreviewRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(400, 200)
+size_flags_horizontal = 3
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Impact" type="VBoxContainer" parent="Margin/Body/PreviewRow"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(280, 140)
+size_flags_horizontal = 3
+
+[node name="ImpactTitle" type="Label" parent="Margin/Body/PreviewRow/Impact"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "AFFECTED MAPS"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.82, 0.69, 0.4, 1)
+
+[node name="AffectedMaps" type="ItemList" parent="Margin/Body/PreviewRow/Impact"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CustomStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+custom_minimum_size = Vector2(0, 48)
+
+[node name="EditCustomBehavior" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Edit this map’s tile behavior…"
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="RecoverCustom" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Check original result"
+visible = false
+
+[node name="DiscardCustom" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discard"
+
+[node name="CancelCustom" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="ReviewCustom" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review impact…"
+
+[node name="ApplyCustom" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply"
+
+[node name="CustomAtlasSource" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+script = ExtResource("3")
+[node name="ImageFile" type="FileDialog" parent="."]
+unique_name_in_owner = true
+access = 2
+file_mode = 0
+use_native_dialog = true
+filters = PackedStringArray("*.png ; PNG artwork")
+[node name="DiscardCustomPrompt" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Discard Landlook draft?"
+dialog_text = "Discard the uncommitted Landlook choices and return to the map?"
+ok_button_text = "Discard draft"
+
+[node name="BehaviorNavigation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Finish Landlook changes"
+dialog_text = "Review and apply the Landlook draft before editing tile behavior, discard it, or keep editing."
+ok_button_text = "Review & Apply"

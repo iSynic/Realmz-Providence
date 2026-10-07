@@ -1,0 +1,315 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/paint_resource_window.gd" id="1"]
+[ext_resource type="Script" path="res://src/paint_resource_preview.gd" id="2"]
+
+[node name="PaintResourceWindow" type="Window"]
+title = "Palettes and stamps"
+size = Vector2i(980, 660)
+min_size = Vector2i(900, 580)
+visible = false
+transient = true
+exclusive = true
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Heading" type="Label" parent="Margin/Body"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "PALETTES AND STAMPS"
+
+[node name="ResourceDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Line" type="HSeparator" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="Search" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="SearchResources" type="LineEdit" parent="Margin/Body/Search"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search name, collection or identity…"
+clear_button_enabled = true
+
+[node name="ResourceKind" type="OptionButton" parent="Margin/Body/Search"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(160, 0)
+
+[node name="ResourceScope" type="OptionButton" parent="Margin/Body/Search"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(136, 0)
+
+[node name="Content" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="Browse" type="VBoxContainer" parent="Margin/Body/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(244, 0)
+
+[node name="Entries" type="ItemList" parent="Margin/Body/Content/Browse"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(244, 180)
+
+[node name="ResourceCount" type="Label" parent="Margin/Body/Content/Browse"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Loading resources…"
+
+[node name="Pages" type="HBoxContainer" parent="Margin/Body/Content/Browse"]
+layout_mode = 2
+
+[node name="PreviousResources" type="Button" parent="Margin/Body/Content/Browse/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Previous"
+
+[node name="NextResources" type="Button" parent="Margin/Body/Content/Browse/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Next"
+
+[node name="NewResource" type="Button" parent="Margin/Body/Content/Browse"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "New palette from brush…"
+
+[node name="CaptureResource" type="Button" parent="Margin/Body/Content/Browse"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Capture selection…"
+
+[node name="Editor" type="ScrollContainer" parent="Margin/Body/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="Fields" type="VBoxContainer" parent="Margin/Body/Content/Editor"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Identity" type="GridContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 10
+
+[node name="NameLabel" type="Label" parent="Margin/Body/Content/Editor/Fields/Identity"]
+layout_mode = 2
+text = "Name"
+
+[node name="ResourceName" type="LineEdit" parent="Margin/Body/Content/Editor/Fields/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 80
+
+[node name="CollectionLabel" type="Label" parent="Margin/Body/Content/Editor/Fields/Identity"]
+layout_mode = 2
+text = "Collection"
+
+[node name="ResourceCollection" type="LineEdit" parent="Margin/Body/Content/Editor/Fields/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 80
+
+[node name="FavoriteResource" type="CheckButton" parent="Margin/Body/Content/Editor/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Favorite"
+
+[node name="Preview" type="HBoxContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+
+[node name="ResourcePreview" type="TextureRect" parent="Margin/Body/Content/Editor/Fields/Preview"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+script = ExtResource("2")
+
+[node name="ResourceStatus" type="Label" parent="Margin/Body/Content/Editor/Fields/Preview"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+text = "Choose a resource to preview it."
+
+[node name="Geometry" type="HBoxContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+
+[node name="SizeLabel" type="Label" parent="Margin/Body/Content/Editor/Fields/Geometry"]
+layout_mode = 2
+text = "Size"
+
+[node name="ResourceWidth" type="SpinBox" parent="Margin/Body/Content/Editor/Fields/Geometry"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 32.0
+value = 1.0
+tooltip_text = "Columns, from 1 to 32. Resize reviews additions and removed cells."
+
+[node name="SizeTimes" type="Label" parent="Margin/Body/Content/Editor/Fields/Geometry"]
+layout_mode = 2
+text = "×"
+
+[node name="ResourceHeight" type="SpinBox" parent="Margin/Body/Content/Editor/Fields/Geometry"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 32.0
+value = 1.0
+
+[node name="ResizeResource" type="Button" parent="Margin/Body/Content/Editor/Fields/Geometry"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Review resize…"
+
+[node name="ResourceCells" type="ItemList" parent="Margin/Body/Content/Editor/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 110)
+fixed_icon_size = Vector2i(32, 32)
+max_columns = 6
+texture_filter = 1
+
+[node name="TileCommands" type="HBoxContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+
+[node name="ReplaceResourceCell" type="Button" parent="Margin/Body/Content/Editor/Fields/TileCommands"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Replace tile…"
+
+[node name="ClearResourceCell" type="Button" parent="Margin/Body/Content/Editor/Fields/TileCommands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Empty tile"
+tooltip_text = "Tile 0 clears the destination when this stamp is placed."
+
+[node name="HoleResourceCell" type="Button" parent="Margin/Body/Content/Editor/Fields/TileCommands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Make hole…"
+tooltip_text = "Remove this recipe cell so placement leaves the destination untouched."
+
+[node name="CellCoordinates" type="HBoxContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+
+[node name="PositionLabel" type="Label" parent="Margin/Body/Content/Editor/Fields/CellCoordinates"]
+layout_mode = 2
+text = "Cell X / Y"
+
+[node name="ResourceCellX" type="SpinBox" parent="Margin/Body/Content/Editor/Fields/CellCoordinates"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 31.0
+
+[node name="ResourceCellY" type="SpinBox" parent="Margin/Body/Content/Editor/Fields/CellCoordinates"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 31.0
+
+[node name="AddResourceCell" type="Button" parent="Margin/Body/Content/Editor/Fields/CellCoordinates"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Set cell…"
+tooltip_text = "Add or replace the coordinate using the selected recipe cell."
+
+[node name="SpecialResourceCell" type="Button" parent="Margin/Body/Content/Editor/Fields"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose Special Land artwork for cell…"
+
+[node name="Commands" type="HBoxContainer" parent="Margin/Body/Content/Editor/Fields"]
+layout_mode = 2
+
+[node name="DuplicateResource" type="Button" parent="Margin/Body/Content/Editor/Fields/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Duplicate…"
+
+[node name="DeleteResource" type="Button" parent="Margin/Body/Content/Editor/Fields/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Delete…"
+
+[node name="SaveResource" type="Button" parent="Margin/Body/Content/Editor/Fields/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Save collection changes"
+
+[node name="Scope" type="Label" parent="Margin/Body"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Collections reopen with this project on this computer. They do not add artwork or change runtime packages."
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 2
+
+[node name="CancelResources" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="CheckResources" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Check original result"
+
+[node name="UseResource" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use stamp"
+
+[node name="ConfirmDelete" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Delete local resource"
+dialog_text = "Delete this palette or stamp from the local collection? Existing map cells are preserved."
+
+[node name="ConfirmDiscard" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Discard collection changes"
+dialog_text = "Discard these unsaved palette or stamp changes?"
+
+[node name="ConfirmGeometry" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Review resource geometry"
+ok_button_text = "Stage geometry"
+dialog_text = ""

@@ -1,0 +1,73 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/encounter_route_tabs.gd" type="Script" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="Panel"]
+bg_color = Color(0.0470588, 0.0666667, 0.0823529, 1)
+border_width_bottom = 1
+border_color = Color(0.145098, 0.196078, 0.235294, 1)
+
+[sub_resource type="StyleBoxFlat" id="Selected"]
+bg_color = Color(0.0588235, 0.113725, 0.145098, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.839216, 0.721569, 0.458824, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[node name="EncounterRouteTabs" type="PanelContainer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_styles/panel = SubResource("Panel")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 4
+
+[node name="Routes" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Heading" type="Label" parent="Margin/Routes"]
+custom_minimum_size = Vector2(92, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = "ENCOUNTERS"
+vertical_alignment = 1
+
+[node name="SimpleEncounterRoute" type="Button" parent="Margin/Routes"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+toggle_mode = true
+theme_override_styles/pressed = SubResource("Selected")
+text = "Simple Encounters"
+
+[node name="ComplexEncounterRoute" type="Button" parent="Margin/Routes"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+toggle_mode = true
+theme_override_styles/pressed = SubResource("Selected")
+text = "Complex Encounters"
+
+[node name="RogueEncounterRoute" type="Button" parent="Margin/Routes"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+toggle_mode = true
+theme_override_styles/pressed = SubResource("Selected")
+text = "Rogue Encounters"
+
+[node name="TimedEncounterRoute" type="Button" parent="Margin/Routes"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+toggle_mode = true
+theme_override_styles/pressed = SubResource("Selected")
+text = "Timed Encounters"

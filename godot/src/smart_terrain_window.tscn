@@ -1,0 +1,234 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/smart_terrain_window.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+
+[node name="SmartTerrainInspector" type="PanelContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+script = ExtResource("1")
+theme = ExtResource("2")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SmartDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_type_variation = &"WorldTitle"
+
+[node name="Options" type="VBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Family" type="VBoxContainer" parent="Margin/Body/Options"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Margin/Body/Options/Family"]
+layout_mode = 2
+visible = false
+text = "TERRAIN FAMILY"
+
+[node name="TerrainFamily" type="OptionButton" parent="Margin/Body/Options/Family"]
+unique_name_in_owner = true
+layout_mode = 2
+fit_to_longest_item = false
+item_count = 3
+selected = 0
+popup/item_0/text = "Water"
+popup/item_0/id = 0
+popup/item_1/text = "Mountains"
+popup/item_1/id = 1
+popup/item_2/text = "Trees / Forest"
+popup/item_2/id = 2
+
+[node name="Shape" type="HBoxContainer" parent="Margin/Body/Options"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Tolerance" type="OptionButton" parent="Margin/Body/Options"]
+unique_name_in_owner = true
+layout_mode = 2
+fit_to_longest_item = false
+item_count = 4
+selected = 0
+popup/item_0/text = "Shape: Literal"
+popup/item_1/text = "Gentle · up to 1 cell"
+popup/item_2/text = "Balanced · up to 2 cells"
+popup/item_3/text = "Strong · up to 3 cells"
+tooltip_text = "Shape adjustment is always measured from your original mask. Holes, separate regions and narrow connections stay intact."
+
+[node name="Label" type="Label" parent="Margin/Body/Options/Shape"]
+layout_mode = 2
+visible = false
+text = "SHAPE"
+
+[node name="MaskShape" type="OptionButton" parent="Margin/Body/Options/Shape"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+fit_to_longest_item = false
+item_count = 5
+selected = 0
+popup/item_0/text = "Freehand"
+popup/item_0/id = 0
+popup/item_1/text = "Line"
+popup/item_1/id = 1
+popup/item_2/text = "Rectangle"
+popup/item_2/id = 2
+popup/item_3/text = "Ellipse"
+popup/item_3/id = 3
+popup/item_4/text = "Connected"
+popup/item_4/id = 4
+
+[node name="MaskControls" type="VBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="FilledMask" type="CheckButton" parent="Margin/Body/MaskControls"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Filled shape"
+
+[node name="MaskCombine" type="OptionButton" parent="Margin/Body/Options/Shape"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 1
+popup/item_0/text = "Replace"
+popup/item_0/id = 0
+popup/item_1/text = "Add"
+popup/item_1/id = 1
+popup/item_2/text = "Subtract"
+popup/item_2/id = 2
+
+[node name="DrawingHint" type="Label" parent="Margin/Body/MaskControls"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+text = "Draw directly on the map. Keep drawing until Apply or Cancel."
+
+[node name="SmartDetails" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme = ExtResource("2")
+theme_override_constants/separation = 16
+
+[node name="Heading" type="Label" parent="Margin/Body/SmartDetails"]
+layout_mode = 2
+text = "SMART TERRAIN · DRAFT PREVIEW"
+theme_type_variation = &"WorldTitle"
+
+[node name="SmartCounts" type="Label" parent="Margin/Body/SmartDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.76, 0.39, 1)
+
+[node name="ShowBefore" type="CheckButton" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show before"
+
+[node name="DeltaLegend" type="Label" parent="Margin/Body/SmartDetails"]
+layout_mode = 2
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Gold outline: original mask · green +: added · coral −: removed · blue ~: re-tiled neighbor"
+
+[node name="SmartStatus" type="Label" parent="Margin/Body/SmartDetails"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="Reshape" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="History" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="UndoStroke" type="Button" parent="Margin/Body/History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Undo stroke"
+
+[node name="RedoStroke" type="Button" parent="Margin/Body/History"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Redo stroke"
+
+[node name="GrowMask" type="Button" parent="Margin/Body/Reshape"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Grow"
+tooltip_text = "Grow the original mask by one cell"
+
+[node name="ShrinkMask" type="Button" parent="Margin/Body/Reshape"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Shrink"
+tooltip_text = "Shrink the original mask by one cell"
+
+[node name="ClearMask" type="Button" parent="Margin/Body/Reshape"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Clear"
+tooltip_text = "Clear the original mask"
+
+[node name="CanvasHelp" type="Label" parent="Margin/Body/SmartDetails"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 2
+text = ""
+
+[node name="RecoverSmart" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Check original result"
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 2
+
+[node name="CancelSmart" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+tooltip_text = "Close without applying terrain; keep the mask. During drawing, Escape cancels the current stroke."
+size_flags_horizontal = 3
+
+[node name="ReviewSmart" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Review"
+size_flags_horizontal = 3
+
+[node name="ApplySmart" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Apply"
+size_flags_horizontal = 3

@@ -1,0 +1,104 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/land_selection_actions.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+
+[node name="LandSelectionActions" type="Window"]
+title = "Selection and region actions"
+size = Vector2i(820, 560)
+min_size = Vector2i(760, 520)
+visible = false
+exclusive = true
+transient = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 18
+
+[node name="Heading" type="Label" parent="Margin/Body"]
+theme_type_variation = &"WorldTitle"
+text = "SELECTION AND REGION ACTIONS"
+
+[node name="SelectionDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+
+[node name="Separator" type="HSeparator" parent="Margin/Body"]
+
+[node name="Fields" type="GridContainer" parent="Margin/Body"]
+columns = 2
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 8
+
+[node name="ShapeLabel" type="Label" parent="Margin/Body/Fields"]
+text = "SELECTION SHAPE"
+[node name="CombineLabel" type="Label" parent="Margin/Body/Fields"]
+text = "COMBINE"
+[node name="SelectionShape" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+item_count = 5
+popup/item_0/text = "Freehand"
+popup/item_1/text = "Line"
+popup/item_2/text = "Rectangle"
+popup/item_3/text = "Ellipse"
+popup/item_4/text = "Connected"
+[node name="SelectionCombine" type="OptionButton" parent="Margin/Body/Fields"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+item_count = 3
+popup/item_0/text = "Replace"
+popup/item_1/text = "Add"
+popup/item_2/text = "Subtract"
+
+[node name="MatchLabel" type="Label" parent="Margin/Body"]
+text = "CONNECTED MATCH"
+[node name="SelectionMatch" type="OptionButton" parent="Margin/Body"]
+unique_name_in_owner = true
+item_count = 3
+popup/item_0/text = "Exact value"
+popup/item_1/text = "Terrain family"
+popup/item_2/text = "Behavior"
+[node name="SelectionSummary" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.97, 0.76, 0.36, 1)
+
+[node name="Operations" type="GridContainer" parent="Margin/Body"]
+columns = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+[node name="FillArea" type="Button" parent="Margin/Body/Operations"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Fill…"
+[node name="ClearArea" type="Button" parent="Margin/Body/Operations"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Clear…"
+[node name="ReplaceArea" type="Button" parent="Margin/Body/Operations"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Replace terrain…"
+[node name="CaptureArea" type="Button" parent="Margin/Body/Operations"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Capture stamp…"
+[node name="Spacer" type="Control" parent="Margin/Body"]
+size_flags_vertical = 3
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+alignment = 2
+[node name="CancelSelection" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Cancel"
+[node name="UseSelection" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Use selection"

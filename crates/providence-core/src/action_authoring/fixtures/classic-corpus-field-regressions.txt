@@ -1,0 +1,9 @@
+# Independently decoded big-endian Data DD/DDD and EDCD words, Classic 491816ad.
+# scenario family level record slot opcode row word0 word1 word2 word3 word4
+# All six were sampled erroneous missing-XAP diagnostics; word4 is a message.
+City_of_Bywater dungeon 0 7 4 56 300 230 0 -1 30000 771
+City_of_Bywater land 5 74 5 56 601 243 0 -1 0 822
+City_of_Bywater land 5 90 5 56 587 239 0 -1 0 812
+War_in_the_Sword_Lands land 13 13 2 56 9003 -493 -493 -1 1103 3979
+War_in_the_Sword_Lands land 13 61 1 56 11031 -175 -175 -1 10136 4021
+War_in_the_Sword_Lands land 13 73 0 56 11031 -175 -175 -1 10136 4021

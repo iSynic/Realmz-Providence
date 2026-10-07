@@ -1,0 +1,69 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/rogue_action_row.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/encounter_reference_field.tscn" id="ref"]
+[node name="RogueActionRow" type="HBoxContainer"]
+layout_mode = 2
+script = ExtResource("1")
+theme_override_constants/separation = 4
+
+[node name="Available" type="CheckBox" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(184, 34)
+theme_override_font_sizes/font_size = 12
+text = "Acrobatic Act"
+
+[node name="Modifier" type="SpinBox" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = -128
+max_value = 127
+allow_greater = false
+allow_lesser = false
+custom_minimum_size = Vector2(72, 34)
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 12
+
+[node name="Success" type="OptionButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(72, 34)
+theme_override_font_sizes/font_size = 12
+
+[node name="Failure" type="OptionButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(72, 34)
+theme_override_font_sizes/font_size = 12
+
+[node name="Reference0" instance=ExtResource("ref") parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "successText"
+target_kind = "message"
+none_value = 0
+size_flags_stretch_ratio = 2.0
+
+[node name="Reference1" instance=ExtResource("ref") parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "failureText"
+target_kind = "message"
+none_value = 0
+size_flags_stretch_ratio = 2.0
+
+[node name="Reference2" instance=ExtResource("ref") parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "successSounds"
+target_kind = "sound"
+none_value = 0
+size_flags_stretch_ratio = 1.0
+
+[node name="Reference3" instance=ExtResource("ref") parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+field_key = "failureSounds"
+target_kind = "sound"
+none_value = 0
+size_flags_stretch_ratio = 1.0

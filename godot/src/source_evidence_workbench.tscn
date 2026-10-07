@@ -1,0 +1,262 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/source_evidence_workbench.gd" id="1"]
+
+[node name="TechnicalDetails" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+theme_override_constants/separation = 10
+
+[node name="DiagnosticRoutes" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IssuesRoute" type="Button" parent="DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Issues"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="RecordsRoute" type="Button" parent="DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Decoded Records"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="EvidenceRoute" type="Button" parent="DiagnosticRoutes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Technical Details"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="Purpose" type="Label" parent="."]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_type_variation = &"ItemContext"
+
+[node name="Body" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="CatalogPanel" type="PanelContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 1.0
+custom_minimum_size = Vector2(510,0)
+theme_type_variation = &"ItemPanel"
+
+[node name="Catalog" type="VBoxContainer" parent="Body/CatalogPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CatalogHeading" type="Label" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "RETAINED CLASSIC SOURCES"
+theme_type_variation = &"StoryMacroHeading"
+
+[node name="CatalogScope" type="Label" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Imported originals · read-only preservation"
+theme_type_variation = &"ItemContext"
+
+[node name="Facets" type="HBoxContainer" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SourceFilter" type="OptionButton" parent="Body/CatalogPanel/Catalog/Facets"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Refresh" type="Button" parent="Body/CatalogPanel/Catalog/Facets"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Refresh"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="SearchRow" type="HBoxContainer" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CatalogSearch" type="LineEdit" parent="Body/CatalogPanel/Catalog/SearchRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Search source path or digest…"
+
+[node name="ClearFilters" type="Button" parent="Body/CatalogPanel/Catalog/SearchRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Clear filters"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="CatalogCount" type="Label" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open a scenario first."
+theme_type_variation = &"ItemContext"
+
+[node name="CatalogScroll" type="ScrollContainer" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Rows" type="VBoxContainer" parent="Body/CatalogPanel/Catalog/CatalogScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+[node name="CatalogPager" type="HBoxContainer" parent="Body/CatalogPanel/Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Previous" type="Button" parent="Body/CatalogPanel/Catalog/CatalogPager"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹ Previous"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="PageCount" type="Label" parent="Body/CatalogPanel/Catalog/CatalogPager"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No current page"
+size_flags_horizontal = 3
+theme_type_variation = &"ItemContext"
+
+[node name="Next" type="Button" parent="Body/CatalogPanel/Catalog/CatalogPager"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next ›"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="PageNumber" type="SpinBox" parent="Body/CatalogPanel/Catalog/CatalogPager"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 1.0
+max_value = 1.0
+value = 1.0
+custom_minimum_size = Vector2(68, 0)
+
+[node name="GoPage" type="Button" parent="Body/CatalogPanel/Catalog/CatalogPager"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Go"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="InspectorPanel" type="PanelContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.2
+theme_type_variation = &"ItemPanel"
+custom_minimum_size = Vector2(550, 0)
+
+[node name="Inspector" type="VBoxContainer" parent="Body/InspectorPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="InspectorHeading" type="Label" parent="Body/InspectorPanel/Inspector"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "TECHNICAL DETAILS"
+theme_type_variation = &"StoryMacroHeading"
+
+[node name="DetailScroll" type="ScrollContainer" parent="Body/InspectorPanel/Inspector"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Details" type="VBoxContainer" parent="Body/InspectorPanel/Inspector/DetailScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="SelectionName" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "No current selection."
+theme_type_variation = &"ItemName"
+autowrap_mode = 3
+
+[node name="SelectionGeometry" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="SelectionSummary" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="SelectionActions" type="HBoxContainer" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="OpenRecords" type="Button" parent="Body/InspectorPanel/Inspector/DetailScroll/Details/SelectionActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open decoded records"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="OpenAssets" type="Button" parent="Body/InspectorPanel/Inspector/DetailScroll/Details/SelectionActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open Scenario Assets"
+custom_minimum_size = Vector2(0, 30)
+
+[node name="OpenReason" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="CodecHeading" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CODEC GEOMETRY AND PRESERVATION"
+theme_type_variation = &"ItemUsesHeading"
+
+[node name="CodecDetails" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+
+[node name="IdentityHeading" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SOURCE AND TOOL IDENTITY"
+theme_type_variation = &"StoryMacroHeading"
+
+[node name="SourceIdentity" type="Label" parent="Body/InspectorPanel/Inspector/DetailScroll/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_type_variation = &"ItemContext"
+
+[node name="ReturnContext" type="Label" parent="Body/InspectorPanel/Inspector"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Back restores filters, page, selection and focus."
+theme_type_variation = &"ItemContext"
+autowrap_mode = 3

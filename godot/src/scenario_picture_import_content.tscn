@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[node name="ImportFields" type="VBoxContainer"]
+theme_override_constants/separation = 8
+
+[node name="LabelField" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="LabelField"]
+layout_mode = 2
+text = "LABEL"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="ImportLabel" type="LineEdit" parent="LabelField"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Picture label"
+
+[node name="ResourceIdField" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="ResourceIdField"]
+layout_mode = 2
+text = "PICT RESOURCE ID"
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+
+[node name="ImportResourceId" type="SpinBox" parent="ResourceIdField"]
+layout_mode = 2
+unique_name_in_owner = true
+min_value = 30000
+max_value = 30128
+
+[node name="ImportDither" type="CheckBox" parent="."]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Dither while converting to the Classic indexed palette"
+button_pressed = true
+
+[node name="ImportNote" type="Label" parent="."]
+visible = false
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)

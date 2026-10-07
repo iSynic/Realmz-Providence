@@ -1,0 +1,36 @@
+extends RefCounted
+
+
+static func run(host: SceneTree, slot: int, xap_identity: String) -> void:
+	await host._choose_action(slot, "realmz.action.77")
+	var quest_test: Dictionary = host._workbench._field_controls.testB
+	assert(int(quest_test.field.minimum) == -127)
+	assert(int(quest_test.field.maximum) == 127)
+	assert(quest_test.field.targetKind == null)
+	await host._choose_action(slot, "realmz.action.78")
+	assert(host._choice_labels("falseDestination") == ["Continue current script", "Branch"])
+	assert(host._choice_labels("trueDestination") == ["Continue current script", "Branch"])
+	assert(not host._workbench._field_controls.has("falseTarget"))
+	assert(not host._workbench._field_controls.has("trueTarget"))
+	await host._select_choice("falseDestination", 1)
+	assert(host._workbench._field_controls.falseTarget.field.targetKind == "extra-action-point")
+	host._workbench._field_renderer.accept_target("falseTarget", 436)
+	await host._settle()
+	await host._select_choice("falseDestination", 0)
+	assert(not host._workbench._field_controls.has("falseTarget"))
+	await host._select_choice("falseDestination", 1)
+	assert(int(host._workbench._field_controls.falseTarget.field.value) == 436)
+	await host._view.commit_selected()
+	await host._settle()
+	assert(not host._view.has_unapplied_changes())
+	assert(await host._shell._scripts.open_extra_action_point(xap_identity))
+	await host._settle()
+	host._workbench.focus_slot(slot)
+	await host._settle()
+	assert(host._selected_value("falseDestination") == 1)
+	assert(host._selected_value("trueDestination") == 0)
+	assert(int(host._workbench._field_controls.falseTarget.field.value) == 436)
+	assert(not host._workbench._field_controls.has("trueTarget"))
+	var step: Dictionary = host._workbench.draft_steps()[slot]
+	assert(int(step.settings.values.falseTarget) == 436)
+	assert(int(step.settings.values.trueTarget) == 0)

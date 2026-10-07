@@ -1,0 +1,636 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://src/action_point_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/action_step_workbench.tscn" type="PackedScene" id="2"]
+
+[sub_resource type="SystemFont" id="RouteMonoFont"]
+font_names = PackedStringArray("Cascadia Mono", "Consolas", "Liberation Mono", "monospace")
+
+[node name="ActionPoints" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+theme_override_fonts/font = SubResource("RouteMonoFont")
+script = ExtResource("1")
+
+[node name="StoryRouteTabs" type="HBoxContainer" parent="."]
+visible = false
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="ActionPointsRouteTab" type="Button" parent="StoryRouteTabs"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Action Points"
+[node name="ExtraActionPointsRouteTab" type="Button" parent="StoryRouteTabs"]
+layout_mode = 2
+disabled = true
+toggle_mode = true
+text = "Extra Action Points"
+[node name="GlobalMacrosRouteTab" type="Button" parent="StoryRouteTabs"]
+layout_mode = 2
+disabled = true
+toggle_mode = true
+text = "Global Macros"
+[node name="StoryFlagsRouteTab" type="Button" parent="StoryRouteTabs"]
+layout_mode = 2
+disabled = true
+toggle_mode = true
+text = "Story Flags"
+[node name="ActionPointRouteHeader" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 2
+[node name="Copy" type="VBoxContainer" parent="ActionPointRouteHeader"]
+layout_mode = 2
+[node name="Title" type="Label" parent="ActionPointRouteHeader/Copy"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+theme_override_font_sizes/font_size = 16
+text = "Action Points"
+[node name="Subtitle" type="Label" parent="ActionPointRouteHeader/Copy"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 12
+text = ""
+
+[node name="ActionPointCreateBar" type="PanelContainer" parent="."]
+layout_mode = 2
+[node name="Row" type="HBoxContainer" parent="ActionPointCreateBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="MapField" type="VBoxContainer" parent="ActionPointCreateBar/Row"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointCreateBar/Row/MapField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "MAP"
+[node name="ActionPointMapPicker" type="OptionButton" parent="ActionPointCreateBar/Row/MapField"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+size_flags_vertical = 8
+[node name="XField" type="VBoxContainer" parent="ActionPointCreateBar/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointCreateBar/Row/XField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "X"
+[node name="NewActionPointX" type="SpinBox" parent="ActionPointCreateBar/Row/XField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(86, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 89.0
+[node name="YField" type="VBoxContainer" parent="ActionPointCreateBar/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointCreateBar/Row/YField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Y"
+[node name="NewActionPointY" type="SpinBox" parent="ActionPointCreateBar/Row/YField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(86, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 89.0
+[node name="CreateActionPoint" type="Button" parent="ActionPointCreateBar/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+size_flags_vertical = 8
+tooltip_text = "Creation requires the bounded fixed-slot allocation command."
+disabled = true
+text = "+ Action Point"
+[node name="DuplicateActionPoint" type="Button" parent="ActionPointCreateBar/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 32)
+size_flags_vertical = 8
+tooltip_text = "Duplication requires the bounded fixed-slot allocation command."
+disabled = true
+text = "Duplicate"
+[node name="WideViewportSpacer" type="Control" parent="ActionPointCreateBar/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionPointEditorSurface" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+[node name="ActionPointMasterDetail" type="HSplitContainer" parent="ActionPointEditorSurface"]
+layout_mode = 2
+split_offset = 300
+[node name="ActionPointMasterPanel" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="SidebarTitle" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+theme_override_font_sizes/font_size = 16
+text = "ACTION POINTS"
+[node name="SidebarSubtitle" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+autowrap_mode = 2
+[node name="ContextRoutes" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 4
+[node name="AP" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ContextRoutes"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "AP  Action Points"
+alignment = 0
+[node name="EX" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ContextRoutes"]
+layout_mode = 2
+disabled = true
+text = "EX  Extra Action Points"
+alignment = 0
+[node name="GM" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ContextRoutes"]
+layout_mode = 2
+disabled = true
+text = "GM  Global Macros"
+alignment = 0
+[node name="SF" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ContextRoutes"]
+layout_mode = 2
+disabled = true
+text = "SF  Story Flags"
+alignment = 0
+[node name="ActionPointInventorySummary" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "0 shown  |  0 total"
+[node name="ActionPointSearch" type="LineEdit" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Filter action points…"
+[node name="InventoryNote" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = ""
+autowrap_mode = 2
+[node name="ActionPointFilters" type="GridContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+layout_mode = 2
+columns = 2
+[node name="CurrentMap" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+toggle_mode = true
+button_pressed = true
+text = "CURRENT MAP"
+[node name="All" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "ALL"
+[node name="Active" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "ACTIVE"
+[node name="Reusable" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "REUSABLE"
+[node name="Warnings" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "WARNINGS"
+[node name="ActionPointCollection" type="ItemList" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+[node name="Paging" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="ActionPointPreviousPage" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/Paging"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "‹"
+[node name="ActionPointPageStatus" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/Paging"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Page 1"
+horizontal_alignment = 1
+[node name="ActionPointNextPage" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/Paging"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+text = "›"
+
+[node name="ActionPointDetail" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+[node name="ActionPointEmptyState" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+[node name="Center" type="CenterContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointEmptyState"]
+layout_mode = 2
+[node name="Copy" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointEmptyState/Center"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+[node name="Title" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointEmptyState/Center/Copy"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+theme_override_font_sizes/font_size = 18
+text = "No Action Point selected"
+horizontal_alignment = 1
+[node name="Guidance" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointEmptyState/Center/Copy"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Choose an Action Point from this map, or set X and Y above to create one in a reusable slot."
+horizontal_alignment = 1
+autowrap_mode = 2
+[node name="ActionPointRecordHeader" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="Row" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader"]
+layout_mode = 2
+[node name="ActionPointIdentity" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.929412, 0.956863, 0.984314, 1)
+theme_override_font_sizes/font_size = 15
+text = "Select an Action Point"
+[node name="DescriptorLabel" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "DESCRIPTOR"
+[node name="ActionPointDescriptor" type="LineEdit" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 80
+placeholder_text = "Optional project-only description"
+[node name="Callers" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+disabled = true
+text = "Callers…"
+tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
+
+[node name="Duplicate" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+layout_mode = 2
+tooltip_text = "Duplication is not yet owned by a bounded core command."
+disabled = true
+text = "Duplicate"
+[node name="ClearActionPoint" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Clear will be enabled with its destructive confirmation contract."
+disabled = true
+text = "Clear Action Point"
+[node name="WideViewportSpacer" type="Control" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="ActionPointDraftValidation" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.827451, 0.478431, 1)
+
+[node name="ActionPointHeaderGrid" type="GridContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+columns = 2
+[node name="Activation" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "ACTIVATION"
+[node name="Row" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body"]
+layout_mode = 2
+[node name="ActionPointPlaced" type="CheckBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Placed"
+[node name="ChanceField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row/ChanceField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "%"
+[node name="ActionPointChance" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row/ChanceField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(74, 32)
+layout_mode = 2
+size_flags_vertical = 8
+min_value = -128.0
+max_value = 127.0
+[node name="SemanticActivationStatus" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = "Normal land cell; Secret Area remains a Map concern."
+autowrap_mode = 2
+
+[node name="Location" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "TRIGGER LOCATION"
+[node name="Row" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body"]
+layout_mode = 2
+[node name="ActionPointTriggerMap" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "No map"
+[node name="XField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/XField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "X"
+[node name="ActionPointTriggerX" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/XField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 89.0
+[node name="YField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/YField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Y"
+[node name="ActionPointTriggerY" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/YField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 89.0
+[node name="RevealActionPointTrigger" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Reveal"
+
+[node name="Destination" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination"]
+layout_mode = 2
+[node name="Heading" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Heading"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "AFTER SCRIPT DESTINATION"
+[node name="ActionPointDestinationSummary" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Same as trigger"
+[node name="Row" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body"]
+layout_mode = 2
+[node name="MapField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/MapField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "MAP"
+[node name="ActionPointPostLevel" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/MapField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 255.0
+[node name="XField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/XField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "X"
+[node name="ActionPointPostX" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/XField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 255.0
+[node name="YField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/YField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Y"
+[node name="ActionPointPostY" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/YField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+size_flags_vertical = 8
+max_value = 255.0
+[node name="RevealActionPointDestination" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+size_flags_vertical = 8
+text = "Reveal"
+
+[node name="ActionPointStepAuthoring" type="HSplitContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 300
+[node name="ActionPointStepListPanel" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+[node name="Heading" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body"]
+layout_mode = 2
+[node name="ActionPointActionSummary" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "0 OF 8 USED  ·  STEPS"
+[node name="AddStep" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body/Heading"]
+layout_mode = 2
+tooltip_text = "Select an empty row and edit its CODE/ID fields."
+disabled = true
+text = "+ Add Step"
+[node name="Help" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+text = "Each row is one ordered Realmz CODE/ID slot."
+[node name="ActionPointActions" type="Tree" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+columns = 4
+column_titles_visible = true
+hide_root = true
+
+[node name="SelectedActionPointStepPanel" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring"]
+layout_mode = 2
+[node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="Heading" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "SLOT 1  |  CURRENT STEP"
+[node name="ActionPointSlotEditor" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body"]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="OpcodeField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/OpcodeField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "RAW OPCODE"
+[node name="ActionPointSelectedOpcode" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/OpcodeField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+[node name="TargetField" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor"]
+layout_mode = 2
+[node name="Label" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/TargetField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "TARGET / ROW ID"
+[node name="ActionPointSelectedTarget" type="SpinBox" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/TargetField"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+min_value = -32768.0
+max_value = 32767.0
+[node name="ApplyActionPointSlot" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Apply Step"
+[node name="RepairActionPointTarget" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Commit the Target / row ID above as a typed reference repair."
+disabled = true
+text = "Retarget"
+[node name="PeekActionPointTarget" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Peek"
+[node name="ActionPointAttachmentScroll" type="ScrollContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+[node name="ActionPointExtraCodeAttachments" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointAttachmentScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="ActionPointSourceEvidence" type="Label" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+[node name="Actions" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body"]
+layout_mode = 2
+[node name="CompileActionPointSlice" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Validate + Compile"
+
+[node name="SemanticActionSteps" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail" instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="DraftActions" type="HBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
+layout_mode = 2
+[node name="ApplyActionPoint" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply Action Point  Ctrl+Enter"
+[node name="DiscardActionPoint" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/DraftActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discard"
+
+[node name="ClearActionPointConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Clear Action Point"
+ok_button_text = "Clear Action Point"
+cancel_button_text = "Cancel"
+dialog_text = "Clear this Action Point and make its fixed slot reusable? The map marker and all eight steps will be removed. Undo remains available."
+
+[connection signal="item_selected" from="ActionPointCreateBar/Row/MapField/ActionPointMapPicker" to="." method="_on_map_selected"]
+[connection signal="text_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointSearch" to="." method="_on_search_changed"]
+[connection signal="item_selected" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointCollection" to="." method="_select_summary"]
+[connection signal="toggled" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row/ActionPointPlaced" to="." method="_on_placed_toggled"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation/Body/Row/ChanceField/ActionPointChance" to="." method="_on_context_value_changed"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/XField/ActionPointTriggerX" to="." method="_on_context_value_changed"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/YField/ActionPointTriggerY" to="." method="_on_context_value_changed"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location/Body/Row/RevealActionPointTrigger" to="." method="_reveal_trigger"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/MapField/ActionPointPostLevel" to="." method="_on_context_value_changed"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/XField/ActionPointPostX" to="." method="_on_context_value_changed"]
+[connection signal="value_changed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/YField/ActionPointPostY" to="." method="_on_context_value_changed"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination/Body/Row/RevealActionPointDestination" to="." method="_reveal_destination"]
+[connection signal="item_selected" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/ActionPointStepListPanel/Body/ActionPointActions" to="." method="_select_action"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/ApplyActionPointSlot" to="." method="_apply_selected_action"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/RepairActionPointTarget" to="." method="_repair_selected_action"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/ActionPointSlotEditor/PeekActionPointTarget" to="." method="_peek_selected_action"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/DraftActions/ApplyActionPoint" to="." method="commit_selected"]
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/Actions/CompileActionPointSlice" to="." method="_on_compile_pressed"]
+
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]

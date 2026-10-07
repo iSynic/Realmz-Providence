@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[node name="Filters" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 34)
+theme_override_constants/separation = 6
+
+[node name="Kind" type="OptionButton" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(79, 30)
+size_flags_vertical = 4
+disabled = true
+tooltip_text = "This gallery currently shows icons. Other asset kinds are not connected here yet."
+item_count = 1
+selected = 0
+popup/item_0/text = "Icons"
+popup/item_0/id = 0
+
+[node name="All" type="Button" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(50, 30)
+size_flags_vertical = 4
+text = "All"
+toggle_mode = true
+button_pressed = true
+disabled = true
+tooltip_text = "Showing all matching icons. Preview-status filtering is not connected yet."
+
+[node name="Previewable" type="Button" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(108, 30)
+size_flags_vertical = 4
+text = "Previewable"
+disabled = true
+tooltip_text = "Preview-status filtering across the full collection is not connected yet."
+
+[node name="Missing" type="Button" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(79, 30)
+size_flags_vertical = 4
+text = "Missing"
+disabled = true
+tooltip_text = "Missing-picture filtering across the full collection is not connected yet."

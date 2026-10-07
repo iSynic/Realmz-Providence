@@ -1,0 +1,116 @@
+[gd_scene format=3]
+
+[node name="PublishTargetsForm" type="VBoxContainer"]
+custom_minimum_size = Vector2(820, 550)
+theme_override_constants/separation = 10
+
+[node name="PublishTargetsSubtitle" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = ""
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+
+[node name="PublishNoClobberInvariant" type="Label" parent="."]
+layout_mode = 2
+text = "Export creates new output. Existing files are never overwritten."
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.898039, 0.709804, 0.403922, 1)
+
+[node name="ApplicationLibrary" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="ApplicationLibrary"]
+layout_mode = 2
+text = "APPLICATION MEDIA LIBRARY"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+
+[node name="Path" type="HBoxContainer" parent="ApplicationLibrary"]
+layout_mode = 2
+
+[node name="ApplicationLibraryRoot" type="LineEdit" parent="ApplicationLibrary/Path"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Choose the validated Realmz Classic application-media library"
+
+[node name="Browse" type="Button" parent="ApplicationLibrary/Path"]
+layout_mode = 2
+text = "Browse…"
+
+[node name="ClassicOutput" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="ClassicOutput"]
+layout_mode = 2
+text = "LEGACY REALMZ SCENARIO (7.1.2 AND LATER)"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+
+[node name="Path" type="HBoxContainer" parent="ClassicOutput"]
+layout_mode = 2
+
+[node name="ClassicOutputDirectory" type="LineEdit" parent="ClassicOutput/Path"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "New Legacy Realmz scenario directory"
+
+[node name="Browse" type="Button" parent="ClassicOutput/Path"]
+layout_mode = 2
+text = "Choose Parent…"
+
+[node name="RebuiltOutput" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="RebuiltOutput"]
+layout_mode = 2
+text = "REBUILT PACKAGE"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+
+[node name="Path" type="HBoxContainer" parent="RebuiltOutput"]
+layout_mode = 2
+
+[node name="RebuiltPackagePath" type="LineEdit" parent="RebuiltOutput/Path"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "New .realmz2 package path"
+
+[node name="Browse" type="Button" parent="RebuiltOutput/Path"]
+layout_mode = 2
+text = "Choose File…"
+
+[node name="TargetReadinessRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Classic" type="PanelContainer" parent="TargetReadinessRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Status" type="RichTextLabel" parent="TargetReadinessRow/Classic"]
+layout_mode = 2
+custom_minimum_size = Vector2(390, 105)
+bbcode_enabled = true
+fit_content = false
+text = "LEGACY REALMZ · NOT CHECKED"
+
+[node name="Rebuilt" type="PanelContainer" parent="TargetReadinessRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Status" type="RichTextLabel" parent="TargetReadinessRow/Rebuilt"]
+layout_mode = 2
+custom_minimum_size = Vector2(390, 105)
+bbcode_enabled = true
+fit_content = false
+text = "REBUILT · NOT CHECKED"
+
+[node name="CompilerIdentity" type="Label" parent="."]
+layout_mode = 2
+text = "Compiler · not inspected"
+theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
+
+[node name="PublishValidation" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3

@@ -1,0 +1,790 @@
+{
+  "formatVersion": 1,
+  "geometry": "Data LD; 90x90 signed big-endian column-major cells",
+  "evidence": "Exact four-neighbor source contexts; original center is replaced before solving",
+  "auditSha256": "9fa75cdd0c309102276ddba0893f67cb97f806a2ed4c8826f9f781b20853f44c",
+  "sources": [
+    {
+      "path": "D:\\Scenarios\\Trouble in the Sword Lands\\Data LD",
+      "sha256": "b9b57fec44471f5ec213d4354e98b9eec459cd7cdba9c41c2f7cfc92325a69a7",
+      "cases": [
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 85,
+          "y": 74,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 18,
+          "neighbors": [
+            157,
+            15,
+            16,
+            13
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 61,
+          "y": 75,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 17,
+          "neighbors": [
+            157,
+            3,
+            60,
+            157
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 84,
+          "y": 75,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 15,
+          "neighbors": [
+            13,
+            16,
+            13,
+            33
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 65,
+          "y": 76,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 13,
+          "neighbors": [
+            157,
+            14,
+            33,
+            60
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 85,
+          "y": 76,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 14,
+          "neighbors": [
+            16,
+            17,
+            58,
+            13
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 78,
+          "y": 78,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 20,
+          "neighbors": [
+            35,
+            56,
+            18,
+            19
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 0,
+          "x": 17,
+          "y": 85,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 24,
+          "neighbors": [
+            49,
+            18,
+            60,
+            17
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 79,
+          "y": 4,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 22,
+          "neighbors": [
+            9,
+            60,
+            1,
+            39
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 78,
+          "y": 17,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 5,
+          "neighbors": [
+            9,
+            57,
+            157,
+            157
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 79,
+          "y": 18,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 6,
+          "neighbors": [
+            57,
+            60,
+            5,
+            157
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 80,
+          "y": 23,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 11,
+          "neighbors": [
+            157,
+            5,
+            8,
+            60
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 82,
+          "y": 24,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 19,
+          "neighbors": [
+            58,
+            20,
+            17,
+            157
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 40,
+          "y": 45,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 23,
+          "neighbors": [
+            2,
+            39,
+            2,
+            60
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 3,
+          "x": 50,
+          "y": 53,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 12,
+          "neighbors": [
+            11,
+            157,
+            60,
+            60
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 4,
+          "x": 5,
+          "y": 57,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 16,
+          "neighbors": [
+            12,
+            17,
+            18,
+            15
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 4,
+          "x": 10,
+          "y": 58,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 7,
+          "neighbors": [
+            10,
+            6,
+            8,
+            18
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 10,
+          "x": 75,
+          "y": 14,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 10,
+          "neighbors": [
+            6,
+            59,
+            33,
+            12
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 10,
+          "x": 88,
+          "y": 16,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 9,
+          "neighbors": [
+            5,
+            60,
+            5,
+            7
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 11,
+          "x": 18,
+          "y": 62,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 8,
+          "neighbors": [
+            7,
+            157,
+            11,
+            60
+          ]
+        },
+        {
+          "scenario": "Trouble in the Sword Lands",
+          "map": 11,
+          "x": 11,
+          "y": 73,
+          "landlook": 7,
+          "atlas": "59f654305a949d95072b5a7ce00f7454d4b323c00442e126ef70cb0063f8a071",
+          "expectedTile": 21,
+          "neighbors": [
+            34,
+            16,
+            51,
+            19
+          ]
+        }
+      ],
+      "absent": []
+    },
+    {
+      "path": "D:\\Scenarios\\City of Bywater\\Data LD",
+      "sha256": "0475bfcc39790e97fc3de636e870c99b58ca85b786990b71e7970732f6f6c988",
+      "cases": [
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 43,
+          "y": 52,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 10,
+          "neighbors": [
+            25,
+            33,
+            60,
+            156
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 72,
+          "y": 52,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 12,
+          "neighbors": [
+            2,
+            156,
+            60,
+            35
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 42,
+          "y": 53,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 9,
+          "neighbors": [
+            156,
+            60,
+            10,
+            155
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 73,
+          "y": 53,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 13,
+          "neighbors": [
+            156,
+            14,
+            60,
+            60
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 84,
+          "y": 54,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 17,
+          "neighbors": [
+            156,
+            18,
+            60,
+            14
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 80,
+          "y": 56,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 15,
+          "neighbors": [
+            59,
+            4,
+            156,
+            60
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 87,
+          "y": 56,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 19,
+          "neighbors": [
+            13,
+            28,
+            156,
+            16
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 69,
+          "y": 60,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 16,
+          "neighbors": [
+            60,
+            157,
+            156,
+            15
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 65,
+          "y": 61,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 21,
+          "neighbors": [
+            33,
+            4,
+            38,
+            15
+          ]
+        },
+        {
+          "scenario": "City of Bywater",
+          "map": 0,
+          "x": 83,
+          "y": 70,
+          "landlook": 0,
+          "atlas": "12d673a57358098ed0e5ee09721fe169f0c2cab7c628e5214f0f1893c11d9dd2",
+          "expectedTile": 22,
+          "neighbors": [
+            25,
+            60,
+            27,
+            39
+          ]
+        }
+      ],
+      "absent": [
+        5,
+        6,
+        7,
+        8,
+        11,
+        14,
+        18,
+        20,
+        23,
+        24
+      ]
+    },
+    {
+      "path": "D:\\Scenarios\\War in the Sword Lands\\Data LD",
+      "sha256": "1eec6c134c21214af132bbc3d0a6e81052ffdea74022436133588fd54bdbc8c3",
+      "cases": [
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 81,
+          "y": 1,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 20,
+          "neighbors": [
+            56,
+            33,
+            18,
+            19
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 81,
+          "y": 2,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 18,
+          "neighbors": [
+            20,
+            57,
+            60,
+            17
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 79,
+          "y": 4,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 22,
+          "neighbors": [
+            9,
+            60,
+            1,
+            39
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 78,
+          "y": 17,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 5,
+          "neighbors": [
+            9,
+            57,
+            157,
+            157
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 79,
+          "y": 18,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 6,
+          "neighbors": [
+            57,
+            60,
+            5,
+            157
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 78,
+          "y": 22,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 13,
+          "neighbors": [
+            157,
+            14,
+            59,
+            60
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 79,
+          "y": 22,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 14,
+          "neighbors": [
+            157,
+            157,
+            60,
+            13
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 80,
+          "y": 23,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 11,
+          "neighbors": [
+            157,
+            5,
+            8,
+            60
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 82,
+          "y": 24,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 19,
+          "neighbors": [
+            58,
+            20,
+            17,
+            157
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 76,
+          "y": 26,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 15,
+          "neighbors": [
+            56,
+            16,
+            13,
+            35
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 26,
+          "y": 28,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 24,
+          "neighbors": [
+            38,
+            26,
+            35,
+            25
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 50,
+          "y": 53,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 12,
+          "neighbors": [
+            11,
+            157,
+            60,
+            60
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 0,
+          "x": 39,
+          "y": 61,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 17,
+          "neighbors": [
+            1157,
+            18,
+            33,
+            14
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 2,
+          "x": 75,
+          "y": 14,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 10,
+          "neighbors": [
+            6,
+            59,
+            33,
+            12
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 2,
+          "x": 87,
+          "y": 14,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 7,
+          "neighbors": [
+            60,
+            6,
+            12,
+            60
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 2,
+          "x": 88,
+          "y": 16,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 9,
+          "neighbors": [
+            5,
+            60,
+            5,
+            7
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 3,
+          "x": 41,
+          "y": 58,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 23,
+          "neighbors": [
+            26,
+            39,
+            12,
+            33
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 3,
+          "x": 18,
+          "y": 62,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 8,
+          "neighbors": [
+            7,
+            157,
+            11,
+            60
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 3,
+          "x": 28,
+          "y": 70,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 21,
+          "neighbors": [
+            60,
+            4,
+            50,
+            15
+          ]
+        },
+        {
+          "scenario": "War in the Sword Lands",
+          "map": 3,
+          "x": 18,
+          "y": 72,
+          "landlook": 7,
+          "atlas": "fd993e9142f0b684dd6ad0d683d66baa7641e44874680378e90373f4bc007184",
+          "expectedTile": 16,
+          "neighbors": [
+            58,
+            157,
+            157,
+            15
+          ]
+        }
+      ],
+      "absent": []
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="PackedScene" path="res://src/monster_editor.tscn" id="1"]
+
+[node name="MonsterLibraryEditor" instance=ExtResource("1")]
+library_route = true

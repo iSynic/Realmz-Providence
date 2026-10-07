@@ -1,0 +1,500 @@
+[gd_scene load_steps=6 format=3]
+[ext_resource type="Script" path="res://src/player_maps_editor.gd" id="1"]
+[ext_resource type="Script" path="res://src/player_map_preview.gd" id="2"]
+[ext_resource type="Theme" path="res://theme/player_scenario_theme.tres" id="3"]
+[ext_resource type="PackedScene" path="res://src/player_map_resource_picker.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/scenario_map_picker.tscn" id="5"]
+
+[node name="PlayerMapsEditor" type="VBoxContainer"]
+script = ExtResource("1")
+theme = ExtResource("3")
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+text = "PLAYER MAPS"
+theme_type_variation = "ScenarioHeading"
+
+[node name="PlayerMapCount" type="Label" parent="Header"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "0 records"
+
+[node name="NewPlayerMap" type="Button" parent="Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "New Player Map"
+disabled = true
+
+[node name="Subtitle" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = ""
+
+[node name="PlayerMapWorkbench" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="Browser" type="VBoxContainer" parent="PlayerMapWorkbench"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="PlayerMapSearch" type="LineEdit" parent="PlayerMapWorkbench/Browser"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "Search name, ID, note, target…"
+clear_button_enabled = true
+
+[node name="PlayerMapRecordList" type="ItemList" parent="PlayerMapWorkbench/Browser"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+auto_tooltip = true
+
+[node name="Detail" type="VBoxContainer" parent="PlayerMapWorkbench"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerMapIdentity" type="Label" parent="PlayerMapWorkbench/Detail"]
+layout_mode = 2
+unique_name_in_owner = true
+theme_type_variation = "ScenarioTitle"
+text = "No Player Map selected"
+text_overrun_behavior = 3
+clip_text = true
+
+[node name="PlayerMapStatus" type="Label" parent="PlayerMapWorkbench/Detail"]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+text = "Create a Player Map to begin."
+
+[node name="Panes" type="HBoxContainer" parent="PlayerMapWorkbench/Detail"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="PreviewColumn" type="VBoxContainer" parent="PlayerMapWorkbench/Detail/Panes"]
+tooltip_text = "Click or drag moves the selected marker. Escape stops marker painting."
+layout_mode = 2
+custom_minimum_size = Vector2(340, 0)
+
+[node name="PreviewHeading" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+text = "DRAFT PREVIEW · 320 × 320"
+theme_type_variation = "ScenarioHeading"
+
+[node name="ZoomRow" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+
+[node name="ZoomOut" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/ZoomRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "−"
+
+[node name="ZoomLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/ZoomRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "100%"
+size_flags_horizontal = 3
+
+[node name="ZoomIn" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/ZoomRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "+"
+
+[node name="RefreshPreview" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/ZoomRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Refresh"
+
+[node name="PreviewScroll" type="ScrollContainer" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+custom_minimum_size = Vector2(340, 332)
+size_flags_vertical = 3
+
+[node name="PlayerMapPreview" type="Control" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/PreviewScroll"]
+layout_mode = 2
+unique_name_in_owner = true
+script = ExtResource("2")
+focus_mode = 2
+custom_minimum_size = Vector2(320, 320)
+clip_contents = true
+texture_filter = 1
+
+[node name="TextPreview" type="TextEdit" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(320, 260)
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
+
+[node name="PreviewReason" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="MarkerHeading" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+text = "MARKERS · ALL TEN SLOTS"
+theme_type_variation = "ScenarioHeading"
+
+[node name="MarkerRow" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+
+[node name="MarkerSlot" type="OptionButton" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerRow"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="MarkerIcon" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerRow"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="ChooseMarker" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose icon…"
+
+[node name="MarkerPosition" type="GridContainer" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+columns = 4
+
+[node name="MarkerXLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerPosition"]
+layout_mode = 2
+text = "X"
+
+[node name="MarkerX" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerPosition"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="MarkerYLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerPosition"]
+layout_mode = 2
+text = "Y"
+
+[node name="MarkerY" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerPosition"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="MarkerActions" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+layout_mode = 2
+
+[node name="PlaceMarker" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerActions"]
+tooltip_text = "Click or drag on the map to move the selected marker. Escape stops marker painting."
+layout_mode = 2
+unique_name_in_owner = true
+text = "Paint selected marker"
+toggle_mode = true
+
+[node name="ClearMarker" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn/MarkerActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Clear slot"
+
+[node name="MarkerHint" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PreviewColumn"]
+visible = false
+layout_mode = 2
+text = "Click or drag to move this marker. Esc stops painting."
+autowrap_mode = 2
+
+[node name="PlayerMapDetailScroll" type="ScrollContainer" parent="PlayerMapWorkbench/Detail/Panes"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="Fields" type="VBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(470, 0)
+theme_override_constants/separation = 8
+
+[node name="AvailableNameLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+text = "AVAILABLE NAME"
+theme_type_variation = "ScenarioHeading"
+
+[node name="AvailableName" type="LineEdit" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="UnavailableNameLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+text = "UNAVAILABLE NAME"
+theme_type_variation = "ScenarioHeading"
+
+[node name="UnavailableName" type="LineEdit" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="ModeRow" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+
+[node name="DisplayMode" type="OptionButton" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/ModeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="ChooseTarget" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/ModeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose target map…"
+
+[node name="Geometry" type="GridContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+columns = 3
+
+[node name="StartXLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+text = "TOP LEFT X"
+
+[node name="StartYLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+text = "TOP LEFT Y"
+
+[node name="PlayerMapIconSizeLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+text = "TILE / ICON SIZE"
+
+[node name="StartX" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="StartY" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="PlayerMapIconSize" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/Geometry"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="RawFields" type="GridContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+columns = 3
+
+[node name="PlayerMapPictureIdLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+text = "PICTURE ID"
+
+[node name="PlayerMapShowLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+text = "SHOW / TEXT ID"
+
+[node name="PlayerMapLevelLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+text = "LEVEL"
+
+[node name="PlayerMapPictureId" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="PlayerMapShow" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="PlayerMapLevel" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RawFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="PlayerMapDungeon" type="CheckBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Dungeon target"
+
+[node name="References" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+
+[node name="ChoosePicture" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/References"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose picture…"
+
+[node name="ChooseText" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/References"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Choose TEXT…"
+
+[node name="RouteActions" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+
+[node name="OpenPlayerMapTarget" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RouteActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open Map"
+
+[node name="OpenPlayerMapText" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RouteActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open TEXT"
+
+[node name="PreviewPlayerMapPicture" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RouteActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open picture preview"
+
+[node name="NoteLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+text = "NOTE"
+theme_type_variation = "ScenarioHeading"
+
+[node name="PlayerMapNote" type="TextEdit" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 90)
+wrap_mode = 1
+
+[node name="TextByteCounts" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="RectangleLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+text = "DISPLAY RECTANGLE"
+theme_type_variation = "ScenarioHeading"
+
+[node name="RectangleFields" type="GridContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+columns = 4
+
+[node name="RectTopLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+text = "TOP"
+
+[node name="RectLeftLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+text = "LEFT"
+
+[node name="RectBottomLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+text = "BOTTOM"
+
+[node name="RectRightLabel" type="Label" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+text = "RIGHT"
+
+[node name="RectTop" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="RectLeft" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="RectBottom" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="RectRight" type="SpinBox" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/RectangleFields"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+min_value = -32768.0
+max_value = 32767.0
+
+[node name="Links" type="RichTextLabel" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+bbcode_enabled = true
+fit_content = false
+scroll_active = true
+custom_minimum_size = Vector2(0, 80)
+
+[node name="UsesPaging" type="HBoxContainer" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields"]
+layout_mode = 2
+[node name="UsesPrevious" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/UsesPaging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Previous callers"
+disabled = true
+[node name="UsesNext" type="Button" parent="PlayerMapWorkbench/Detail/Panes/PlayerMapDetailScroll/Fields/UsesPaging"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Next callers"
+disabled = true
+
+[node name="Footer" type="HBoxContainer" parent="PlayerMapWorkbench/Detail"]
+layout_mode = 2
+
+[node name="ApplyPlayerMap" type="Button" parent="PlayerMapWorkbench/Detail/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply Player Map"
+disabled = true
+theme_type_variation = "ScenarioPrimary"
+
+[node name="DiscardPlayerMap" type="Button" parent="PlayerMapWorkbench/Detail/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Discard"
+disabled = true
+
+[node name="ResolvePlayerMap" type="Button" parent="PlayerMapWorkbench/Detail/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Resolve outcome"
+visible = false
+
+[node name="CopyPlayerMapDraft" type="Button" parent="PlayerMapWorkbench/Detail/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Copy draft"
+
+[node name="DraftDelay" type="Timer" parent="."]
+layout_mode = 2
+wait_time = 0.25
+one_shot = true
+
+[node name="ResourcePicker" parent="." instance=ExtResource("4")]
+
+[node name="TargetPicker" parent="." instance=ExtResource("5")]
+
+[node name="ModeConfirmation" type="ConfirmationDialog" parent="."]
+layout_mode = 2
+title = "Change Player Map display mode"
+dialog_text = "Confirm the explicit field changes. Inactive values remain retained in the draft."

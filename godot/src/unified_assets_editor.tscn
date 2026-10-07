@@ -1,0 +1,282 @@
+[gd_scene load_steps=8 format=3]
+[ext_resource type="Script" path="res://src/unified_assets_editor.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/unified_asset_gallery.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://src/vault_editor.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://src/new_text_dialog.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/media_authoring_dialog.tscn" id="5"]
+
+[sub_resource type="SystemFont" id="HeadingFont"]
+font_names = PackedStringArray("Source Sans 3", "Segoe UI")
+font_weight = 700
+
+[sub_resource type="SystemFont" id="SubtitleFont"]
+font_names = PackedStringArray("JetBrains Mono", "Consolas")
+
+[node name="UnifiedAssets" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+script = ExtResource("1")
+
+[node name="Header" type="VBoxContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 66)
+
+[node name="TopInset" type="Control" parent="Header"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 4)
+
+[node name="Heading" type="HBoxContainer" parent="Header"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 45)
+
+[node name="Titles" type="VBoxContainer" parent="Header/Heading"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Header/Heading/Titles"]
+layout_mode = 2
+text = "Assets"
+theme_type_variation = "MediaTitle"
+theme_override_fonts/font = SubResource("HeadingFont")
+theme_override_font_sizes/font_size = 18
+
+[node name="Subtitle" type="Label" parent="Header/Heading/Titles"]
+visible = false
+layout_mode = 2
+text = ""
+theme_override_fonts/font = SubResource("SubtitleFont")
+theme_override_font_sizes/font_size = 11
+
+[node name="Import" type="Button" parent="Header/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(180, 34)
+size_flags_vertical = 4
+text = "Import to My Library…"
+disabled = true
+
+[node name="NewText" type="Button" parent="Header/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+size_flags_vertical = 4
+text = "New Text…"
+visible = false
+disabled = true
+
+[node name="Divider" type="HSeparator" parent="Header"]
+layout_mode = 2
+
+[node name="SaveAssetState" type="VBoxContainer" parent="Header"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+theme_override_constants/separation = 8
+
+[node name="SaveAssetNotice" type="Label" parent="Header/SaveAssetState"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="SaveAssetActions" type="HBoxContainer" parent="Header/SaveAssetState"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SaveAssetProject" type="Button" parent="Header/SaveAssetState/SaveAssetActions"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+text = "Save Project"
+
+[node name="SaveAssetAs" type="Button" parent="Header/SaveAssetState/SaveAssetActions"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 34)
+text = "Save As…"
+
+[node name="Body" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Collections" type="PanelContainer" parent="Body"]
+custom_minimum_size = Vector2(272, 0)
+layout_mode = 2
+theme_type_variation = "ItemPanel"
+[node name="Inset" type="MarginContainer" parent="Body/Collections"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_bottom = 6
+[node name="Sections" type="VBoxContainer" parent="Body/Collections/Inset"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BrowseCaption" type="Label" parent="Body/Collections/Inset/Sections"]
+layout_mode = 2
+text = "BROWSE"
+theme_type_variation = "MediaHeading"
+[node name="AllMedia" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+text = "All media"
+toggle_mode = true
+button_pressed = true
+[node name="Pictures" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pictures"
+[node name="Icons" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Icons"
+[node name="Sounds" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Sounds"
+[node name="SpecialLand" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Special Land"
+[node name="TextResources" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Text & formatting"
+[node name="Music" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+text = "Music"
+[node name="Title" type="Label" parent="Body/Collections/Inset/Sections"]
+layout_mode = 2
+text = "COLLECTIONS"
+theme_type_variation = "MediaCollectionHeading"
+
+[node name="LibraryCaption" type="Label" parent="Body/Collections/Inset/Sections"]
+layout_mode = 2
+text = "MY LIBRARY"
+theme_type_variation = "MediaCollectionHeading"
+
+[node name="AllCollections" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "All collections"
+toggle_mode = true
+
+[node name="Personal" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "My Library"
+toggle_mode = true
+
+[node name="Bag" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Bag of Holding"
+toggle_mode = true
+
+[node name="Vault" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "Vault of Arcana"
+toggle_mode = true
+
+[node name="MonsterArtwork" type="Button" parent="Body/Collections/Inset/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Monster artwork"
+visible = false
+
+
+[node name="NewCollection" type="Button" parent="Body/Collections/Inset/Sections"]
+custom_minimum_size = Vector2(0, 34)
+unique_name_in_owner = true
+layout_mode = 2
+text = "+ New collection"
+disabled = true
+
+[node name="LibraryHistory" type="HBoxContainer" parent="Body/Collections/Inset/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="LibraryUndo" type="Button" parent="Body/Collections/Inset/Sections/LibraryHistory"]
+unique_name_in_owner = true
+text = "Undo Library"
+[node name="LibraryRedo" type="Button" parent="Body/Collections/Inset/Sections/LibraryHistory"]
+unique_name_in_owner = true
+text = "Redo Library"
+[node name="PersonalCollections" type="ItemList" parent="Body/Collections/Inset/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MoreCollections" type="Button" parent="Body/Collections/Inset/Sections"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show More"
+visible = false
+
+[node name="Content" type="VBoxContainer" parent="Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Scopes" type="HBoxContainer" parent="Body/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 35)
+
+[node name="Scenario" type="Button" parent="Body/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scenario"
+toggle_mode = true
+
+[node name="Library" type="Button" parent="Body/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "My Library"
+toggle_mode = true
+
+[node name="Stock" type="Button" parent="Body/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Stock"
+toggle_mode = true
+
+[node name="WorkspaceStatus" type="Label" parent="Body/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="ReconcileMedia" type="Button" parent="Body/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Reconcile stored state"
+
+[node name="Gallery" parent="Body/Content" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
+unified_browser = true
+
+[node name="Supplied" parent="Body/Content" instance=ExtResource("3")]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+standalone_copy = true
+
+[node name="NewTextDialog" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+
+[node name="MediaDialog" parent="." instance=ExtResource("5")]
+unique_name_in_owner = true

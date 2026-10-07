@@ -1,0 +1,430 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource path="res://src/complex_encounter_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/simple_encounter_step_dialog.tscn" type="PackedScene" id="2"]
+[ext_resource path="res://src/simple_encounter_result_column.tscn" type="PackedScene" id="3"]
+[ext_resource path="res://src/simple_encounter_copy_dialog.tscn" type="PackedScene" id="4"]
+
+[node name="Complex Encounters" type="HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+split_offset = 245
+script = ExtResource("1")
+
+[node name="EncounterMaster" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(245, 0)
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="Heading" type="Label" parent="EncounterMaster"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+theme_override_font_sizes/font_size = 16
+text = "COMPLEX ENCOUNTERS"
+[node name="Description" type="Label" parent="EncounterMaster"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Physical, magic, item, word, and Rogue responses."
+autowrap_mode = 2
+[node name="EncounterSearch" type="LineEdit" parent="EncounterMaster"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Filter encounter ID or response…"
+[node name="EncounterCollection" type="ItemList" parent="EncounterMaster"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EncounterDetailScroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="EncounterDetail" type="VBoxContainer" parent="EncounterDetailScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RecordToolbar" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+[node name="EncounterIdentity" type="Label" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+theme_override_font_sizes/font_size = 15
+text = "Select a Complex Encounter"
+[node name="PreviousEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+layout_mode = 2
+text = "‹"
+[node name="NextEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+layout_mode = 2
+text = "›"
+[node name="Callers" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+disabled = true
+text = "Callers…"
+tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
+
+[node name="CopyEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Copy From…"
+[node name="NewEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+layout_mode = 2
+text = "New Encounter"
+
+[node name="PromptSettings" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+theme_override_constants/separation = 6
+[node name="PromptField" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Label" type="Label" parent="EncounterDetailScroll/EncounterDetail/PromptSettings/PromptField"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.560784, 0.721569, 0.9, 1)
+text = "PROMPT MESSAGE"
+[node name="PromptMessage" type="LineEdit" parent="EncounterDetailScroll/EncounterDetail/PromptSettings/PromptField"]
+unique_name_in_owner = true
+layout_mode = 2
+editable = false
+placeholder_text = "Choose a message…"
+[node name="FindPrompt" type="Button" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+layout_mode = 2
+text = "Find…"
+[node name="PreviewPrompt" type="Button" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+layout_mode = 2
+text = "Preview"
+[node name="EditPrompt" type="Button" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+layout_mode = 2
+text = "Edit String"
+[node name="CanBackOut" type="CheckBox" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Can back out"
+[node name="MaximumTimes" type="SpinBox" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+min_value = -128.0
+max_value = 127.0
+prefix = "Attempts  "
+[node name="TechnicalDetails" type="Button" parent="EncounterDetailScroll/EncounterDetail/PromptSettings"]
+layout_mode = 2
+toggle_mode = true
+text = "Technical details"
+[node name="TechnicalText" type="Label" parent="EncounterDetailScroll/EncounterDetail"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+autowrap_mode = 2
+
+[node name="ResponseHeading" type="Label" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "RESPONSE AUTHORING  ·  ORDERED CLASSIC FIELDS"
+[node name="ResponseColumns" type="GridContainer" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+columns = 2
+theme_override_constants/separation = 6
+
+[node name="PhysicalPanel" type="PanelContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Layout" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel"]
+layout_mode = 2
+[node name="Header" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel/Layout"]
+layout_mode = 2
+[node name="Title" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.94, 0.49, 0.49, 1)
+text = "PHYSICAL · EXACT SET"
+[node name="PhysicalResult" type="OptionButton" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel/Layout/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(105, 0)
+layout_mode = 2
+[node name="PhysicalRows" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+[node name="Hint" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/PhysicalPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Success requires exactly the checked actions."
+autowrap_mode = 2
+
+[node name="MagicPanel" type="PanelContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Layout" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/MagicPanel"]
+layout_mode = 2
+[node name="Title" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/MagicPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.76, 0.3, 1)
+text = "MAGIC · 10 ORDERED TESTS"
+[node name="MagicRows" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/MagicPanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+[node name="Hint" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/MagicPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Slot 1 enables Cast Spell / Use Scroll."
+autowrap_mode = 2
+
+[node name="ItemPanel" type="PanelContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Layout" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/ItemPanel"]
+layout_mode = 2
+[node name="Title" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/ItemPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.49, 0.79, 0.64, 1)
+text = "ITEMS · 5 ORDERED TESTS"
+[node name="ItemRows" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/ItemPanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+[node name="Hint" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/ItemPanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Slot 1 enables Use Item; unmatched → Result 4."
+autowrap_mode = 2
+
+[node name="TypedRoguePanel" type="PanelContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Layout" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel"]
+tooltip_text = "Classic lowercases input and compares only up to the first authored space."
+layout_mode = 2
+theme_override_constants/separation = 5
+[node name="TypedTitle" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.74, 0.49, 1, 1)
+text = "TYPED REPLY"
+[node name="TypedReply" type="LineEdit" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Type the accepted word…"
+[node name="TypedTools" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+layout_mode = 2
+[node name="TypedCount" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/TypedTools"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0 / 39 bytes"
+[node name="Lowercase" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/TypedTools"]
+layout_mode = 2
+text = "lowercase"
+[node name="TypedResult" type="OptionButton" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/TypedTools"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(105, 0)
+layout_mode = 2
+[node name="TypedHint" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "Classic lowercases input; matching stops at the first authored space."
+autowrap_mode = 2
+[node name="RogueTitle" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.41, 0.78, 0.91, 1)
+text = "ROGUE ACTION"
+[node name="RogueEnabled" type="CheckBox" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Enable Special / Rogue response"
+[node name="RogueChoice" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose Rogue Encounter…"
+[node name="RoguePreview" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.49, 0.79, 0.64, 1)
+text = "Disabled"
+autowrap_mode = 2
+[node name="RogueTools" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout"]
+layout_mode = 2
+[node name="RogueReset" type="CheckBox" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/RogueTools"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Reset flag"
+[node name="OpenRogue" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/RogueTools"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open"
+
+[node name="ResultHeader" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+[node name="ResultTitle" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResultHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "RESULT PROGRAMS  ·  FOUR COLUMNS × EIGHT ORDERED STEPS"
+[node name="PreviewSound" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultHeader"]
+layout_mode = 2
+text = "Preview Sound"
+[node name="OpenCodeHelper" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Code Helper"
+[node name="OpenManual" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Manual §17"
+[node name="ResultColumns" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 485)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+[node name="Result1" type="PanelContainer" parent="EncounterDetailScroll/EncounterDetail/ResultColumns"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="Steps" type="VBoxContainer" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1"]
+layout_mode = 2
+[node name="Heading" type="Label" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "RESULT 1"
+[node name="Step1" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step2" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step3" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step4" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step5" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step6" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step7" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Step8" type="Button" parent="EncounterDetailScroll/EncounterDetail/ResultColumns/Result1/Steps"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+alignment = 0
+[node name="Result2Column" parent="EncounterDetailScroll/EncounterDetail/ResultColumns" instance=ExtResource("3")]
+unique_name_in_owner = true
+[node name="Result3Column" parent="EncounterDetailScroll/EncounterDetail/ResultColumns" instance=ExtResource("3")]
+unique_name_in_owner = true
+[node name="Result4Column" parent="EncounterDetailScroll/EncounterDetail/ResultColumns" instance=ExtResource("3")]
+unique_name_in_owner = true
+
+[node name="FlowSummary" type="Button" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+text = "▸  RESULT FLOW SUMMARY"
+alignment = 0
+[node name="FlowText" type="Label" parent="EncounterDetailScroll/EncounterDetail"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+autowrap_mode = 2
+[node name="StatusRow" type="HBoxContainer" parent="EncounterDetailScroll/EncounterDetail"]
+layout_mode = 2
+[node name="EncounterDraftValidation" type="Label" parent="EncounterDetailScroll/EncounterDetail/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+[node name="ApplyEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apply Complex Encounter  Ctrl+Enter"
+[node name="CompileEncounterSlice" type="Button" parent="EncounterDetailScroll/EncounterDetail/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Validate + Compile"
+
+[node name="PromptPicker" type="PopupPanel" parent="."]
+unique_name_in_owner = true
+size = Vector2i(620, 430)
+[node name="Layout" type="VBoxContainer" parent="PromptPicker"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+[node name="Search" type="LineEdit" parent="PromptPicker/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search messages by number or text…"
+[node name="Results" type="ItemList" parent="PromptPicker/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ResponsePicker" type="PopupPanel" parent="."]
+unique_name_in_owner = true
+size = Vector2i(680, 480)
+[node name="Layout" type="VBoxContainer" parent="ResponsePicker"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+[node name="ResponsePickerHeading" type="Label" parent="ResponsePicker/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CHOOSE CONTENT"
+[node name="ResponsePickerSearch" type="LineEdit" parent="ResponsePicker/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search by name or ID…"
+[node name="ResponsePickerResults" type="ItemList" parent="ResponsePicker/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SimpleEncounterStepDialog" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+[node name="SimpleEncounterCopyDialog" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+
+[connection signal="text_changed" from="EncounterMaster/EncounterSearch" to="." method="_on_search_changed"]
+[connection signal="item_selected" from="EncounterMaster/EncounterCollection" to="." method="_select_summary"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/PreviousEncounter" to="." method="_previous"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/NextEncounter" to="." method="_next"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/CopyEncounter" to="." method="_copy"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/NewEncounter" to="." method="_create"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/PromptSettings/FindPrompt" to="." method="_find_prompt"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/PromptSettings/PreviewPrompt" to="." method="_preview_prompt"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/PromptSettings/EditPrompt" to="." method="_edit_prompt"]
+[connection signal="toggled" from="EncounterDetailScroll/EncounterDetail/PromptSettings/TechnicalDetails" to="." method="_toggle_technical"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/TypedTools/Lowercase" to="." method="_lowercase_typed"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/RogueChoice" to="." method="_choose_rogue"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResponseColumns/TypedRoguePanel/Layout/RogueTools/OpenRogue" to="." method="_open_rogue"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResultHeader/PreviewSound" to="." method="_preview_selected_sound"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResultHeader/OpenCodeHelper" to="." method="_open_code_helper"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/ResultHeader/OpenManual" to="." method="_open_manual"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/FlowSummary" to="." method="_toggle_flow"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/StatusRow/ApplyEncounter" to="." method="commit_selected"]
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/StatusRow/CompileEncounterSlice" to="." method="_on_compile_pressed"]
+
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]

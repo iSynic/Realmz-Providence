@@ -1,0 +1,109 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/item_form.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/item_identity_section.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://src/item_equipment_section.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://src/item_restrictions_section.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/item_special_section.tscn" id="5"]
+
+[node name="ItemForm" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+theme_override_constants/separation = 10
+
+[node name="SectionButtons" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Identity" type="Button" parent="SectionButtons"]
+layout_mode = 2
+toggle_mode = true
+text = "Identity & Use"
+
+[node name="Equipment" type="Button" parent="SectionButtons"]
+layout_mode = 2
+toggle_mode = true
+text = "Equipment & Damage"
+
+[node name="Special" type="Button" parent="SectionButtons"]
+layout_mode = 2
+toggle_mode = true
+text = "Special Behavior"
+
+[node name="Restrictions" type="Button" parent="SectionButtons"]
+layout_mode = 2
+toggle_mode = true
+text = "Restrictions"
+
+[node name="UsedBy" type="Button" parent="SectionButtons"]
+layout_mode = 2
+toggle_mode = true
+text = "Used By"
+
+[node name="BodyScroll" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Sections" type="VBoxContainer" parent="BodyScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Identity" parent="BodyScroll/Sections" instance=ExtResource("2")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Equipment" parent="BodyScroll/Sections" instance=ExtResource("3")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Special" parent="BodyScroll/Sections" instance=ExtResource("5")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Restrictions" parent="BodyScroll/Sections" instance=ExtResource("4")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UsedBy" type="PanelContainer" parent="BodyScroll/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ItemUsesPanel"
+
+[node name="Body" type="VBoxContainer" parent="BodyScroll/Sections/UsedBy"]
+layout_mode = 2
+
+[node name="UsedByCount" type="Label" parent="BodyScroll/Sections/UsedBy/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "USED BY · 0"
+autowrap_mode = 2
+
+[node name="Uses" type="VBoxContainer" parent="BodyScroll/Sections/UsedBy/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="UsesPages" type="HBoxContainer" parent="BodyScroll/Sections/UsedBy/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+
+[node name="UsesPrevious" type="Button" parent="BodyScroll/Sections/UsedBy/Body/UsesPages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "‹"
+
+[node name="UsesPage" type="Label" parent="BodyScroll/Sections/UsedBy/Body/UsesPages"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UsesNext" type="Button" parent="BodyScroll/Sections/UsedBy/Body/UsesPages"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "›"
+

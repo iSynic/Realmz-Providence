@@ -1,0 +1,97 @@
+[gd_resource type="Theme" load_steps=8 format=3]
+
+[sub_resource type="StyleBoxFlat" id="Normal"]
+bg_color = Color(0.071, 0.086, 0.106, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.153, 0.192, 0.235, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="Hover"]
+bg_color = Color(0.082, 0.137, 0.196, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.498, 0.765, 0.953, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="Focus"]
+bg_color = Color(0.082, 0.212, 0.306, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.498, 0.765, 0.953, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[sub_resource type="StyleBoxFlat" id="Disabled"]
+bg_color = Color(0.063, 0.071, 0.082, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.153, 0.192, 0.235, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="MenuNormal"]
+bg_color = Color(0, 0, 0, 0)
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 16.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="MenuHover"]
+bg_color = Color(0.082, 0.137, 0.196, 1)
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 16.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="MenuFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_bottom = 2
+border_color = Color(0.498, 0.765, 0.953, 1)
+
+[resource]
+Button/colors/font_color = Color(0.886, 0.918, 0.949, 1)
+Button/colors/font_disabled_color = Color(0.408, 0.467, 0.514, 1)
+Button/font_sizes/font_size = 14
+Button/styles/normal = SubResource("Normal")
+Button/styles/hover = SubResource("Hover")
+Button/styles/pressed = SubResource("Hover")
+Button/styles/disabled = SubResource("Disabled")
+Button/styles/focus = SubResource("Focus")
+MenuBar/colors/font_color = Color(0.659, 0.749, 0.827, 1)
+MenuBar/font_sizes/font_size = 14
+MenuBar/constants/h_separation = 0
+MenuBar/styles/normal = SubResource("MenuNormal")
+MenuBar/styles/hover = SubResource("MenuHover")
+MenuBar/styles/pressed = SubResource("MenuHover")
+MenuBar/styles/focus = SubResource("MenuFocus")

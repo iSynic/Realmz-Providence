@@ -1,0 +1,55 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://src/monster_set_badges.tscn" id="1"]
+[ext_resource type="Theme" path="res://theme/monster_inventory_theme.tres" id="2"]
+
+[node name="MonsterInventoryRow" type="Button"]
+custom_minimum_size = Vector2(0, 60)
+theme = ExtResource("2")
+size_flags_horizontal = 3
+toggle_mode = true
+alignment = 0
+
+[node name="Contents" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -6.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Portrait" type="TextureRect" parent="Contents"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Facts" type="VBoxContainer" parent="Contents"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="Name" type="Label" parent="Contents/Facts"]
+theme_type_variation = &"MonsterName"
+layout_mode = 2
+mouse_filter = 2
+text_overrun_behavior = 3
+
+[node name="Summary" type="Label" parent="Contents/Facts"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 9
+text_overrun_behavior = 3
+
+[node name="SetBadges" parent="Contents/Facts" instance=ExtResource("1")]
+visible = false
+layout_mode = 2

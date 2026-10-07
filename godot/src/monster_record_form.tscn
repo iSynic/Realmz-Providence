@@ -1,0 +1,1158 @@
+[gd_scene load_steps=9 format=3]
+[ext_resource type="Script" path="res://src/monster_record_form.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_record_field.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://src/monster_record_flag.tscn" id="3"]
+[ext_resource type="Theme" path="res://theme/scenario_workbench_theme.tres" id="4"]
+[ext_resource type="StyleBox" path="res://theme/monster_section_panel.tres" id="5"]
+[ext_resource type="PackedScene" path="res://src/monster_reward_field.tscn" id="6"]
+[ext_resource type="StyleBox" path="res://theme/monster_traits_panel.tres" id="7"]
+[ext_resource type="StyleBox" path="res://theme/monster_attack_panel.tres" id="8"]
+
+[node name="MonsterRecordForm" type="MarginContainer"]
+custom_minimum_size = Vector2(780, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+theme = ExtResource("4")
+script = ExtResource("1")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="MonsterRecordActions" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+
+[node name="RecordStatus" type="Label" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Select a scenario monster."
+text_overrun_behavior = 3
+
+[node name="CopyToLibrary" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+text = "Copy to Library..."
+disabled = true
+
+[node name="Duplicate" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+text = "Duplicate..."
+disabled = true
+
+[node name="ClearSelection" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+text = "Clear..."
+disabled = true
+
+[node name="Customize" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+visible = false
+text = "Customize…"
+[node name="Transfer" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+visible = false
+text = "Copy to Scenario…"
+[node name="Restore" type="Button" parent="Content/MonsterRecordActions"]
+layout_mode = 2
+visible = false
+text = "Restore source…"
+[node name="SetPanel" type="PanelContainer" parent="Content"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("5")
+
+[node name="MonsterSetToolbar" type="VBoxContainer" parent="Content/SetPanel"]
+layout_mode = 2
+
+
+[node name="Sets" type="HBoxContainer" parent="Content/SetPanel/MonsterSetToolbar"]
+layout_mode = 2
+
+
+[node name="Normal" type="Button" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Normal"
+toggle_mode = true
+disabled = true
+
+[node name="Monster" type="Button" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Monster"
+toggle_mode = true
+disabled = true
+
+[node name="Mega" type="Button" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Mega"
+toggle_mode = true
+disabled = true
+
+[node name="HideFromBestiary" type="CheckBox" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Hide from bestiary · Normal"
+disabled = true
+
+[node name="Variants" type="Button" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Variants..."
+disabled = true
+
+[node name="Switch" type="Button" parent="Content/SetPanel/MonsterSetToolbar/Sets"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Switch with..."
+disabled = true
+
+[node name="LibraryIdentity" type="HBoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+
+[node name="Label" type="Label" parent="Content/LibraryIdentity"]
+layout_mode = 2
+text = "Preferred scenario ID"
+
+[node name="PreferredScenarioId" type="LineEdit" parent="Content/LibraryIdentity"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(100, 32)
+editable = false
+
+[node name="Hint" type="Label" parent="Content/LibraryIdentity"]
+visible = false
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+size_flags_horizontal = 3
+text = "Allocation reviews occupied IDs before a scenario copy."
+[node name="LibraryBestiary" type="CheckBox" parent="Content/LibraryIdentity"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide from bestiary"
+disabled = true
+
+[node name="Sections" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="Overview" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Overview"
+toggle_mode = true
+
+[node name="Attacks" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Attacks & traits"
+toggle_mode = true
+
+[node name="Spells" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Spells"
+toggle_mode = true
+
+[node name="Items" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Items & rewards"
+toggle_mode = true
+
+[node name="Saves" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Saves"
+toggle_mode = true
+
+[node name="Conditions" type="Button" parent="Content/Sections"]
+layout_mode = 2
+text = "Conditions"
+toggle_mode = true
+
+[node name="ReferenceContext" type="Label" parent="Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+autowrap_mode = 2
+text = "Scenario required for reference selection and transfers."
+
+[node name="BodyScroll" type="ScrollContainer" parent="Content"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 280)
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Pages" type="VBoxContainer" parent="Content/BodyScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Overview" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Attacks" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+theme_override_constants/separation = 8
+
+[node name="Spells" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+theme_override_constants/separation = 8
+
+[node name="Items" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+theme_override_constants/separation = 8
+
+[node name="Saves" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+theme_override_constants/separation = 8
+
+[node name="Conditions" type="VBoxContainer" parent="Content/BodyScroll/Pages"]
+layout_mode = 2
+size_flags_horizontal = 3
+visible = false
+theme_override_constants/separation = 8
+
+[node name="IdentityAndDescription" type="HBoxContainer" parent="Content/BodyScroll/Pages/Overview"]
+custom_minimum_size = Vector2(0, 161)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+
+[node name="MonsterIdentity" type="PanelContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription"]
+theme_override_styles/panel = ExtResource("5")
+custom_minimum_size = Vector2(366, 0)
+size_flags_horizontal = 3
+
+
+[node name="Body" type="HBoxContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+
+[node name="Art" type="VBoxContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 0)
+theme_override_constants/separation = 4
+
+
+[node name="Pair" type="HBoxContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Portrait" type="TextureRect" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art/Pair"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 56)
+size_flags_horizontal = 0
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="FacingPortrait" type="TextureRect" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art/Pair"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 56)
+size_flags_horizontal = 0
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+
+[node name="AppearanceStatus" type="Label" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art"]
+layout_mode = 2
+text = "No artwork"
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 10
+
+
+[node name="ChooseIcon" type="Button" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Search icon"
+disabled = true
+tooltip_text = "Appearance browsing is not connected yet."
+
+
+[node name="OpenIcon" type="Button" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/Art"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open artwork…"
+disabled = true
+
+[node name="IdentityFields" type="VBoxContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+
+[node name="MonsterName" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/IdentityFields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MONSTER NAME"
+field_path = "displayName"
+
+
+[node name="MonsterMacro" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterIdentity/Body/IdentityFields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MONSTER MACRO"
+field_path = "deathMacro"
+
+
+[node name="MonsterDescription" type="PanelContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription"]
+theme_override_styles/panel = ExtResource("5")
+size_flags_horizontal = 3
+
+
+[node name="Body" type="VBoxContainer" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterDescription"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+
+[node name="Heading" type="Label" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterDescription/Body"]
+theme_override_font_sizes/font_size = 12
+layout_mode = 2
+text = "Monster Description"
+
+
+[node name="Description" type="TextEdit" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterDescription/Body"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 116)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
+
+[node name="DescriptionScope" type="Label" parent="Content/BodyScroll/Pages/Overview/IdentityAndDescription/MonsterDescription/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+text = "Description is shared across difficulty sets."
+
+
+[node name="StatsAndBehavior" type="HBoxContainer" parent="Content/BodyScroll/Pages/Overview"]
+custom_minimum_size = Vector2(0, 241)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+
+[node name="CombatStats" type="PanelContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior"]
+theme_override_styles/panel = ExtResource("5")
+size_flags_horizontal = 3
+
+
+[node name="Body" type="VBoxContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+
+[node name="Heading" type="Label" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body"]
+theme_override_font_sizes/font_size = 12
+layout_mode = 2
+text = "Combat Stats"
+
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+
+[node name="hitDice" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "STAMINA LEVEL"
+field_path = "hitDice"
+
+
+[node name="staminaBonus" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "BONUS STAMINA"
+field_path = "staminaBonus"
+
+
+[node name="agility" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "AGILITY"
+field_path = "agility"
+
+
+[node name="movementMax" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MOVE MAX"
+field_path = "movementMax"
+
+
+[node name="armor" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "ARMOR RATING"
+field_path = "armor"
+
+
+[node name="magicResistance" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MAGIC RESIST %"
+field_path = "magicResistance"
+
+
+[node name="magicToHit" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MAGIC + REQUIRED TO HIT"
+field_path = "magicToHit"
+
+
+[node name="experience" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "VICTORY POINTS"
+field_path = "experience"
+
+
+[node name="spellPoints" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "SPELL POINTS"
+field_path = "spellPoints"
+
+
+[node name="maxSpellPoints" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/CombatStats/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MAX SPELL POINTS"
+field_path = "maxSpellPoints"
+
+
+[node name="MonsterBehavior" type="PanelContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior"]
+theme_override_styles/panel = ExtResource("5")
+size_flags_horizontal = 3
+
+
+[node name="Body" type="VBoxContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 7
+
+
+[node name="Heading" type="Label" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body"]
+theme_override_font_sizes/font_size = 12
+layout_mode = 2
+text = "Behavior"
+
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+
+[node name="traitor" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "SIDE"
+field_path = "traitor"
+
+
+[node name="size" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "SIZE"
+field_path = "size"
+
+
+[node name="requiredWeapon" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "REQUIRED WEAPON"
+field_path = "requiredWeapon"
+
+
+[node name="attackCount" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "ATTACKS"
+field_path = "attackCount"
+
+
+[node name="magicAttackCount" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "MAGICAL ATTACKS"
+field_path = "magicAttackCount"
+
+
+[node name="damageBonus" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "DAMAGE PLUS"
+field_path = "damageBonus"
+
+
+[node name="castPercent" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "CAST SPELL %"
+field_path = "castPercent"
+
+
+[node name="runPercent" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "RUN AWAY %"
+field_path = "runPercent"
+
+
+[node name="surrenderPercent" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "SURRENDER %"
+field_path = "surrenderPercent"
+
+
+[node name="missilePercent" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "USE MISSILE %"
+field_path = "missilePercent"
+
+
+[node name="canSummon" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_label = "SUMMON ELIGIBLE"
+field_path = "canSummon"
+
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Attacks"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Spells"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Items"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Saves"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Conditions"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="weapon" parent="Content/BodyScroll/Pages/Overview/StatsAndBehavior/MonsterBehavior/Body/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "weapon"
+field_label = "WEAPON USED"
+
+[node name="AttackNumber0" type="Label" parent="Content/BodyScroll/Pages/Attacks/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
+text = "Attack 1"
+vertical_alignment = 1
+
+[node name="attacks_0_0" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.0.0"
+field_label = "Damage Low"
+
+[node name="attacks_0_1" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.0.1"
+field_label = "Damage High"
+
+[node name="attacks_0_2" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.0.2"
+field_label = "Form"
+
+[node name="attacks_0_3" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.0.3"
+field_label = "Special"
+
+[node name="AttackNumber1" type="Label" parent="Content/BodyScroll/Pages/Attacks/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
+text = "Attack 2"
+vertical_alignment = 1
+
+[node name="attacks_1_0" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.1.0"
+field_label = "Damage Low"
+
+[node name="attacks_1_1" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.1.1"
+field_label = "Damage High"
+
+[node name="attacks_1_2" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.1.2"
+field_label = "Form"
+
+[node name="attacks_1_3" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.1.3"
+field_label = "Special"
+
+[node name="AttackNumber2" type="Label" parent="Content/BodyScroll/Pages/Attacks/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
+text = "Attack 3"
+vertical_alignment = 1
+
+[node name="attacks_2_0" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.2.0"
+field_label = "Damage Low"
+
+[node name="attacks_2_1" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.2.1"
+field_label = "Damage High"
+
+[node name="attacks_2_2" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.2.2"
+field_label = "Form"
+
+[node name="attacks_2_3" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.2.3"
+field_label = "Special"
+
+[node name="AttackNumber3" type="Label" parent="Content/BodyScroll/Pages/Attacks/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
+text = "Attack 4"
+vertical_alignment = 1
+
+[node name="attacks_3_0" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.3.0"
+field_label = "Damage Low"
+
+[node name="attacks_3_1" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.3.1"
+field_label = "Damage High"
+
+[node name="attacks_3_2" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.3.2"
+field_label = "Form"
+
+[node name="attacks_3_3" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.3.3"
+field_label = "Special"
+
+[node name="AttackNumber4" type="Label" parent="Content/BodyScroll/Pages/Attacks/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
+text = "Attack 5"
+vertical_alignment = 1
+
+[node name="attacks_4_0" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.4.0"
+field_label = "Damage Low"
+
+[node name="attacks_4_1" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.4.1"
+field_label = "Damage High"
+
+[node name="attacks_4_2" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.4.2"
+field_label = "Form"
+
+[node name="attacks_4_3" parent="Content/BodyScroll/Pages/Attacks/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "attacks.4.3"
+field_label = "Special"
+
+[node name="TraitsPanel" type="PanelContainer" parent="Content/BodyScroll/Pages/Attacks"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("7")
+[node name="Body" type="VBoxContainer" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel"]
+layout_mode = 2
+[node name="Heading" type="Label" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body"]
+layout_mode = 2
+text = "TRAITS"
+[node name="Fields" type="GridContainer" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body"]
+layout_mode = 2
+columns = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="typeFlags_0" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.0"
+field_label = "Magic Using"
+
+[node name="typeFlags_1" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.1"
+field_label = "Undead"
+
+[node name="typeFlags_2" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.2"
+field_label = "Demonic/Devil"
+
+[node name="typeFlags_3" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.3"
+field_label = "Reptilian"
+
+[node name="typeFlags_4" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.4"
+field_label = "Very Evil"
+
+[node name="typeFlags_5" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.5"
+field_label = "Intelligent"
+
+[node name="typeFlags_6" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.6"
+field_label = "Giant Size"
+
+[node name="typeFlags_7" parent="Content/BodyScroll/Pages/Attacks/TraitsPanel/Body/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "typeFlags.7"
+field_label = "Non-Humanoid"
+
+[node name="spells_0" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.0"
+field_label = "Spell 1"
+
+[node name="spells_1" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.1"
+field_label = "Spell 2"
+
+[node name="spells_2" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.2"
+field_label = "Spell 3"
+
+[node name="spells_3" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.3"
+field_label = "Spell 4"
+
+[node name="spells_4" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.4"
+field_label = "Spell 5"
+
+[node name="spells_5" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.5"
+field_label = "Spell 6"
+
+[node name="spells_6" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.6"
+field_label = "Spell 7"
+
+[node name="spells_7" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.7"
+field_label = "Spell 8"
+
+[node name="spells_8" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.8"
+field_label = "Spell 9"
+
+[node name="spells_9" parent="Content/BodyScroll/Pages/Spells/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "spells.9"
+field_label = "Spell 10"
+
+[node name="items_0" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.0"
+field_label = "Item 1"
+
+[node name="items_1" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.1"
+field_label = "Item 2"
+
+[node name="items_2" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.2"
+field_label = "Item 3"
+
+[node name="items_3" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.3"
+field_label = "Item 4"
+
+[node name="items_4" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.4"
+field_label = "Item 5"
+
+[node name="items_5" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "items.5"
+field_label = "Item 6"
+
+[node name="money_0" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("6")]
+layout_mode = 2
+field_path = "money.0"
+field_label = "Gold"
+
+[node name="money_1" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("6")]
+layout_mode = 2
+field_path = "money.1"
+field_label = "Gems"
+
+[node name="money_2" parent="Content/BodyScroll/Pages/Items/Fields" instance=ExtResource("6")]
+layout_mode = 2
+field_path = "money.2"
+field_label = "Jewelry"
+
+[node name="spellImmunities_0" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.0"
+field_label = "CHARM IMMUNE"
+
+[node name="spellImmunities_1" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.1"
+field_label = "HEAT IMMUNE"
+
+[node name="spellImmunities_2" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.2"
+field_label = "COLD IMMUNE"
+
+[node name="spellImmunities_3" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.3"
+field_label = "ELECTRICAL IMMUNE"
+
+[node name="spellImmunities_4" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.4"
+field_label = "CHEMICAL IMMUNE"
+
+[node name="spellImmunities_5" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("3")]
+layout_mode = 2
+field_path = "spellImmunities.5"
+field_label = "MENTAL IMMUNE"
+
+[node name="saves_0" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.0"
+field_label = "CHARM SAVE"
+
+[node name="saves_1" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.1"
+field_label = "HEAT SAVE"
+
+[node name="saves_2" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.2"
+field_label = "COLD SAVE"
+
+[node name="saves_3" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.3"
+field_label = "ELECTRICAL SAVE"
+
+[node name="saves_4" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.4"
+field_label = "CHEMICAL SAVE"
+
+[node name="saves_5" parent="Content/BodyScroll/Pages/Saves/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "saves.5"
+field_label = "MENTAL SAVE"
+
+[node name="conditions_0" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.0"
+field_label = "RUNNING"
+
+[node name="conditions_1" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.1"
+field_label = "HELPLESS"
+
+[node name="conditions_2" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.2"
+field_label = "HINDERED"
+
+[node name="conditions_3" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.3"
+field_label = "CURSED"
+
+[node name="conditions_4" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.4"
+field_label = "MAGIC AURA"
+
+[node name="conditions_5" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.5"
+field_label = "STUPID"
+
+[node name="conditions_6" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.6"
+field_label = "SLOW"
+
+[node name="conditions_7" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.7"
+field_label = "SHIELD FROM HITS"
+
+[node name="conditions_8" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.8"
+field_label = "SHIELD FROM PROJECTILES"
+
+[node name="conditions_9" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.9"
+field_label = "POISONED"
+
+[node name="conditions_10" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.10"
+field_label = "REGENERATING"
+
+[node name="conditions_11" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.11"
+field_label = "FIRE PROTECTION"
+
+[node name="conditions_12" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.12"
+field_label = "COLD PROTECTION"
+
+[node name="conditions_13" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.13"
+field_label = "ELECTRICAL PROTECTION"
+
+[node name="conditions_14" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.14"
+field_label = "CHEMICAL PROTECTION"
+
+[node name="conditions_15" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.15"
+field_label = "MENTAL PROTECTION"
+
+[node name="conditions_16" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.16"
+field_label = "1ST LEVEL SPELL PROTECTION"
+
+[node name="conditions_17" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.17"
+field_label = "2ND LEVEL SPELL PROTECTION"
+
+[node name="conditions_18" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.18"
+field_label = "3RD LEVEL SPELL PROTECTION"
+
+[node name="conditions_19" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.19"
+field_label = "4TH LEVEL SPELL PROTECTION"
+
+[node name="conditions_20" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.20"
+field_label = "5TH LEVEL SPELL PROTECTION"
+
+[node name="conditions_21" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.21"
+field_label = "STRONG"
+
+[node name="conditions_22" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.22"
+field_label = "PROTECTION FROM EVIL"
+
+[node name="conditions_23" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.23"
+field_label = "SPEED"
+
+[node name="conditions_24" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.24"
+field_label = "INVISIBLE"
+
+[node name="conditions_25" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.25"
+field_label = "ANIMATED"
+
+[node name="conditions_26" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.26"
+field_label = "STONED"
+
+[node name="conditions_27" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.27"
+field_label = "BLIND"
+
+[node name="conditions_28" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.28"
+field_label = "DISEASED"
+
+[node name="conditions_29" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.29"
+field_label = "CONFUSED"
+
+[node name="conditions_30" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.30"
+field_label = "REFLECT SPELLS"
+
+[node name="conditions_31" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.31"
+field_label = "REFLECT ATTACKS"
+
+[node name="conditions_32" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.32"
+field_label = "ATTACK BONUS"
+
+[node name="conditions_33" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.33"
+field_label = "ABSORB SPELL POINTS"
+
+[node name="conditions_34" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.34"
+field_label = "DRAIN SPELL POINTS"
+
+[node name="conditions_35" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.35"
+field_label = "ABSORB SPELL POINTS FROM ATTACKS"
+
+[node name="conditions_36" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.36"
+field_label = "HINDER ATTACK"
+
+[node name="conditions_37" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.37"
+field_label = "HINDER DEFENSE"
+
+[node name="conditions_38" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.38"
+field_label = "DEFENSE BONUS"
+
+[node name="conditions_39" parent="Content/BodyScroll/Pages/Conditions/Fields" instance=ExtResource("2")]
+layout_mode = 2
+field_path = "conditions.39"
+field_label = "SILENCED"
+
+[node name="DraftFooter" type="PanelContainer" parent="Content"]
+layout_mode = 2
+theme_override_styles/panel = ExtResource("5")
+
+[node name="Row" type="HBoxContainer" parent="Content/DraftFooter"]
+layout_mode = 2
+
+
+[node name="UsedBy" type="Button" parent="Content/DraftFooter/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 0
+text = "Used by..."
+disabled = true
+
+[node name="DraftStatus" type="Label" parent="Content/DraftFooter/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Select a record."
+autowrap_mode = 2
+
+[node name="DiscardDraft" type="Button" parent="Content/DraftFooter/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Discard"
+disabled = true
+
+[node name="FirstError" type="Button" parent="Content/DraftFooter/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "First error"
+disabled = true
+
+[node name="ApplyDraft" type="Button" parent="Content/DraftFooter/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply"
+disabled = true
+
+[node name="CheckResult" type="Button" parent="Content/DraftFooter/Row"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+text = "Check result"
+disabled = true

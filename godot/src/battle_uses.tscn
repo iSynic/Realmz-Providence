@@ -1,0 +1,6 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://src/monster_uses.tscn" id="1"]
+[ext_resource type="Script" path="res://src/battle_uses.gd" id="2"]
+[node name="BattleUses" instance=ExtResource("1")]
+title = "Battle Used By"
+script = ExtResource("2")

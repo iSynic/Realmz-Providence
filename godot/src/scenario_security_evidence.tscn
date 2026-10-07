@@ -1,0 +1,176 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource path="res://src/scenario_workbench_frame.tscn" type="PackedScene" id="1"]
+[ext_resource path="res://src/scenario_security_editor.gd" type="Script" id="2"]
+[ext_resource path="res://src/scenario_registration_results.tscn" type="PackedScene" id="3"]
+[ext_resource path="res://src/scenario_startup_source_picker.tscn" type="PackedScene" id="4"]
+
+[node name="ScenarioSecurityEvidence" instance=ExtResource("1")]
+script = ExtResource("2")
+stable_route_id = "scenario.registration"
+projection_method = "scenario-security.open"
+write_method = "scenario-security.update"
+section_title = "Security"
+
+[node name="Title" parent="Header" index="0"]
+text = "SECURITY & REGISTRATION"
+
+[node name="SectionHeading" parent="Body/FormPanel/Form" index="0"]
+text = "SECURITY · SCENARIO CODE SEGMENTS"
+
+[node name="ApplySection" parent="Body/FormPanel/Form/Footer" index="0"]
+text = "Apply Security Codes"
+
+[node name="SecurityReason" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="UnlockEditing" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Unlock Editing"
+size_flags_horizontal = 0
+
+[node name="ChooseOriginalSource" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Choose original startup file…"
+visible = false
+size_flags_horizontal = 0
+
+[node name="SecuritySegments" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+
+[node name="Segment1Field" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Caption" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment1Field"]
+layout_mode = 2
+text = "CODE SEGMENT 1"
+theme_type_variation = &"ScenarioField"
+
+[node name="CodeSegment1" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment1Field"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+editable = false
+
+[node name="Segment1Count" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment1Field"]
+layout_mode = 2
+text = "0 / 20 ASCII bytes"
+theme_type_variation = &"ItemContext"
+
+[node name="Segment2Field" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Caption" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment2Field"]
+layout_mode = 2
+text = "CODE SEGMENT 2"
+theme_type_variation = &"ScenarioField"
+
+[node name="CodeSegment2" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment2Field"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+editable = false
+
+[node name="Segment2Count" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/SecuritySegments/Segment2Field"]
+layout_mode = 2
+text = "0 / 20 ASCII bytes"
+theme_type_variation = &"ItemContext"
+
+[node name="Consequence" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Changing the segments changes the registration codes players need. Apply saves both together; Lock preserves this draft."
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"
+
+[node name="GeneratorHeading" type="HBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorHeading"]
+layout_mode = 2
+text = "REGISTRATION CODE GENERATOR"
+size_flags_horizontal = 3
+theme_type_variation = &"ScenarioHeading"
+
+[node name="GenerateCodes" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorHeading"]
+layout_mode = 2
+text = "Generate codes"
+disabled = true
+
+[node name="GeneratorFields" type="GridContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 16
+
+[node name="RegistrationNameField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Caption" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields/RegistrationNameField"]
+layout_mode = 2
+text = "REGISTRATION NAME · 26 ASCII BYTES"
+theme_type_variation = &"ScenarioField"
+
+[node name="RegistrationName" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields/RegistrationNameField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+editable = false
+
+[node name="SerialNumberField" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Caption" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields/SerialNumberField"]
+layout_mode = 2
+text = "REALMZ SERIAL · SIGNED 32-BIT"
+theme_type_variation = &"ScenarioField"
+
+[node name="SerialNumber" type="LineEdit" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/GeneratorFields/SerialNumberField"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 34)
+editable = false
+
+[node name="GeneratorContext" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"
+
+[node name="ResultsScroll" type="ScrollContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 220)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RegistrationResults" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/ResultsScroll" instance=ExtResource("3")]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="EvidenceDisclosure" type="Button" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+text = "Source and algorithm details"
+toggle_mode = true
+alignment = 0
+
+[node name="EvidenceDetails" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll/Fields"]
+layout_mode = 2
+visible = false
+
+[node name="SourceEvidence" type="Label" parent="Body/FormPanel/Form/WorkbenchScroll/Fields/EvidenceDetails"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="SecurityReview" type="ConfirmationDialog" parent="."]
+title = "Review security changes"
+size = Vector2i(700, 260)
+transient = true
+exclusive = true
+ok_button_text = "Use reviewed draft"
+
+[node name="StartupSourcePicker" parent="." instance=ExtResource("4")]

@@ -1,0 +1,4847 @@
+[gd_scene load_steps=7 format=3]
+[ext_resource type="Script" path="res://src/caste_editor.gd" id="1"]
+[ext_resource type="Script" path="res://src/rule_authoring_form.gd" id="2"]
+[ext_resource type="Theme" path="res://src/item_theme.tres" id="3"]
+[ext_resource type="PackedScene" path="res://src/character_navigation.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://src/attribute_limits.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://src/rule_source_header.tscn" id="6"]
+
+[node name="CasteEditor" type="HBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+theme = ExtResource("3")
+rule_kind = "caste"
+
+[node name="Catalog" type="VBoxContainer" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(270, 0)
+
+[node name="Label1" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "CASTES"
+theme_type_variation = "ItemTitle"
+
+[node name="Routes" parent="Catalog" instance=ExtResource("4")]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "Stock · Scenario · Empty slots"
+theme_type_variation = "ItemContext"
+
+[node name="Label3" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "SEARCH NAME OR ID"
+theme_type_variation = "ItemFieldLabel"
+
+[node name="RecordSearch" type="LineEdit" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+clear_button_enabled = true
+
+[node name="OwnershipFilter" type="OptionButton" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="RecordStatus" type="Label" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Open a project to browse rules."
+autowrap_mode = 2
+
+[node name="RecordList" type="ItemList" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+allow_reselect = true
+max_text_lines = 2
+
+[node name="NewRule" type="Button" parent="Catalog"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "New caste…"
+
+[node name="Label4" type="Label" parent="Catalog"]
+layout_mode = 2
+text = "IDs stay fixed. Clear preserves callers."
+theme_type_variation = "ItemContext"
+
+[node name="Main" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Header" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="RecordIdentity" type="Label" parent="Main/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Select a caste"
+size_flags_horizontal = 3
+theme_type_variation = "ItemTitle"
+
+[node name="DuplicateRule" type="Button" parent="Main/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Duplicate…"
+
+[node name="ClearRule" type="Button" parent="Main/Header"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Clear…"
+
+[node name="RuleSources" parent="Main" instance=ExtResource("6")]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="DraftStatus" type="Label" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+
+[node name="SubmissionNotice" type="Label" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+visible = false
+autowrap_mode = 2
+
+[node name="Recovery" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="CheckOriginalResult" type="Button" parent="Main/Recovery"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Check original result"
+visible = false
+
+[node name="ReviewSavedVersion" type="Button" parent="Main/Recovery"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Review saved version…"
+visible = false
+
+[node name="SectionTabs" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+
+[node name="Section0" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Profile"
+toggle_mode = true
+metadata/section = "Profile"
+
+[node name="Section1" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Casting & Attacks"
+toggle_mode = true
+metadata/section = "Casting & Attacks"
+
+[node name="Section2" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Equipment"
+toggle_mode = true
+metadata/section = "Equipment"
+
+[node name="Section3" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Progression"
+toggle_mode = true
+metadata/section = "Progression"
+
+[node name="Section4" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Abilities"
+toggle_mode = true
+metadata/section = "Abilities"
+
+[node name="Section5" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Conditions"
+toggle_mode = true
+metadata/section = "Conditions"
+
+[node name="Section6" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Items"
+toggle_mode = true
+metadata/section = "Items"
+
+[node name="Section7" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "Races"
+toggle_mode = true
+metadata/section = "Races"
+
+[node name="Section8" type="Button" parent="Main/SectionTabs"]
+layout_mode = 2
+text = "References"
+toggle_mode = true
+metadata/section = "References"
+
+[node name="RuleDetailScroll" type="ScrollContainer" parent="Main"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RuleForm" type="VBoxContainer" parent="Main/RuleDetailScroll"]
+layout_mode = 2
+unique_name_in_owner = true
+size_flags_horizontal = 3
+script = ExtResource("2")
+
+[node name="Profile" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Profile"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section5" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label6" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+text = "IDENTITY & MISCELLANEOUS"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="Field7" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field7"]
+layout_mode = 2
+text = "Caste name"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="LineEdit" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field7"]
+layout_mode = 2
+metadata/field_path = ["definition", "name"]
+custom_minimum_size = Vector2(104, 0)
+size_flags_horizontal = 3
+
+[node name="Label8" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+text = "Project label"
+theme_type_variation = "ItemContext"
+
+[node name="Field9" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field9"]
+layout_mode = 2
+text = "Caste Class"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field9"]
+layout_mode = 2
+metadata/field_path = ["definition", "casteClass"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field10" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field10"]
+layout_mode = 2
+text = "Minimum Age Group"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field10"]
+layout_mode = 2
+metadata/field_path = ["definition", "minimumAgeGroup"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field11" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field11"]
+layout_mode = 2
+text = "Movement Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field11"]
+layout_mode = 2
+metadata/field_path = ["definition", "movementBonus"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field12" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field12"]
+layout_mode = 2
+text = "Magic Resistance Multiplier"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field12"]
+layout_mode = 2
+metadata/field_path = ["definition", "magicResistanceMultiplier"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field13" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field13"]
+layout_mode = 2
+text = "Two Hand Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field13"]
+layout_mode = 2
+metadata/field_path = ["definition", "twoHandBonus"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field14" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field14"]
+layout_mode = 2
+text = "Maximum Stamina Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field14"]
+layout_mode = 2
+metadata/field_path = ["definition", "maximumStaminaBonus"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field15" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field15"]
+layout_mode = 2
+text = "Start Money"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section5/Fields/Field15"]
+layout_mode = 2
+metadata/field_path = ["definition", "startMoney"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Section16" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label17" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields"]
+layout_mode = 2
+text = "ATTRIBUTE LIMITS"
+theme_type_variation = "ItemRestrictionsHeading"
+
+[node name="AttributeLimits" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields" instance=ExtResource("5")]
+layout_mode = 2
+
+[node name="Field36" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields/Field36"]
+layout_mode = 2
+text = "Can use missiles"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields/Field36"]
+layout_mode = 2
+metadata/field_path = ["definition", "canUseMissile"]
+custom_minimum_size = Vector2(104, 0)
+
+[node name="Field37" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields/Field37"]
+layout_mode = 2
+text = "Gets missile bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Profile/Sections/Section16/Fields/Field37"]
+layout_mode = 2
+metadata/field_path = ["definition", "getsMissileBonus"]
+custom_minimum_size = Vector2(104, 0)
+
+[node name="Section38" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Profile"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Section38"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label39" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Section38/Fields"]
+layout_mode = 2
+text = "PROJECT NOTE"
+theme_type_variation = "ItemSpecialHeading"
+
+[node name="Field40" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Profile/Section38/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Profile/Section38/Fields/Field40"]
+layout_mode = 2
+text = "Note"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="TextEdit" parent="Main/RuleDetailScroll/RuleForm/Profile/Section38/Fields/Field40"]
+layout_mode = 2
+metadata/field_path = ["definition", "description"]
+custom_minimum_size = Vector2(0, 52)
+size_flags_horizontal = 3
+
+[node name="CastingAttacks" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Casting & Attacks"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section41" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label42" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+text = "SPELLCASTING"
+theme_type_variation = "ItemRestrictionsHeading"
+
+[node name="Field43" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field43"]
+layout_mode = 2
+text = "Sorcerer · Enabled"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field43"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 0, 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field44" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field44"]
+layout_mode = 2
+text = "Sorcerer · Start level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field44"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 0, 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field45" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field45"]
+layout_mode = 2
+text = "Sorcerer · Max level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field45"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 0, 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field46" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field46"]
+layout_mode = 2
+text = "Priest · Enabled"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field46"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 1, 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field47" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field47"]
+layout_mode = 2
+text = "Priest · Start level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field47"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 1, 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field48" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field48"]
+layout_mode = 2
+text = "Priest · Max level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field48"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 1, 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field49" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field49"]
+layout_mode = 2
+text = "Enchanter · Enabled"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field49"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 2, 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field50" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field50"]
+layout_mode = 2
+text = "Enchanter · Start level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field50"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 2, 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field51" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field51"]
+layout_mode = 2
+text = "Enchanter · Max level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field51"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 2, 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field52" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field52"]
+layout_mode = 2
+text = "Special · Enabled"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field52"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 3, 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field53" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field53"]
+layout_mode = 2
+text = "Special · Start level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field53"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 3, 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field54" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field54"]
+layout_mode = 2
+text = "Special · Max level"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field54"]
+layout_mode = 2
+metadata/field_path = ["definition", "spellcasterRows", 3, 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field55" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field55"]
+layout_mode = 2
+text = "Maximum spells per round"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields/Field55"]
+layout_mode = 2
+metadata/field_path = ["nativeFields", "maximumSpellsPerRound"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Label56" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section41/Fields"]
+layout_mode = 2
+text = "Saved for Classic. Rebuilt has no supported projection for this limit."
+theme_type_variation = "ItemContext"
+
+[node name="Section57" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label58" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields"]
+layout_mode = 2
+text = "ATTACKS"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="attackLevelsGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field59" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field59"]
+layout_mode = 2
+text = "3 / 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field59"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field60" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field60"]
+layout_mode = 2
+text = "2 / 1"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field60"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field61" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field61"]
+layout_mode = 2
+text = "5 / 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field61"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field62" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field62"]
+layout_mode = 2
+text = "3 / 1"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field62"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field63" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field63"]
+layout_mode = 2
+text = "7 / 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field63"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field64" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field64"]
+layout_mode = 2
+text = "4 / 1"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field64"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field65" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field65"]
+layout_mode = 2
+text = "9 / 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field65"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field66" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field66"]
+layout_mode = 2
+text = "5 / 1"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field66"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field67" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field67"]
+layout_mode = 2
+text = "11 / 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field67"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field68" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field68"]
+layout_mode = 2
+text = "6 / 1"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/attackLevelsGrid/Field68"]
+layout_mode = 2
+metadata/field_path = ["definition", "attackLevels", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field69" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/Field69"]
+layout_mode = 2
+text = "Bonus Attacks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/Field69"]
+layout_mode = 2
+metadata/field_path = ["definition", "bonusAttacks"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field70" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/Field70"]
+layout_mode = 2
+text = "Maximum Attacks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/CastingAttacks/Sections/Section57/Fields/Field70"]
+layout_mode = 2
+metadata/field_path = ["definition", "maximumAttacks"]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Equipment" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Equipment"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section71" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label72" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields"]
+layout_mode = 2
+text = "STARTING ITEMS · TWENTY FIXED SLOTS"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="Slots" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields"]
+layout_mode = 2
+columns = 2
+size_flags_horizontal = 3
+
+[node name="Slot0" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label73" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot0"]
+layout_mode = 2
+text = "01"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem0" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot0"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 0
+
+[node name="OpenItem0" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot0"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 0
+
+[node name="Slot1" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label74" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot1"]
+layout_mode = 2
+text = "02"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem1" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot1"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 1
+
+[node name="OpenItem1" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot1"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 1
+
+[node name="Slot2" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label75" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot2"]
+layout_mode = 2
+text = "03"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem2" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot2"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 2
+
+[node name="OpenItem2" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot2"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 2
+
+[node name="Slot3" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label76" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot3"]
+layout_mode = 2
+text = "04"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem3" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot3"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 3
+
+[node name="OpenItem3" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot3"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 3
+
+[node name="Slot4" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label77" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot4"]
+layout_mode = 2
+text = "05"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem4" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot4"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 4
+
+[node name="OpenItem4" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot4"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 4
+
+[node name="Slot5" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label78" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot5"]
+layout_mode = 2
+text = "06"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem5" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot5"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 5
+
+[node name="OpenItem5" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot5"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 5
+
+[node name="Slot6" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label79" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot6"]
+layout_mode = 2
+text = "07"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem6" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot6"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 6
+
+[node name="OpenItem6" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot6"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 6
+
+[node name="Slot7" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label80" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot7"]
+layout_mode = 2
+text = "08"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem7" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot7"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 7
+
+[node name="OpenItem7" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot7"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 7
+
+[node name="Slot8" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label81" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot8"]
+layout_mode = 2
+text = "09"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem8" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot8"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 8
+
+[node name="OpenItem8" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot8"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 8
+
+[node name="Slot9" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label82" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot9"]
+layout_mode = 2
+text = "10"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem9" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot9"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 9
+
+[node name="OpenItem9" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot9"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 9
+
+[node name="Slot10" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label83" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot10"]
+layout_mode = 2
+text = "11"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem10" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot10"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 10
+
+[node name="OpenItem10" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot10"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 10
+
+[node name="Slot11" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label84" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot11"]
+layout_mode = 2
+text = "12"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem11" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot11"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 11
+
+[node name="OpenItem11" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot11"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 11
+
+[node name="Slot12" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label85" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot12"]
+layout_mode = 2
+text = "13"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem12" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot12"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 12
+
+[node name="OpenItem12" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot12"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 12
+
+[node name="Slot13" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label86" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot13"]
+layout_mode = 2
+text = "14"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem13" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot13"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 13
+
+[node name="OpenItem13" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot13"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 13
+
+[node name="Slot14" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label87" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot14"]
+layout_mode = 2
+text = "15"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem14" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot14"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 14
+
+[node name="OpenItem14" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot14"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 14
+
+[node name="Slot15" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label88" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot15"]
+layout_mode = 2
+text = "16"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem15" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot15"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 15
+
+[node name="OpenItem15" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot15"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 15
+
+[node name="Slot16" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label89" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot16"]
+layout_mode = 2
+text = "17"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem16" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot16"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 16
+
+[node name="OpenItem16" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot16"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 16
+
+[node name="Slot17" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label90" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot17"]
+layout_mode = 2
+text = "18"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem17" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot17"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 17
+
+[node name="OpenItem17" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot17"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 17
+
+[node name="Slot18" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label91" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot18"]
+layout_mode = 2
+text = "19"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem18" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot18"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 18
+
+[node name="OpenItem18" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot18"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 18
+
+[node name="Slot19" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label92" type="Label" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot19"]
+layout_mode = 2
+text = "20"
+theme_type_variation = "ItemContext"
+
+[node name="ChooseItem19" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot19"]
+layout_mode = 2
+text = "Empty · Choose…"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(210, 0)
+text_overrun_behavior = 3
+metadata/item_slot = 19
+
+[node name="OpenItem19" type="Button" parent="Main/RuleDetailScroll/RuleForm/Equipment/Sections/Section71/Fields/Slots/Slot19"]
+layout_mode = 2
+text = "Open"
+disabled = true
+metadata/open_item_slot = 19
+
+[node name="Progression" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Progression"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section93" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label94" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields"]
+layout_mode = 2
+text = "VICTORY POINTS"
+theme_type_variation = "ItemSpecialHeading"
+
+[node name="victoryThresholdsGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields"]
+layout_mode = 2
+columns = 3
+size_flags_horizontal = 3
+
+[node name="Field95" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field95"]
+layout_mode = 2
+text = "Level 2"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field95"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field96" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field96"]
+layout_mode = 2
+text = "Level 3"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field96"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field97" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field97"]
+layout_mode = 2
+text = "Level 4"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field97"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field98" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field98"]
+layout_mode = 2
+text = "Level 5"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field98"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field99" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field99"]
+layout_mode = 2
+text = "Level 6"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field99"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field100" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field100"]
+layout_mode = 2
+text = "Level 7"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field100"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field101" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field101"]
+layout_mode = 2
+text = "Level 8"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field101"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field102" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field102"]
+layout_mode = 2
+text = "Level 9"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field102"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field103" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field103"]
+layout_mode = 2
+text = "Level 10"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field103"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field104" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field104"]
+layout_mode = 2
+text = "Level 11"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field104"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field105" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field105"]
+layout_mode = 2
+text = "Level 12"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field105"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 10]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field106" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field106"]
+layout_mode = 2
+text = "Level 13"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field106"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 11]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field107" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field107"]
+layout_mode = 2
+text = "Level 14"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field107"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 12]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field108" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field108"]
+layout_mode = 2
+text = "Level 15"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field108"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 13]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field109" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field109"]
+layout_mode = 2
+text = "Level 16"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field109"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 14]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field110" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field110"]
+layout_mode = 2
+text = "Level 17"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field110"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 15]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field111" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field111"]
+layout_mode = 2
+text = "Level 18"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field111"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 16]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field112" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field112"]
+layout_mode = 2
+text = "Level 19"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field112"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 17]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field113" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field113"]
+layout_mode = 2
+text = "Level 20"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field113"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 18]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field114" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field114"]
+layout_mode = 2
+text = "Level 21"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field114"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 19]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field115" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field115"]
+layout_mode = 2
+text = "Level 22"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field115"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 20]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field116" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field116"]
+layout_mode = 2
+text = "Level 23"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field116"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 21]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field117" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field117"]
+layout_mode = 2
+text = "Level 24"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field117"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 22]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field118" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field118"]
+layout_mode = 2
+text = "Level 25"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field118"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 23]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field119" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field119"]
+layout_mode = 2
+text = "Level 26"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field119"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 24]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field120" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field120"]
+layout_mode = 2
+text = "Level 27"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field120"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 25]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field121" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field121"]
+layout_mode = 2
+text = "Level 28"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field121"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 26]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field122" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field122"]
+layout_mode = 2
+text = "Level 29"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field122"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 27]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field123" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field123"]
+layout_mode = 2
+text = "Level 30"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field123"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 28]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field124" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field124"]
+layout_mode = 2
+text = "++"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section93/Fields/victoryThresholdsGrid/Field124"]
+layout_mode = 2
+metadata/field_path = ["definition", "victoryThresholds", 29]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Section125" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label126" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+text = "PER-LEVEL GROWTH"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="staminaDiceGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field127" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid/Field127"]
+layout_mode = 2
+text = "Stamina · Start"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid/Field127"]
+layout_mode = 2
+metadata/field_path = ["definition", "staminaDice", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field128" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid/Field128"]
+layout_mode = 2
+text = "Stamina · Level up"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/staminaDiceGrid/Field128"]
+layout_mode = 2
+metadata/field_path = ["definition", "staminaDice", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="strengthValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field129" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid/Field129"]
+layout_mode = 2
+text = "Strength damage bonus · Start"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid/Field129"]
+layout_mode = 2
+metadata/field_path = ["definition", "strengthValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field130" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid/Field130"]
+layout_mode = 2
+text = "Strength damage bonus · Max"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/strengthValuesGrid/Field130"]
+layout_mode = 2
+metadata/field_path = ["definition", "strengthValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="dodgeValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field131" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid/Field131"]
+layout_mode = 2
+text = "Dodge missile · Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid/Field131"]
+layout_mode = 2
+metadata/field_path = ["definition", "dodgeValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field132" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid/Field132"]
+layout_mode = 2
+text = "Dodge missile · Level up"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/dodgeValuesGrid/Field132"]
+layout_mode = 2
+metadata/field_path = ["definition", "dodgeValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="toHitValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field133" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid/Field133"]
+layout_mode = 2
+text = "Melee to hit · Start"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid/Field133"]
+layout_mode = 2
+metadata/field_path = ["definition", "toHitValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field134" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid/Field134"]
+layout_mode = 2
+text = "Melee to hit · Level up"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/toHitValuesGrid/Field134"]
+layout_mode = 2
+metadata/field_path = ["definition", "toHitValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="missileValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field135" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid/Field135"]
+layout_mode = 2
+text = "Missile to hit · Start"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid/Field135"]
+layout_mode = 2
+metadata/field_path = ["definition", "missileValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field136" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid/Field136"]
+layout_mode = 2
+text = "Missile to hit · Level up"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/missileValuesGrid/Field136"]
+layout_mode = 2
+metadata/field_path = ["definition", "missileValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="handToHandValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field137" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid/Field137"]
+layout_mode = 2
+text = "Hand to hand · Start"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid/Field137"]
+layout_mode = 2
+metadata/field_path = ["definition", "handToHandValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field138" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid/Field138"]
+layout_mode = 2
+text = "Hand to hand · Level up"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Progression/Sections/Section125/Fields/handToHandValuesGrid/Field138"]
+layout_mode = 2
+metadata/field_path = ["definition", "handToHandValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Abilities" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Abilities"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section139" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label140" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields"]
+layout_mode = 2
+text = "INITIAL ABILITIES"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="initialAbilityValuesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field141" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field141"]
+layout_mode = 2
+text = "Sneak attack"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field141"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field142" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field142"]
+layout_mode = 2
+text = "Hide in shadows"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field142"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field143" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field143"]
+layout_mode = 2
+text = "Resurrect"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field143"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field144" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field144"]
+layout_mode = 2
+text = "Major wound"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field144"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field145" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field145"]
+layout_mode = 2
+text = "Detect secret"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field145"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field146" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field146"]
+layout_mode = 2
+text = "Acrobatic act"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field146"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field147" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field147"]
+layout_mode = 2
+text = "Detect trap"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field147"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field148" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field148"]
+layout_mode = 2
+text = "Disarm trap"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field148"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field149" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field149"]
+layout_mode = 2
+text = "Hear noise"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field149"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field150" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field150"]
+layout_mode = 2
+text = "Force door"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field150"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field151" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field151"]
+layout_mode = 2
+text = "Move silently"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field151"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 10]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field152" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field152"]
+layout_mode = 2
+text = "Pick lock"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field152"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 11]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field153" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field153"]
+layout_mode = 2
+text = "Unlabelled slot 12 (retained)"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field153"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 12]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field154" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field154"]
+layout_mode = 2
+text = "Turn undead"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section139/Fields/initialAbilityValuesGrid/Field154"]
+layout_mode = 2
+metadata/field_path = ["definition", "initialAbilityValues", 13]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Section155" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label156" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields"]
+layout_mode = 2
+text = "ABILITY GROWTH"
+theme_type_variation = "ItemSpecialHeading"
+
+[node name="levelAbilityDiceGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field157" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field157"]
+layout_mode = 2
+text = "Sneak attack"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field157"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field158" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field158"]
+layout_mode = 2
+text = "Hide in shadows"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field158"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field159" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field159"]
+layout_mode = 2
+text = "Resurrect"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field159"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field160" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field160"]
+layout_mode = 2
+text = "Major wound"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field160"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field161" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field161"]
+layout_mode = 2
+text = "Detect secret"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field161"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field162" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field162"]
+layout_mode = 2
+text = "Acrobatic act"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field162"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field163" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field163"]
+layout_mode = 2
+text = "Detect trap"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field163"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field164" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field164"]
+layout_mode = 2
+text = "Disarm trap"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field164"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field165" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field165"]
+layout_mode = 2
+text = "Hear noise"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field165"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field166" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field166"]
+layout_mode = 2
+text = "Force door"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field166"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field167" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field167"]
+layout_mode = 2
+text = "Move silently"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field167"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 10]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field168" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field168"]
+layout_mode = 2
+text = "Pick lock"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field168"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 11]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field169" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field169"]
+layout_mode = 2
+text = "Unlabelled slot 12 (retained)"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field169"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 12]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field170" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field170"]
+layout_mode = 2
+text = "Turn undead"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section155/Fields/levelAbilityDiceGrid/Field170"]
+layout_mode = 2
+metadata/field_path = ["definition", "levelAbilityDice", 13]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Section171" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label172" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields"]
+layout_mode = 2
+text = "ATTRIBUTES & SAVES"
+theme_type_variation = "ItemRestrictionsHeading"
+
+[node name="attributeBonusesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field173" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field173"]
+layout_mode = 2
+text = "Brawn"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field173"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field174" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field174"]
+layout_mode = 2
+text = "Knowledge"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field174"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field175" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field175"]
+layout_mode = 2
+text = "Judgement"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field175"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field176" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field176"]
+layout_mode = 2
+text = "Agility"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field176"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field177" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field177"]
+layout_mode = 2
+text = "Vitality"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field177"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field178" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field178"]
+layout_mode = 2
+text = "Luck"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/attributeBonusesGrid/Field178"]
+layout_mode = 2
+metadata/field_path = ["definition", "attributeBonuses", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="saveBonusesGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields"]
+layout_mode = 2
+columns = 1
+size_flags_horizontal = 3
+
+[node name="Field179" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field179"]
+layout_mode = 2
+text = "Charm"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field179"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field180" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field180"]
+layout_mode = 2
+text = "Heat"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field180"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field181" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field181"]
+layout_mode = 2
+text = "Cold"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field181"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field182" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field182"]
+layout_mode = 2
+text = "Electrical"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field182"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field183" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field183"]
+layout_mode = 2
+text = "Chemical"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field183"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field184" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field184"]
+layout_mode = 2
+text = "Mental"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field184"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field185" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field185"]
+layout_mode = 2
+text = "Magical"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field185"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field186" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field186"]
+layout_mode = 2
+text = "Special"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Abilities/Sections/Section171/Fields/saveBonusesGrid/Field186"]
+layout_mode = 2
+metadata/field_path = ["definition", "saveBonuses", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Conditions" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Conditions"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section187" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label188" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields"]
+layout_mode = 2
+text = "STARTING CONDITIONS"
+theme_type_variation = "ItemSpecialHeading"
+
+[node name="conditionLevelsGrid" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields"]
+layout_mode = 2
+columns = 3
+size_flags_horizontal = 3
+
+[node name="Field189" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field189"]
+layout_mode = 2
+text = "Running"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field189"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 0]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field190" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field190"]
+layout_mode = 2
+text = "Helpless"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field190"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 1]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field191" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field191"]
+layout_mode = 2
+text = "Hindered"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field191"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 2]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field192" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field192"]
+layout_mode = 2
+text = "Cursed"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field192"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 3]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field193" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field193"]
+layout_mode = 2
+text = "Magic Aura"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field193"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 4]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field194" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field194"]
+layout_mode = 2
+text = "Stupid"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field194"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 5]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field195" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field195"]
+layout_mode = 2
+text = "Slow"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field195"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 6]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field196" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field196"]
+layout_mode = 2
+text = "Shield From Hits"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field196"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 7]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field197" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field197"]
+layout_mode = 2
+text = "Shield From Projectiles"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field197"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 8]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field198" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field198"]
+layout_mode = 2
+text = "Poisoned"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field198"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 9]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field199" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field199"]
+layout_mode = 2
+text = "Regenerating"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field199"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 10]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field200" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field200"]
+layout_mode = 2
+text = "Fire Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field200"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 11]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field201" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field201"]
+layout_mode = 2
+text = "Cold Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field201"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 12]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field202" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field202"]
+layout_mode = 2
+text = "Electrical Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field202"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 13]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field203" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field203"]
+layout_mode = 2
+text = "Chemical Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field203"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 14]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field204" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field204"]
+layout_mode = 2
+text = "Mental Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field204"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 15]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field205" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field205"]
+layout_mode = 2
+text = "1st Level Spell Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field205"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 16]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field206" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field206"]
+layout_mode = 2
+text = "2nd Level Spell Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field206"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 17]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field207" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field207"]
+layout_mode = 2
+text = "3rd Level Spell Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field207"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 18]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field208" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field208"]
+layout_mode = 2
+text = "4th Level Spell Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field208"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 19]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field209" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field209"]
+layout_mode = 2
+text = "5th Level Spell Protection"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field209"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 20]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field210" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field210"]
+layout_mode = 2
+text = "Strong"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field210"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 21]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field211" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field211"]
+layout_mode = 2
+text = "Protection From Evil"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field211"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 22]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field212" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field212"]
+layout_mode = 2
+text = "Speed"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field212"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 23]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field213" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field213"]
+layout_mode = 2
+text = "Invisible"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field213"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 24]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field214" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field214"]
+layout_mode = 2
+text = "Animated"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field214"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 25]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field215" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field215"]
+layout_mode = 2
+text = "Stoned"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field215"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 26]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field216" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field216"]
+layout_mode = 2
+text = "Blind"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field216"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 27]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field217" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field217"]
+layout_mode = 2
+text = "Diseased"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field217"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 28]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field218" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field218"]
+layout_mode = 2
+text = "Confused"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field218"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 29]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field219" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field219"]
+layout_mode = 2
+text = "Reflect Spells"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field219"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 30]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field220" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field220"]
+layout_mode = 2
+text = "Reflect Attacks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field220"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 31]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field221" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field221"]
+layout_mode = 2
+text = "Attack Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field221"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 32]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field222" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field222"]
+layout_mode = 2
+text = "Absorb Spell Points"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field222"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 33]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field223" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field223"]
+layout_mode = 2
+text = "Drain Spell Points"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field223"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 34]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field224" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field224"]
+layout_mode = 2
+text = "Absorb Spell Points From Attacks"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field224"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 35]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field225" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field225"]
+layout_mode = 2
+text = "Hinder Attack"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field225"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 36]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field226" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field226"]
+layout_mode = 2
+text = "Hinder Defense"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field226"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 37]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field227" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field227"]
+layout_mode = 2
+text = "Defense Bonus"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field227"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 38]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Field228" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field228"]
+layout_mode = 2
+text = "Silenced"
+size_flags_horizontal = 3
+theme_type_variation = "ItemFieldLabel"
+autowrap_mode = 2
+custom_minimum_size = Vector2(100, 0)
+
+[node name="Value" type="SpinBox" parent="Main/RuleDetailScroll/RuleForm/Conditions/Sections/Section187/Fields/conditionLevelsGrid/Field228"]
+layout_mode = 2
+metadata/field_path = ["definition", "conditionLevels", 39]
+custom_minimum_size = Vector2(104, 0)
+min_value = -32768
+max_value = 32767
+allow_greater = true
+allow_lesser = true
+
+[node name="Items" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Items"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Items"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section229" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Items/Sections"]
+tooltip_text = "Changing an item category keeps unlabelled imported bits."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemEquipmentPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label230" type="Label" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields"]
+layout_mode = 2
+text = "PERMITTED ITEM CATEGORIES"
+theme_type_variation = "ItemEquipmentHeading"
+
+[node name="Categories" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields"]
+layout_mode = 2
+columns = 3
+size_flags_horizontal = 3
+
+[node name="Category0" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Small Blunt Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 0
+
+[node name="Category1" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Medium Blunt Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 1
+
+[node name="Category2" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Large Blunt Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 2
+
+[node name="Category3" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Very Small Bladed Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 3
+
+[node name="Category4" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Small Bladed Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 4
+
+[node name="Category5" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Medium Bladed Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 5
+
+[node name="Category6" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Large Bladed Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 6
+
+[node name="Category7" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Very Large Bladed Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 7
+
+[node name="Category8" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Staffs"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 8
+
+[node name="Category9" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Spears"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 9
+
+[node name="Category10" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Pole Arms"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 10
+
+[node name="Category11" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Ninja Style Weapons"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 11
+
+[node name="Category12" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Normal Bows"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 12
+
+[node name="Category13" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Cross Bows"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 13
+
+[node name="Category14" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Darts"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 14
+
+[node name="Category15" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Flasks Of Oil"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 15
+
+[node name="Category16" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Throwing Knife"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 16
+
+[node name="Category17" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Whips"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 17
+
+[node name="Category18" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Quiver"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 18
+
+[node name="Category19" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Waist / Belt"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 19
+
+[node name="Category20" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Neck / Necklace"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 20
+
+[node name="Category21" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Caps"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 21
+
+[node name="Category22" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Soft Helm"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 22
+
+[node name="Category23" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Small Helm"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 23
+
+[node name="Category24" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Large Helm"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 24
+
+[node name="Category25" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Small Shield"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 25
+
+[node name="Category26" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Med Shield"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 26
+
+[node name="Category27" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Large Shield"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 27
+
+[node name="Category28" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Bracers"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 28
+
+[node name="Category29" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Cloth Gloves"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 29
+
+[node name="Category30" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Leather Gloves"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 30
+
+[node name="Category31" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Metal Gloves"
+metadata/field_path = ["definition", "itemCategoryMasks", 0]
+metadata/bit = 31
+
+[node name="Category32" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Cloak / Cape"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 0
+
+[node name="Category33" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Robe"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 1
+
+[node name="Category34" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Padded Armor"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 2
+
+[node name="Category35" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Leather Armor"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 3
+
+[node name="Category36" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Chain Armor"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 4
+
+[node name="Category37" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Banded Armor"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 5
+
+[node name="Category38" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Plate Armor"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 6
+
+[node name="Category39" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Soft Boots"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 7
+
+[node name="Category40" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Hard Boots"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 8
+
+[node name="Category41" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Throwing Hammer"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 9
+
+[node name="Category42" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Throwing Stars"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 10
+
+[node name="Category43" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Blunt Weapon"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 11
+
+[node name="Category44" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Bladed Weapon"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 12
+
+[node name="Category45" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Large Weapon"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 13
+
+[node name="Category46" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Missile Weapon"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 14
+
+[node name="Category47" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Item"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 15
+
+[node name="Category48" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Scroll Case"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 16
+
+[node name="Category49" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Broach / Pin"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 17
+
+[node name="Category50" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Ring"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 18
+
+[node name="Category51" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Potion"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 19
+
+[node name="Category52" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Misc. Magic Item"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 20
+
+[node name="Category53" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Special Object"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 21
+
+[node name="Category54" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Ion Stone"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 22
+
+[node name="Category55" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Book"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 23
+
+[node name="Category56" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields/Categories"]
+layout_mode = 2
+text = "Scroll"
+metadata/field_path = ["definition", "itemCategoryMasks", 1]
+metadata/bit = 24
+
+[node name="Label231" type="Label" parent="Main/RuleDetailScroll/RuleForm/Items/Sections/Section229/Fields"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="Races" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "Races"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Races"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section232" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/Races/Sections"]
+tooltip_text = "Eligibility can be edited from either Race or Caste."
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label233" type="Label" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields"]
+layout_mode = 2
+text = "PERMITTED COMBINATIONS"
+theme_type_variation = "ItemRestrictionsHeading"
+
+[node name="Label234" type="Label" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="Eligibility" type="GridContainer" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields"]
+layout_mode = 2
+columns = 3
+
+[node name="Eligible1" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "1"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.1"
+
+[node name="Eligible2" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "2"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.2"
+
+[node name="Eligible3" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "3"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.3"
+
+[node name="Eligible4" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "4"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.4"
+
+[node name="Eligible5" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "5"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.5"
+
+[node name="Eligible6" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "6"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.6"
+
+[node name="Eligible7" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "7"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.7"
+
+[node name="Eligible8" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "8"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.8"
+
+[node name="Eligible9" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "9"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.9"
+
+[node name="Eligible10" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "10"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.10"
+
+[node name="Eligible11" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "11"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.11"
+
+[node name="Eligible12" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "12"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.12"
+
+[node name="Eligible13" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "13"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.13"
+
+[node name="Eligible14" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "14"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.14"
+
+[node name="Eligible15" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "15"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.15"
+
+[node name="Eligible16" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "16"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.16"
+
+[node name="Eligible17" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "17"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.17"
+
+[node name="Eligible18" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "18"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.18"
+
+[node name="Eligible19" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "19"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.19"
+
+[node name="Eligible20" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "20"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.20"
+
+[node name="Eligible21" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "21"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.21"
+
+[node name="Eligible22" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "22"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.22"
+
+[node name="Eligible23" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "23"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.23"
+
+[node name="Eligible24" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "24"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.24"
+
+[node name="Eligible25" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "25"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.25"
+
+[node name="Eligible26" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "26"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.26"
+
+[node name="Eligible27" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "27"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.27"
+
+[node name="Eligible28" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "28"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.28"
+
+[node name="Eligible29" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "29"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.29"
+
+[node name="Eligible30" type="CheckBox" parent="Main/RuleDetailScroll/RuleForm/Races/Sections/Section232/Fields/Eligibility"]
+layout_mode = 2
+text = "30"
+metadata/field_path = ["definition", "eligibleRaceIds"]
+metadata/reference_id = "classic.race.30"
+
+[node name="References" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm"]
+layout_mode = 2
+size_flags_horizontal = 3
+metadata/section = "References"
+
+[node name="Sections" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/References"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Section235" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemSpecialPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label236" type="Label" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
+layout_mode = 2
+text = "USED BY · EXACT OWNING FIELDS"
+theme_type_variation = "ItemSpecialHeading"
+
+[node name="ReferenceActions" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
+layout_mode = 2
+
+[node name="FindAllUses" type="Button" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/ReferenceActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Find all uses"
+
+[node name="TraceCallers" type="Button" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/ReferenceActions"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Trace callers"
+
+[node name="Uses" type="ItemList" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(350, 250)
+size_flags_horizontal = 3
+
+[node name="UsesPaging" type="HBoxContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
+layout_mode = 2
+
+[node name="PreviousUses" type="Button" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/UsesPaging"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Previous"
+disabled = true
+
+[node name="UsesCount" type="Label" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/UsesPaging"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0 uses"
+size_flags_horizontal = 3
+
+[node name="NextUses" type="Button" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/UsesPaging"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Next"
+disabled = true
+
+[node name="Label237" type="Label" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
+layout_mode = 2
+text = "Double-click a caller to open its exact field."
+theme_type_variation = "ItemContext"
+
+[node name="Section238" type="PanelContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = "ItemRestrictionsPanel"
+
+[node name="Fields" type="VBoxContainer" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section238"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label239" type="Label" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section238/Fields"]
+layout_mode = 2
+text = "LINKS FROM THIS RULE"
+theme_type_variation = "ItemRestrictionsHeading"
+
+[node name="Outgoing" type="ItemList" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section238/Fields"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(350, 250)
+size_flags_horizontal = 3
+
+[node name="Footer" type="HBoxContainer" parent="Main"]
+layout_mode = 2
+
+[node name="ApplyRule" type="Button" parent="Main/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Apply caste"
+
+[node name="DiscardRule" type="Button" parent="Main/Footer"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Discard"
+
+[node name="Label240" type="Label" parent="Main/Footer"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = "ItemContext"
+
+[node name="SearchDelay" type="Timer" parent="."]
+layout_mode = 2
+wait_time = 0.18
+one_shot = true

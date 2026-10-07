@@ -1,0 +1,179 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://theme/player_scenario_theme.tres" type="Theme" id="1"]
+
+[node name="ScenarioWorkbenchFrame" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("1")
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+text = "SCENARIO"
+theme_type_variation = &"ScenarioTitle"
+size_flags_horizontal = 3
+
+[node name="Subtitle" type="Label" parent="."]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = &"ItemContext"
+
+[node name="Body" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="SectionsPanel" type="PanelContainer" parent="Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+theme_type_variation = &"ScenarioPanel"
+
+[node name="Sections" type="VBoxContainer" parent="Body/SectionsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FindLabel" type="Label" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "FIND"
+theme_type_variation = &"ScenarioField"
+
+[node name="SectionSearch" type="LineEdit" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+placeholder_text = "Scenario sections"
+
+[node name="StartupTab" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Startup"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="RestrictionsTab" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Restrictions"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="ContactTab" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Contact"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="SecurityTab" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Security"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="Space" type="Control" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 22)
+
+[node name="RelatedLabel" type="Label" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Related editors"
+theme_type_variation = &"ScenarioHeading"
+
+[node name="Assets" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Assets"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="Spells" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Spells"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="Races" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Races"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="Castes" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Castes"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="GlobalMacrosTab" type="Button" parent="Body/SectionsPanel/Sections"]
+layout_mode = 2
+text = "Global Macros"
+custom_minimum_size = Vector2(0, 34)
+alignment = 0
+
+[node name="SidebarHelp" type="Label" parent="Body/SectionsPanel/Sections"]
+visible = false
+layout_mode = 2
+text = ""
+autowrap_mode = 2
+theme_type_variation = &"ItemContext"
+
+[node name="FormPanel" type="PanelContainer" parent="Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ScenarioPanel"
+
+[node name="Form" type="VBoxContainer" parent="Body/FormPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="SectionHeading" type="Label" parent="Body/FormPanel/Form"]
+layout_mode = 2
+text = "SCENARIO DRAFT"
+theme_type_variation = &"ScenarioHeading"
+
+[node name="DraftStatus" type="Label" parent="Body/FormPanel/Form"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Loading…"
+
+[node name="WorkbenchScroll" type="ScrollContainer" parent="Body/FormPanel/Form"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Fields" type="VBoxContainer" parent="Body/FormPanel/Form/WorkbenchScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="Footer" type="HBoxContainer" parent="Body/FormPanel/Form"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ApplySection" type="Button" parent="Body/FormPanel/Form/Footer"]
+layout_mode = 2
+text = "Apply"
+custom_minimum_size = Vector2(160, 34)
+theme_type_variation = &"ScenarioPrimary"
+disabled = true
+
+[node name="DiscardSection" type="Button" parent="Body/FormPanel/Form/Footer"]
+layout_mode = 2
+text = "Discard"
+disabled = true
+
+[node name="CopyDraft" type="Button" parent="Body/FormPanel/Form/Footer"]
+layout_mode = 2
+text = "Copy draft"
+visible = false
+
+[node name="ResolveSection" type="Button" parent="Body/FormPanel/Form/Footer"]
+layout_mode = 2
+text = "Resolve outcome"
+visible = false
+
+[node name="FooterHelp" type="Label" parent="Body/FormPanel/Form/Footer"]
+visible = false
+layout_mode = 2
+text = ""
+theme_type_variation = &"ItemContext"

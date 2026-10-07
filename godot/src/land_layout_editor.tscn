@@ -1,0 +1,274 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource path="res://src/land_layout_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/land_layout_placement_review.tscn" type="PackedScene" id="2"]
+[ext_resource path="res://src/world_controls.tres" type="Theme" id="3"]
+[ext_resource path="res://src/world_sections.tscn" type="PackedScene" id="4"]
+[ext_resource path="res://src/land_layout_canvas.gd" type="Script" id="5"]
+[ext_resource path="res://src/layout_neighbor_preview.gd" type="Script" id="6"]
+
+[node name="LandLayoutEditor" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="WorldSections" parent="." instance=ExtResource("4")]
+unique_name_in_owner = true
+selected_section = "LandLayout"
+
+[node name="LayoutHeader" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="LayoutHeaderCopy" type="VBoxContainer" parent="LayoutHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="LayoutHeader/LayoutHeaderCopy"]
+layout_mode = 2
+theme = ExtResource("3")
+theme_type_variation = &"WorldTitle"
+text = "Land Layout"
+
+[node name="LayoutStatus" type="Label" parent="LayoutHeader/LayoutHeaderCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+text = "No layout projection loaded"
+
+[node name="ClearLayout" type="Button" parent="LayoutHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Remove the Data LL layout table after confirmation."
+disabled = true
+text = "Clear Layout"
+
+[node name="LayoutScaling" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="LayoutZoomOut" type="Button" parent="LayoutScaling"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Zoom out"
+text = "−"
+
+[node name="LayoutZoom" type="Label" parent="LayoutScaling"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(54,0)
+layout_mode = 2
+horizontal_alignment = 1
+text = "100%"
+tooltip_text = "100% uses 180 pixels per map. Wheel to zoom; middle drag to pan."
+
+[node name="LayoutZoomIn" type="Button" parent="LayoutScaling"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+"
+tooltip_text = "Zoom in"
+
+[node name="LayoutFit" type="Button" parent="LayoutScaling"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fit layout"
+
+[node name="LayoutFitAssigned" type="Button" parent="LayoutScaling"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fit assigned"
+disabled = true
+
+[node name="LayoutGridToggle" type="CheckBox" parent="LayoutScaling"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Grid"
+tooltip_text = "Show cell borders over map previews. Turning off the grid keeps selection and exact cell positions."
+
+[node name="LayoutWorkbench" type="HSplitContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 820
+
+[node name="LayoutGridRegion" type="VBoxContainer" parent="LayoutWorkbench"]
+tooltip_text = "Wheel: zoom. Middle drag: pan. Arrows: select. Enter: open map."
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LayoutGrid" type="Control" parent="LayoutWorkbench/LayoutGridRegion"]
+tooltip_text = "Wheel: zoom. Middle drag: pan. Arrows: select. Enter: open map."
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0,260)
+script = ExtResource("5")
+
+[node name="LayoutNavigationHint" type="Label" parent="LayoutWorkbench/LayoutGridRegion"]
+visible = false
+layout_mode = 2
+theme_type_variation = &"WorldHint"
+theme_override_font_sizes/font_size = 11
+text = "Wheel: zoom · Middle drag: pan · Arrow keys: select · Enter: open map"
+
+[node name="LayoutInspector" type="VBoxContainer" parent="LayoutWorkbench"]
+tooltip_text = "Click selects a neighbor; double-click opens its map."
+custom_minimum_size = Vector2(336, 0)
+layout_mode = 2
+
+[node name="PaletteHeading" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+layout_mode = 2
+theme = ExtResource("3")
+theme_type_variation = &"WorldUsesHeading"
+text = "LAND MAP PALETTE"
+
+[node name="LayoutSearch" type="LineEdit" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search map name or number…"
+clear_button_enabled = true
+
+[node name="LayoutResultCount" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LayoutNoResults" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+text = "No matching maps."
+
+[node name="LandMapPalette" type="ItemList" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 126)
+layout_mode = 2
+fixed_icon_size = Vector2i(48,48)
+texture_filter = 1
+
+[node name="SelectedHeading" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.839216, 0.721569, 0.458824, 1)
+text = "SELECTED CELL"
+
+[node name="SelectedLayoutCell" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SELECT A LAYOUT CELL"
+
+[node name="SelectedLayoutValue" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "No cell selected."
+
+[node name="PlaceCurrentLand" type="Button" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Place Current Land"
+
+[node name="ClearLayoutCell" type="Button" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Clear Layout Cell"
+
+[node name="OpenLinkedLand" type="Button" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Open Linked Map"
+
+[node name="NeighborPreview" type="CheckButton" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Neighbor Preview"
+
+[node name="LayoutNeighbors" type="GridContainer" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 3
+size_flags_horizontal = 4
+theme_override_constants/h_separation = 0
+theme_override_constants/v_separation = 0
+
+[node name="NorthWestSpace" type="Control" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+
+[node name="NorthNeighbor" type="Button" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+expand_icon = true
+script = ExtResource("6")
+
+[node name="NorthEastSpace" type="Control" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+
+[node name="WestNeighbor" type="Button" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+expand_icon = true
+script = ExtResource("6")
+
+[node name="CenterNeighbor" type="Button" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+expand_icon = true
+script = ExtResource("6")
+
+[node name="EastNeighbor" type="Button" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+expand_icon = true
+script = ExtResource("6")
+
+[node name="SouthWestSpace" type="Control" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+
+[node name="SouthNeighbor" type="Button" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+expand_icon = true
+script = ExtResource("6")
+
+[node name="SouthEastSpace" type="Control" parent="LayoutWorkbench/LayoutInspector/LayoutNeighbors"]
+layout_mode = 2
+custom_minimum_size = Vector2(64,64)
+
+[node name="LayoutLegend" type="Label" parent="LayoutWorkbench/LayoutInspector"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Click a neighbor to select its cell.\nDouble-click to open its exact map."
+
+[node name="ReconcileLayout" type="Button" parent="LayoutWorkbench/LayoutInspector"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Reconcile original layout result"
+
+[node name="LayoutPlacementReview" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="ClearLayoutConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Clear Land Layout?"
+dialog_text = "Remove the complete 8 × 16 Land Layout table? Map records are not deleted."
+ok_button_text = "Clear Layout"
+
+[connection signal="pressed" from="LayoutHeader/ClearLayout" to="." method="_on_clear_layout_pressed"]
+[connection signal="pressed" from="LayoutWorkbench/LayoutInspector/PlaceCurrentLand" to="." method="_on_place_pressed"]
+[connection signal="pressed" from="LayoutWorkbench/LayoutInspector/ClearLayoutCell" to="." method="_on_clear_cell_pressed"]
+[connection signal="pressed" from="LayoutWorkbench/LayoutInspector/OpenLinkedLand" to="." method="_on_open_map_pressed"]
+[connection signal="confirmed" from="ClearLayoutConfirmation" to="." method="_on_clear_layout_confirmed"]

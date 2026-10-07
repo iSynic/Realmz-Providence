@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/monster_route.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/monster_workbench.tscn" id="2"]
+
+[node name="MonsterEditor" type="VBoxContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")
+
+[node name="CombatTabs" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Battle" type="Button" parent="CombatTabs"]
+layout_mode = 2
+text = "Battle"
+
+[node name="Monster" type="Button" parent="CombatTabs"]
+layout_mode = 2
+text = "Monster"
+toggle_mode = true
+
+[node name="Library" type="Button" parent="CombatTabs"]
+layout_mode = 2
+text = "Monster Library"
+toggle_mode = true
+
+[node name="Space" type="Control" parent="CombatTabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LinksUses" type="Button" parent="CombatTabs"]
+layout_mode = 2
+text = "Links / Uses"
+disabled = true
+tooltip_text = "Monster link navigation is not connected yet."
+
+[node name="Workbench" parent="." instance=ExtResource("2")]
+layout_mode = 2

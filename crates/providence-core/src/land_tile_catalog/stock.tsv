@@ -1,0 +1,800 @@
+# Providence 56ac232c22fc321a99cb819f1e2d8c3985ad479a src/editor/map/landlookTileSemantics.ts; bounded stock authoring metadata.
+# Source SHA-256 e41d68e07d7dec3f4116c61df9a8a96d2a7b385f2e9f3164d1cf1b8695ea1b58
+# look	first	last	category	confidence	name	notes	connections	category label
+0	1	1	water-shore	known	Shoreline, land west			Water and shore transition
+0	2	2	water-shore	known	Shoreline, land east			Water and shore transition
+0	3	3	water-shore	known	Shoreline, land north			Water and shore transition
+0	4	4	water-shore	known	Shoreline, land south			Water and shore transition
+0	5	5	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top midpoint to bottom-right.		Water and shore transition
+0	6	6	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to bottom midpoint.		Water and shore transition
+0	7	7	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top-right to bottom midpoint.		Water and shore transition
+0	8	8	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top midpoint to bottom-left.		Water and shore transition
+0	9	9	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom midpoint to top-right.		Water and shore transition
+0	10	10	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to top midpoint.		Water and shore transition
+0	11	11	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to bottom midpoint.		Water and shore transition
+0	12	12	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top midpoint to bottom-right.		Water and shore transition
+0	13	13	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to right midpoint.		Water and shore transition
+0	14	14	water-shore	known	Sloped shoreline, land northeast	Boundary runs from left midpoint to bottom-right.		Water and shore transition
+0	15	15	water-shore	known	Sloped shoreline, land southeast	Boundary runs from bottom-left to right midpoint.		Water and shore transition
+0	16	16	water-shore	known	Sloped shoreline, land southeast	Boundary runs from left midpoint to top-right.		Water and shore transition
+0	17	17	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to right midpoint.		Water and shore transition
+0	18	18	water-shore	known	Sloped shoreline, land northwest	Boundary runs from left midpoint to top-right.		Water and shore transition
+0	19	19	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to right midpoint.		Water and shore transition
+0	20	20	water-shore	known	Sloped shoreline, land southwest	Boundary runs from left midpoint to bottom-right.		Water and shore transition
+0	21	21	water-shore	known	Open water to narrow stream south		north,south	Water and shore transition
+0	22	22	water-shore	known	Open water to narrow stream west		east,west	Water and shore transition
+0	23	23	water-shore	known	Open water to narrow stream east		east,west	Water and shore transition
+0	24	24	water-shore	known	Open water to narrow stream north		north,south	Water and shore transition
+0	25	25	water-shore	known	Quarter water southeast			Water and shore transition
+0	26	26	water-shore	known	Quarter water southwest			Water and shore transition
+0	27	27	water-shore	known	Quarter water northeast			Water and shore transition
+0	28	28	water-shore	known	Quarter water northwest			Water and shore transition
+0	29	29	water-shore	known	Inward shoreline corner, land northeast			Water and shore transition
+0	30	30	water-shore	known	Inward shoreline corner, land northwest			Water and shore transition
+0	31	31	water-shore	known	Inward shoreline corner, land southeast			Water and shore transition
+0	32	32	water-shore	known	Inward shoreline corner, land southwest			Water and shore transition
+0	33	33	rocks	known	One rock in water	Optional decorative full-water tile.		Rocks / rubble / terrain prop
+0	34	34	rocks	known	Two rocks in water	Optional decorative full-water tile.		Rocks / rubble / terrain prop
+0	35	35	rocks	known	Several rocks in water	Optional decorative full-water tile.		Rocks / rubble / terrain prop
+0	36	37	blank	likely	Blank / unused land tile			Blank / unused
+0	38	38	water-shore	known	Narrow stream north/south		north,south	Water and shore transition
+0	39	39	water-shore	known	Narrow stream east/west		east,west	Water and shore transition
+0	40	40	water-shore	known	Narrow stream to land, land south		north	Water and shore transition
+0	41	41	water-shore	known	Narrow stream to land, land west		east	Water and shore transition
+0	42	42	water-shore	known	Narrow stream to land, land north		south	Water and shore transition
+0	43	43	water-shore	known	Narrow stream to land, land east		west	Water and shore transition
+0	44	44	water-shore	known	Narrow stream trifork north/west/east	Land transition is south.	north,east,west	Water and shore transition
+0	45	45	water-shore	known	Narrow stream trifork north/east/south	Land transition is west.	north,east,south	Water and shore transition
+0	46	46	water-shore	known	Narrow stream trifork west/south/east	Land transition is north.	east,south,west	Water and shore transition
+0	47	47	water-shore	known	Narrow stream trifork north/west/south	Land transition is east.	north,south,west	Water and shore transition
+0	48	48	water-shore	known	Narrow stream bend south/east		east,south	Water and shore transition
+0	49	49	water-shore	known	Narrow stream bend south/west		south,west	Water and shore transition
+0	50	50	water-shore	known	Narrow stream bend north/east		north,east	Water and shore transition
+0	51	51	water-shore	known	Narrow stream bend north/west		north,west	Water and shore transition
+0	52	54	graves	known	Grave			Graves / graveyard
+0	55	55	road	known	Solid cobblestones			Road / wall transition
+0	56	59	terrain-prop	known	Single-tile island in water			Terrain prop
+0	60	60	water-shore	known	Full water	Normal full-water center tile.		Water and shore transition
+0	61	61	mountain-land	known	Solid mountain	Full-looking mountain region fill tile for the Plains landlook.		Mountain to land
+0	62	65	mountain-land	known	Mountain to land			Mountain to land
+0	66	66	mountain-land	known	Mountain to land	Runtime-solid mountain transition tile with visible grass cutout.		Mountain to land
+0	67	84	mountain-land	known	Mountain to land			Mountain to land
+0	85	85	mountain-land	known	Mountain to land	End of the mountain-to-land atlas run.		Mountain to land
+0	86	86	mountain-water	known	Mountain to water	Start of the mountain-to-water atlas run.		Mountain to water
+0	87	92	mountain-water	known	Mountain to water			Mountain to water
+0	93	93	mountain-water	known	Mountain to water	End of the mountain-to-water atlas run.		Mountain to water
+0	94	104	road	likely	Road / wall transition			Road / wall transition
+0	105	105	cave-transition	known	Stream to cave, cave west		east,west	Cave transition
+0	106	106	cave-transition	known	Stream to cave, cave east		east,west	Cave transition
+0	107	107	cave-transition	known	Stream to cave, cave south		north,south	Cave transition
+0	108	108	cave-transition	known	Stream to cave, cave north		north,south	Cave transition
+0	109	109	cave-transition	known	Land to cave, cave east		east,west	Cave transition
+0	110	110	cave-transition	known	Land to cave, cave west		east,west	Cave transition
+0	111	111	cave-transition	known	Land to cave, cave south		north,south	Cave transition
+0	112	112	cave-transition	known	Land to cave, cave north		north,south	Cave transition
+0	113	114	buildings	likely	Gate / structure			Gate / structure
+0	115	117	hazard	likely	Fire / hazard			Fire / hazard
+0	118	129	forest	likely	Forest transition	Primary contiguous forest tiles used by the smart forest brush.		Forest transition
+0	130	130	road	known	Road bridge east/west over water		east,west	Road / wall transition
+0	131	131	road	known	Road bridge north/south over water		north,south	Road / wall transition
+0	132	132	road	known	Road east/west		east,west	Road / wall transition
+0	133	133	road	known	Road north/south		north,south	Road / wall transition
+0	134	134	road	known	Road four-way junction		north,east,south,west	Road / wall transition
+0	135	135	road	known	Road junction east/south/west		east,south,west	Road / wall transition
+0	136	136	road	known	Road junction north/east/west		north,east,west	Road / wall transition
+0	137	137	road	known	Road junction north/east/south		north,east,south	Road / wall transition
+0	138	138	road	known	Road junction north/south/west		north,south,west	Road / wall transition
+0	139	139	road	known	Road bend east/south		east,south	Road / wall transition
+0	140	140	road	known	Road bend north/west		north,west	Road / wall transition
+0	141	141	road	known	Road bend north/east		north,east	Road / wall transition
+0	142	142	road	known	Road bend south/west		south,west	Road / wall transition
+0	143	143	road	known	Road endpoint east		east	Road / wall transition
+0	144	144	road	known	Road endpoint south		south	Road / wall transition
+0	145	145	road	known	Road endpoint west		west	Road / wall transition
+0	146	146	road	known	Road endpoint north		north	Road / wall transition
+0	147	147	watercraft	known	Boat	Realmz mapstats marks this as boat-required movement.		Boat / watercraft
+0	148	148	terrain-prop	uncertain	Well / small landmark			Terrain prop
+0	149	149	terrain-prop	likely	Fallen log			Terrain prop
+0	150	154	tree-detail	known	Tree detail	Decorative tree/detail pieces, not contiguous smart-forest fill tiles.		Tree detail
+0	155	158	open	known	Open land / clear terrain			Open land / clear terrain
+0	159	167	rocks	known	Rocks / rubble / terrain prop			Rocks / rubble / terrain prop
+0	168	168	blank	likely	Blank / unused land tile			Blank / unused
+0	169	169	road	known	Hidden walkable path	Divinity marks this Plains path tile with the hidden-walkable symbol.		Road / wall transition
+0	170	179	buildings	likely	Large structure / landmark piece			Gate / structure
+0	180	185	buildings	known	Combat-clearing structure	Solid during land exploration; its Realmz combat build expands entirely into non-solid ground.		Gate / structure
+0	186	186	buildings	likely	Small building / landmark			Gate / structure
+0	187	189	graves	known	Graves / graveyard			Graves / graveyard
+0	190	200	buildings	known	House / settlement building			Gate / structure
+2	169	169	uncertain	uncertain	Unreviewed tile			Terrain edge transition
+2	180	183	buildings	uncertain	Large structure / terrain piece			Gate / structure
+2	184	185	buildings	likely	Structure / bridge segment			Gate / structure
+3	1	1	water-shore	known	Shoreline, land west			Underground water / shore
+3	2	2	water-shore	known	Shoreline, land east			Underground water / shore
+3	3	3	water-shore	known	Shoreline, land north			Underground water / shore
+3	4	4	water-shore	known	Shoreline, land south			Underground water / shore
+3	5	5	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top midpoint to bottom-right.		Underground water / shore
+3	6	6	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to bottom midpoint.		Underground water / shore
+3	7	7	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top-right to bottom midpoint.		Underground water / shore
+3	8	8	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top midpoint to bottom-left.		Underground water / shore
+3	9	9	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom midpoint to top-right.		Underground water / shore
+3	10	10	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to top midpoint.		Underground water / shore
+3	11	11	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to bottom midpoint.		Underground water / shore
+3	12	12	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top midpoint to bottom-right.		Underground water / shore
+3	13	13	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to right midpoint.		Underground water / shore
+3	14	14	water-shore	known	Sloped shoreline, land northeast	Boundary runs from left midpoint to bottom-right.		Underground water / shore
+3	15	15	water-shore	known	Sloped shoreline, land southeast	Boundary runs from bottom-left to right midpoint.		Underground water / shore
+3	16	16	water-shore	known	Sloped shoreline, land southeast	Boundary runs from left midpoint to top-right.		Underground water / shore
+3	17	17	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to right midpoint.		Underground water / shore
+3	18	18	water-shore	known	Sloped shoreline, land northwest	Boundary runs from left midpoint to top-right.		Underground water / shore
+3	19	19	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to right midpoint.		Underground water / shore
+3	20	20	water-shore	known	Sloped shoreline, land southwest	Boundary runs from left midpoint to bottom-right.		Underground water / shore
+3	21	21	water-shore	known	Open water to narrow stream south		north,south	Underground water / shore
+3	22	22	water-shore	known	Open water to narrow stream west		east,west	Underground water / shore
+3	23	23	water-shore	known	Open water to narrow stream east		east,west	Underground water / shore
+3	24	24	water-shore	known	Open water to narrow stream north		north,south	Underground water / shore
+3	25	25	water-shore	known	Quarter water southeast			Underground water / shore
+3	26	26	water-shore	known	Quarter water southwest			Underground water / shore
+3	27	27	water-shore	known	Quarter water northeast			Underground water / shore
+3	28	28	water-shore	known	Quarter water northwest			Underground water / shore
+3	29	29	water-shore	known	Inward shoreline corner, land northeast			Underground water / shore
+3	30	30	water-shore	known	Inward shoreline corner, land northwest			Underground water / shore
+3	31	31	water-shore	known	Inward shoreline corner, land southeast			Underground water / shore
+3	32	32	water-shore	known	Inward shoreline corner, land southwest			Underground water / shore
+3	33	33	rocks	known	One rock in water	Optional decorative full-water tile.		Cave rocks / rubble
+3	34	34	rocks	known	Two rocks in water	Optional decorative full-water tile.		Cave rocks / rubble
+3	35	35	rocks	known	Several rocks in water	Optional decorative full-water tile.		Cave rocks / rubble
+3	38	38	water-shore	known	Narrow stream north/south		north,south	Underground water / shore
+3	39	39	water-shore	known	Narrow stream east/west		east,west	Underground water / shore
+3	40	40	water-shore	known	Narrow stream to land, land south		north	Underground water / shore
+3	41	41	water-shore	known	Narrow stream to land, land west		east	Underground water / shore
+3	42	42	water-shore	known	Narrow stream to land, land north		south	Underground water / shore
+3	43	43	water-shore	known	Narrow stream to land, land east		west	Underground water / shore
+3	44	44	water-shore	known	Narrow stream trifork north/west/east	Land transition is south.	north,east,west	Underground water / shore
+3	45	45	water-shore	known	Narrow stream trifork north/east/south	Land transition is west.	north,east,south	Underground water / shore
+3	46	46	water-shore	known	Narrow stream trifork west/south/east	Land transition is north.	east,south,west	Underground water / shore
+3	47	47	water-shore	known	Narrow stream trifork north/west/south	Land transition is east.	north,south,west	Underground water / shore
+3	48	48	water-shore	known	Narrow stream bend south/east		east,south	Underground water / shore
+3	49	49	water-shore	known	Narrow stream bend south/west		south,west	Underground water / shore
+3	50	50	water-shore	known	Narrow stream bend north/east		north,east	Underground water / shore
+3	51	51	water-shore	known	Narrow stream bend north/west		north,west	Underground water / shore
+3	55	55	road	known	Solid cobblestones			Cavern path / bridge art
+3	60	60	water-shore	known	Full water	Normal full-water center tile.		Underground water / shore
+3	61	61	mountain-land	likely	Solid cave wall	Subterranean atlas slot aligned with the Plains mountain fill family.		Cave wall to floor
+3	62	65	mountain-land	known	Cave wall to floor			Cave wall to floor
+3	66	66	mountain-land	known	Mountain to land	Runtime-solid mountain transition tile with visible grass cutout.		Cave wall to floor
+3	67	84	mountain-land	known	Cave wall to floor			Cave wall to floor
+3	85	85	mountain-land	known	Mountain to land	End of the mountain-to-land atlas run.		Cave wall to floor
+3	86	86	mountain-water	known	Mountain to water	Start of the mountain-to-water atlas run.		Cave wall to water
+3	87	92	mountain-water	known	Cave wall to water			Cave wall to water
+3	93	93	mountain-water	known	Mountain to water	End of the mountain-to-water atlas run.		Cave wall to water
+3	94	104	road	likely	Cavern path / bridge art			Cavern path / bridge art
+3	113	114	buildings	likely	Underground structures			Underground structures
+3	118	129	forest	likely	Underground growth transition	Primary contiguous forest tiles used by the smart forest brush.		Underground growth transition
+3	130	130	road	known	Road bridge east/west over water		east,west	Cavern path / bridge art
+3	131	131	road	known	Road bridge north/south over water		north,south	Cavern path / bridge art
+3	132	132	road	known	Road east/west		east,west	Cavern path / bridge art
+3	133	133	road	known	Road north/south		north,south	Cavern path / bridge art
+3	134	134	road	known	Road four-way junction		north,east,south,west	Cavern path / bridge art
+3	135	135	road	known	Road junction east/south/west		east,south,west	Cavern path / bridge art
+3	136	136	road	known	Road junction north/east/west		north,east,west	Cavern path / bridge art
+3	137	137	road	known	Road junction north/east/south		north,east,south	Cavern path / bridge art
+3	138	138	road	known	Road junction north/south/west		north,south,west	Cavern path / bridge art
+3	139	139	road	known	Road bend east/south		east,south	Cavern path / bridge art
+3	140	140	road	known	Road bend north/west		north,west	Cavern path / bridge art
+3	141	141	road	known	Road bend north/east		north,east	Cavern path / bridge art
+3	142	142	road	known	Road bend south/west		south,west	Cavern path / bridge art
+3	143	143	road	known	Road endpoint east		east	Cavern path / bridge art
+3	144	144	road	known	Road endpoint south		south	Cavern path / bridge art
+3	145	145	road	known	Road endpoint west		west	Cavern path / bridge art
+3	146	146	road	known	Road endpoint north		north	Cavern path / bridge art
+3	147	147	watercraft	known	Boat / raft			Boat / watercraft
+3	150	154	tree-detail	known	Underground growth detail	Decorative tree/detail pieces, not contiguous smart-forest fill tiles.		Underground growth detail
+3	159	167	rocks	known	Cave rocks / rubble			Cave rocks / rubble
+3	169	169	uncertain	uncertain	Unreviewed tile			Terrain edge transition
+3	170	179	buildings	likely	Underground structures			Underground structures
+3	180	183	buildings	uncertain	Underground structures			Underground structures
+3	184	186	buildings	likely	Underground structures			Underground structures
+3	190	200	buildings	known	Underground structures			Underground structures
+4	1	1	buildings	known	Straight north-south gray wall	Gray brick wall with north-south continuity; land west and east.		Castle structures
+4	2	2	buildings	known	South-facing east-west gray wall	Gray brick wall with east-west continuity; land north. The projected south-facing brick facade extends through the southern part of the tile.		Castle structures
+4	3	3	buildings	known	Gray wall to southeast thick wall	Gray wall runs north-south and branches east from the center into thick red/black wall in the southeast. Land west with a small northeast corner pocket.		Castle structures
+4	4	4	buildings	known	Gray wall to southwest thick wall	Gray wall runs north-south and branches west from the center into thick red/black wall in the southwest. Land east with a small northwest corner pocket.		Castle structures
+4	5	5	buildings	known	Gray wall with southwest thick-wall junction	Gray wall runs north-south and branches west from the center into thick red/black wall in the southwest. Land west with a small northwest corner pocket.		Castle structures
+4	6	6	buildings	known	Gray wall with southwest room corner	Gray north-south wall with red/black rock in the small northwest corner; the southwest corner is the northeast corner of a room. Land east.		Castle structures
+4	7	7	buildings	known	East-facing wall lever	Gray north-south wall facing east with a lever or switch slot at the east midpoint. Land east and west.		Castle structures
+4	8	8	buildings	known	South-facing wall lever	Gray east-west wall facing south with a lever or switch slot at the south midpoint. Land north.		Castle structures
+4	9	9	buildings	known	East-facing wall torch	Gray north-south wall facing east with a torch at the east midpoint. Land east and west.		Castle structures
+4	10	10	buildings	known	South-facing wall torch	Gray east-west wall facing south with a torch at the south midpoint. Land north.		Castle structures
+4	11	11	buildings	known	Gray southeast wall junction	Topology matches tile 3, but a south-facing east-west gray wall occupies the southeast corner instead of thick red/black wall. Land west with a small northeast corner pocket.		Castle structures
+4	12	12	buildings	known	Gray southwest wall junction	Topology matches tile 4, but a south-facing east-west gray wall occupies the southwest corner instead of thick red/black wall. Land east with a small northwest corner pocket.		Castle structures
+4	13	13	buildings	known	Gray north-east wall corner	Gray wall runs from the north midpoint to center, then from center to the east midpoint. South-facing wall perspective; land west with a small northeast corner pocket.		Castle structures
+4	14	14	buildings	known	Gray north-west wall corner	Horizontal mirror of tile 13: wall runs from the north midpoint to center, then west. South-facing wall perspective; land east with a small northwest corner pocket.		Castle structures
+4	15	15	buildings	known	Gray south-east wall corner	Gray wall runs from the south midpoint to center, then east. South-facing wall perspective; land north and west.		Castle structures
+4	16	16	buildings	known	Gray south-west wall corner	Horizontal mirror of tile 15: wall runs from the south midpoint to center, then west. South-facing wall perspective; land north and east.		Castle structures
+4	17	17	buildings	known	Gray north-east-west wall junction	Three-way wall with continuity north, east, and west. South-facing wall perspective; land in small northwest and northeast corner pockets.		Castle structures
+4	18	18	buildings	known	Gray east-west-south wall junction	South-facing gray east-west wall with continuity east, west, and south. Land north.		Castle structures
+4	19	19	buildings	known	Gray four-way wall junction	Cross wall with north, east, south, and west continuity. South-facing wall perspective; land in small northwest and northeast corner pockets.		Castle structures
+4	20	20	buildings	known	South end-cap for north-south gray wall	Wall connects north and terminates south; the expected southern neighbor is land. Land east and west. Perspective masonry reaches the south edge despite not continuing south.		Castle structures
+4	21	21	buildings	known	West end-cap for east-west gray wall	South-facing wall extends from the east midpoint to center and terminates west. Land north and west; projected facade may extend to the tile edge without logical continuity.		Castle structures
+4	22	22	buildings	known	North end-cap for north-south gray wall	Wall connects south and terminates north. Land west, north, and east; the oblique projection emphasizes the east side of the wall.		Castle structures
+4	23	23	buildings	known	East end-cap for east-west gray wall	Horizontal mirror of tile 21: south-facing wall extends from the west midpoint to center and terminates east. Land north and east.		Castle structures
+4	24	24	buildings	known	Thick wall west, land east	Thick red/black wall region west with a gray east-facing boundary and land east. Wall continuity north, south, and west.		Castle structures
+4	25	25	buildings	known	Thick wall north, land south	Thick red/black wall region north with a gray south-facing boundary and land south. Wall continuity north, east, and west.		Castle structures
+4	26	26	buildings	known	Northwest land pocket with southwest wall	Based on tile 24, but land is limited to a small northwest corner pocket and a south-facing east-west gray wall occupies the southwest corner.		Castle structures
+4	27	27	buildings	known	Northeast land pocket with southeast wall	Horizontal mirror of tile 26: land is limited to a small northeast corner pocket and a south-facing east-west gray wall occupies the southeast corner.		Castle structures
+4	28	28	buildings	known	Thick wall northeast, land southwest	Thick red/black northeast outside corner with gray west- and south-facing boundaries. Land southwest; wall continuity north and east.		Castle structures
+4	29	29	buildings	known	Thick wall northwest, land southeast	Horizontal mirror of tile 28: thick red/black northwest outside corner with gray east- and south-facing boundaries. Land southeast; wall continuity north and west.		Castle structures
+4	30	30	buildings	known	Thick wall southeast, land northwest	Thick red/black southeast outside corner with gray north- and west-facing boundaries. Land northwest; wall continuity south and east.		Castle structures
+4	31	31	buildings	known	Thick wall southwest, land northeast	Thick red/black southwest outside corner with gray north- and east-facing boundaries. Land northeast; wall continuity south and west.		Castle structures
+4	32	32	buildings	known	Thick wall south with north junction	Thick red/black wall fills the bottom half. Gray wall continuity west, east, and north.		Castle structures
+4	33	33	buildings	known	Thick wall north with south junction	Vertical counterpart of tile 32: thick red/black wall fills the top half with gray wall continuity west, east, and south. South-facing projection shows wall rather than floor in the southwest and southeast corners.		Castle structures
+4	34	34	buildings	known	Southwest thick wall with northeast pocket	Thick red/black wall southwest meets gray walls with north and east continuity. Land in a small northeast corner pocket.		Castle structures
+4	35	35	buildings	known	Southeast thick wall with northwest pocket	Horizontal mirror of tile 34: thick red/black wall southeast meets gray walls with north and west continuity. Land in a small northwest corner pocket.		Castle structures
+4	36	36	buildings	known	Northwest thick wall with projected southeast face	Vertical counterpart of tile 34: thick red/black wall northwest meets gray walls with south and east continuity. South-facing projection shows wall in the southeast corner instead of floor.		Castle structures
+4	37	37	buildings	known	Northeast thick wall with projected southwest face	Horizontal mirror of tile 36: thick red/black wall northeast meets gray walls with south and west continuity. South-facing projection shows wall in the southwest corner instead of floor.		Castle structures
+4	38	38	buildings	known	Deep thick wall south, land north	Thick red/black wall region south with a gray north-facing boundary and land north; a deeper projected variant of the south wall boundary.		Castle structures
+4	39	39	buildings	known	Deep thick wall east, land west	Thick red/black wall region east with a gray west-facing boundary and land west; a deeper projected wall variant.		Castle structures
+4	40	40	buildings	known	Solid thick red-black wall	Solid thick red/black outer-wall fill with no land. Perspective filler may touch tile edges without indicating a traversable connection.		Castle structures
+4	41	41	buildings	known	East-facing torch on thick wall	Thick red/black north-south wall with an east-facing gray facade and torch. Land or floor east.		Castle structures
+4	42	42	buildings	known	South-facing torch on thick wall	Thick red/black east-west wall with a south-facing gray facade and torch. Land or floor south.		Castle structures
+4	43	43	buildings	known	Purple curtains on thick south wall	Thick red/black east-west wall with purple curtains on its south-facing wall. Land or floor south.		Castle structures
+4	44	44	buildings	known	Purple curtains on gray south wall	Gray east-west wall with purple curtains on its south face. Land north and south.		Castle structures
+4	45	45	buildings	known	Red curtains on gray south wall	Gray east-west wall with red curtains on its south face. Land north and south.		Castle structures
+4	46	46	buildings	known	Green curtains on gray south wall	Gray east-west wall with green curtains on its south face. Land north and south.		Castle structures
+4	47	47	buildings	known	Gray wall with southwest thick-wall pocket	South-facing gray east-west wall with continuity west, east, and south. Thick red/black pocket southwest; land north.		Castle structures
+4	48	48	buildings	known	Gray wall with southeast thick-wall pocket	Horizontal mirror of Castle tile 47. Thick red/black pocket southeast; land north.		Castle structures
+4	49	49	buildings	known	Vertical mirror of southeast pocket wall	Vertical mirror of Castle tile 48.		Castle structures
+4	50	50	cave-transition	known	Tunnel through thick south wall	Thick red/black east-west wall with a south-facing brick facade and tunnel. The tunnel enters from land to the south.	north,east	Cave transition
+4	51	51	buildings	known	East-facing fountain wall	Thick red/black wall west with a gray north-south facade and fountain on its east side. Land east.		Castle structures
+4	52	52	buildings	known	West-facing fountain wall	Horizontal mirror of Castle tile 51. Thick wall east, fountain on the west side, and land west.		Castle structures
+4	53	53	buildings	known	North-facing teal fountain wall	Thick red/black wall south with a teal or green fountain facing north.		Castle structures
+4	54	54	hazard	known	South-facing lava skull wall	Inset skull rock at the south midpoint of a thick red/black wall spews lava south. Land or lava south.		Fire / hazard
+4	55	55	hazard	known	East-facing lava skull wall	Thick red/black north-south wall west with an inset skull rock spewing lava east.		Fire / hazard
+4	56	56	hazard	known	West-facing lava skull wall	Horizontal mirror of Castle tile 55; the skull rock spews lava west.		Fire / hazard
+4	57	57	hazard	known	North-facing lava skull wall	Vertical mirror of Castle tile 54; the skull rock spews lava north.		Fire / hazard
+4	58	58	buildings	known	East-ascending stone stairway	Gray stone stairway running west-east; the east side ascends.		Castle structures
+4	59	65	buildings	known	Combat-clearing castle wall	Solid during land exploration; its Realmz combat build expands entirely into non-solid ground.		Castle structures
+4	66	66	buildings	known	Mirrored masonry wall transition	Horizontal mirror of Castle tile 49. Realmz marks the tile solid and line-of-sight blocking.		Castle structures
+4	67	67	blank	known	Pure white tile	Pure white atlas tile, probably not intended for scenario authoring despite having walkable runtime metadata.		Blank / unused
+4	68	68	hazard	known	Pit	Pit terrain. Realmz requires flight or floating movement.		Fire / hazard
+4	69	69	buildings	known	Stairway descending underground	Gray masonry stairway descending into the ground. Realmz marks the tile walkable.		Castle structures
+4	70	70	hazard	known	Dark acid pit	Dark pit with acid at the bottom. Realmz requires flight or floating movement.		Fire / hazard
+4	71	71	hazard	known	Lava	Lava hazard requiring special movement or flight.		Fire / hazard
+4	72	72	hazard	likely	Acid pool	Green liquid hazard, likely acid. It uses the same restricted movement behavior as lava.		Fire / hazard
+4	73	73	water-shore	known	Shallow water	Shallow blue water that Realmz marks normally walkable.		Moat / water transition
+4	74	74	buildings	known	North-south portcullis passage	Walk-through masonry passage running north-south with a portcullis. Walkable, but blocks line of sight.		Castle structures
+4	75	75	buildings	known	East-west portcullis passage	Walk-through masonry passage running east-west with a portcullis. Walkable, but blocks line of sight.		Castle structures
+4	76	76	buildings	known	North-south wooden-door passage	Walk-through masonry passage running north-south with a wooden door. Walkable, but blocks line of sight.		Castle structures
+4	77	77	buildings	known	East-west wooden-door passage	Walk-through masonry passage running east-west with a wooden door. Walkable, but blocks line of sight.		Castle structures
+4	78	78	terrain-prop	known	Red rug center	Center fill for the red rug family.		Terrain prop
+4	79	79	terrain-prop	known	Red rug northwest outside edge	Northwest rug tile with gold embroidery on the outside left and top edges.		Terrain prop
+4	80	80	terrain-prop	known	Red rug northwest inside corner	Northwest rug tile with gold embroidery on the inside bottom and right corners.		Terrain prop
+4	81	81	terrain-prop	known	Red rug southwest outside corner	Southwest outside rug corner with gold embroidery on the left and bottom edges.		Terrain prop
+4	82	82	terrain-prop	known	Red rug southwest inside corner	Southwest inside rug corner with gold embroidery on the top and right edges.		Terrain prop
+4	83	83	terrain-prop	known	Red rug southeast outside corner	Southeast outside rug corner with gold embroidery on the right and bottom edges.		Terrain prop
+4	84	84	terrain-prop	known	Red rug southeast inside corner	Southeast inside rug corner with gold embroidery on the top and left edges.		Terrain prop
+4	85	85	terrain-prop	known	Red rug northeast outside corner	Northeast outside rug corner with gold embroidery on the top and right edges.		Terrain prop
+4	86	86	terrain-prop	known	Red rug northeast inside corner	Northeast inside rug corner with gold embroidery on the bottom and left edges.		Terrain prop
+4	87	87	terrain-prop	known	Red rug east edge	Straight rug edge with gold embroidery on the right side.		Terrain prop
+4	88	88	terrain-prop	known	Red rug north edge	Straight rug edge with gold embroidery on the top side.		Terrain prop
+4	89	89	terrain-prop	known	Red rug south edge	Straight rug edge with gold embroidery on the bottom side.		Terrain prop
+4	90	90	terrain-prop	known	Red rug west edge	Straight rug edge with gold embroidery on the left side.		Terrain prop
+4	91	91	hazard	known	Square floor hatch or covered pit	Square hatch set into stone floor. Its Realmz combat expansion places pit tile 68 in the center.		Fire / hazard
+4	92	92	buildings	known	Double wooden door	Double wooden door set into stone floor.		Castle structures
+4	93	93	terrain-prop	known	Horizontal wooden floor or bridge	Horizontal wooden floor or bridge section.		Terrain prop
+4	94	94	terrain-prop	known	Vertical wooden floor or bridge	Vertical wooden floor or bridge section.		Terrain prop
+4	95	95	open	known	Gray marble floor			Open land / clear terrain
+4	96	96	buildings	known	Hidden walkable thick red-black wall	Thick red/black wall artwork that Realmz marks walkable and as a runtime path.		Castle structures
+4	97	97	rocks	known	Broken stone floor	Stone floor with broken stones.		Stone rubble / courtyard prop
+4	98	98	terrain-prop	known	Stained stone floor	Stone floor with stains.		Terrain prop
+4	99	99	terrain-prop	likely	Cobblestone with west white feature	Likely a white bench on the west side; it may instead be one segment of a joinable decorative inlay.		Terrain prop
+4	100	100	terrain-prop	likely	Cobblestone with east white feature	Likely a white bench on the east side; it may instead be one segment of a joinable decorative inlay.		Terrain prop
+4	101	101	terrain-prop	likely	Cobblestone with north white feature	Likely a white bench on the north side; it may instead be one segment of a joinable decorative inlay.		Terrain prop
+4	102	102	terrain-prop	likely	Cobblestone with south white feature	Likely a white bench on the south side; it may instead be one segment of a joinable decorative inlay.		Terrain prop
+4	103	103	terrain-prop	likely	Cobblestone with southwest white feature	Likely a white stool in the southwest; it may instead be part of a joinable decorative inlay.		Terrain prop
+4	104	104	terrain-prop	likely	Cobblestone with northwest white feature	Likely a white stool in the northwest; it may instead be part of a joinable decorative inlay.		Terrain prop
+4	105	105	terrain-prop	likely	Cobblestone with southeast white feature	White stool or decorative inlay in the southeast.		Terrain prop
+4	106	106	terrain-prop	likely	Cobblestone with northeast white feature	White stool or decorative inlay in the northeast.		Terrain prop
+4	107	107	terrain-prop	likely	Cobblestone with north-east white feature	Joined white bench or decorative inlay on the north and east sides.		Terrain prop
+4	108	108	terrain-prop	likely	Cobblestone with north-west white feature	Joined white bench or decorative inlay on the north and west sides.		Terrain prop
+4	109	109	terrain-prop	likely	Cobblestone with south-east white feature	Joined white bench or decorative inlay on the south and east sides.		Terrain prop
+4	110	110	terrain-prop	likely	Cobblestone with south-west white feature	Joined white bench or decorative inlay on the south and west sides.		Terrain prop
+4	111	111	open	known	Plain cobblestone floor			Open land / clear terrain
+4	112	112	terrain-prop	known	Cobblestone with single bloodstain			Terrain prop
+4	113	113	terrain-prop	known	Cobblestone with multiple bloodstains			Terrain prop
+4	114	114	hazard	known	Cobblestone with green stains	Green slime or acid stains on cobblestone floor.		Fire / hazard
+4	115	115	terrain-prop	known	Cobblestone with single scroll			Terrain prop
+4	116	116	terrain-prop	known	Cobblestone with single skull			Terrain prop
+4	117	117	terrain-prop	known	Cobblestone with equipment pile	Pile of equipment, treasure, or miscellaneous items on cobblestone floor.		Terrain prop
+4	118	118	buildings	known	Large machine, lever up	Large solid machine with its lever in the up position. Blocks line of sight.		Castle structures
+4	119	119	buildings	known	Large machine, lever down	Large solid machine with its lever in the down position. Blocks line of sight.		Castle structures
+4	120	120	terrain-prop	known	Cobblestone with blue magical effect	Blue magical effect or stain on cobblestone floor.		Terrain prop
+4	121	121	terrain-prop	known	Cobblestone with lever down			Terrain prop
+4	122	122	terrain-prop	known	Cobblestone with lever up			Terrain prop
+4	123	123	terrain-prop	known	Cobblestone with skeleton remains			Terrain prop
+4	124	124	terrain-prop	known	Cobblestone with one sack	One sack or bundle on cobblestone floor.		Terrain prop
+4	125	125	terrain-prop	known	Cobblestone with three sacks	Three sacks or bundles on cobblestone floor.		Terrain prop
+4	126	126	terrain-prop	known	Cobblestone with east-facing wooden chair			Terrain prop
+4	127	127	terrain-prop	known	Cobblestone with west-facing wooden chair			Terrain prop
+4	128	128	terrain-prop	known	Cobblestone with small wooden stool			Terrain prop
+4	129	129	terrain-prop	known	Empty weapon rack			Terrain prop
+4	130	130	terrain-prop	known	Weapon rack with swords			Terrain prop
+4	131	131	terrain-prop	known	Weapon rack with spears			Terrain prop
+4	132	132	terrain-prop	known	Weapon rack with javelins			Terrain prop
+4	133	133	terrain-prop	known	Weapon rack with long axes			Terrain prop
+4	134	134	cave-transition	known	Floor ladder leading up	Ladder lying on or emerging from the floor and leading upward.	north,east,south,west	Cave transition
+4	135	135	cave-transition	known	Floor hole with ladder leading down		east,south,west	Cave transition
+4	136	136	terrain-prop	known	Pile of sacks or supplies			Terrain prop
+4	137	137	terrain-prop	known	Two wooden crates			Terrain prop
+4	138	138	terrain-prop	known	Two barrels			Terrain prop
+4	139	139	terrain-prop	known	Brown and gold jugs	Several brown and gold jugs on the floor.		Terrain prop
+4	140	140	terrain-prop	known	Colored equipment rack	Rack of colored weapons, clothing, or banners.		Terrain prop
+4	141	141	terrain-prop	known	Short round stone column			Terrain prop
+4	142	142	terrain-prop	known	Top half of stone column			Terrain prop
+4	143	143	terrain-prop	known	Bottom half of stone column			Terrain prop
+4	144	144	terrain-prop	known	Unoccupied ornate throne			Terrain prop
+4	145	145	terrain-prop	known	Wooden writing desk or workbench			Terrain prop
+4	146	146	terrain-prop	known	Alchemy table with colored bottles			Terrain prop
+4	147	147	terrain-prop	known	Plain wooden desk facing north			Terrain prop
+4	148	148	terrain-prop	known	Plain wooden desk facing south			Terrain prop
+4	149	149	terrain-prop	known	White chest facing south	White chest or strongbox facing south.		Terrain prop
+4	150	150	terrain-prop	known	Ornate closed chest facing south			Terrain prop
+4	151	151	terrain-prop	known	Wooden chest facing west	Side-profile wooden chest facing west.		Terrain prop
+4	152	152	terrain-prop	known	Standing torch			Terrain prop
+4	153	153	terrain-prop	known	Left half of sarcophagus			Terrain prop
+4	154	154	terrain-prop	known	Right half of sarcophagus			Terrain prop
+4	155	155	open	known	Plain cobblestone floor			Open land / clear terrain
+4	156	156	terrain-prop	known	Left half of bed			Terrain prop
+4	157	157	terrain-prop	known	Right half of bed			Terrain prop
+4	158	158	terrain-prop	known	Left end of long wooden table			Terrain prop
+4	159	159	terrain-prop	known	Center of long wooden table			Terrain prop
+4	160	160	terrain-prop	known	Long wooden table center with bottles			Terrain prop
+4	161	161	terrain-prop	known	Long wooden table center with food	Long table center with food or place settings.		Terrain prop
+4	162	162	terrain-prop	known	Right end of long wooden table			Terrain prop
+4	163	163	terrain-prop	known	Left side of torture rack			Terrain prop
+4	164	164	terrain-prop	known	Right side of torture rack			Terrain prop
+4	165	165	terrain-prop	known	Left half of yellow bed			Terrain prop
+4	166	166	terrain-prop	known	Right half of yellow bed			Terrain prop
+4	167	167	terrain-prop	known	Standing floor mirror	Walkable floor fixture that blocks line of sight.		Terrain prop
+4	168	168	blank	known	Pure white tile	Likely unused and not intended for scenario authoring.		Blank / unused
+4	169	169	terrain-prop	known	Short bookcase			Terrain prop
+4	170	170	terrain-prop	known	Tall bookcase with skull			Terrain prop
+4	171	171	terrain-prop	known	Wooden dresser			Terrain prop
+4	172	172	terrain-prop	known	Wooden dresser with books	Wooden dresser with books on top.		Terrain prop
+4	173	173	terrain-prop	known	Green standing person statue			Terrain prop
+4	174	174	terrain-prop	known	Blue standing person statue			Terrain prop
+4	175	175	terrain-prop	known	White standing person statue			Terrain prop
+4	176	176	hazard	known	Brazier or fire bowl	Walkable floor fixture that blocks line of sight.		Fire / hazard
+4	177	177	terrain-prop	known	Top half of tall purple throne	This half blocks line of sight.		Terrain prop
+4	178	178	terrain-prop	known	Bottom half of tall purple throne			Terrain prop
+4	179	179	terrain-prop	known	Top of west-facing stone gargoyle	Top half of a stone dragon or gargoyle facing west.		Terrain prop
+4	180	180	terrain-prop	known	Bottom of west-facing stone gargoyle	Bottom half of a stone dragon or gargoyle facing west.		Terrain prop
+4	181	181	water-shore	known	Stone platform surrounded by water	Large gray stone platform surrounded by water.		Moat / water transition
+4	182	182	hazard	known	Stone platform surrounded by acid	Large gray stone platform surrounded by acid.		Fire / hazard
+4	183	183	hazard	known	Black stone platform surrounded by lava	Large black stone platform surrounded by lava.		Fire / hazard
+4	184	184	terrain-prop	known	Magic bubble with runes	Runed magical bubble. Realmz marks this tile as blocking line of sight.		Terrain prop
+4	185	185	terrain-prop	known	Left half of coffin			Terrain prop
+4	186	186	terrain-prop	known	Right half of coffin			Terrain prop
+4	187	187	buildings	known	North-wall open door, upper left component	Left side of the upper half of a long open door swinging from a north wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	188	188	buildings	known	North-wall open door, upper right component	Right side of the upper half where the open door meets the north wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	189	189	buildings	known	North-wall east end cap	Right end cap terminating the north wall to the east. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	190	190	buildings	known	North-wall open door, lower left component	Vertical counterpart of tile 187 and the lower paired half of the long open door. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	191	191	buildings	known	North-wall open door, lower right component	Vertical counterpart of tile 188 and the lower paired half where the door meets the wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	192	192	buildings	known	North-wall east end-cap counterpart	Vertical counterpart of tile 189. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76.		Castle structures
+4	193	193	buildings	known	West-wall open door, upper component	Upper half of a door swinging north from a west wall. Also commonly used as surrounding wall fill. Realmz uses it in the combat expansion for tiles 75 and 77.		Castle structures
+4	194	194	buildings	known	East-wall open door, upper component	Upper half of a door swinging north from an east wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77.		Castle structures
+4	195	195	buildings	known	West-wall open door, lower component	Lower half of the open door where it meets the west wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77.		Castle structures
+4	196	196	buildings	known	East-wall open door, lower component	Lower half of the open door where it meets the east wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77.		Castle structures
+4	197	197	buildings	known	Cobblestone to east black wall	Cobblestone or land on the left transitions to thick black wall on the right. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77.		Castle structures
+4	198	198	buildings	known	Cobblestone to west black wall	Horizontal mirror of tile 197: thick black wall on the left and cobblestone or land on the right. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77.		Castle structures
+4	199	199	terrain-prop	likely	Left half of purple altar or sarcophagus	Left half of a purple altar, bench, or sarcophagus-like object.		Terrain prop
+4	200	200	terrain-prop	likely	Right half of purple altar or sarcophagus	Right half of the purple object paired with tile 199.		Terrain prop
+5	1	1	water-shore	known	Shoreline, land west			Oasis / shore transition
+5	2	2	water-shore	known	Shoreline, land east			Oasis / shore transition
+5	3	3	water-shore	known	Shoreline, land north			Oasis / shore transition
+5	4	4	water-shore	known	Shoreline, land south			Oasis / shore transition
+5	5	5	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top midpoint to bottom-right.		Oasis / shore transition
+5	6	6	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to bottom midpoint.		Oasis / shore transition
+5	7	7	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top-right to bottom midpoint.		Oasis / shore transition
+5	8	8	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top midpoint to bottom-left.		Oasis / shore transition
+5	9	9	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom midpoint to top-right.		Oasis / shore transition
+5	10	10	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to top midpoint.		Oasis / shore transition
+5	11	11	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to bottom midpoint.		Oasis / shore transition
+5	12	12	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top midpoint to bottom-right.		Oasis / shore transition
+5	13	13	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to right midpoint.		Oasis / shore transition
+5	14	14	water-shore	known	Sloped shoreline, land northeast	Boundary runs from left midpoint to bottom-right.		Oasis / shore transition
+5	15	15	water-shore	known	Sloped shoreline, land southeast	Boundary runs from bottom-left to right midpoint.		Oasis / shore transition
+5	16	16	water-shore	known	Sloped shoreline, land southeast	Boundary runs from left midpoint to top-right.		Oasis / shore transition
+5	17	17	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to right midpoint.		Oasis / shore transition
+5	18	18	water-shore	known	Sloped shoreline, land northwest	Boundary runs from left midpoint to top-right.		Oasis / shore transition
+5	19	19	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to right midpoint.		Oasis / shore transition
+5	20	20	water-shore	known	Sloped shoreline, land southwest	Boundary runs from left midpoint to bottom-right.		Oasis / shore transition
+5	21	21	water-shore	known	Open water to narrow stream south		north,south	Oasis / shore transition
+5	22	22	water-shore	known	Open water to narrow stream west		east,west	Oasis / shore transition
+5	23	23	water-shore	known	Open water to narrow stream east		east,west	Oasis / shore transition
+5	24	24	water-shore	known	Open water to narrow stream north		north,south	Oasis / shore transition
+5	25	25	water-shore	known	Quarter water southeast			Oasis / shore transition
+5	26	26	water-shore	known	Quarter water southwest			Oasis / shore transition
+5	27	27	water-shore	known	Quarter water northeast			Oasis / shore transition
+5	28	28	water-shore	known	Quarter water northwest			Oasis / shore transition
+5	29	29	water-shore	known	Inward shoreline corner, land northeast			Oasis / shore transition
+5	30	30	water-shore	known	Inward shoreline corner, land northwest			Oasis / shore transition
+5	31	31	water-shore	known	Inward shoreline corner, land southeast			Oasis / shore transition
+5	32	32	water-shore	known	Inward shoreline corner, land southwest			Oasis / shore transition
+5	33	33	rocks	known	One rock in water	Optional decorative full-water tile.		Desert rocks / rubble
+5	34	34	rocks	known	Two rocks in water	Optional decorative full-water tile.		Desert rocks / rubble
+5	35	35	rocks	known	Several rocks in water	Optional decorative full-water tile.		Desert rocks / rubble
+5	36	36	open	known	Open desert sand	Walkable sand; unlike the aligned Plains slot, this is not blank.		Open land / clear terrain
+5	38	38	water-shore	known	Narrow stream north/south		north,south	Oasis / shore transition
+5	39	39	water-shore	known	Narrow stream east/west		east,west	Oasis / shore transition
+5	40	40	water-shore	known	Narrow stream to land, land south		north	Oasis / shore transition
+5	41	41	water-shore	known	Narrow stream to land, land west		east	Oasis / shore transition
+5	42	42	water-shore	known	Narrow stream to land, land north		south	Oasis / shore transition
+5	43	43	water-shore	known	Narrow stream to land, land east		west	Oasis / shore transition
+5	44	44	water-shore	known	Narrow stream trifork north/west/east	Land transition is south.	north,east,west	Oasis / shore transition
+5	45	45	water-shore	known	Narrow stream trifork north/east/south	Land transition is west.	north,east,south	Oasis / shore transition
+5	46	46	water-shore	known	Narrow stream trifork west/south/east	Land transition is north.	east,south,west	Oasis / shore transition
+5	47	47	water-shore	known	Narrow stream trifork north/west/south	Land transition is east.	north,south,west	Oasis / shore transition
+5	48	48	water-shore	known	Narrow stream bend south/east		east,south	Oasis / shore transition
+5	49	49	water-shore	known	Narrow stream bend south/west		south,west	Oasis / shore transition
+5	50	50	water-shore	known	Narrow stream bend north/east		north,east	Oasis / shore transition
+5	51	51	water-shore	known	Narrow stream bend north/west		north,west	Oasis / shore transition
+5	52	52	water-shore	likely	Small oasis pool with central rock			Oasis / shore transition
+5	53	53	water-shore	known	Round oasis pool			Oasis / shore transition
+5	54	54	water-shore	known	Small oasis pool			Oasis / shore transition
+5	55	55	water-shore	known	Elongated oasis pool			Oasis / shore transition
+5	60	60	water-shore	known	Full desert water	Normal full-water center tile for the Desert landlook.		Oasis / shore transition
+5	61	61	mountain-land	known	Solid desert ridge	Full dark desert ridge or mountain fill aligned with the Plains mountain family.		Rock / dune to sand
+5	62	65	mountain-land	known	Rock / dune to sand			Rock / dune to sand
+5	66	66	mountain-land	known	Mountain to land	Runtime-solid mountain transition tile with visible grass cutout.		Rock / dune to sand
+5	67	84	mountain-land	known	Rock / dune to sand			Rock / dune to sand
+5	85	85	mountain-land	known	Mountain to land	End of the mountain-to-land atlas run.		Rock / dune to sand
+5	86	86	mountain-water	known	Mountain to water	Start of the mountain-to-water atlas run.		Rock / dune to water
+5	87	92	mountain-water	known	Rock / dune to water			Rock / dune to water
+5	93	93	mountain-water	known	Mountain to water	End of the mountain-to-water atlas run.		Rock / dune to water
+5	94	94	buildings	known	North-south desert briar wall	Solid and line-of-sight blocking.		Desert structures
+5	95	95	buildings	known	East-west desert briar wall	Solid and line-of-sight blocking.		Desert structures
+5	96	97	buildings	likely	Desert briar wall junction	Solid and line-of-sight blocking.		Desert structures
+5	98	99	buildings	likely	Desert briar wall corner	Solid and line-of-sight blocking.		Desert structures
+5	100	100	buildings	known	Desert briar wall cross-junction	Solid and line-of-sight blocking.		Desert structures
+5	101	102	buildings	likely	Desert briar wall junction	Solid and line-of-sight blocking.		Desert structures
+5	103	104	buildings	likely	Desert briar wall end or corner	Solid and line-of-sight blocking.		Desert structures
+5	113	113	buildings	likely	Walkable east-west desert briar passage	Walkable but line-of-sight blocking.		Desert structures
+5	114	114	buildings	likely	Walkable north-south desert briar passage	Walkable but line-of-sight blocking.		Desert structures
+5	115	115	road	known	Wooden desert bridge over water			Desert road / trail art
+5	116	116	road	likely	Wooden desert bridge and east shore			Desert road / trail art
+5	117	117	road	likely	Wooden desert bridge and west shore			Desert road / trail art
+5	118	118	tree-detail	known	Lone palm tree	Realmz marks this as Desert forest type 2.		Desert scrub detail
+5	119	119	tree-detail	known	Two palm trees	Realmz marks this as Desert forest type 2.		Desert scrub detail
+5	120	120	tree-detail	known	Three palm trees	Realmz marks this as Desert forest type 2.		Desert scrub detail
+5	121	121	forest	known	Solid palm grove	Center fill for the Desert palm-grove transition family.		Desert scrub transition
+5	122	129	forest	likely	Desert scrub transition	Primary contiguous forest tiles used by the smart forest brush.		Desert scrub transition
+5	130	130	road	likely	Wooden bridge or dock over water		east,west	Desert road / trail art
+5	131	131	road	known	Road bridge north/south over water		north,south	Desert road / trail art
+5	132	132	road	known	Road east/west		east,west	Desert road / trail art
+5	133	133	road	known	Road north/south		north,south	Desert road / trail art
+5	134	134	road	known	Road four-way junction		north,east,south,west	Desert road / trail art
+5	135	135	road	known	Road junction east/south/west		east,south,west	Desert road / trail art
+5	136	136	road	known	Road junction north/east/west		north,east,west	Desert road / trail art
+5	137	137	road	known	Road junction north/east/south		north,east,south	Desert road / trail art
+5	138	138	road	known	Road junction north/south/west		north,south,west	Desert road / trail art
+5	139	139	road	known	Road bend east/south		east,south	Desert road / trail art
+5	140	140	road	known	Road bend north/west		north,west	Desert road / trail art
+5	141	141	road	known	Road bend north/east		north,east	Desert road / trail art
+5	142	142	road	known	Road bend south/west		south,west	Desert road / trail art
+5	143	143	road	known	Road endpoint east		east	Desert road / trail art
+5	144	144	road	known	Road endpoint south		south	Desert road / trail art
+5	145	145	road	known	Road endpoint west		west	Desert road / trail art
+5	146	146	road	known	Road endpoint north		north	Desert road / trail art
+5	147	147	watercraft	known	Desert sailing vessel	Realmz mapstats marks this as boat-required movement.		Boat / watercraft
+5	148	148	tree-detail	known	Large desert palm cluster	Solid and line-of-sight blocking.		Desert scrub detail
+5	149	149	tree-detail	known	Tall desert reeds	Solid and line-of-sight blocking.		Desert scrub detail
+5	150	150	tree-detail	known	Large desert cactus	Solid and line-of-sight blocking.		Desert scrub detail
+5	151	151	tree-detail	known	Dense desert bush	Solid and line-of-sight blocking.		Desert scrub detail
+5	152	152	tree-detail	known	Dense desert scrub	Solid and line-of-sight blocking.		Desert scrub detail
+5	153	153	tree-detail	known	Large desert palm tree	Solid and line-of-sight blocking.		Desert scrub detail
+5	154	154	tree-detail	known	Dead desert tree	Walkable decorative vegetation.		Desert scrub detail
+5	155	155	tree-detail	known	Tall leafless desert tree	Walkable decorative vegetation.		Desert scrub detail
+5	156	156	tree-detail	known	Small dead desert tree	Walkable decorative vegetation.		Desert scrub detail
+5	157	157	tree-detail	likely	Red-fruited desert tree	Walkable decorative vegetation.		Desert scrub detail
+5	158	158	tree-detail	likely	Dead desert tree with foliage	Walkable decorative vegetation.		Desert scrub detail
+5	159	159	open	known	One small desert plant			Open land / clear terrain
+5	160	160	open	known	Three small desert plants			Open land / clear terrain
+5	161	161	rocks	known	One small desert rock			Desert rocks / rubble
+5	162	162	rocks	known	Two small desert rocks			Desert rocks / rubble
+5	163	163	rocks	likely	Desert boulder with small plant			Desert rocks / rubble
+5	164	164	rocks	known	Large desert rock			Desert rocks / rubble
+5	165	165	rocks	known	Two desert rocks			Desert rocks / rubble
+5	166	166	rocks	likely	Layered desert rock			Desert rocks / rubble
+5	167	167	rocks	known	Tall desert rock formation			Desert rocks / rubble
+5	168	168	buildings	likely	Desert stone gate or arch	Walkable structure; unlike the aligned Plains slot, this is not blank.		Desert structures
+5	169	169	road	known	Hidden walkable desert ridge	Dark ridge artwork that Realmz marks walkable and as a runtime path.		Desert road / trail art
+5	170	170	buildings	known	Desert hut			Desert structures
+5	171	171	buildings	likely	Desert hut with green-capped tower			Desert structures
+5	172	172	buildings	likely	Desert hut with pink-capped tower			Desert structures
+5	173	173	buildings	likely	Small desert tower hut with red window			Desert structures
+5	174	174	buildings	likely	Small desert tower hut with green dome			Desert structures
+5	175	175	buildings	known	Two connected tiny desert huts			Desert structures
+5	176	176	buildings	known	Three connected tiny desert huts			Desert structures
+5	177	177	buildings	likely	Sturdy desert tent with post			Desert structures
+5	178	178	buildings	known	Two sturdy desert tents			Desert structures
+5	179	179	buildings	likely	Canopy-suspended desert hut			Desert structures
+5	180	180	mountain-land	known	Combat-clearing desert mountain-to-land fill	Solid ridge terrain during land exploration; its Realmz combat build expands into non-solid desert ground.		Rock / dune to sand
+5	181	181	mountain-land	known	Combat-clearing desert mountain-to-land west edge	Solid during land exploration and open in Realmz combat expansion.		Rock / dune to sand
+5	182	182	mountain-land	known	Combat-clearing desert mountain-to-land transition	Solid during land exploration and open in Realmz combat expansion.		Rock / dune to sand
+5	183	183	mountain-land	known	Combat-clearing desert mountain-to-land east edge	Solid during land exploration and open in Realmz combat expansion.		Rock / dune to sand
+5	184	184	buildings	known	Hidden walkable north-south desert briar wall	Walkable path-marked wall that blocks line of sight; it is already open during land exploration rather than combat-clearing.		Desert structures
+5	185	185	buildings	known	Combat-clearing east-west desert briar wall	Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain.		Desert structures
+5	186	186	tree-detail	known	Small desert bush			Desert scrub detail
+5	187	187	tree-detail	known	Large desert shrub			Desert scrub detail
+5	188	188	tree-detail	known	Desert palm cluster			Desert scrub detail
+5	189	189	tree-detail	known	Tall desert grass			Desert scrub detail
+5	190	190	tree-detail	known	Low desert scrub			Desert scrub detail
+5	191	191	open	known	Plain desert sand	Primary source-defined Desert base tile.		Open land / clear terrain
+5	192	192	open	known	Alternate desert sand			Open land / clear terrain
+5	193	193	water-shore	known	Round oasis pool			Oasis / shore transition
+5	194	194	water-shore	known	Paired oasis pools			Oasis / shore transition
+5	195	195	open	uncertain	Bright desert sand or heat shimmer			Open land / clear terrain
+5	196	196	water-shore	known	Round oasis pool			Oasis / shore transition
+5	197	198	open	uncertain	Bright desert sand or heat shimmer			Open land / clear terrain
+5	199	199	water-shore	known	Connected oasis pools			Oasis / shore transition
+5	200	200	water-shore	known	Elongated oasis pool			Oasis / shore transition
+9	1	1	water-shore	known	Shoreline, land west			Swamp water / bog shore
+9	2	2	water-shore	known	Shoreline, land east			Swamp water / bog shore
+9	3	3	water-shore	known	Shoreline, land north			Swamp water / bog shore
+9	4	4	water-shore	known	Shoreline, land south			Swamp water / bog shore
+9	5	5	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top midpoint to bottom-right.		Swamp water / bog shore
+9	6	6	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to bottom midpoint.		Swamp water / bog shore
+9	7	7	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top-right to bottom midpoint.		Swamp water / bog shore
+9	8	8	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top midpoint to bottom-left.		Swamp water / bog shore
+9	9	9	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom midpoint to top-right.		Swamp water / bog shore
+9	10	10	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to top midpoint.		Swamp water / bog shore
+9	11	11	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to bottom midpoint.		Swamp water / bog shore
+9	12	12	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top midpoint to bottom-right.		Swamp water / bog shore
+9	13	13	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to right midpoint.		Swamp water / bog shore
+9	14	14	water-shore	known	Sloped shoreline, land northeast	Boundary runs from left midpoint to bottom-right.		Swamp water / bog shore
+9	15	15	water-shore	known	Sloped shoreline, land southeast	Boundary runs from bottom-left to right midpoint.		Swamp water / bog shore
+9	16	16	water-shore	known	Sloped shoreline, land southeast	Boundary runs from left midpoint to top-right.		Swamp water / bog shore
+9	17	17	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to right midpoint.		Swamp water / bog shore
+9	18	18	water-shore	known	Sloped shoreline, land northwest	Boundary runs from left midpoint to top-right.		Swamp water / bog shore
+9	19	19	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to right midpoint.		Swamp water / bog shore
+9	20	20	water-shore	known	Sloped shoreline, land southwest	Boundary runs from left midpoint to bottom-right.		Swamp water / bog shore
+9	21	21	water-shore	known	Open water to narrow stream south		north,south	Swamp water / bog shore
+9	22	22	water-shore	known	Open water to narrow stream west		east,west	Swamp water / bog shore
+9	23	23	water-shore	known	Open water to narrow stream east		east,west	Swamp water / bog shore
+9	24	24	water-shore	known	Open water to narrow stream north		north,south	Swamp water / bog shore
+9	25	25	water-shore	known	Quarter water southeast			Swamp water / bog shore
+9	26	26	water-shore	known	Quarter water southwest			Swamp water / bog shore
+9	27	27	water-shore	known	Quarter water northeast			Swamp water / bog shore
+9	28	28	water-shore	known	Quarter water northwest			Swamp water / bog shore
+9	29	29	water-shore	known	Inward shoreline corner, land northeast			Swamp water / bog shore
+9	30	30	water-shore	known	Inward shoreline corner, land northwest			Swamp water / bog shore
+9	31	31	water-shore	known	Inward shoreline corner, land southeast			Swamp water / bog shore
+9	32	32	water-shore	known	Inward shoreline corner, land southwest			Swamp water / bog shore
+9	33	33	rocks	known	One rock in water	Optional decorative full-water tile.		Swamp rocks / muck prop
+9	34	34	rocks	known	Two rocks in water	Optional decorative full-water tile.		Swamp rocks / muck prop
+9	35	35	rocks	known	Several rocks in water	Optional decorative full-water tile.		Swamp rocks / muck prop
+9	36	36	open	known	Open swamp ground	Plain brown swamp ground; unlike the aligned Plains slot, this is not a blank tile.		Open land / clear terrain
+9	37	37	open	known	Open swamp ground	Alternate plain brown swamp ground; unused in the current scenario corpus.		Open land / clear terrain
+9	38	38	water-shore	known	Narrow stream north/south		north,south	Swamp water / bog shore
+9	39	39	water-shore	known	Narrow stream east/west		east,west	Swamp water / bog shore
+9	40	40	water-shore	known	Narrow stream to land, land south		north	Swamp water / bog shore
+9	41	41	water-shore	known	Narrow stream to land, land west		east	Swamp water / bog shore
+9	42	42	water-shore	known	Narrow stream to land, land north		south	Swamp water / bog shore
+9	43	43	water-shore	known	Narrow stream to land, land east		west	Swamp water / bog shore
+9	44	44	water-shore	known	Narrow stream trifork north/west/east	Land transition is south.	north,east,west	Swamp water / bog shore
+9	45	45	water-shore	known	Narrow stream trifork north/east/south	Land transition is west.	north,east,south	Swamp water / bog shore
+9	46	46	water-shore	known	Narrow stream trifork west/south/east	Land transition is north.	east,south,west	Swamp water / bog shore
+9	47	47	water-shore	known	Narrow stream trifork north/west/south	Land transition is east.	north,south,west	Swamp water / bog shore
+9	48	48	water-shore	known	Narrow stream bend south/east		east,south	Swamp water / bog shore
+9	49	49	water-shore	known	Narrow stream bend south/west		south,west	Swamp water / bog shore
+9	50	50	water-shore	known	Narrow stream bend north/east		north,east	Swamp water / bog shore
+9	51	51	water-shore	known	Narrow stream bend north/west		north,west	Swamp water / bog shore
+9	52	52	graves	known	Closed coffin with crucifix			Graves / graveyard
+9	53	53	graves	known	Open coffin			Graves / graveyard
+9	54	54	graves	known	Closed coffin without crucifix	Can also serve visually as a closed chest.		Graves / graveyard
+9	55	55	terrain-prop	likely	Red bog patch	A solid red-brown patch replacing the aligned Plains cobblestone tile.		Terrain prop
+9	60	60	water-shore	known	Full swamp water	Normal full swamp-water center tile.		Swamp water / bog shore
+9	61	61	mountain-land	known	Solid bog bank	Full dark bog-bank or dense-growth fill aligned with the Plains mountain family.		Bog bank to ground
+9	62	65	mountain-land	known	Bog bank to ground			Bog bank to ground
+9	66	66	mountain-land	known	Mountain to land	Runtime-solid mountain transition tile with visible grass cutout.		Bog bank to ground
+9	67	84	mountain-land	known	Bog bank to ground			Bog bank to ground
+9	85	85	mountain-land	known	Mountain to land	End of the mountain-to-land atlas run.		Bog bank to ground
+9	86	86	mountain-water	known	Mountain to water	Start of the mountain-to-water atlas run.		Bog bank to water
+9	87	92	mountain-water	known	Bog bank to water			Bog bank to water
+9	93	93	mountain-water	known	Mountain to water	End of the mountain-to-water atlas run.		Bog bank to water
+9	94	104	road	likely	Swamp path / bridge art			Swamp path / bridge art
+9	113	114	buildings	likely	Swamp structures			Swamp structures
+9	115	115	buildings	likely	Spiked barrier over swamp water			Swamp structures
+9	116	116	buildings	likely	Spiked swamp barrier transition	Bank-and-water variant of the spiked barrier family.		Swamp structures
+9	117	117	buildings	likely	Spiked swamp barrier transition	Mirrored bank-and-water variant of the spiked barrier family.		Swamp structures
+9	118	118	tree-detail	known	Lone swamp tree	Realmz marks this as swamp forest type 4.		Swamp tree detail
+9	119	119	tree-detail	known	Two swamp trees	Realmz marks this as swamp forest type 4.		Swamp tree detail
+9	120	120	tree-detail	known	Three swamp trees	Realmz marks this as swamp forest type 4.		Swamp tree detail
+9	121	129	forest	likely	Swamp tree transition	Primary contiguous forest tiles used by the smart forest brush.		Swamp tree transition
+9	130	130	road	known	Road bridge east/west over water		east,west	Swamp path / bridge art
+9	131	131	road	known	Road bridge north/south over water		north,south	Swamp path / bridge art
+9	132	132	road	known	Road east/west		east,west	Swamp path / bridge art
+9	133	133	road	known	Road north/south		north,south	Swamp path / bridge art
+9	134	134	road	known	Road four-way junction		north,east,south,west	Swamp path / bridge art
+9	135	135	road	known	Road junction east/south/west		east,south,west	Swamp path / bridge art
+9	136	136	road	known	Road junction north/east/west		north,east,west	Swamp path / bridge art
+9	137	137	road	known	Road junction north/east/south		north,east,south	Swamp path / bridge art
+9	138	138	road	known	Road junction north/south/west		north,south,west	Swamp path / bridge art
+9	139	139	road	known	Road bend east/south		east,south	Swamp path / bridge art
+9	140	140	road	known	Road bend north/west		north,west	Swamp path / bridge art
+9	141	141	road	known	Road bend north/east		north,east	Swamp path / bridge art
+9	142	142	road	known	Road bend south/west		south,west	Swamp path / bridge art
+9	143	143	road	known	Road endpoint east		east	Swamp path / bridge art
+9	144	144	road	known	Road endpoint south		south	Swamp path / bridge art
+9	145	145	road	known	Road endpoint west		west	Swamp path / bridge art
+9	146	146	road	known	Road endpoint north		north	Swamp path / bridge art
+9	147	147	watercraft	known	Swamp boat / skiff			Boat / watercraft
+9	149	149	tree-detail	known	Large dead swamp stump			Swamp tree detail
+9	150	150	tree-detail	known	Tall yellow swamp grass			Swamp tree detail
+9	151	151	tree-detail	known	Split dead swamp tree	Solid and line-of-sight blocking.		Swamp tree detail
+9	152	152	tree-detail	known	Dead swamp stump			Swamp tree detail
+9	153	153	rocks	likely	Large mossy swamp boulder	Solid and line-of-sight blocking.		Swamp rocks / muck prop
+9	154	154	tree-detail	known	Large dead swamp tree			Swamp tree detail
+9	155	155	open	known	Plain swamp ground			Open land / clear terrain
+9	156	156	open	likely	Swamp ground with faint grass			Open land / clear terrain
+9	157	157	open	known	Swamp ground with grass tufts			Open land / clear terrain
+9	158	158	open	known	Swamp ground with several grass tufts			Open land / clear terrain
+9	159	159	terrain-prop	likely	Swamp ground with one dark pool			Terrain prop
+9	160	160	terrain-prop	likely	Swamp ground with two dark pools			Terrain prop
+9	161	161	rocks	likely	Small rock and dead brush			Swamp rocks / muck prop
+9	162	162	terrain-prop	likely	Small swamp branch			Terrain prop
+9	163	163	rocks	likely	Dead swamp stump and rock			Swamp rocks / muck prop
+9	164	164	rocks	known	Single small swamp rock			Swamp rocks / muck prop
+9	165	165	rocks	known	Two swamp rocks			Swamp rocks / muck prop
+9	166	166	rocks	known	Three swamp rocks			Swamp rocks / muck prop
+9	167	167	rocks	known	Swamp rock pile			Swamp rocks / muck prop
+9	168	168	blank	known	Blank / unused swamp tile			Blank / unused
+9	169	169	road	known	Hidden walkable bog path	Dense bog artwork that Realmz marks walkable and as a runtime path, matching the aligned Plains hidden-walkable slot.		Swamp path / bridge art
+9	170	170	buildings	known	Swamp hut			Swamp structures
+9	171	171	buildings	known	Swamp hut with green-capped tower			Swamp structures
+9	172	172	buildings	known	Swamp hut with pink-capped tower			Swamp structures
+9	173	173	buildings	known	Small tower hut with green window			Swamp structures
+9	174	174	buildings	known	Small tower hut with red window			Swamp structures
+9	175	175	buildings	known	Two connected tiny huts	Two connected huts with yellow windows.		Swamp structures
+9	176	176	buildings	known	Three connected tiny huts	Three connected huts with yellow windows.		Swamp structures
+9	177	177	buildings	known	Sturdy tent with lantern post			Swamp structures
+9	178	178	buildings	known	Two sturdy tents			Swamp structures
+9	179	179	buildings	known	Canopy-suspended swamp hut	Small hut suspended in a canopy of trees.		Swamp structures
+9	180	180	buildings	known	Combat-clearing bog wall	Solid dark bog terrain during land exploration; its Realmz combat build expands into non-solid swamp ground.		Swamp structures
+9	181	181	buildings	known	Combat-clearing bog wall, west edge	Solid during land exploration and open in Realmz combat expansion.		Swamp structures
+9	182	182	buildings	known	Combat-clearing bog wall transition	Solid during land exploration and open in Realmz combat expansion.		Swamp structures
+9	183	183	buildings	known	Combat-clearing bog wall, east edge	Solid during land exploration and open in Realmz combat expansion.		Swamp structures
+9	184	184	buildings	known	Combat-clearing north-south masonry path	Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain.		Swamp structures
+9	185	185	buildings	known	Combat-clearing east-west masonry path	Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain.		Swamp structures
+9	186	186	buildings	known	Small swamp hut			Swamp structures
+9	187	187	graves	known	Large swamp grave or tomb			Graves / graveyard
+9	188	189	graves	known	Swamp grave or tomb cluster			Graves / graveyard
+9	190	200	buildings	known	Swamp structures			Swamp structures
+10	1	1	water-shore	known	Shoreline, land west			Ice / water transition
+10	2	2	water-shore	known	Shoreline, land east			Ice / water transition
+10	3	3	water-shore	known	Shoreline, land north			Ice / water transition
+10	4	4	water-shore	known	Shoreline, land south			Ice / water transition
+10	5	5	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top midpoint to bottom-right.		Ice / water transition
+10	6	6	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to bottom midpoint.		Ice / water transition
+10	7	7	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top-right to bottom midpoint.		Ice / water transition
+10	8	8	water-shore	known	Sloped shoreline, land southeast	Boundary runs from top midpoint to bottom-left.		Ice / water transition
+10	9	9	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom midpoint to top-right.		Ice / water transition
+10	10	10	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to top midpoint.		Ice / water transition
+10	11	11	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to bottom midpoint.		Ice / water transition
+10	12	12	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top midpoint to bottom-right.		Ice / water transition
+10	13	13	water-shore	known	Sloped shoreline, land northeast	Boundary runs from top-left to right midpoint.		Ice / water transition
+10	14	14	water-shore	known	Sloped shoreline, land northeast	Boundary runs from left midpoint to bottom-right.		Ice / water transition
+10	15	15	water-shore	known	Sloped shoreline, land southeast	Boundary runs from bottom-left to right midpoint.		Ice / water transition
+10	16	16	water-shore	known	Sloped shoreline, land southeast	Boundary runs from left midpoint to top-right.		Ice / water transition
+10	17	17	water-shore	known	Sloped shoreline, land northwest	Boundary runs from bottom-left to right midpoint.		Ice / water transition
+10	18	18	water-shore	known	Sloped shoreline, land northwest	Boundary runs from left midpoint to top-right.		Ice / water transition
+10	19	19	water-shore	known	Sloped shoreline, land southwest	Boundary runs from top-left to right midpoint.		Ice / water transition
+10	20	20	water-shore	known	Sloped shoreline, land southwest	Boundary runs from left midpoint to bottom-right.		Ice / water transition
+10	21	21	water-shore	known	Open water to narrow stream south		north,south	Ice / water transition
+10	22	22	water-shore	known	Open water to narrow stream west		east,west	Ice / water transition
+10	23	23	water-shore	known	Open water to narrow stream east		east,west	Ice / water transition
+10	24	24	water-shore	known	Open water to narrow stream north		north,south	Ice / water transition
+10	25	25	water-shore	known	Quarter water southeast			Ice / water transition
+10	26	26	water-shore	known	Quarter water southwest			Ice / water transition
+10	27	27	water-shore	known	Quarter water northeast			Ice / water transition
+10	28	28	water-shore	known	Quarter water northwest			Ice / water transition
+10	29	29	water-shore	known	Inward shoreline corner, land northeast			Ice / water transition
+10	30	30	water-shore	known	Inward shoreline corner, land northwest			Ice / water transition
+10	31	31	water-shore	known	Inward shoreline corner, land southeast			Ice / water transition
+10	32	32	water-shore	known	Inward shoreline corner, land southwest			Ice / water transition
+10	33	33	rocks	known	One rock in water	Optional decorative full-water tile.		Snow rocks / rubble
+10	34	34	rocks	known	Two rocks in water	Optional decorative full-water tile.		Snow rocks / rubble
+10	35	35	rocks	known	Several rocks in water	Optional decorative full-water tile.		Snow rocks / rubble
+10	36	36	open	known	Open snow ground	Plain snow ground; unlike the aligned Plains slot, this is not a blank tile.		Open land / clear terrain
+10	37	37	open	known	Open snow ground	Alternate plain snow ground; unused in the current scenario corpus.		Open land / clear terrain
+10	38	38	water-shore	known	Narrow stream north/south		north,south	Ice / water transition
+10	39	39	water-shore	known	Narrow stream east/west		east,west	Ice / water transition
+10	40	40	water-shore	known	Narrow stream to land, land south		north	Ice / water transition
+10	41	41	water-shore	known	Narrow stream to land, land west		east	Ice / water transition
+10	42	42	water-shore	known	Narrow stream to land, land north		south	Ice / water transition
+10	43	43	water-shore	known	Narrow stream to land, land east		west	Ice / water transition
+10	44	44	water-shore	known	Narrow stream trifork north/west/east	Land transition is south.	north,east,west	Ice / water transition
+10	45	45	water-shore	known	Narrow stream trifork north/east/south	Land transition is west.	north,east,south	Ice / water transition
+10	46	46	water-shore	known	Narrow stream trifork west/south/east	Land transition is north.	east,south,west	Ice / water transition
+10	47	47	water-shore	known	Narrow stream trifork north/west/south	Land transition is east.	north,south,west	Ice / water transition
+10	48	48	water-shore	known	Narrow stream bend south/east		east,south	Ice / water transition
+10	49	49	water-shore	known	Narrow stream bend south/west		south,west	Ice / water transition
+10	50	50	water-shore	known	Narrow stream bend north/east		north,east	Ice / water transition
+10	51	51	water-shore	known	Narrow stream bend north/west		north,west	Ice / water transition
+10	55	55	road	known	Solid cobblestones			Snow road / trail art
+10	60	60	water-shore	known	Full icy water	Normal full-water center tile for the Snow landlook.		Ice / water transition
+10	61	61	mountain-land	known	Solid snowy ridge	Full snowy ridge or mountain fill aligned with the Plains mountain family.		Snowy ridge to snow
+10	62	65	mountain-land	known	Snowy ridge to snow			Snowy ridge to snow
+10	66	66	mountain-land	known	Mountain to land	Runtime-solid mountain transition tile with visible grass cutout.		Snowy ridge to snow
+10	67	84	mountain-land	known	Snowy ridge to snow			Snowy ridge to snow
+10	85	85	mountain-land	known	Mountain to land	End of the mountain-to-land atlas run.		Snowy ridge to snow
+10	86	86	mountain-water	known	Mountain to water	Start of the mountain-to-water atlas run.		Snowy ridge to water
+10	87	92	mountain-water	known	Snowy ridge to water			Snowy ridge to water
+10	93	93	mountain-water	known	Mountain to water	End of the mountain-to-water atlas run.		Snowy ridge to water
+10	94	104	road	likely	Snow road / trail art			Snow road / trail art
+10	113	114	buildings	likely	Snow structures			Snow structures
+10	115	115	road	likely	Snow bridge over water			Snow road / trail art
+10	116	116	road	likely	Snow bridge and shore transition			Snow road / trail art
+10	117	117	road	likely	Snow bridge and shore transition	Mirrored bridge-and-shore variant.		Snow road / trail art
+10	118	118	tree-detail	known	Lone snow tree	Realmz marks this as Snow forest type 5.		Snow tree detail
+10	119	119	tree-detail	known	Two snow trees	Realmz marks this as Snow forest type 5.		Snow tree detail
+10	120	120	tree-detail	known	Three snow trees	Realmz marks this as Snow forest type 5.		Snow tree detail
+10	121	129	forest	likely	Snow forest transition	Primary contiguous forest tiles used by the smart forest brush.		Snow forest transition
+10	130	130	road	known	Road bridge east/west over water		east,west	Snow road / trail art
+10	131	131	road	known	Road bridge north/south over water		north,south	Snow road / trail art
+10	132	132	road	known	Road east/west		east,west	Snow road / trail art
+10	133	133	road	known	Road north/south		north,south	Snow road / trail art
+10	134	134	road	known	Road four-way junction		north,east,south,west	Snow road / trail art
+10	135	135	road	known	Road junction east/south/west		east,south,west	Snow road / trail art
+10	136	136	road	known	Road junction north/east/west		north,east,west	Snow road / trail art
+10	137	137	road	known	Road junction north/east/south		north,east,south	Snow road / trail art
+10	138	138	road	known	Road junction north/south/west		north,south,west	Snow road / trail art
+10	139	139	road	known	Road bend east/south		east,south	Snow road / trail art
+10	140	140	road	known	Road bend north/west		north,west	Snow road / trail art
+10	141	141	road	known	Road bend north/east		north,east	Snow road / trail art
+10	142	142	road	known	Road bend south/west		south,west	Snow road / trail art
+10	143	143	road	known	Road endpoint east		east	Snow road / trail art
+10	144	144	road	known	Road endpoint south		south	Snow road / trail art
+10	145	145	road	known	Road endpoint west		west	Snow road / trail art
+10	146	146	road	known	Road endpoint north		north	Snow road / trail art
+10	147	147	watercraft	known	Snow boat / watercraft			Boat / watercraft
+10	149	149	rocks	known	Snow-covered boulder			Snow rocks / rubble
+10	150	150	tree-detail	known	Bare snow bush			Snow tree detail
+10	151	151	tree-detail	known	Large bare snow bush	Solid and line-of-sight blocking.		Snow tree detail
+10	152	152	tree-detail	known	Leafless snow tree			Snow tree detail
+10	153	153	tree-detail	known	Tall snow-covered evergreen	Solid and line-of-sight blocking.		Snow tree detail
+10	154	154	tree-detail	known	Broad snow-covered evergreen			Snow tree detail
+10	155	155	open	known	Plain decorative snow ground			Open land / clear terrain
+10	156	156	open	known	Decorative snow with light grass			Open land / clear terrain
+10	157	157	open	known	Decorative snow with grass			Open land / clear terrain
+10	158	158	open	known	Decorative snow with several grass patches			Open land / clear terrain
+10	159	159	open	known	Decorative snow with exposed ice	Walkable decoration in Snow's source-defined open-ground range, not the aligned Plains rock range.		Open land / clear terrain
+10	160	160	open	known	Decorative icy snow with rocks	Walkable decoration in Snow's source-defined open-ground range, not the aligned Plains rock range.		Open land / clear terrain
+10	161	161	rocks	likely	Scattered snow-covered rocks			Snow rocks / rubble
+10	162	162	rocks	likely	Two snow-covered boulders			Snow rocks / rubble
+10	163	163	rocks	likely	Large and small snow-covered rocks			Snow rocks / rubble
+10	164	164	rocks	known	One snow-covered rock			Snow rocks / rubble
+10	165	165	rocks	known	Two snow-covered rocks			Snow rocks / rubble
+10	166	166	rocks	known	Several snow-covered rocks			Snow rocks / rubble
+10	167	167	rocks	known	Large snow-covered rock			Snow rocks / rubble
+10	168	168	blank	known	Blank / unused snow tile			Blank / unused
+10	169	169	road	known	Hidden walkable snowy ridge	Dense icy ridge artwork that Realmz marks walkable and as a runtime path, matching the aligned Plains hidden-walkable slot.		Snow road / trail art
+10	170	170	buildings	known	Snow-covered hut			Snow structures
+10	171	171	buildings	likely	Snow hut with small capped tower			Snow structures
+10	172	172	buildings	likely	Snow hut with colored-capped tower			Snow structures
+10	173	173	buildings	likely	Small snow tower hut with green window			Snow structures
+10	174	174	buildings	likely	Small snow tower hut with red window			Snow structures
+10	175	175	buildings	known	Two connected tiny snow huts			Snow structures
+10	176	176	buildings	known	Three connected tiny snow huts			Snow structures
+10	177	177	buildings	likely	Sturdy snow tent with post			Snow structures
+10	178	178	buildings	known	Two sturdy snow tents			Snow structures
+10	179	179	buildings	likely	Canopy-suspended snow hut	Small snow-covered hut suspended among leafless trees.		Snow structures
+10	180	180	mountain-land	known	Combat-clearing snowy mountain-to-land fill	Solid snowy mountain terrain during land exploration; its Realmz combat build expands into non-solid snow ground.		Snowy ridge to snow
+10	181	181	mountain-land	known	Combat-clearing snowy mountain-to-land west edge	Solid during land exploration and open in Realmz combat expansion.		Snowy ridge to snow
+10	182	182	mountain-land	known	Combat-clearing snowy mountain-to-land transition	Solid during land exploration and open in Realmz combat expansion.		Snowy ridge to snow
+10	183	183	mountain-land	known	Combat-clearing snowy mountain-to-land east edge	Solid during land exploration and open in Realmz combat expansion.		Snowy ridge to snow
+10	184	184	buildings	known	Combat-clearing north-south snow wall	Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain.		Snow structures
+10	185	185	buildings	known	Combat-clearing east-west snow wall	Solid during land exploration but, uniquely, does not block line of sight; its Realmz combat build expands into non-solid terrain.		Snow structures
+10	186	186	buildings	likely	Snow structures			Snow structures
+10	190	200	buildings	known	Snow structures			Snow structures

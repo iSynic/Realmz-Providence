@@ -1,0 +1,6 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://src/monster_reference_picker.tscn" id="1"]
+[ext_resource type="Script" path="res://src/player_map_resource_picker.gd" id="2"]
+[node name="PlayerMapResourcePicker" instance=ExtResource("1")]
+title = "Choose Player Map resource"
+script = ExtResource("2")

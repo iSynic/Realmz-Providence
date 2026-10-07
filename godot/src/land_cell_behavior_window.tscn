@@ -1,0 +1,191 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://src/land_cell_behavior_window.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+
+[node name="LandCellBehavior" type="Window"]
+title = "Cell details"
+size = Vector2i(820, 600)
+min_size = Vector2i(780, 580)
+visible = false
+exclusive = true
+transient = true
+theme = ExtResource("2")
+script = ExtResource("1")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 8
+
+[node name="CellHeading" type="Label" parent="Margin/Body"]
+theme_type_variation = &"WorldTitle"
+text = "CELL DETAILS"
+
+[node name="CellDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 12
+text = "Cell behavior"
+
+[node name="CellPresentation" type="HBoxContainer" parent="Margin/Body"]
+theme_override_constants/separation = 24
+
+[node name="Artwork" type="PanelContainer" parent="Margin/Body/CellPresentation"]
+custom_minimum_size = Vector2(96, 96)
+
+[node name="CellArtwork" type="TextureRect" parent="Margin/Body/CellPresentation/Artwork"]
+unique_name_in_owner = true
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="CellOverlay" type="TextureRect" parent="Margin/Body/CellPresentation/Artwork"]
+unique_name_in_owner = true
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Information" type="VBoxContainer" parent="Margin/Body/CellPresentation"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CellArtworkName" type="Label" parent="Margin/Body/CellPresentation/Information"]
+unique_name_in_owner = true
+theme_type_variation = &"WorldUsesHeading"
+text = "Selected artwork"
+autowrap_mode = 3
+
+[node name="CellActionPointSummary" type="Label" parent="Margin/Body/CellPresentation/Information"]
+unique_name_in_owner = true
+text = "No Action Point on this cell"
+
+[node name="OpenCellActionPoint" type="Button" parent="Margin/Body/CellPresentation/Information"]
+unique_name_in_owner = true
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(220, 30)
+text = "Open Action Point"
+
+[node name="SecretLabel" type="Label" parent="Margin/Body"]
+text = "SECRET AREA"
+theme_override_colors/font_color = Color(0.74, 0.59, 0.94, 1)
+
+[node name="SecretState" type="OptionButton" parent="Margin/Body"]
+tooltip_text = "Changing Secret Area keeps the tile and Action Point."
+visible = false
+unique_name_in_owner = true
+
+[node name="SecretChoices" type="HBoxContainer" parent="Margin/Body"]
+theme_override_constants/separation = 10
+
+[node name="SecretNormal" type="Button" parent="Margin/Body/SecretChoices"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 30)
+toggle_mode = true
+text = "Normal"
+
+[node name="SecretHidden" type="Button" parent="Margin/Body/SecretChoices"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 30)
+toggle_mode = true
+text = "Hidden"
+
+[node name="SecretRevealed" type="Button" parent="Margin/Body/SecretChoices"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(142, 30)
+toggle_mode = true
+text = "Revealed"
+
+[node name="SecretHint" type="Label" parent="Margin/Body"]
+visible = false
+autowrap_mode = 3
+text = ""
+
+[node name="CellPlacementStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.97, 0.76, 0.36, 1)
+
+[node name="CreateCellActionPoint" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+size_flags_horizontal = 0
+custom_minimum_size = Vector2(254, 30)
+text = "Create / place Action Point…"
+
+[node name="PlacementDetailsToggle" type="CheckButton" parent="Margin/Body"]
+unique_name_in_owner = true
+text = "Placement and shared passability"
+
+[node name="PlacementDetails" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+visible = false
+theme_override_constants/separation = 8
+
+[node name="PassabilityLabel" type="Label" parent="Margin/Body/PlacementDetails"]
+text = "SPECIAL ARTWORK · SHARED PASSABILITY"
+theme_override_colors/font_color = Color(0.44, 0.78, 0.61, 1)
+
+[node name="Passability" type="OptionButton" parent="Margin/Body/PlacementDetails"]
+unique_name_in_owner = true
+
+[node name="PassabilityReason" type="Label" parent="Margin/Body/PlacementDetails"]
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="RemovePlacement" type="Button" parent="Margin/Body/PlacementDetails"]
+unique_name_in_owner = true
+text = "Remove placement…"
+
+[node name="CellImpact" type="ItemList" parent="Margin/Body/PlacementDetails"]
+unique_name_in_owner = true
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 68)
+
+[node name="FooterSpace" type="Control" parent="Margin/Body"]
+size_flags_vertical = 3
+
+[node name="CellBehaviorStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Body"]
+alignment = 2
+
+[node name="CellTechnicalDetails" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Technical details…"
+
+[node name="Spacer" type="Control" parent="Margin/Body/Actions"]
+size_flags_horizontal = 3
+
+[node name="RecoverCellBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Check original result"
+visible = false
+
+[node name="DiscardCellBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Discard"
+
+[node name="CancelCellBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Cancel"
+
+[node name="ReviewCellBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Review impact…"
+
+[node name="ApplyCellBehavior" type="Button" parent="Margin/Body/Actions"]
+unique_name_in_owner = true
+text = "Apply"
+
+[node name="DiscardCellConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Discard cell draft?"
+dialog_text = "Discard these changes and return to the map?"
+ok_button_text = "Discard"

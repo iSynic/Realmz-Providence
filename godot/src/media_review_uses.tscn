@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/media_review_uses.gd" id="1"]
+
+[node name="AffectedUses" type="VBoxContainer"]
+visible = false
+script = ExtResource("1")
+
+[node name="Heading" type="HBoxContainer" parent="."]
+
+[node name="Count" type="Label" parent="Heading"]
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "Affected fields"
+
+[node name="Previous" type="Button" parent="Heading"]
+text = "Previous"
+
+[node name="Next" type="Button" parent="Heading"]
+text = "Next"
+
+[node name="Open" type="Button" parent="Heading"]
+text = "Open owning field"
+disabled = true
+
+[node name="Refresh" type="Button" parent="Heading"]
+text = "Refresh uses"
+
+[node name="Fields" type="ItemList" parent="."]
+custom_minimum_size = Vector2(0, 76)
+theme_override_font_sizes/font_size = 12
+

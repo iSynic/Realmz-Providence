@@ -1,0 +1,289 @@
+[gd_scene format=3]
+
+[node name="Identity" type="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Names" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemPanel"
+
+[node name="Body" type="VBoxContainer" parent="Names"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="Names/Body"]
+layout_mode = 2
+text = "NAMES AND DESCRIPTION"
+theme_type_variation = &"ItemHeading"
+
+[node name="NamesGrid" type="GridContainer" parent="Names/Body"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="ItemUnidentifiedNameField" type="VBoxContainer" parent="Names/Body/NamesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Names/Body/NamesGrid/ItemUnidentifiedNameField"]
+layout_mode = 2
+text = "UNIDENTIFIED NAME"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ItemUnidentifiedName" type="LineEdit" parent="Names/Body/NamesGrid/ItemUnidentifiedNameField"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 32)
+metadata/field_name = "unidentifiedName"
+
+[node name="ItemUnidentifiedNameCount" type="Label" parent="Names/Body/NamesGrid/ItemUnidentifiedNameField"]
+layout_mode = 2
+text = "255-byte Classic limit"
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="ItemIdentifiedNameField" type="VBoxContainer" parent="Names/Body/NamesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Names/Body/NamesGrid/ItemIdentifiedNameField"]
+layout_mode = 2
+text = "IDENTIFIED NAME"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ItemIdentifiedName" type="LineEdit" parent="Names/Body/NamesGrid/ItemIdentifiedNameField"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 32)
+metadata/field_name = "name"
+
+[node name="ItemIdentifiedNameCount" type="Label" parent="Names/Body/NamesGrid/ItemIdentifiedNameField"]
+layout_mode = 2
+text = "255-byte Classic limit"
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="ItemDescriptionField" type="VBoxContainer" parent="Names/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Names/Body/ItemDescriptionField"]
+layout_mode = 2
+text = "DESCRIPTION"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ItemDescription" type="TextEdit" parent="Names/Body/ItemDescriptionField"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 56)
+metadata/field_name = "description"
+wrap_mode = 1
+
+[node name="ItemDescriptionCount" type="Label" parent="Names/Body/ItemDescriptionField"]
+layout_mode = 2
+text = "255-byte Classic limit"
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="IdentityUse" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemPanel"
+
+[node name="Body" type="VBoxContainer" parent="IdentityUse"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Heading" type="Label" parent="IdentityUse/Body"]
+layout_mode = 2
+text = "IDENTITY AND USE"
+theme_type_variation = &"ItemHeading"
+
+[node name="UseGrid" type="GridContainer" parent="IdentityUse/Body"]
+layout_mode = 2
+columns = 5
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 8
+
+[node name="IconIdField" type="VBoxContainer" parent="IdentityUse/Body/UseGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="IdentityUse/Body/UseGrid/IconIdField"]
+layout_mode = 2
+text = "ARTWORK"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="IdentityUse/Body/UseGrid/IconIdField"]
+layout_mode = 2
+
+[node name="IconId" type="SpinBox" parent="IdentityUse/Body/UseGrid/IconIdField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(72, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "iconId"
+
+[node name="ChooseIconId" type="Button" parent="IdentityUse/Body/UseGrid/IconIdField/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="ItemTypeField" type="VBoxContainer" parent="IdentityUse/Body/UseGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="IdentityUse/Body/UseGrid/ItemTypeField"]
+layout_mode = 2
+text = "EQUIPMENT / USE TYPE"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="IdentityUse/Body/UseGrid/ItemTypeField"]
+layout_mode = 2
+
+[node name="ItemType" type="SpinBox" parent="IdentityUse/Body/UseGrid/ItemTypeField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(72, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "itemType"
+
+[node name="ChooseItemType" type="Button" parent="IdentityUse/Body/UseGrid/ItemTypeField/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="CostField" type="VBoxContainer" parent="IdentityUse/Body/UseGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="IdentityUse/Body/UseGrid/CostField"]
+layout_mode = 2
+text = "COST"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="IdentityUse/Body/UseGrid/CostField"]
+layout_mode = 2
+
+[node name="Cost" type="SpinBox" parent="IdentityUse/Body/UseGrid/CostField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "cost"
+
+[node name="InitialChargesField" type="VBoxContainer" parent="IdentityUse/Body/UseGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="IdentityUse/Body/UseGrid/InitialChargesField"]
+layout_mode = 2
+text = "INITIAL CHARGES"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="IdentityUse/Body/UseGrid/InitialChargesField"]
+layout_mode = 2
+
+[node name="InitialCharges" type="SpinBox" parent="IdentityUse/Body/UseGrid/InitialChargesField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "initialCharges"
+
+[node name="SoundIdField" type="VBoxContainer" parent="IdentityUse/Body/UseGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="IdentityUse/Body/UseGrid/SoundIdField"]
+layout_mode = 2
+text = "USE SOUND"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="ValueRow" type="HBoxContainer" parent="IdentityUse/Body/UseGrid/SoundIdField"]
+layout_mode = 2
+
+[node name="SoundId" type="SpinBox" parent="IdentityUse/Body/UseGrid/SoundIdField/ValueRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(100, 32)
+min_value = -32768.0
+max_value = 32767.0
+allow_greater = true
+allow_lesser = true
+metadata/field_name = "soundId"
+
+[node name="ChooseSoundId" type="Button" parent="IdentityUse/Body/UseGrid/SoundIdField/ValueRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="TypeExplanation" type="Label" parent="IdentityUse/Body"]
+layout_mode = 2
+text = "Negative cost marks a unique item. Exact signed types are retained."
+theme_type_variation = &"ItemContext"
+
+autowrap_mode = 2
+
+[node name="Curse" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"ItemPanel"
+
+[node name="Body" type="HBoxContainer" parent="Curse"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Magical" type="CheckBox" parent="Curse/Body"]
+layout_mode = 2
+text = "Detectable as magical"
+metadata/field_name = "magical"
+
+custom_minimum_size = Vector2(240, 32)
+size_flags_vertical = 4
+
+[node name="CursedForm" type="VBoxContainer" parent="Curse/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="Curse/Body/CursedForm"]
+layout_mode = 2
+text = "CURSED FORM ITEM"
+theme_type_variation = &"ItemFieldLabel"
+
+[node name="CurseRow" type="HBoxContainer" parent="Curse/Body/CursedForm"]
+layout_mode = 2
+
+[node name="CursedItemReference" type="LineEdit" parent="Curse/Body/CursedForm/CurseRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+editable = false
+placeholder_text = "None"
+
+[node name="ChooseCursedItem" type="Button" parent="Curse/Body/CursedForm/CurseRow"]
+layout_mode = 2
+text = "Choose…"
+custom_minimum_size = Vector2(0, 32)
+
+[node name="PlaySound" type="Button" parent="Curse/Body"]
+layout_mode = 2
+text = "▶ Play sound"
+custom_minimum_size = Vector2(0, 32)
+
+size_flags_vertical = 8

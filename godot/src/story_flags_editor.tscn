@@ -1,0 +1,81 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource path="res://src/quest_editor.gd" type="Script" id="1"]
+[ext_resource path="res://src/quest_role_panel.tscn" type="PackedScene" id="2"]
+[ext_resource path="res://src/discovery_theme.tres" type="Theme" id="3"]
+[ext_resource path="res://theme/authoring_heading.tres" type="Font" id="4"]
+[node name="Quests" type="HSplitContainer"]
+custom_minimum_size = Vector2(900, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+split_offset = 280
+script = ExtResource("1")
+theme = ExtResource("3")
+[node name="QuestBrowser" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(280, 0)
+[node name="QuestHeader" type="Label" parent="QuestBrowser"]
+theme_type_variation = &"QuestTitle"
+text = "QUESTS · STORY FLAGS"
+[node name="QuestSearch" type="LineEdit" parent="QuestBrowser"]
+placeholder_text = "Filter quest ID, name or note…"
+[node name="QuestFilters" type="HBoxContainer" parent="QuestBrowser"]
+[node name="All" type="Button" parent="QuestBrowser/QuestFilters"]
+text = "All"
+[node name="Used" type="Button" parent="QuestBrowser/QuestFilters"]
+text = "Used"
+[node name="Unlabeled" type="Button" parent="QuestBrowser/QuestFilters"]
+text = "Unlabeled"
+[node name="QuestCollection" type="Tree" parent="QuestBrowser"]
+size_flags_vertical = 3
+hide_root = true
+[node name="BrowserStatus" type="Label" parent="QuestBrowser"]
+text = "126 Classic quest flags"
+[node name="QuestDetail" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(560, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+[node name="QuestIdentity" type="Label" parent="QuestDetail"]
+theme_type_variation = &"QuestTitle"
+text = "Select a Quest"
+[node name="Summary" type="Label" parent="QuestDetail"]
+visible = false
+text = ""
+[node name="Metadata" type="HBoxContainer" parent="QuestDetail"]
+theme_override_constants/separation = 18
+[node name="Name" type="VBoxContainer" parent="QuestDetail/Metadata"]
+custom_minimum_size = Vector2(330, 0)
+size_flags_horizontal = 3
+[node name="FlagLabelCaption" type="Label" parent="QuestDetail/Metadata/Name"]
+text = "QUEST NAME"
+[node name="QuestLabel" type="LineEdit" parent="QuestDetail/Metadata/Name"]
+placeholder_text = "Quest name"
+[node name="Note" type="VBoxContainer" parent="QuestDetail/Metadata"]
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.6
+[node name="FlagNotesCaption" type="Label" parent="QuestDetail/Metadata/Note"]
+text = "AUTHOR NOTE"
+[node name="ContextNotes" type="TextEdit" parent="QuestDetail/Metadata/Note"]
+custom_minimum_size = Vector2(0, 76)
+placeholder_text = "Multiline author context"
+[node name="QuestActions" type="HBoxContainer" parent="QuestDetail"]
+[node name="ApplyLabel" type="Button" parent="QuestDetail/QuestActions"]
+disabled = true
+text = "Apply label"
+[node name="DiscardLabel" type="Button" parent="QuestDetail/QuestActions"]
+text = "Discard"
+[node name="DeleteLabel" type="Button" parent="QuestDetail/QuestActions"]
+disabled = true
+text = "Remove label…"
+[node name="DisabledReason" type="Label" parent="QuestDetail"]
+autowrap_mode = 2
+text = "Labels and notes describe intent. Removing a label does not clear the gameplay flag."
+[node name="Roles" type="HBoxContainer" parent="QuestDetail"]
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+[node name="Checks" parent="QuestDetail/Roles" instance=ExtResource("2")]
+role = "checks"
+[node name="Changes" parent="QuestDetail/Roles" instance=ExtResource("2")]
+role = "changes"
+[node name="RemoveConfirmation" type="ConfirmationDialog" parent="."]
+title = "Remove Quest label"
+dialog_text = "Remove this name and author note? The gameplay flag remains unchanged."
