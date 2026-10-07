@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     strategy:
       fail-fast: false
       matrix:
@@ -74,20 +75,34 @@ jobs:
             ${{ runner.temp }}/providence-release/*.sha256
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: always() && startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Find successful builds of this exact revision
+        id: tested
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/native-release.yml/runs" -f head_sha="$GITHUB_SHA" -f status=success --jq '.workflow_runs | map(select(.event == "push" and .head_branch == "main")) | first | .id')
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo 'This revision has no successful three-platform build.'; exit 1; }
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.tested.outputs.run_id }}
           path: release
           merge-multiple: true
       - name: Verify archives and prepare corresponding source
         run: |
           cd release
+          test -f Providence-v0.6.0-beta.1-windows-x64.zip
+          test -f Providence-v0.6.0-beta.1-macos-universal.zip
+          test -f Providence-v0.6.0-beta.1-linux-x64.tar.gz
           cat *.sha256 > SHA256SUMS
           sha256sum --check SHA256SUMS
           git -C .. archive --format=tar.gz --prefix=Providence-${GITHUB_REF_NAME}/ --output="$PWD/Providence-${GITHUB_REF_NAME}-source.tar.gz" HEAD

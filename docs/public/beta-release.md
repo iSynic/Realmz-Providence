@@ -21,3 +21,9 @@ CC BY-NC-SA 4.0 and original notices. See the repository licensing documents.
 This is a beta. Import/export checks do not certify campaign completion or
 remove inherited scenario authoring errors. Rebuilt playtest uses a separate
 compatible Rebuilt installation.
+
+The release gate passed all 40 scenarios in the reference corpus: fresh import,
+Save/reopen, byte-exact no-edit Classic export and validation of actual Rebuilt
+archives. Rebuilt checks used an explicit application-rules audit profile;
+they do not establish the intended custom-rule selection for each campaign.
+The source-bound results are in `docs/public/compatibility-audit.json`.

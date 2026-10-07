@@ -15,7 +15,8 @@ def inspect(root):
     failures = []
     total = 0
     for path in root.rglob("*"):
-        if not path.is_file() or ".git" in path.relative_to(root).parts: continue
+        if not path.is_file() or any(part in {".git", ".godot", "__pycache__"}
+                                     for part in path.relative_to(root).parts): continue
         total += 1
         relative = path.relative_to(root).as_posix()
         if path.name in FORBIDDEN or relative.startswith(("artifacts/", "design/")):

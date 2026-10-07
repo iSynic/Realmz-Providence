@@ -39,3 +39,4 @@ theme/custom="res://theme/providence_theme.tres"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.047, 0.058, 0.071, 1)
+textures/vram_compression/import_etc2_astc=true
