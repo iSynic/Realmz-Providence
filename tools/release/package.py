@@ -131,7 +131,8 @@ def archive_bundle(bundle, destination):
                              strict_timestamps=False) as target:
             for path in sorted(bundle.rglob("*")):
                 if path.is_file(): target.write(path, "Providence/" + path.relative_to(bundle).as_posix())
-    (destination / (archive.name + ".sha256")).write_text(f"{digest(archive)}  {archive.name}\n")
+    (destination / (archive.name + ".sha256")).write_text(
+        f"{digest(archive)}  {archive.name}\n", encoding="utf-8", newline="\n")
     print(f"RELEASE_ARCHIVE {archive}", flush=True)
 
 
