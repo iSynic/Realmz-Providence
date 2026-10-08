@@ -90,6 +90,9 @@ disabled = true
 text = "Callers…"
 tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
 
+[node name="ViewFlow" type="Button" parent="Detail/RecordToolbar"]
+text = "View Flow…"
+
 [node name="BodyScroll" type="ScrollContainer" parent="Detail"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -890,3 +893,5 @@ text = "Use cell"
 theme_override_font_sizes/font_size = 12
 
 [connection signal="pressed" from="Detail/RecordToolbar/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]
+
+[connection signal="pressed" from="Detail/RecordToolbar/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

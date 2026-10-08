@@ -300,6 +300,9 @@ disabled = true
 text = "Callers…"
 tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
 
+[node name="ViewFlow" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
+text = "View Flow…"
+
 [node name="Duplicate" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row"]
 layout_mode = 2
 tooltip_text = "Duplication is not yet owned by a bounded core command."
@@ -634,3 +637,5 @@ dialog_text = "Clear this Action Point and make its fixed slot reusable? The map
 [connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointStepAuthoring/SelectedActionPointStepPanel/Body/Actions/CompileActionPointSlice" to="." method="_on_compile_pressed"]
 
 [connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]
+
+[connection signal="pressed" from="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointRecordHeader/Row/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

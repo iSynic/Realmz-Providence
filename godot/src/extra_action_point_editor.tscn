@@ -270,6 +270,9 @@ disabled = true
 text = "Callers…"
 tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
 
+[node name="ViewFlow" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointDetail/ExtraActionPointRecordHeader/Row"]
+text = "View Flow…"
+
 [node name="DuplicateExtraActionPoint" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointDetail/ExtraActionPointRecordHeader/Row"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -513,3 +516,5 @@ dialog_text = "Delete this Extra Action Point? Existing callers will remain visi
 [connection signal="pressed" from="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointDetail/ExtraActionPointStepAuthoring/SelectedActionStepPanel/SelectedActionStepBody/ExtraActionPointEditorActions/CompileExtraActionPointSlice" to="." method="_on_compile_pressed"]
 
 [connection signal="pressed" from="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointDetail/ExtraActionPointRecordHeader/Row/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]
+
+[connection signal="pressed" from="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointDetail/ExtraActionPointRecordHeader/Row/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

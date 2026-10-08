@@ -66,6 +66,9 @@ text = "Discard"
 [node name="DeleteLabel" type="Button" parent="QuestDetail/QuestActions"]
 disabled = true
 text = "Remove label…"
+[node name="ViewFlow" type="Button" parent="QuestDetail/QuestActions"]
+text = "View Flow…"
+
 [node name="DisabledReason" type="Label" parent="QuestDetail"]
 autowrap_mode = 2
 text = "Labels and notes describe intent. Removing a label does not clear the gameplay flag."
@@ -79,3 +82,5 @@ role = "changes"
 [node name="RemoveConfirmation" type="ConfirmationDialog" parent="."]
 title = "Remove Quest label"
 dialog_text = "Remove this name and author note? The gameplay flag remains unchanged."
+
+[connection signal="pressed" from="QuestDetail/QuestActions/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

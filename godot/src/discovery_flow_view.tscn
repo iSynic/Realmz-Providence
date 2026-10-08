@@ -1,0 +1,209 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://src/discovery_flow_view.gd" id="1"]
+[ext_resource type="Theme" path="res://src/discovery_theme.tres" id="2"]
+[ext_resource type="Script" path="res://src/discovery_flow_canvas.gd" id="3"]
+[node name="ViewFlow" type="Window"]
+title = "View Flow"
+size = Vector2i(1536, 836)
+min_size = Vector2i(1080, 680)
+visible = false
+transient = true
+script = ExtResource("1")
+theme = ExtResource("2")
+[node name="Background" type="PanelContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+[node name="Body" type="VBoxContainer" parent="Background"]
+theme_override_constants/separation = 0
+[node name="TitlebarBand" type="PanelContainer" parent="Background/Body"]
+theme_type_variation = &"FlowHeader"
+custom_minimum_size = Vector2(0, 56)
+[node name="Titlebar" type="HBoxContainer" parent="Background/Body/TitlebarBand"]
+custom_minimum_size = Vector2(0, 34)
+[node name="Heading" type="Label" parent="Background/Body/TitlebarBand/Titlebar"]
+unique_name_in_owner = true
+text = "View flow"
+theme_type_variation = &"DiscoveryHeading"
+size_flags_horizontal = 3
+text_overrun_behavior = 3
+[node name="Close" type="Button" parent="Background/Body/TitlebarBand/Titlebar"]
+unique_name_in_owner = true
+text = "Close  Esc"
+[node name="ToolbarBand" type="MarginContainer" parent="Background/Body"]
+custom_minimum_size = Vector2(0, 44)
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 7
+theme_override_constants/margin_bottom = 5
+[node name="Toolbar" type="HBoxContainer" parent="Background/Body/ToolbarBand"]
+custom_minimum_size = Vector2(0, 32)
+[node name="Back" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "Back"
+[node name="FocusHere" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "Focus here"
+[node name="Fit" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "Fit"
+[node name="Recenter" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "Recenter"
+[node name="Refresh" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "Refresh"
+[node name="ZoomOut" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "−"
+[node name="ZoomReset" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "100%"
+[node name="ZoomIn" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+text = "+"
+[node name="FiltersBand" type="MarginContainer" parent="Background/Body"]
+custom_minimum_size = Vector2(0, 35)
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+[node name="Filters" type="HBoxContainer" parent="Background/Body/FiltersBand"]
+custom_minimum_size = Vector2(0, 35)
+[node name="Calls" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "→ Calls and branches"
+button_pressed = true
+[node name="State" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "⇢ State checks and changes"
+button_pressed = true
+[node name="References" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "⋯ Other references"
+button_pressed = true
+[node name="NoticeBand" type="PanelContainer" parent="Background/Body"]
+theme_type_variation = &"FlowNotice"
+[node name="Notice" type="Label" parent="Background/Body/NoticeBand"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+text = "Showing applied project state; unapplied edits are excluded."
+autowrap_mode = 3
+[node name="Panes" type="HBoxContainer" parent="Background/Body"]
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+[node name="GraphRegion" type="Control" parent="Background/Body/Panes"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+[node name="Graph" type="GraphEdit" parent="Background/Body/Panes/GraphRegion"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+show_menu = false
+show_grid = false
+minimap_enabled = false
+snapping_enabled = false
+script = ExtResource("3")
+theme = ExtResource("2")
+[node name="UpstreamCaption" type="Label" parent="Background/Body/Panes/GraphRegion"]
+unique_name_in_owner = true
+offset_left = 20.0
+offset_top = 16.0
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
+text = "UPSTREAM · 2 LEVELS"
+mouse_filter = 2
+[node name="DownstreamCaption" type="Label" parent="Background/Body/Panes/GraphRegion"]
+unique_name_in_owner = true
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -270.0
+offset_right = -20.0
+offset_top = 16.0
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
+text = "DOWNSTREAM · 2 LEVELS"
+mouse_filter = 2
+[node name="Details" type="PanelContainer" parent="Background/Body/Panes"]
+custom_minimum_size = Vector2(350, 0)
+theme_type_variation = &"FlowDetails"
+[node name="Scroll" type="ScrollContainer" parent="Background/Body/Panes/Details"]
+horizontal_scroll_mode = 0
+[node name="DetailBody" type="VBoxContainer" parent="Background/Body/Panes/Details/Scroll"]
+size_flags_horizontal = 3
+[node name="DetailHeading" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "SELECTED RECORD"
+theme_type_variation = &"DiscoveryContext"
+[node name="SelectedTitle" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "Select a record"
+autowrap_mode = 3
+theme_type_variation = &"DiscoveryTitle"
+[node name="Connections" type="OptionButton" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "Record details"
+fit_to_longest_item = false
+clip_text = true
+[node name="EdgeControls" type="HBoxContainer" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+[node name="ConnectionCount" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
+unique_name_in_owner = true
+text = "0 connections"
+size_flags_horizontal = 3
+[node name="PreviousEdge" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
+unique_name_in_owner = true
+text = "Previous"
+[node name="NextEdge" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
+unique_name_in_owner = true
+text = "Next"
+[node name="Detail" type="RichTextLabel" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 245)
+fit_content = true
+scroll_active = false
+selection_enabled = true
+[node name="OpenSource" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "Open owning step"
+[node name="OpenRecord" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "Open in editor"
+[node name="DetailHint" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+unique_name_in_owner = true
+text = "Select a connection for its exact owning field."
+autowrap_mode = 3
+theme_type_variation = &"DiscoveryContext"
+[node name="FooterBand" type="PanelContainer" parent="Background/Body"]
+custom_minimum_size = Vector2(0, 80)
+theme_type_variation = &"FlowFooter"
+[node name="Footer" type="VBoxContainer" parent="Background/Body/FooterBand"]
+theme_override_constants/separation = 12
+[node name="Actions" type="HBoxContainer" parent="Background/Body/FooterBand/Footer"]
+custom_minimum_size = Vector2(0, 34)
+[node name="Selected" type="Label" parent="Background/Body/FooterBand/Footer/Actions"]
+unique_name_in_owner = true
+text = "Selected: —"
+[node name="Upstream" type="Button" parent="Background/Body/FooterBand/Footer/Actions"]
+unique_name_in_owner = true
+text = "Expand upstream"
+[node name="Downstream" type="Button" parent="Background/Body/FooterBand/Footer/Actions"]
+unique_name_in_owner = true
+text = "Expand downstream"
+[node name="Collapse" type="Button" parent="Background/Body/FooterBand/Footer/Actions"]
+unique_name_in_owner = true
+text = "Collapse expansion"
+[node name="Retry" type="Button" parent="Background/Body/FooterBand/Footer/Actions"]
+unique_name_in_owner = true
+text = "Retry"
+[node name="StatusRow" type="HBoxContainer" parent="Background/Body/FooterBand/Footer"]
+custom_minimum_size = Vector2(0, 18)
+[node name="Status" type="Label" parent="Background/Body/FooterBand/Footer/StatusRow"]
+size_flags_horizontal = 3
+unique_name_in_owner = true
+text = "Select an applied record to view its flow."
+autowrap_mode = 3
+[node name="Legend" type="Label" parent="Background/Body/FooterBand/Footer/StatusRow"]
+unique_name_in_owner = true
+text = "Possible authored relationships"
+theme_type_variation = &"DiscoveryContext"

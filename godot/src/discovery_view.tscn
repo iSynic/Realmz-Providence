@@ -158,6 +158,10 @@ size_flags_horizontal = 3
 [node name="OpenRecord" type="Button" parent="Margin/Body/Footer"]
 unique_name_in_owner = true
 text = "Open record"
+[node name="ViewFlow" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "View Flow…"
+disabled = true
 [node name="Close" type="Button" parent="Margin/Body/Footer"]
 unique_name_in_owner = true
 text = "Close"

@@ -71,6 +71,9 @@ disabled = true
 text = "Callers…"
 tooltip_text = "Find exact fields that call this record; follow Uses and Trace from Links."
 
+[node name="ViewFlow" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
+text = "View Flow…"
+
 [node name="CopyEncounter" type="Button" parent="EncounterDetailScroll/EncounterDetail/RecordToolbar"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -396,3 +399,5 @@ unique_name_in_owner = true
 [connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/StatusRow/CompileEncounterSlice" to="." method="_on_compile_pressed"]
 
 [connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/Callers" to="." method="emit_signal" binds= ["discovery_requested", "incoming"]]
+
+[connection signal="pressed" from="EncounterDetailScroll/EncounterDetail/RecordToolbar/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

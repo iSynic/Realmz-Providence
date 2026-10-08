@@ -78,6 +78,13 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 3
 
+[node name="ViewFlowRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+unique_name_in_owner = true
+[node name="ViewFlow" type="Button" parent="CommandPaletteBody/CommandResults/ViewFlowRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+alignment = 0
+text = "View Flow: selected record  ·  Navigate"
 [node name="OpenCurrentMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -183,3 +190,5 @@ text = "6 results · disabled commands explain why"
 [connection signal="pressed" from="CommandPaletteBody/CommandResults/PaintSelectedTileRow/PaintSelectedTile" to="." method="_request_command" binds=["map.paint-selected-tile"]]
 [connection signal="pressed" from="CommandPaletteBody/CommandResults/StampSelectionRow/StampSelection" to="." method="_request_command" binds=["map.stamp-selection"]]
 [connection signal="pressed" from="CommandPaletteBody/CommandResults/RevealMapRow/RevealMap" to="." method="_request_command" binds=["map.reveal-explorer"]]
+
+[connection signal="pressed" from="CommandPaletteBody/CommandResults/ViewFlowRow/ViewFlow" to="." method="_request_command" binds= ["navigate.view-flow"]]

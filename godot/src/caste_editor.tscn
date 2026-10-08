@@ -4770,6 +4770,9 @@ layout_mode = 2
 unique_name_in_owner = true
 text = "Trace callers"
 
+[node name="ViewFlow" type="Button" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/ReferenceActions"]
+text = "View Flow…"
+
 [node name="Uses" type="ItemList" parent="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields"]
 layout_mode = 2
 unique_name_in_owner = true
@@ -4845,3 +4848,5 @@ theme_type_variation = "ItemContext"
 layout_mode = 2
 wait_time = 0.18
 one_shot = true
+
+[connection signal="pressed" from="Main/RuleDetailScroll/RuleForm/References/Sections/Section235/Fields/ReferenceActions/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

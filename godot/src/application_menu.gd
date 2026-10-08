@@ -47,6 +47,7 @@ enum CommandId {
 	NAVIGATE_REVEAL,
 	NAVIGATE_FIND_USES,
 	NAVIGATE_USED_BY,
+	NAVIGATE_FLOW,
 	WINDOW_NEW = 500,
 	WINDOW_MOVE,
 	WINDOW_NEXT,
@@ -103,7 +104,7 @@ func update_command_state(context: Dictionary) -> void:
 	_set_enabled(&"edit.find-document", document_tab in [0, 1, 33], "This document has no bounded search projection yet.")
 	_set_enabled(&"navigate.back", bool(context.get("canNavigateBack", false)), "No earlier authoring location is available.")
 	_set_enabled(&"navigate.forward", bool(context.get("canNavigateForward", false)), "No later authoring location is available.")
-	for command in [&"navigate.go-to-entity", &"edit.find-global", &"navigate.find-uses", &"navigate.used-by", &"view.links-uses"]:
+	for command in [&"navigate.go-to-entity", &"edit.find-global", &"navigate.find-uses", &"navigate.view-flow", &"navigate.used-by", &"view.links-uses"]:
 		_set_enabled(command, session_connected and not bool(context.get("recoveryRequired", false)), "Reopen the project before searching." if context.get("recoveryRequired", false) else "Open a project to search content and links.")
 	_set_checked(&"view.project-explorer", bool(context.get("explorerVisible", true)))
 	_set_checked(&"view.inspector", bool(context.get("inspectorVisible", false)))
@@ -188,6 +189,7 @@ func _build_navigate_menu() -> void:
 	_add_disabled(popup, &"Navigate", "Reveal in Explorer", &"navigate.reveal-explorer", CommandId.NAVIGATE_REVEAL, KEY_R, true, true)
 	_add(popup, &"Navigate", "Find Uses", &"navigate.find-uses", CommandId.NAVIGATE_FIND_USES)
 	_add(popup, &"Navigate", "Used By", &"navigate.used-by", CommandId.NAVIGATE_USED_BY)
+	_add(popup, &"Navigate", "View Flow…", &"navigate.view-flow", CommandId.NAVIGATE_FLOW)
 
 
 func _build_window_menu() -> void:
@@ -260,6 +262,9 @@ func _set_enabled(command: StringName, enabled: bool, reason: String) -> void:
 	var index := popup.get_item_index(int(entry.id))
 	popup.set_item_disabled(index, not enabled)
 	popup.set_item_tooltip(index, "" if enabled else reason)
+
+func set_flow_available(available: bool) -> void:
+	_set_enabled(&"navigate.view-flow", available, "Select an applied record before opening View Flow.")
 
 
 func _set_checked(command: StringName, checked: bool) -> void:

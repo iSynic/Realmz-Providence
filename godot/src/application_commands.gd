@@ -77,9 +77,10 @@ func configure_session(session, drafts, read_bridge: Callable, guard: Callable, 
 	_discovery = preload("res://src/discovery_controller.gd").new()
 	add_child(_discovery)
 	_discovery.initialize(_operations, _session.context, _read_bridge, _navigation, _registry, _tabs)
-	for route in ["rules.races", "rules.castes", "scripts.global-macros", "text.messages", "scripts.action-points", "scripts.macros", "encounters.simple", "encounters.complex", "encounters.rogue", "encounters.timed", "economy.treasure", "economy.shops"]:
+	for route in ["rules.races", "rules.castes", "scripts.global-macros", "scripts.quests", "text.messages", "scripts.action-points", "scripts.macros", "encounters.simple", "encounters.complex", "encounters.rogue", "encounters.timed", "economy.treasure", "economy.shops"]:
 		var view = _registry.view(route)
 		view.discovery_requested.connect(_open_authoring_links.bind(view, route))
+		_discovery.register_flow_entry(view, route)
 
 func _open_authoring_links(direction: String, origin: Control, route: String) -> void:
 	var selection := preload("res://src/discovery_selection.gd").record(origin, route)
@@ -119,11 +120,12 @@ func refresh() -> void:
 		"previewAvailable": available.available, "previewUnavailableReason": available.reason,
 		"hasUnappliedDraft": _drafts.has_draft(), "canNavigateBack": _navigation.can_go_back(),
 		"canNavigateForward": _navigation.can_go_forward()})
+	_menu.set_flow_available(_session.connected and not _operations.requires_reopen and _discovery.can_open_current_flow())
 
 
 func dispatch(command: StringName) -> void:
 	if _operations.busy or _issues.guard_repair_command(command): return
-	if command in [&"edit.find-global", &"navigate.go-to-entity", &"navigate.find-uses", &"navigate.used-by", &"view.links-uses"] and (not _session.connected or _operations.requires_reopen): return
+	if command in [&"edit.find-global", &"navigate.go-to-entity", &"navigate.find-uses", &"navigate.view-flow", &"navigate.used-by", &"view.links-uses"] and (not _session.connected or _operations.requires_reopen): return
 	if _project_actions.has(command):
 		if command in [&"file.save", &"file.save-as"]: await _project_actions[command].call()
 		else: await _guard.call(_project_actions[command], "publishing" if command == &"file.compile-targets" else "continuing")
@@ -149,6 +151,7 @@ func _workspace_command(command: StringName) -> void:
 		&"view.reset-layout": _reset_layout()
 		&"navigate.go-to-entity", &"edit.find-global": _discovery.open_search()
 		&"navigate.find-uses": _discovery.open_current_links("outgoing")
+		&"navigate.view-flow": _discovery.open_current_flow()
 		&"navigate.used-by", &"view.links-uses": _discovery.open_current_links("incoming")
 		&"navigate.back": await _navigation.navigate_back()
 		&"navigate.forward": await _navigation.navigate_forward()
@@ -184,12 +187,14 @@ func _reset_layout() -> void:
 
 func show_palette() -> void:
 	_palette.popup_palette({"hasMap": not _maps.document.identity.is_empty(),
+		"flowAvailable": _session.connected and not _operations.requires_reopen and _discovery.can_open_current_flow(),
 		"landEditable": _session.connected and _read_bridge.call().is_project_backed() and not _maps.document.is_dungeon})
 
 
 func _palette_command(command: String) -> void:
 	var land: ProvidenceLandEditor = _registry.view("maps.land")
 	match command:
+		"navigate.view-flow": await _discovery.open_current_flow()
 		"map.open-current": await _navigation.open_map(_maps.document.identity)
 		"map.fit":
 			land.fit_canvas()

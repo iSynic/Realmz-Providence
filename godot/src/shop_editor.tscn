@@ -112,6 +112,9 @@ layout_mode = 2
 disabled = true
 text = "Callers…"
 tooltip_text = "Find instructions that load or alter this Shop."
+[node name="ViewFlow" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
+text = "View Flow…"
+
 [node name="NewShop" type="Button" parent="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader"]
 layout_mode = 2
 disabled = true
@@ -254,3 +257,5 @@ layout_mode = 2
 disabled = true
 tooltip_text = "Apply this Shop draft to the open project."
 text = "Apply Shop"
+
+[connection signal="pressed" from="ShopWorkspace/ShopWorkbenchScroll/ShopWorkbench/ShopHeader/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

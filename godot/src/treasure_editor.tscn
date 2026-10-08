@@ -62,6 +62,9 @@ layout_mode = 2
 text = "Callers…"
 tooltip_text = "Find scripts and encounters that award this Treasure."
 disabled = true
+[node name="ViewFlow" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
+text = "View Flow…"
+
 [node name="NewTreasure" type="Button" parent="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader"]
 layout_mode = 2
 disabled = true
@@ -281,3 +284,5 @@ layout_mode = 2
 disabled = true
 tooltip_text = "Apply this Treasure draft to the open project."
 text = "Apply Treasure"
+
+[connection signal="pressed" from="TreasureWorkspace/TreasureWorkbenchScroll/TreasureWorkbench/TreasureHeader/ViewFlow" to="." method="emit_signal" binds= ["discovery_requested", "flow"]]

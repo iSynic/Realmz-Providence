@@ -7,6 +7,7 @@ signal open_record_requested(record: Dictionary)
 signal open_source_requested(link: Dictionary)
 signal open_target_requested(link: Dictionary)
 signal trace_branch_requested(link: Dictionary)
+signal flow_requested(record: Dictionary)
 signal closed
 
 var _mode := "search"
@@ -50,6 +51,7 @@ func _ready() -> void:
 	%Uses.pressed.connect(show_links.bind("outgoing"))
 	%Trace.pressed.connect(show_links.bind("trace"))
 	%OpenRecord.pressed.connect(func(): open_record_requested.emit(_record))
+	%ViewFlow.pressed.connect(func(): flow_requested.emit(_record.duplicate(true)))
 	%OpenSource.pressed.connect(func(): open_source_requested.emit(_selection))
 	%OpenTarget.pressed.connect(func(): open_target_requested.emit(_selection))
 	%TraceBranch.pressed.connect(func(): trace_branch_requested.emit(_selection))
@@ -160,6 +162,7 @@ func set_preview(result: Dictionary) -> void:
 		button.tooltip_text = preload("res://src/source_navigation.gd").unavailable_reason(caller)
 		button.disabled = not button.tooltip_text.is_empty()
 	%OpenRecord.disabled = _record.is_empty()
+	%ViewFlow.disabled = _record.is_empty() or str(_record.get("identity", "")).is_empty()
 	%SearchUsedBy.text = "Used By %d" % int(result.get("usedBy", 0))
 	%SearchUses.text = "Uses %d" % int(result.get("uses", 0))
 	for button in [%UsedBy, %Uses, %Trace, %SearchUsedBy, %SearchUses]: button.disabled = _record.is_empty() or _record.get("scope", "") in ["docs", "personal"] or _record.get("kind", "") in ["monster-library-entry", "reference-string"]
@@ -302,9 +305,10 @@ func _clear_selection() -> void:
 	%SearchUses.text = "Uses"
 	%UsedBy.text = "Used By"
 	%Uses.text = "Uses"
-	for button in [%OpenRecord, %OpenSource, %OpenTarget, %TraceBranch, %UsedBy, %Uses, %Trace, %SearchUsedBy, %SearchUses]: button.disabled = true
+	for button in [%ViewFlow, %OpenRecord, %OpenSource, %OpenTarget, %TraceBranch, %UsedBy, %Uses, %Trace, %SearchUsedBy, %SearchUses]: button.disabled = true
 
 func _update_mode() -> void:
+	%ViewFlow.disabled = _record.is_empty() or str(_record.get("identity", "")).is_empty()
 	%OpenRecord.disabled = _record.is_empty() or _record.get("linkOnly", false)
 	title = "Scenario Search" if _mode == "search" else "Links · " + preload("res://src/discovery_preview.gd").title(_record)
 	%Heading.text = "Search scenario" if _mode == "search" else title

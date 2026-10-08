@@ -11,7 +11,9 @@ DIRECTORIES = ["crates", "contracts", "vendor", "godot/src", "godot/theme", "god
 FILES = [".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "LICENSE", "LICENSE-REALMZ.txt",
          "NOTICE", "SOURCE-LICENSE.md", "CONVERTER-LICENSE.md", "COPYING.converter", "THIRD_PARTY_NOTICES.md",
          "godot/project.godot", "godot/export_presets.cfg", "artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt",
-         "tools/music-preview-runtime.json", ".github/workflows/native-release.yml"]
+         "tools/music-preview-runtime.json", ".github/workflows/native-release.yml",
+         "tools/verify-discovery-flow.py", "tools/adapter_test_client.py",
+         "tools/verify_discovery_adapter.py", "tools/verify_discovery_flow.py", "tools/run-godot-workflow.py"]
 PRIVATE_TOOLS = {"capture_special_paint.gd", "validate_character_navigation_native.gd", "validate_rule_source_native.gd",
                  "validate_treasure_player_beta.gd", "validate_treasure_pool_native.gd"}
 IGNORE_PARTS = {".git", ".godot", "__pycache__", "target", "artifacts"}

@@ -5,6 +5,7 @@ signal command_requested(command: String)
 
 @onready var _search: LineEdit = %CommandSearch
 @onready var _rows: Array[Control] = [
+	%ViewFlowRow,
 	%OpenCurrentMapRow,
 	%FitMapRow,
 	%ToggleActionPointsRow,
@@ -13,6 +14,7 @@ signal command_requested(command: String)
 	%RevealMapRow,
 ]
 @onready var _buttons: Dictionary = {
+	"navigate.view-flow": %ViewFlow,
 	"map.open-current": %OpenCurrentMap,
 	"map.fit": %FitMap,
 	"map.toggle-action-points": %ToggleActionPoints,
@@ -27,6 +29,7 @@ func _ready() -> void:
 
 
 func popup_palette(context: Dictionary) -> void:
+	_set_command_state("navigate.view-flow", bool(context.get("flowAvailable", false)), "Open a project and select an applied record.")
 	_set_command_state("map.open-current", bool(context.get("hasMap", false)), "Open or import a map first.")
 	_set_command_state("map.fit", bool(context.get("hasMap", false)), "Open or import a map first.")
 	_set_command_state("map.toggle-action-points", bool(context.get("hasMap", false)), "Open or import a map first.")

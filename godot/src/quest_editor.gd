@@ -1,6 +1,8 @@
 class_name ProvidenceQuestEditor
 extends HSplitContainer
 
+signal discovery_requested(direction: String)
+
 signal source_requested(reference: Dictionary)
 signal selection_changed(quest: Dictionary)
 signal apply_state_changed(can_apply: bool)

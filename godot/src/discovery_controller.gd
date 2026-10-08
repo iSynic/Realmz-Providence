@@ -12,6 +12,9 @@ var _query_generation := 0
 var _preview_generation := 0
 var _display_context: Dictionary = {}
 var _code_helper: Window
+var flow
+var _flow_entries: Dictionary = {}
+var _entry_elapsed := 0.0
 
 func initialize(operations: ProvidenceEditorOperation, context: Callable, bridge: Callable, navigation, registry, tabs: TabContainer) -> void:
 	_operations = operations
@@ -32,6 +35,40 @@ func initialize(operations: ProvidenceEditorOperation, context: Callable, bridge
 	_view.closed.connect(func(): _generation += 1)
 	_navigation.navigation_canceled.connect(_view.resume_after_canceled_navigation)
 	_navigation.source_navigation_failed.connect(_view.navigation_failed)
+	flow = preload("res://src/discovery_flow_controller.gd").new()
+	add_child(flow)
+	flow.initialize(operations, context, bridge, navigation, route_record)
+	_view.flow_requested.connect(open_flow_record)
+
+func open_current_flow() -> void:
+	var editor: Control = _tabs.get_current_tab_control()
+	var route := str(_registry.identity_for_tab(_tabs.current_tab))
+	await flow.open(preload("res://src/discovery_selection.gd").record(editor, route))
+
+func register_flow_entry(editor: Control, route: String) -> void:
+	var button := editor.find_child("ViewFlow", true, false) as Button
+	if button != null:
+		button.disabled = true
+		_flow_entries[route] = button
+
+func can_open_current_flow() -> bool:
+	if not _context.call().get("connected", false): return false
+	var editor: Control = _tabs.get_current_tab_control()
+	var selection := preload("res://src/discovery_selection.gd").record(editor, str(_registry.identity_for_tab(_tabs.current_tab)))
+	return not str(selection.get("identity", "")).is_empty()
+
+func _process(delta: float) -> void:
+	_entry_elapsed += delta
+	if _entry_elapsed < 0.15 or _tabs == null: return
+	_entry_elapsed = 0.0
+	var route := str(_registry.identity_for_tab(_tabs.current_tab))
+	if _flow_entries.has(route):
+		_flow_entries[route].disabled = not can_open_current_flow() or _operations.busy or _operations.requires_reopen
+		_flow_entries[route].tooltip_text = "View applied relationships; unfinished edits stay in the editor."
+
+func open_flow_record(record: Dictionary) -> void:
+	_view.close_view()
+	await flow.open(record)
 
 func open_search() -> void:
 	_generation += 1
@@ -41,6 +78,9 @@ func configure_help(code_helper: Window) -> void:
 	_code_helper = code_helper
 
 func open_current_links(direction: String) -> void:
+	if direction == "flow":
+		await open_current_flow()
+		return
 	var view: Control = _tabs.get_current_tab_control()
 	var route := str(_registry.identity_for_tab(_tabs.current_tab))
 	var selected := preload("res://src/discovery_selection.gd").record(view, route)
@@ -111,7 +151,14 @@ func links(record: Dictionary, direction: String, query: String, offset: int, tr
 func open_record(record: Dictionary, destination_context: Dictionary = {}) -> void:
 	if not await _still_current(): return
 	_view.suspend_for_navigation()
+	await route_record(record, destination_context)
+
+func route_record(record: Dictionary, destination_context: Dictionary = {}) -> void:
 	var kind := str(record.get("kind", ""))
+	var caller = destination_context.get("originReference", {}).get("callerContext")
+	if kind == "rogue-encounter" and caller != null:
+		await _navigation.open_script_source({"source":record.identity, "field":"", "callerContext":caller})
+		return
 	if kind.ends_with("-encounter-result"):
 		var identity := str(record.identity)
 		var entry = destination_context.get("originReference", {}).get("codePosition")
