@@ -30,6 +30,7 @@ func _run() -> void:
 	assert(flow.summary_error.is_empty(), flow.summary_error)
 	assert(view.model.summaries.has(view.root_id()), "The native flow must show a semantic program summary")
 	assert(view.model.summaries[view.root_id()].usedSteps == 4)
+	await preload("res://tools/discovery_flow_lifetime_checks.gd").new().dismiss_members(self)
 	await _check_connections()
 	await _check_keyboard_and_source()
 	await _check_history()

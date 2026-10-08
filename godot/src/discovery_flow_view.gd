@@ -235,11 +235,17 @@ func _find_select(index: int) -> void:
 	graph.focus_record(str(id))
 
 func _show_members(ids: Array) -> void:
+	_dismiss_helper()
 	%List.clear()
 	for id in ids:
 		var index: int = %List.add_item(graph.caption(model.nodes[id]) + " · " + str(model.summaries.get(id, {}).get("summary", model.nodes[id].label)))
 		%List.set_item_metadata(index, id)
 	%FindResults.show()
+	%List.grab_focus()
+
+func _dismiss_find() -> void:
+	%FindResults.hide()
+	%Find.clear()
 
 func _queue_helper(id: String, anchor: Vector2, pinned: bool) -> void:
 	if _helper_pinned and not pinned: return
@@ -344,6 +350,7 @@ func mark_stale(message := "Project changed. Refresh before expanding or opening
 	_show_selection()
 
 func suspend_for_navigation() -> void:
+	_dismiss_find()
 	graph.save_positions()
 	suspended = true
 	hide()
@@ -357,6 +364,7 @@ func navigation_failed(message: String) -> void:
 	show_failure(message, false)
 
 func close_view() -> void:
+	_dismiss_find()
 	graph.save_positions()
 	suspended = false
 	hide()
@@ -364,10 +372,17 @@ func close_view() -> void:
 	if _focus != null and is_instance_valid(_focus.get_ref()): _focus.get_ref().grab_focus()
 
 func _input(event: InputEvent) -> void:
-	if not visible or not event.is_action_pressed("ui_cancel"): return
-	if %Helper.visible:
+	if not visible: return
+	if event is InputEventMouseButton and event.pressed and %FindResults.visible:
+		if not %FindResults.get_global_rect().has_point(event.position) and not %Find.get_global_rect().has_point(event.position):
+			_dismiss_find()
+	if not event.is_action_pressed("ui_cancel"): return
+	if %FindResults.visible:
+		_dismiss_find()
 		_dismiss_helper()
-	elif %FindResults.visible: %FindResults.hide(); %Find.clear()
+		%Find.grab_focus()
+	elif %Helper.visible:
+		_dismiss_helper()
 	else: close_view()
 	set_input_as_handled()
 

@@ -1,5 +1,56 @@
 extends RefCounted
 
+func dismiss_members(host) -> void:
+	var view = host.view
+	var original: String = view.model.selected
+	var members: Array = view.model.nodes.keys()
+	view.graph.members_requested.emit(members)
+	await host.process_frame
+	assert(view.get_node("%FindResults").visible)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = view.get_node("%Find").get_global_rect().get_center()
+	view.push_input(click, true)
+	assert(view.get_node("%FindResults").visible, "Clicking the search field keeps results available")
+	click.pressed = false
+	view.push_input(click, true)
+	var activated := [false]
+	var fit = view.get_node("%Fit")
+	fit.gui_input.connect(func(event):
+		if event is InputEventMouseButton and event.pressed: activated[0] = true)
+	click.position = fit.get_global_rect().get_center()
+	click.pressed = true
+	var motion := InputEventMouseMotion.new()
+	motion.position = click.position
+	view.push_input(motion, true)
+	view.push_input(click, true)
+	click.pressed = false
+	view.push_input(click, true)
+	assert(not view.get_node("%FindResults").visible, "Clicking outside dismisses members")
+	assert(activated[0], "The outside click still reaches its destination control")
+	assert(view.visible and view.model.selected == original, "Dismissal preserves the open flow and selection")
+	view.graph.members_requested.emit(members)
+	var escape := InputEventKey.new()
+	escape.pressed = true
+	escape.keycode = KEY_ESCAPE
+	view.push_input(escape, true)
+	assert(view.visible and not view.get_node("%FindResults").visible, "Escape dismisses members without closing flow")
+	view.graph.members_requested.emit(members)
+	view.close_view()
+	view.present()
+	assert(not view.get_node("%FindResults").visible, "Reopening flow does not restore stale members")
+	view.graph.members_requested.emit(members)
+	await host.process_frame
+	var list: ItemList = view.get_node("%List")
+	click.position = list.global_position + list.get_item_rect(0).get_center()
+	click.pressed = true
+	view.push_input(click, true)
+	click.pressed = false
+	view.push_input(click, true)
+	assert(not view.get_node("%FindResults").visible and view.model.selected == members[0], "Clicking a member still selects that exact record")
+	view.select_node(original)
+
 func interrupted_refresh(host) -> void:
 	var view = host.view
 	var previous: Dictionary = view.model.snapshot()

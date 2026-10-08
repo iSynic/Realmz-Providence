@@ -25,6 +25,7 @@ unfinished edit. Apply a newly created record before opening its flow.
   work independently. State connections do not imply execution order.
 - Groups disclose their loaded members. **Find in loaded records** can reveal
   a member inside a group; it does not search records outside the current view.
+  Click outside the list or press Escape to dismiss it without closing View Flow.
 - Hover or press F1 for help. Tab reaches controls; arrows move card focus and
   Enter selects. Escape dismisses help before closing the window. Opening an
   editor uses the usual draft confirmation.
