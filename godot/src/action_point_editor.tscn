@@ -40,7 +40,7 @@ text = "Global Macros"
 layout_mode = 2
 disabled = true
 toggle_mode = true
-text = "Story Flags"
+text = "Quests"
 [node name="ActionPointRouteHeader" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 2

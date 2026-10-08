@@ -22,5 +22,5 @@ alignment = 0
 [node name="SF" type="Button" parent="."]
 layout_mode = 2
 toggle_mode = true
-text = "SF  Story Flags"
+text = "Q   Quests"
 alignment = 0

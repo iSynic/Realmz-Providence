@@ -15,7 +15,7 @@ theme = ExtResource("3")
 custom_minimum_size = Vector2(280, 0)
 [node name="QuestHeader" type="Label" parent="QuestBrowser"]
 theme_type_variation = &"QuestTitle"
-text = "QUESTS · STORY FLAGS"
+text = "QUESTS"
 [node name="ContextRoutes" parent="QuestBrowser" instance=ExtResource("5")]
 active_route = "scripts.quests"
 [node name="QuestSearch" type="LineEdit" parent="QuestBrowser"]
