@@ -27,9 +27,15 @@ class FixtureBridge:
 			facets.append({"id": id, "label": id, "total": 0, "errors": 0, "warnings": 0, "information": 0})
 		var matching: Array = []
 		var before_group := 0
+		var hidden := 0
+		var codes: Array = []
 		for row: Dictionary in rows:
 			var severity_key: String = {"error": "errors", "warning": "warnings", "information": "information"}[row.severity]
 			counts[severity_key] += 1
+			if not codes.has(row.code): codes.append(row.code)
+			if (params.get("hideUncalledWarnings", false) and row.severity == "warning" and row.entity in ["extra-action-point:509", "extra-action-point:510"]) or params.get("excludedCodes", []).has(row.code) or params.get("excludedFindings", []).has(IssuesState.selection_key(row)):
+				hidden += 1
+				continue
 			if params.get("severity", "") not in ["", row.severity]:
 				continue
 			var query: String = params.query.to_lower()
@@ -59,7 +65,8 @@ class FixtureBridge:
 		var result := {"revision": revision, "offset": offset, "limit": params.limit,
 			"total": matching.size(), "items": matching.slice(offset, offset + int(params.limit)),
 			"unfilteredTotal": rows.size(), "matchedBeforeGroup": before_group,
-			"unfilteredCounts": counts, "categories": facets, "selectionIndex": selected}
+			"unfilteredCounts": counts, "categories": facets, "selectionIndex": selected,
+			"availableCodes": codes, "temporaryHiddenCount": hidden}
 		if malformed:
 			result.items.append({"message": "Invalid row"})
 		return {"ok": true, "result": result}
@@ -72,6 +79,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var bridge := FixtureBridge.new()
 	var state := IssuesState.new()
+	state.set_capacity(8)
 	var phases: Array = []
 	var record_phase := func(): phases.append(state.status)
 	state.changed.connect(record_phase)

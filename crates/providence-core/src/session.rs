@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 mod action_draft_commands;
+mod action_draft_preservation;
 mod action_draft_semantics;
 mod action_point_commands;
 mod action_point_records;

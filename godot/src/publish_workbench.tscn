@@ -75,6 +75,24 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.560784, 0.627451, 0.678431, 1)
 text = ""
 
+[node name="TrimExtraCodeTail" type="CheckBox" parent="PublishPanel/Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Trim inaccessible Extra Code tail from export"
+tooltip_text = "Only unchanged imported Data EDCD bytes beyond Castle's row address range. Interior gaps and project source bytes stay intact."
+
+[node name="TrimNotice" type="Label" parent="PublishPanel/Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+visible = false
+theme_override_colors/font_color = Color(0.9, 0.71, 0.4, 1)
+
+[node name="TrimConfirmation" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Export without inaccessible Extra Code bytes?"
+ok_button_text = "Export trimmed copy"
+
 [node name="Columns" type="HBoxContainer" parent="."]
 layout_mode = 2
 size_flags_vertical = 3

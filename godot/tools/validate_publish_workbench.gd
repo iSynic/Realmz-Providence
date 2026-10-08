@@ -49,6 +49,7 @@ class Bridge extends ProvidenceNativeBridge:
 	func _classic_plan(params: Dictionary) -> Dictionary:
 		var offset := int(params.get("offset", 0))
 		return {"revision": 7, "completeScenario": false, "requiredDirectoryName": "Fixture Scenario",
+			"manifestSha256": "fixture-trim-plan", "trim": {"preview": {"removableBytes":317040}},
 			"files": _page(offset, ["Data DD", "Data ED3", "Data LD", "Data SD", "Global", "Scenario.rsrc", "Data NI", "Data TD", "Data MD2"], "family")}
 
 	func _rebuilt_plan(params: Dictionary) -> Dictionary:
@@ -93,6 +94,7 @@ func _run() -> void:
 	_controller.attach_session()
 	_destination_paths()
 	await _classic_check_and_paging()
+	await _trim_confirmation()
 	await _stuffit_check()
 	await _rebuilt_check()
 	await _warning_readiness()
@@ -136,6 +138,32 @@ func _rebuilt_check() -> void:
 	_check(_methods() == ["project.inspect-rebuilt-readiness", "compiler.describe", "project.inspect-rebuilt-package", "project.benchmark"], "Rebuilt request sequence changed")
 	var params: Dictionary = _bridge.calls[2].params
 	_check(params.get("compilerCommit") == "fixture-commit" and params.get("limit") == 4, "Rebuilt plan lost compiler identity or bound")
+	_check(not _view.trim_option.visible and _view.trim_parameters().is_empty(), "Classic trimming leaked into Rebuilt")
+
+
+func _trim_confirmation() -> void:
+	_check(not _view.trim_option.button_pressed, "Trimming must default off")
+	_view.trim_option.button_pressed = true
+	await process_frame
+	while _operations.busy: await process_frame
+	_check(_view.trim_notice.text.contains("317040"), "Trim warning lost its byte count")
+	_check(_bridge.calls.any(func(call): return call.method == "project.inspect-classic-plan" and call.params.get("trimExtraCodeTail", false)), "Trim selection did not reach the plan")
+	_bridge.calls.clear()
+	_view.export_button.pressed.emit()
+	_check(_view.trim_confirmation.visible, "Trim confirmation was skipped")
+	_view.trim_confirmation.canceled.emit()
+	_view.trim_confirmation.hide()
+	_check(_bridge.calls.is_empty() and not _view.trim_parameters(true).acknowledgeTrim, "Cancel acknowledged or published a trimmed export")
+	_view.export_button.pressed.emit()
+	_view.trim_confirmation.confirmed.emit()
+	_view.trim_confirmation.hide()
+	_view.classic_parent_picker.hide()
+	var response := await _controller.publish_to("classic", "trimmed-fixture")
+	_check(response.get("ok", false), "Confirmed trim publication failed")
+	var params: Dictionary = _bridge.calls.back().params
+	_check(params.get("trimExtraCodeTail", false) and params.get("acknowledgeTrim", false) and params.manifestSha256 == "fixture-trim-plan", "Trim publication lost consent or plan identity")
+	_controller.attach_session()
+	_check(not _view.trim_option.button_pressed, "Trimming selection survived a project attachment")
 
 
 func _stuffit_check() -> void:

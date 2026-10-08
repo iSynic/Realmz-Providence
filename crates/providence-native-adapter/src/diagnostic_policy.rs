@@ -20,7 +20,12 @@ impl Findings {
         ))
     }
 
-    pub(crate) fn project(&self, revision: Revision, params: &Value) -> Result<Value, String> {
+    pub(crate) fn project(
+        &self,
+        revision: Revision,
+        params: &Value,
+        uncalled: &std::collections::BTreeSet<providence_core::model::StableId>,
+    ) -> Result<Value, String> {
         let show_all = match params.get("showAll") {
             None | Some(Value::Null) => false,
             Some(Value::Bool(value)) => *value,
@@ -36,6 +41,12 @@ impl Findings {
             self.0.application_fallbacks(),
             params,
             |finding, query| view.members_match(finding, query),
+            |finding| {
+                finding
+                    .entity
+                    .as_ref()
+                    .is_some_and(|id| uncalled.contains(id))
+            },
             |finding| serde_json::to_value(view.row(finding)).expect("finding row"),
         )?;
         page["allFindingCount"] = json!(self.0.all_count());
@@ -62,3 +73,15 @@ fn counts_value(counts: [usize; 3]) -> Value {
 
 #[cfg(test)]
 mod tests;
+
+// Build the shared caller index only when this optional view filter is requested.
+pub(crate) fn uncalled_records(
+    session: &EditorSession,
+    params: &Value,
+) -> std::collections::BTreeSet<providence_core::model::StableId> {
+    if params.get("hideUncalledWarnings").and_then(Value::as_bool) == Some(true) {
+        providence_core::validation::findings::callers::records_without_callers(session.discovery())
+    } else {
+        Default::default()
+    }
+}

@@ -38,13 +38,20 @@ pub(crate) fn write_classic_slice_with_application(
             session.revision().0
         ));
     }
-    let manifest = compile_classic_slice_with_application_and_asset_payloads(
+    let mut manifest = compile_classic_slice_with_application_and_asset_payloads(
         session.snapshot(),
         sources,
         asset_payloads,
         application_media,
     )
     .map_err(|error| error.to_string())?;
+    let trim = crate::classic_export_trim::prepare(
+        session,
+        &mut manifest,
+        sources.data_edcd,
+        params,
+        true,
+    )?;
     let directory = PathBuf::from(required_string(params, "directory")?);
     let digest = manifest.deterministic_sha256();
     publish_classic_directory(&directory, &manifest)?;
@@ -52,13 +59,15 @@ pub(crate) fn write_classic_slice_with_application(
         .files()
         .map(|(name, entry)| json!({ "name": name, "bytes": entry.bytes.len() }))
         .collect::<Vec<_>>();
-    Ok(json!({
+    let mut result = json!({
         "revision": session.revision(),
         "directory": directory,
         "manifestSha256": digest,
         "files": files,
         "warnings": crate::classic_timed_warnings::warnings(session.snapshot()),
-    }))
+    });
+    crate::classic_export_trim::attach(&mut result, trim);
+    Ok(result)
 }
 
 pub(crate) fn publish_classic_directory(

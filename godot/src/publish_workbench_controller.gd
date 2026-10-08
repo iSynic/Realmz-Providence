@@ -32,6 +32,7 @@ func initialize(view: ProvidencePublishWorkbench, operations: ProvidenceEditorOp
 
 
 func attach_session() -> void:
+	_view.reset_trim()
 	_generation += 1
 	_request_generation += 1
 	_update_context()
@@ -184,10 +185,12 @@ func _package_request(operation: ProvidenceEditorOperation, method: String, para
 
 func _publish(operation: ProvidenceEditorOperation, target: String, path: String, expected: int, guard: Dictionary) -> Dictionary:
 	if not _guard_current(guard) or expected != int(_context.call().get("revision", -1)): return _stale()
+	var classic_params := {"directory": path, "path": path, "expectedRevision": expected, "manifestSha256": _view.manifest_sha256()}
+	classic_params.merge(_view.trim_parameters(true), true)
 	if target == "classic":
-		return await operation.request("project.compile-classic-slice", {"directory": path, "expectedRevision": expected})
+		return await operation.request("project.compile-classic-slice", classic_params)
 	if target == "stuffit":
-		return await operation.request("project.compile-classic-stuffit", {"path": path, "expectedRevision": expected, "manifestSha256": _view.manifest_sha256()})
+		return await operation.request("project.compile-classic-stuffit", classic_params)
 	var params := _package_options(_compiler)
 	params["path"] = path
 	params["expectedRevision"] = expected
@@ -224,6 +227,7 @@ func _plan_method() -> String:
 
 func _plan_params(compiler: Dictionary, offset: int) -> Dictionary:
 	var params := {"offset": offset, "limit": ProvidencePublishWorkbench.PAGE_SIZE}
+	params.merge(_view.trim_parameters())
 	if _view.target() == "rebuilt": params.merge(_package_options(compiler))
 	return params
 

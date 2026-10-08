@@ -1,6 +1,8 @@
 //! Derived author-facing findings. No paging, transport or durable state lives here.
 
+pub mod callers;
 mod grouping;
+mod monster_tails;
 mod relevance;
 
 use super::{
@@ -21,7 +23,9 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct Findings {
     all: GroupedFindings,
     actionable: Vec<Diagnostic>,
+    detail_keys: BTreeSet<String>,
     application_fallbacks: usize,
+    retained_monster_tails: BTreeSet<StableId>,
 }
 
 #[derive(Serialize)]
@@ -41,6 +45,8 @@ pub struct FindingRow<'a> {
     pub occurrence_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_identity: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preservation_reason: Option<&'static str>,
 }
 
 pub struct FindingView<'a> {
@@ -75,6 +81,12 @@ impl Findings {
             })
             .collect::<Vec<_>>();
         let actionable = relevance::actionable(snapshot, &all, references);
+        let actionable_keys = actionable.iter().map(row_key).collect::<BTreeSet<_>>();
+        let detail_keys = all
+            .iter()
+            .map(row_key)
+            .filter(|key| !actionable_keys.contains(key))
+            .collect();
         let targets = references
             .iter()
             .map(|reference| {
@@ -87,7 +99,9 @@ impl Findings {
         Self {
             all: grouping::group(all, &targets),
             actionable: grouping::group(actionable, &targets).rows,
+            detail_keys,
             application_fallbacks: fallbacks.len(),
+            retained_monster_tails: monster_tails::uncalled(snapshot, references),
         }
     }
 
@@ -138,15 +152,7 @@ impl<'a> FindingView<'a> {
     }
 
     pub fn row<'b>(&'b self, diagnostic: &'b Diagnostic) -> FindingRow<'b> {
-        let unused =
-            matches!(
-                diagnostic.code.as_str(),
-                "battle.empty"
-                    | "complex-encounter.spell.result-without-target"
-                    | "complex-encounter.item.result-without-target"
-            ) && !self.index.actionable.iter().any(|finding| {
-                finding.code == diagnostic.code && finding.entity == diagnostic.entity
-            });
+        let unused = self.index.detail_keys.contains(&row_key(diagnostic));
         let target_impact = impact(&diagnostic.code, diagnostic.severity, unused, false);
         let group_identity = if self.members {
             None
@@ -167,6 +173,8 @@ impl<'a> FindingView<'a> {
             target_impact,
             occurrence_count: self.occurrences(diagnostic),
             group_identity,
+            preservation_reason: (unused && diagnostic.entity.as_ref().is_some_and(|id| self.index.retained_monster_tails.contains(id)))
+                .then_some("Retained monster record after the bestiary end marker, with no known callers. Available in Decoded records."),
         }
     }
 

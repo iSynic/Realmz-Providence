@@ -58,14 +58,14 @@ impl ClassicManifestOperation {
             ClassicManifestOperation::InspectPlan
             | ClassicManifestOperation::InspectStuffIt
             | ClassicManifestOperation::PublishStuffIt => {
-                let manifest = compile_classic_slice_with_application_and_asset_payloads(
+                let mut manifest = compile_classic_slice_with_application_and_asset_payloads(
                     session.snapshot(),
                     sources,
                     asset_payloads,
                     application_media,
                 )
                 .map_err(|error| error.to_string())?;
-                self.project_manifest(&manifest, session.revision(), params)
+                self.project_manifest(&mut manifest, session, sources.data_edcd, params)
             }
             ClassicManifestOperation::Publish => write_classic_slice_with_application(
                 session,
@@ -114,11 +114,20 @@ impl ClassicManifestOperation {
 
     fn project_manifest(
         self,
-        manifest: &providence_core::compiler::NativeManifest,
-        revision: providence_core::session::Revision,
+        manifest: &mut providence_core::compiler::NativeManifest,
+        session: &EditorSession,
+        original_extra_codes: Option<&[u8]>,
         params: Value,
     ) -> Result<Value, String> {
-        match self {
+        let trim = crate::classic_export_trim::prepare(
+            session,
+            manifest,
+            original_extra_codes,
+            &params,
+            self == Self::PublishStuffIt,
+        )?;
+        let revision = session.revision();
+        let mut result = match self {
             Self::InspectPlan => classic_export_plan::project(manifest, revision, params),
             Self::InspectStuffIt | Self::PublishStuffIt => crate::classic_stuffit::execute(
                 manifest,
@@ -127,6 +136,8 @@ impl ClassicManifestOperation {
                 self == Self::InspectStuffIt,
             ),
             _ => Err("This Classic operation does not project a compiled manifest".into()),
-        }
+        }?;
+        crate::classic_export_trim::attach(&mut result, trim);
+        Ok(result)
     }
 }

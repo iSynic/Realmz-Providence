@@ -110,4 +110,10 @@ jobs:
       - name: Publish beta
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/*.zip release/*.tar.gz release/SHA256SUMS --verify-tag --prerelease --title "Providence $GITHUB_REF_NAME" --notes-file docs/public/beta-release.md
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/*.zip release/*.tar.gz release/SHA256SUMS --clobber
+            gh release edit "$GITHUB_REF_NAME" --prerelease --title "Providence $GITHUB_REF_NAME" --notes-file docs/public/beta-release.md
+          else
+            gh release create "$GITHUB_REF_NAME" release/*.zip release/*.tar.gz release/SHA256SUMS --verify-tag --prerelease --title "Providence $GITHUB_REF_NAME" --notes-file docs/public/beta-release.md
+          fi

@@ -4,6 +4,7 @@ extends HBoxContainer
 const StepPresentation = preload("res://src/action_step_presentation.gd")
 
 const DraftProjection = preload("res://src/action_step_draft_projection.gd")
+const DescriptionState = preload("res://src/action_step_description_state.gd")
 var _field_renderer := ProvidenceActionFieldRenderer.new()
 
 signal form_describe_requested(query: Dictionary, request_id: int, draft_slot: int)
@@ -148,6 +149,10 @@ func clear_document() -> void:
 func set_form_description(description: Dictionary, request_id: int) -> void:
 	var slot := _description_slot(request_id)
 	if slot < 0: return
+	if description.has("error"):
+		_draft_steps[slot]["descriptionPending"] = false
+		_draft_steps[slot]["descriptionError"] = str(description.error)
+		validation_changed.emit(); return
 	var action := description.get("action", {}) as Dictionary
 	if str(action.get("identity", "")) != str(_draft_steps[slot].actionIdentity): return
 	_draft_steps[slot]["authoringProjection"] = description.get("authoring", {}).duplicate(true)
@@ -341,6 +346,7 @@ func draft_error() -> Dictionary:
 			return preload("res://src/editor_draft_apply.gd").failure("Target must be between -32768 and 32767.", target_control)
 		var definition := _definitions_by_identity.get(str(draft.get("actionIdentity", "")), {}) as Dictionary
 		if definition.is_empty():
+			if DescriptionState.retainable(draft, _baseline_steps): continue
 			return preload("res://src/editor_draft_apply.gd").failure("A selected action is no longer in the authoring catalog.", _action_button)
 		if not _optional_text(definition.get("formId")).is_empty() and not draft.has("settings"):
 			return preload("res://src/editor_draft_apply.gd").failure("Complete the settings for step %d." % (int(draft.slot) + 1), _form)
@@ -353,14 +359,7 @@ func draft_error() -> Dictionary:
 
 
 func draft_error_for_authoring() -> Dictionary:
-	for slot in _draft_steps:
-		var draft := _draft_steps[slot] as Dictionary
-		if bool(draft.get("descriptionPending", false)):
-			return preload("res://src/editor_draft_apply.gd").failure("Wait for the updated action choices before applying.", _form)
-		var errors := (draft.get("authoringProjection", {}) as Dictionary).get("errors", []) as Array
-		if not errors.is_empty():
-			return preload("res://src/editor_draft_apply.gd").failure("Step %d: %s" % [int(slot) + 1, str(errors[0])], _form)
-	return {}
+	return DescriptionState.validation(_draft_steps, _form)
 
 
 func _drafts_from_projection(steps: Array) -> Dictionary:
@@ -442,9 +441,9 @@ func _render_editor() -> void:
 	_clear_form()
 	_target_panel.hide()
 	_render_technical()
-	_move_up.disabled = _selected_slot == 0 or draft.is_empty()
-	_move_down.disabled = _selected_slot == 7 or draft.is_empty()
-	_duplicate.disabled = draft.is_empty() or _first_empty_slot() < 0
+	_move_up.disabled = _selected_slot == 0 or draft.is_empty() or not bool(definition.get("selectable", true))
+	_move_down.disabled = _selected_slot == 7 or draft.is_empty() or not bool(definition.get("selectable", true))
+	_duplicate.disabled = draft.is_empty() or _first_empty_slot() < 0 or not bool(definition.get("selectable", true))
 	_clear.disabled = draft.is_empty()
 	validation_changed.emit()
 
@@ -455,11 +454,13 @@ func _request_description() -> void:
 	_target_panel.hide()
 	var draft := _current_draft()
 	if draft.is_empty() or _definitions_by_identity.is_empty(): return
+	if not _definitions_by_identity.has(str(draft.actionIdentity)): return
 	var target := int(draft.get("targetNativeId", 0))
 	if target < -32768 or target > 32767: return
 	_describe_generation += 1
 	var settings := _dictionary(draft.get("settings"))
 	_draft_steps[_selected_slot]["descriptionPending"] = true
+	_draft_steps[_selected_slot].erase("descriptionError")
 	_draft_steps[_selected_slot]["descriptionRequest"] = _describe_generation
 	validation_changed.emit()
 	form_describe_requested.emit({"actionIdentity": str(draft.actionIdentity),
@@ -472,7 +473,11 @@ func _request_description() -> void:
 
 func _render_semantic_form() -> void:
 	_clear_form()
-	_field_renderer.render(_form, _form_description)
+	var origin := _settings_origins.get(_selected_slot, {}) as Dictionary
+	_field_renderer.render(_form, _form_description, origin.get("status", "") == "missing")
+	if origin.get("status", "") == "missing":
+		_description.text = "Missing Extra Code %d · defaults shown" % int(origin.get("targetNativeId", -1))
+		_description.show()
 	_field_controls = _field_renderer.controls
 	StepPresentation.configure_gosub(_gosub, _gosub_applicable, _form_description)
 	_settings_heading.visible = _form.get_child_count() > 0
@@ -706,7 +711,7 @@ func _selected_action_identity() -> String:
 
 
 func _definition_for_draft(draft: Dictionary) -> Dictionary:
-	return _definitions_by_identity.get(str(draft.get("actionIdentity", "realmz.action.0")), {}) as Dictionary
+	return DescriptionState.definition(draft, _definitions_by_identity)
 
 
 func _control_value(control: Control) -> int:

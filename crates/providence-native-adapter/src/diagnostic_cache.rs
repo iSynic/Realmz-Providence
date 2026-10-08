@@ -48,7 +48,8 @@ impl Cache {
             let findings = self
                 .findings
                 .get_or_insert_with(|| Findings::collect(session, self.media.as_ref()));
-            return findings.project(revision, params);
+            let uncalled = super::diagnostic_policy::uncalled_records(session, params);
+            return findings.project(revision, params, &uncalled);
         };
         let root = store.as_ref().map(ProjectStore::root);
         let context = context_identity(params, root, session.snapshot())?;

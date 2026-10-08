@@ -45,8 +45,9 @@ pub(super) fn timed_encounter_diagnostics(snapshot: &ProjectSnapshot) -> Vec<Dia
                 code: "timed-encounter.percent.out-of-range".into(),
                 severity: Severity::Warning,
                 message: format!(
-                    "Timed Encounter chance {} is outside 0 through 100.",
-                    encounter.percent
+                    "Timed Encounter chance {} is outside 0 through 100. In Classic, this {} the chance check; other requirements still apply.",
+                    encounter.percent,
+                    if encounter.percent < 0 { "never passes" } else { "always passes" }
                 ),
                 entity: Some(encounter.identity.clone()),
                 field: Some(FieldPath("percent".into())),

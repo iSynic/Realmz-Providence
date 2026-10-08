@@ -91,6 +91,7 @@ mod encounter_references;
 mod extra_action_points;
 mod extra_codes;
 mod history;
+mod imported_action_drafts;
 mod imports;
 mod labels;
 mod land_layout;

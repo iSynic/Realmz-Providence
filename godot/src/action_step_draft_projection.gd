@@ -17,7 +17,7 @@ static func ordered(drafts: Dictionary) -> Array:
 					elif draft.has("settings"):
 						values[key] = projection.resolvedValues.get(key, values.get(key, 0))
 			if draft.has("settings"): draft.settings.values = values
-		for key in ["authoringInput", "authoringProjection", "descriptionPending", "descriptionRequest"]: draft.erase(key)
+		for key in ["authoringInput", "authoringProjection", "descriptionPending", "descriptionRequest", "descriptionError"]: draft.erase(key)
 		if str(draft.get("actionIdentity", "realmz.action.0")) != "realmz.action.0": result.append(draft)
 	return result
 
@@ -27,8 +27,8 @@ static func from_steps(steps: Array, forms: Dictionary) -> Dictionary:
 	var origins := {}
 	for value in steps:
 		var step := value as Dictionary
-		var definition := step.get("definition", {}) as Dictionary
-		var identity := str(definition.get("identity", "realmz.action.0"))
+		var definition := _dictionary(step.get("definition"))
+		var identity := str(definition.get("identity", "realmz.action.%d" % int(step.get("opcode", 0))))
 		if identity == "realmz.action.0": continue
 		var raw_opcode := int(step.get("rawOpcode", 0))
 		var draft := {"slot": int(step.get("slot", 0)), "actionIdentity": identity,

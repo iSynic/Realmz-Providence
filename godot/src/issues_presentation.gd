@@ -7,6 +7,30 @@ const SOURCE_NAMES := {
 	"timed-encounter":"Timed Encounter", "race":"Race", "caste":"Caste", "spell":"Spell", "item":"Item", "option-label":"Encounter choice text", "text-resource":"Scrolling text", "picture": "Picture", "sound": "Sound", "icon": "Icon", "player-map": "Player Map",
 }
 
+const TYPE_NAMES := {
+	"battle.empty": "Empty battles", "battle.runtime-monster-limit": "Too many battle monsters",
+	"action-settings.missing": "Missing action settings",
+	"source.partial-record.preserved": "Incomplete trailing records",
+	"source.shop-records.quarantined": "Preserved shop records",
+	"source.race-table.quarantined": "Preserved race table",
+	"complex-encounter.word.empty": "Empty word responses",
+	"complex-encounter.action.no-groups": "Encounter actions without groups",
+	"complex-encounter.item.result-without-target": "Item results without an item",
+	"complex-encounter.spell.result-without-target": "Spell results without a spell",
+	"rogue-encounter.trap.no-effect": "Traps without an effect",
+	"rogue-encounter.damage.inverted": "Reversed damage ranges",
+	"timed-encounter.percent.out-of-range": "Timed encounter chance outside range",
+	"timed-encounter.location.invalid-level": "Invalid timed encounter location",
+}
+
+
+static func type_label(code: String) -> String:
+	if TYPE_NAMES.has(code): return TYPE_NAMES[code]
+	if code.begins_with("reference."):
+		var kind := code.get_slice(".", 1).replace("-", " ")
+		return "%s %s" % [code.get_slice(".", 2).capitalize(), kind]
+	return code.replace(".", " · ").replace("-", " ").capitalize()
+
 
 static func source_label(finding: Dictionary) -> String:
 	var entity: Variant = finding.get("entity")
@@ -43,6 +67,7 @@ static func message(finding: Dictionary) -> String:
 
 
 static func guidance(finding: Dictionary, destination: Dictionary) -> String:
+	if finding.has("preservationReason"): return str(finding.preservationReason)
 	if destination.is_empty():
 		return "This problem has no available editor destination."
 	if not str(destination.get("reason", "")).is_empty(): return str(destination.reason)

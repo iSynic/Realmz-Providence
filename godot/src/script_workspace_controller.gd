@@ -85,7 +85,8 @@ func _refresh_record(operation: ProvidenceEditorOperation, record: String) -> Di
 		var catalog_response := await _load_action_catalog(operation)
 		if not catalog_response.get("ok", false): return _action_catalog_failure(catalog_response)
 	var map_identity := _map_context() if record == "actionPoint" else ""
-	return await _records[record].reload("", operation, map_identity)
+	var preferred := str(_records[record].selected_identity())
+	return await _records[record].reload(preferred, operation, map_identity, not preferred.is_empty())
 
 
 func _bind_encounters() -> void:
@@ -363,6 +364,8 @@ func _drain_form_descriptions() -> void:
 		if _pending_form_descriptions.has(key): continue
 		if _accept_response.call(response):
 			view.set_action_form_description(response.result, int(pending.requestId))
+		elif not response.get("ok", false):
+			view.set_action_form_description({"error": str(response.get("error", "Action choices could not be loaded."))}, int(pending.requestId))
 	_form_description_drain_running = false
 
 
@@ -466,7 +469,8 @@ func reload_global_macros() -> bool:
 
 
 func reload_action_points(preferred_identity: String = "") -> bool:
-	return _accept_response.call(await _records.actionPoint.reload(preferred_identity, null, _map_context()))
+	if preferred_identity.is_empty(): preferred_identity = _action_points.selected_identity()
+	return _accept_response.call(await _records.actionPoint.reload(preferred_identity, null, _map_context(), not preferred_identity.is_empty()))
 
 
 func reload_action_points_for_map(map_identity: String, preferred_identity: String = "") -> bool:

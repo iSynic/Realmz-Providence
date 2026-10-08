@@ -1,6 +1,16 @@
 Providence's first native Godot/Rust beta replaces the React/Tauri editor.
 The final web release remains available as v0.5.9 and on `legacy/tauri`.
 
+Refreshed October 7, 2026:
+
+- Fix Apply and navigation for imported Action Point drafts with unsupported
+  values, preserving untouched imported steps.
+- Add finding-type filters, adjustable page sizes, temporary hidden entries
+  and types, and an optional filter for warnings with no known callers.
+- Clarify diagnostics for retained monster tail records and imported defects.
+- Add an explicitly confirmed Classic export option to remove an eligible
+  partial Extra Code tail from the exported copy, retaining project source bytes.
+
 - Native Land and Dungeon editing, smart terrain, directional Magic Brush,
   special stamps, map overlays and JPEG export.
 - Action Points, XAPs, quests, encounters, battles, monsters and difficulty

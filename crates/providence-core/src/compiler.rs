@@ -6,6 +6,7 @@ mod combat_files;
 mod economy_files;
 mod encounter_files;
 mod errors;
+pub mod export_trim;
 mod item_files;
 mod manifest;
 mod music;

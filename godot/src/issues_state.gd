@@ -15,7 +15,8 @@ var category := ""
 var show_all := false
 var group_identity := ""
 var expanded := true
-var limit := 8
+var limit := 50
+var filters := preload("res://src/issues_filters.gd").new()
 var revision := -1
 var minimum_revision := -1
 var page: Dictionary = {}
@@ -47,6 +48,7 @@ func attach(bridge) -> void:
 	code = ""
 	category = ""
 	show_all = false
+	filters.reset()
 	group_identity = ""
 	expanded = true
 	minimum_revision = -1
@@ -77,6 +79,7 @@ func set_filters(next_query: String, next_severity: String = "", next_code: Stri
 
 
 func clear_filters() -> bool:
+	filters.reset()
 	category = ""
 	group_identity = ""
 	return set_filters("", "", "")
@@ -100,7 +103,16 @@ func open_group(identity: String) -> bool:
 
 
 func filters_active() -> bool:
-	return not query.is_empty() or not severity.is_empty() or not code.is_empty() or not category.is_empty()
+	return not query.is_empty() or not severity.is_empty() or not code.is_empty() or not category.is_empty() or not filters.rules.is_empty() or filters.hide_uncalled_warnings
+
+
+func hide_selected(by_type: bool) -> bool:
+	filters.add(selected_finding(), by_type)
+	return reload_filters()
+
+
+func reload_filters() -> bool:
+	return set_filters(query, severity, code)
 
 
 func open_category(next_category: String) -> bool:
@@ -180,8 +192,9 @@ func _load(locate: bool) -> bool:
 		"showAll": show_all,
 		"groupIdentity": group_identity,
 		"offset": int(_pages.get(category, 0)), "limit": limit,
-		"groupLimit": 1, "clampOffset": true, "locateSelection": locate,
+		"groupLimit": 64, "clampOffset": true, "locateSelection": locate,
 	}
+	params.merge(filters.parameters())
 	if not severity.is_empty():
 		params["severity"] = severity
 	if _selections.has(category):

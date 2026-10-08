@@ -39,6 +39,7 @@ pub(crate) fn project_with_members(
         application_fallbacks,
         params,
         member_matches,
+        |_| false,
         |finding| serde_json::to_value(finding).expect("diagnostic"),
     )
 }
@@ -49,6 +50,7 @@ pub(crate) fn project_with_rows(
     application_fallbacks: usize,
     params: &Value,
     member_matches: impl Fn(&Diagnostic, &str) -> bool,
+    has_no_callers: impl Fn(&Diagnostic) -> bool,
     project_row: impl Fn(&Diagnostic) -> Value,
 ) -> Result<Value, String> {
     let diagnostics = diagnostics.as_ref();
@@ -56,9 +58,13 @@ pub(crate) fn project_with_rows(
     let matching = diagnostics
         .iter()
         .filter(|finding| {
-            !query
-                .severity
-                .is_some_and(|severity| severity != finding.severity)
+            !query.excludes(finding)
+                && !(query.hide_uncalled_warnings
+                    && finding.severity == Severity::Warning
+                    && has_no_callers(finding))
+                && !query
+                    .severity
+                    .is_some_and(|severity| severity != finding.severity)
                 && (matches_query(finding, &query.text) || member_matches(finding, &query.text))
         })
         .collect::<Vec<_>>();
@@ -88,6 +94,8 @@ pub(crate) fn project_with_rows(
         "groups": groups, "groupOffset": query.group_offset, "groupLimit": query.group_limit,
         "groupTotal": group_total, "groupsTruncated": query.group_offset.saturating_add(query.group_limit) < group_total,
         "applicationFallbacks": application_fallbacks, "categories": category_counts(&matching),
+        "temporaryHiddenCount": diagnostics.iter().filter(|row| query.excludes(row) || (query.hide_uncalled_warnings && row.severity == Severity::Warning && has_no_callers(row))).count(),
+        "availableCodes": diagnostics.iter().map(|row| row.code.as_str()).collect::<std::collections::BTreeSet<_>>(),
     }))
 }
 

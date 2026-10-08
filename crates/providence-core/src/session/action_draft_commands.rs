@@ -30,8 +30,10 @@ impl EditorSession {
             .find(|row| row.identity == draft.source)
             .cloned()
             .ok_or_else(|| SessionError::ActionPointNotFound(draft.source.clone()))?;
-        row.coordinate = draft.header.coordinate;
-        row.classic_door_id = classic_door_id(&row)?;
+        if row.coordinate != draft.header.coordinate {
+            row.coordinate = draft.header.coordinate;
+            row.classic_door_id = classic_door_id(&row)?;
+        }
         row.post_action_level = draft.header.post_action_level;
         row.post_action_x = draft.header.post_action_x;
         row.post_action_y = draft.header.post_action_y;
@@ -142,8 +144,15 @@ pub(super) fn prepare_record_steps(
     validate_record_draft(kind, source, &drafts)?;
     owner_actions(snapshot, kind, source)?;
     let mut edits = Vec::with_capacity(drafts.len());
+    let mut retained = Vec::new();
     let mut allocator = settings_write_policy::SettingsAllocator::new(snapshot);
     for draft in drafts {
+        if let Some(step) =
+            super::action_draft_preservation::preserved_step(snapshot, kind, source, &draft)?
+        {
+            retained.push(step);
+            continue;
+        }
         edits.push(resolve_step_edit(
             snapshot,
             kind,
@@ -152,10 +161,11 @@ pub(super) fn prepare_record_steps(
             &mut allocator,
         )?);
     }
-    let prepared = edits
+    let mut prepared = edits
         .into_iter()
         .map(|edit| super::action_step_commands::prepare_resolved_step(snapshot, kind, edit))
         .collect::<Result<Vec<_>, _>>()?;
+    prepared.extend(retained);
     let requests = prepared
         .iter()
         .map(|step| step.rows.clone())

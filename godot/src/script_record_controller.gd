@@ -70,6 +70,10 @@ func open_record(identity: String) -> Dictionary:
 	return response
 
 
+func selected_identity() -> String:
+	return str(_view.read_state().get("identity", ""))
+
+
 func commit(document: Dictionary) -> Dictionary:
 	var key := str(_methods.get("commitKey", _methods.record))
 	return await submit(_methods.update, {key: document}, true)

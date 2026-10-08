@@ -12,6 +12,7 @@ class FaultBridge extends "res://src/native_bridge.gd":
 var _shell: Control
 var _view: ProvidenceActionPointEditor
 var _path := ""
+var _source_directory := ""
 const SOURCE = "action-point:land:3:13"
 const DESTINATION = "action-point:land:3:14"
 
@@ -21,6 +22,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	assert(args.size() == 2, "Expected disposable root and Classic scenario folder")
 	_path = args[0].path_join("project")
+	_source_directory = args[1]
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
@@ -44,6 +46,7 @@ func _run() -> void:
 		await _check_selection_choices()
 		await _check_failed_apply()
 	await _check_reopen()
+	await _check_preserved_dungeon_row()
 	_shell._close_project()
 	_shell.queue_free()
 	await process_frame
@@ -117,6 +120,72 @@ func _check_reopen() -> void:
 	assert(await _shell._scripts.open_action_point(SOURCE))
 	await _settle()
 	assert(_message_value() == 809 and not _view.has_unapplied_changes())
+
+
+func _check_preserved_dungeon_row() -> void:
+	assert(await _shell._scripts.open_action_point("action-point:dungeon:1:28"))
+	await _settle()
+	assert(_view._identity.text.contains("Unplaced") and not _view._identity.text.contains("(0, 0)"))
+	var original: Dictionary = _view.current_action_point().duplicate(true)
+	var steps: ProvidenceActionStepWorkbench = _view._semantic_steps
+	assert(steps.draft_steps().size() == 8)
+	assert(steps._step_list._items[0].text.contains("Unrecognized imported instruction"))
+	assert(_view.draft_error().is_empty(), str(_view.draft_error()))
+	steps._select_slot(1)
+	await _settle()
+	assert(steps._description.text.contains("Missing Extra Code 22075"))
+	var money := steps._field_controls.moneyType.control as OptionButton
+	assert(money.get_item_text(money.selected) == "Default (0)")
+	var gems := -1
+	for index in money.item_count:
+		if int(money.get_item_metadata(index)) == 2: gems = index
+	assert(gems >= 0)
+	money.select(gems)
+	money.item_selected.emit(gems)
+	await _settle()
+	assert(_view.can_apply_draft(), str(_view.draft_error()))
+	await _click(_view.get_node("%ApplyActionPoint"))
+	var updated := _view.current_action_point()
+	assert(int((steps._field_controls.moneyType.control as OptionButton).get_item_metadata((steps._field_controls.moneyType.control as OptionButton).selected)) == 2)
+	assert(not _view.has_unapplied_changes())
+	for key in ["classicDoorId", "coordinate", "postActionLevel", "postActionX", "postActionY", "chancePercent"]:
+		assert(updated[key] == original[key], key)
+	for index in range(8):
+		if index != 1: assert(updated.actions[index] == original.actions[index], str(index))
+	await _shell._execute_history("undo")
+	await _settle()
+	assert(_view.current_action_point() == original, "Undo: %s != %s" % [str(_view.current_action_point()), str(original)])
+	await _shell._execute_history("redo")
+	await _settle()
+	assert(_view.current_action_point() == updated)
+	await _check_dungeon_export(updated)
+	assert(_shell._bridge.request("project.save").get("ok", false))
+	var reopened: Dictionary = _shell._bridge.start_project(_path)
+	assert(reopened.get("ok", false))
+	await _shell._activate_session(reopened)
+	await _shell._navigation.select_route("scripts.action-points")
+	assert(await _shell._scripts.open_action_point("action-point:dungeon:1:28"))
+	await _settle()
+	assert(_view.current_action_point() == updated)
+
+
+func _check_dungeon_export(updated: Dictionary) -> void:
+	var output := _path.get_base_dir().path_join("export/Lord of the Abyss")
+	assert(DirAccess.make_dir_recursive_absolute(output.get_base_dir()) == OK)
+	var exported: Dictionary = _shell._bridge.request("project.compile-classic-slice", {"directory": output, "expectedRevision": _shell._session_view.revision})
+	assert(exported.get("ok", false), str(exported))
+	assert(FileAccess.get_file_as_bytes(output.path_join("Data DL")) == FileAccess.get_file_as_bytes(_source_directory.path_join("Data DL")))
+	var before := FileAccess.get_file_as_bytes(_source_directory.path_join("Data DDD"))
+	var after := FileAccess.get_file_as_bytes(output.path_join("Data DDD"))
+	assert(before.size() == after.size())
+	var target_offset := 4000 + 28 * 40 + 26
+	for index in before.size():
+		if index not in [target_offset, target_offset + 1]: assert(before[index] == after[index], str(index))
+	before = FileAccess.get_file_as_bytes(_source_directory.path_join("Data EDCD"))
+	after = FileAccess.get_file_as_bytes(output.path_join("Data EDCD"))
+	var settings_offset := int(updated.actions[1].targetNativeId) * 10
+	for index in before.size():
+		if index < settings_offset or index >= settings_offset + 10: assert(before[index] == after[index], str(index))
 
 func _edit_message(value: int) -> void:
 	var workbench: ProvidenceActionStepWorkbench = _view.get_node("%SemanticActionSteps")

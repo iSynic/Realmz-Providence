@@ -400,7 +400,7 @@ func _populate_document() -> void:
 	var record_index := int(_document.get("recordIndex", 0))
 	var coordinate_value: Variant = _document.get("coordinate", {})
 	var coordinate := coordinate_value as Dictionary if coordinate_value is Dictionary else {}
-	_identity.text = "Action Point %d (%d, %d)" % [record_index, int(coordinate.get("x", 0)), int(coordinate.get("y", 0))]
+	_identity.text = "Action Point %d · Unplaced" % record_index if coordinate.is_empty() else "Action Point %d (%d, %d)" % [record_index, int(coordinate.x), int(coordinate.y)]
 	_descriptor.text = str(_document.get("descriptor", ""))
 	_placed.button_pressed = not coordinate.is_empty()
 	_trigger_x.value = int(coordinate.get("x", 0))

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
 
-use crate::model::{BattleRecord, MonsterRecord, MonsterSet, ProjectSnapshot, StableId};
+use crate::model::{MonsterRecord, MonsterSet, ProjectSnapshot, StableId};
 
 const SETS: [i16; 3] = [0, 1, -1];
 
@@ -49,7 +49,7 @@ pub fn inventory(
         .iter()
         .filter_map(|id| snapshot.monster_sets.iter().find(|set| set.set_id == *id))
         .collect();
-    let index = InventoryIndex::new(&sets, &snapshot.battles);
+    let index = InventoryIndex::new(&sets, snapshot);
     let needle = query.trim().to_lowercase();
     let limit = limit.clamp(1, 128);
     let mut items = Vec::new();
@@ -100,13 +100,17 @@ struct InventoryIndex<'a> {
 }
 
 impl<'a> InventoryIndex<'a> {
-    fn new(sets: &[&'a MonsterSet], battles: &[BattleRecord]) -> Self {
+    fn new(sets: &[&'a MonsterSet], snapshot: &ProjectSnapshot) -> Self {
+        let called: BTreeSet<u32> = crate::monster_uses::monster_uses(snapshot)
+            .into_iter()
+            .map(|usage| usage.target_id)
+            .collect();
         let normal_terminator = sets
             .iter()
             .find(|set| set.set_id == 0)
             .and_then(|set| terminator(set));
         let mut placements = BTreeMap::<u32, usize>::new();
-        for value in battles.iter().flat_map(|battle| &battle.grid) {
+        for value in snapshot.battles.iter().flat_map(|battle| &battle.grid) {
             if *value != 0 {
                 *placements
                     .entry(u32::from(value.unsigned_abs()))
@@ -120,7 +124,7 @@ impl<'a> InventoryIndex<'a> {
             for record in &set.monsters {
                 let id = record.native_id.0;
                 records.insert((set.set_id, id), record);
-                if placements.contains_key(&id)
+                if called.contains(&id)
                     || (record.authored && !is_blank(record))
                     || boundary.is_none_or(|boundary| id < boundary)
                 {
@@ -165,7 +169,7 @@ impl<'a> InventoryIndex<'a> {
 fn terminator(set: &MonsterSet) -> Option<u32> {
     set.monsters
         .iter()
-        .filter(|record| record.hit_dice == 255)
+        .filter(|record| record.hit_dice == 255 && !record.not_on_menu)
         .map(|record| record.native_id.0)
         .min()
 }
@@ -186,6 +190,38 @@ mod tests {
 
     fn project() -> ProjectSnapshot {
         ProjectSnapshot::new_authored(StableId("inventory-test".into()))
+    }
+
+    #[test]
+    fn hidden_hd_255_is_not_a_bestiary_terminator() {
+        let mut snapshot = project();
+        let mut normal = decode_monster_set(&[0; 630], "Data MD", 0);
+        normal.monsters[1].hit_dice = 255;
+        normal.monsters[1].not_on_menu = true;
+        snapshot.monster_sets.push(normal);
+        assert_eq!(inventory(&snapshot, 0, "", 0, 64).unwrap().total, 3);
+    }
+
+    #[test]
+    fn script_referenced_tail_ids_remain_selectable() {
+        let normal = decode_monster_set(&[0; 840], "Data MD", 0);
+        let mut snapshot = project();
+        snapshot.monster_sets.push(normal);
+        snapshot.monster_sets[0].monsters[1].hit_dice = 255;
+        snapshot.extra_action_points = crate::codecs::decode_extra_action_points(&[0; 40]).records;
+        snapshot.extra_action_points[0].actions = vec![crate::model::ClassicAction {
+            slot: 0,
+            raw_opcode: 89,
+            target_native_id: 3,
+        }];
+        let page = inventory(&snapshot, 0, "", 0, 64).unwrap();
+        assert_eq!(
+            page.items
+                .iter()
+                .map(|row| row.native_id)
+                .collect::<Vec<_>>(),
+            [0, 3]
+        );
     }
 
     #[test]

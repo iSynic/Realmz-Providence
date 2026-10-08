@@ -272,8 +272,11 @@ pub(super) fn project(
     application_media: Option<&ApplicationMediaCatalog>,
     params: &Value,
 ) -> Result<Value, String> {
-    crate::diagnostic_policy::Findings::collect(session, application_media)
-        .project(session.revision(), params)
+    crate::diagnostic_policy::Findings::collect(session, application_media).project(
+        session.revision(),
+        params,
+        &crate::diagnostic_policy::uncalled_records(session, params),
+    )
 }
 
 #[cfg(test)]

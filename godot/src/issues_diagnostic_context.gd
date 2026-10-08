@@ -62,7 +62,7 @@ func present(finding: Dictionary) -> void:
 	_view.get_node("%FindUses").disabled=kind in ["extra-code","monster-description"]
 	_view.get_node("%OpenRecords").disabled=false
 	_view.get_node("%OpenEvidence").disabled=not bool(row.get("sourceRetained",false))
-	_view.get_node("%DiagnosticReason").text="Read-only context; repair the owning field above." if row.get("sourceRetained",false) else "No uniquely retained original source is available for this record."
+	_view.get_node("%DiagnosticReason").text = "Original bytes remain preserved." if finding.has("preservationReason") else ("Read-only context; repair the owning field above." if row.get("sourceRetained",false) else "No uniquely retained original source is available for this record.")
 
 func owner_is_ambiguous(finding: Dictionary) -> bool:
 	return finding==_finding and not _blocked_reason.is_empty()

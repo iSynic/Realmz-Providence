@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 struct FindingSelection {
     code: String,
@@ -18,6 +18,7 @@ impl FindingSelection {
 
 pub(super) struct Query {
     pub text: String,
+    pub hide_uncalled_warnings: bool,
     code: String,
     category: String,
     pub severity: Option<Severity>,
@@ -28,6 +29,8 @@ pub(super) struct Query {
     pub limit: usize,
     pub group_offset: usize,
     pub group_limit: usize,
+    excluded_codes: std::collections::BTreeSet<String>,
+    excluded_findings: std::collections::BTreeSet<FindingSelection>,
 }
 
 impl Query {
@@ -56,6 +59,7 @@ impl Query {
             .transpose()?;
         Ok(Self {
             text,
+            hide_uncalled_warnings: boolean_parameter(params, "hideUncalledWarnings")?,
             code,
             category,
             severity,
@@ -66,7 +70,18 @@ impl Query {
             limit: number_parameter(params, "limit", 64).clamp(1, 128),
             group_offset: number_parameter(params, "groupOffset", 0),
             group_limit: number_parameter(params, "groupLimit", 32).clamp(1, 64),
+            excluded_codes: exclusion_set(params, "excludedCodes")?,
+            excluded_findings: exclusion_set(params, "excludedFindings")?,
         })
+    }
+
+    pub fn excludes(&self, diagnostic: &Diagnostic) -> bool {
+        self.excluded_codes.contains(&diagnostic.code)
+            || self.excluded_findings.contains(&FindingSelection {
+                code: diagnostic.code.clone(),
+                entity: diagnostic.entity.as_ref().map(|id| id.0.clone()),
+                field: diagnostic.field.as_ref().map(|field| field.0.clone()),
+            })
     }
 
     pub fn in_group(&self, diagnostic: &Diagnostic) -> bool {
@@ -101,6 +116,21 @@ impl Query {
         }
         offset
     }
+}
+
+fn exclusion_set<T: serde::de::DeserializeOwned + Ord>(
+    params: &Value,
+    key: &str,
+) -> Result<std::collections::BTreeSet<T>, String> {
+    let Some(value) = params.get(key) else {
+        return Ok(Default::default());
+    };
+    if !value.as_array().is_some_and(|items| items.len() <= 4096) {
+        return Err(format!(
+            "{key} must be an array of at most 4096 temporary filters"
+        ));
+    }
+    serde_json::from_value(value.clone()).map_err(|_| format!("Invalid {key} filter"))
 }
 
 fn text_parameter<'a>(params: &'a Value, key: &str) -> Result<&'a str, String> {

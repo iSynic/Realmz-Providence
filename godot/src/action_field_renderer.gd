@@ -9,10 +9,12 @@ signal open_requested(kind: String, value: int, identity: String, context: Dicti
 signal preview_requested(kind: String, value: int, identity: String, status: String)
 
 var controls := {}
+var _missing_settings := false
 
 
-func render(form: GridContainer, description: Dictionary) -> void:
+func render(form: GridContainer, description: Dictionary, missing_settings := false) -> void:
 	controls.clear()
+	_missing_settings = missing_settings
 	var groups := (description.get("authoring", {}) as Dictionary).get("controls", []) as Array
 	var members := {}
 	for group in groups:
@@ -179,7 +181,7 @@ func _choice_control(choices: Array, selected: int) -> OptionButton:
 			picker.select(picker.item_count - 1)
 			matched = true
 	if not matched:
-		picker.add_item("Imported value (%d)" % selected)
+		picker.add_item(("Default (%d)" if _missing_settings else "Imported value (%d)") % selected)
 		picker.set_item_metadata(picker.item_count - 1, selected)
 		picker.select(picker.item_count - 1)
 	return picker

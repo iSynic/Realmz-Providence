@@ -8,6 +8,7 @@ mod catalogs;
 mod classic_compilation;
 mod classic_dungeon_import;
 mod classic_export_plan;
+mod classic_export_trim;
 mod classic_import_files;
 mod classic_land_import;
 mod classic_media_import;

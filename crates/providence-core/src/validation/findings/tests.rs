@@ -1,4 +1,6 @@
 use super::*;
+mod monster_tails;
+mod uncalled_imports;
 use crate::{
     model::{ClassicAction, ExtraActionPoint, NativeRecordId, ProjectSnapshot, StableId},
     session::EditorSession,

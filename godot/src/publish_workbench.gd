@@ -26,6 +26,12 @@ var _checking := false
 var _recovery_action := ""
 var _secondary_action := ""
 var _manifest_sha256 := ""
+var _trim_bytes := 0
+var _trim_acknowledged := false
+
+@onready var trim_option: CheckBox = %TrimExtraCodeTail
+@onready var trim_notice: Label = %TrimNotice
+@onready var trim_confirmation: ConfirmationDialog = %TrimConfirmation
 
 @onready var target_selector: OptionButton = %TargetSelector
 @onready var export_button: Button = %ExportTarget
@@ -62,7 +68,15 @@ func _ready() -> void:
 	target_selector.add_item("Legacy Realmz archive (.sit)")
 	_update_target_labels()
 	target_selector.item_selected.connect(_select_target)
-	export_button.pressed.connect(func(): publish_requested.emit(_target))
+	export_button.pressed.connect(_request_export)
+	trim_option.toggled.connect(func(_selected):
+		_trim_acknowledged = false
+		invalidate("Export options changed · Recheck before publishing.")
+		target_changed.emit(_target))
+	trim_confirmation.confirmed.connect(func():
+		trim_confirmation.hide()
+		_trim_acknowledged = true
+		publish_requested.emit(_target))
 	recheck_button.pressed.connect(func():
 		if _checking: cancel_check_requested.emit()
 		else: recheck_requested.emit())
@@ -159,6 +173,9 @@ func present_check(readiness: Dictionary, plan: Dictionary, _compiler: Dictionar
 
 
 func present_page(plan: Dictionary) -> void:
+	_trim_bytes = int(plan.get("trim", {}).get("preview", {}).get("removableBytes", 0))
+	trim_notice.visible = trim_option.button_pressed and _target != "rebuilt"
+	trim_notice.text = "Export will remove %d trailing Data EDCD bytes. Original bytes remain in the project." % _trim_bytes
 	var page := plan.get("files", {}) as Dictionary
 	_offset = int(page.get("offset", 0))
 	_total = int(page.get("total", 0))
@@ -320,6 +337,8 @@ func choose_destination() -> void:
 
 func _select_target(index: int) -> void:
 	_target = ["classic", "rebuilt", "stuffit"][index]
+	reset_trim()
+	trim_option.visible = _target != "rebuilt"
 	_update_target_labels()
 	_offset = 0
 	invalidate("Target changed · Recheck %s." % _target_label())
@@ -330,6 +349,7 @@ func _set_busy(busy: bool) -> void:
 	_checking = false
 	recheck_button.text = "Recheck"
 	_busy = busy
+	trim_option.disabled = busy or not _connected
 	target_selector.disabled = busy or not _connected
 	recheck_button.disabled = busy or not _connected
 	run_benchmark.disabled = busy or not _connected
@@ -337,6 +357,29 @@ func _set_busy(busy: bool) -> void:
 	previous_page.disabled = busy or _offset <= 0
 	next_page.disabled = busy or _offset + PAGE_SIZE >= _total
 	go_to_page.disabled = busy or _total <= PAGE_SIZE
+
+
+func reset_trim() -> void:
+	trim_option.set_pressed_no_signal(false)
+	_trim_acknowledged = false
+	trim_notice.hide()
+	trim_confirmation.hide()
+
+
+func trim_parameters(publishing := false) -> Dictionary:
+	if _target == "rebuilt" or not trim_option.button_pressed: return {}
+	var params := {"trimExtraCodeTail": true}
+	if publishing:
+		params.merge({"acknowledgeTrim": _trim_acknowledged, "manifestSha256": _manifest_sha256})
+	return params
+
+
+func _request_export() -> void:
+	if _target != "rebuilt" and trim_option.button_pressed:
+		trim_confirmation.dialog_text = "Remove %d trailing bytes from Data EDCD in the exported copy?\n\nThe export will no longer preserve every original byte. The project and retained source remain unchanged. No interior records will move." % _trim_bytes
+		trim_confirmation.popup_centered(Vector2i(640, 210))
+	else:
+		publish_requested.emit(_target)
 
 
 func _clear_files() -> void:

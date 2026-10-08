@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://src/issues_workbench.gd" id="1"]
+[ext_resource type="PackedScene" path="res://src/issues_filter_bar.tscn" id="2"]
 
 [sub_resource type="ButtonGroup" id="Severity"]
 
@@ -129,7 +130,7 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 text = "Show all findings"
-tooltip_text = "Include unused empty slots and retained data details."
+tooltip_text = "Include warnings for unedited imported records with no callers, unused empty slots, and retained data details."
 
 [node name="All" type="Button" parent="Body/FindingsAndContext/Findings/Catalog/Severity"]
 unique_name_in_owner = true
@@ -167,6 +168,10 @@ custom_minimum_size = Vector2(108,30)
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(0,30)
+
+[node name="FilterBar" parent="Body/FindingsAndContext/Findings/Catalog" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="FindingScroll" type="ScrollContainer" parent="Body/FindingsAndContext/Findings/Catalog"]
 unique_name_in_owner = true
@@ -287,6 +292,21 @@ layout_mode = 2
 text = "Decoded record..."
 custom_minimum_size = Vector2(0, 30)
 disabled = true
+
+[node name="HideActions" type="HBoxContainer" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
+layout_mode = 2
+
+[node name="HideFinding" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/HideActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide finding"
+tooltip_text = "Hide this row for this project session. A grouped row hides the displayed group. Export readiness is unchanged."
+
+[node name="HideType" type="Button" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context/HideActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hide type"
+tooltip_text = "Hide all findings with this diagnostic code for this project session. Export readiness is unchanged."
 
 [node name="ReturnMeaning" type="Label" parent="Body/FindingsAndContext/SelectedProblemInspector/InspectorBody/InspectorScroll/Context"]
 visible = false

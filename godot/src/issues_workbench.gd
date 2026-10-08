@@ -22,7 +22,6 @@ var _rendered_page := ""
 var _rendered_query := ""
 var _page_input: LineEdit
 var _go_button: Button
-var _resize_queued := false
 var _pager_focus := ""
 var _pager_generation := -1
 var _diagnostic := preload("res://src/issues_diagnostic_context.gd").new()
@@ -40,6 +39,9 @@ func _ready() -> void:
 	%OpenEvidence.pressed.connect(func(): evidence_requested.emit(_diagnostic.native_path))
 	state.refresh_completed.connect(_select_requested_finding)
 	_bind_severity()
+	%FilterBar.configure(state)
+	%HideFinding.pressed.connect(func(): state.hide_selected(false))
+	%HideType.pressed.connect(func(): state.hide_selected(true))
 	%ShowAll.toggled.connect(state.set_show_all)
 	%BackToGroups.pressed.connect(func(): state.open_group(""))
 	%CheckAgain.pressed.connect(_refresh)
@@ -47,7 +49,6 @@ func _ready() -> void:
 	%SearchProblems.gui_input.connect(_search_input)
 	%ClearFilters.pressed.connect(func(): %SearchProblems.text = ""; state.clear_filters(); %SearchProblems.grab_focus())
 	%OpenFinding.pressed.connect(func(): _open_finding(state.selected_finding()))
-	%FindingScroll.resized.connect(_queue_capacity)
 	state.changed.connect(_render)
 	state.refresh_completed.connect(_restore_pager_focus)
 	_render()
@@ -142,7 +143,7 @@ func _render_counts() -> void:
 	if int(counts.get("information", 0)) > 0:
 		text += " · %d information" % int(counts.information)
 	if not state.page.is_empty(): text += " · %d rows" % int(state.page.get("unfilteredTotal", 0))
-	if not state.query.is_empty() or not state.severity.is_empty():
+	if state.filters_active():
 		text += " · %d matching problems" % int(state.page.get("matchedBeforeGroup", 0))
 	match state.status:
 		"no-project": text = "Open a scenario to check for problems."
@@ -247,6 +248,9 @@ func _restore_pager_focus(generation: int, success: bool) -> void:
 
 func _render_inspector() -> void:
 	var finding := state.selected_finding()
+	%HideFinding.disabled = finding.is_empty()
+	%HideType.disabled = finding.is_empty()
+	%HideFinding.text = "Hide group" if not str(finding.get("groupIdentity", "")).is_empty() else "Hide finding"
 	var destination := _destination(finding)
 	%InspectorHeading.add_theme_color_override("font_color", theme.get_color("gold", "Issues"))
 	%FindingSource.text = Presentation.source_label(finding) if not finding.is_empty() else "Select a problem"
@@ -263,7 +267,7 @@ func _render_inspector() -> void:
 
 
 func _destination(finding: Dictionary) -> Dictionary:
-	if finding.is_empty() or not destination_resolver.is_valid():
+	if finding.is_empty() or finding.has("preservationReason") or not destination_resolver.is_valid():
 		return {}
 	return destination_resolver.call(finding)
 
@@ -285,18 +289,6 @@ func owner_open_available(finding: Dictionary) -> bool:
 
 func _refresh() -> void:
 	state.refresh()
-
-
-func _queue_capacity() -> void:
-	if not _resize_queued:
-		_resize_queued = true
-		call_deferred("_update_capacity")
-
-
-func _update_capacity() -> void:
-	_resize_queued = false
-	var capacity := 6 if size.y<900 else 7
-	state.set_capacity(capacity)
 
 
 func _row_input(event: InputEvent, index: int) -> void:
