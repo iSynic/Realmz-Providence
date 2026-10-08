@@ -132,6 +132,7 @@ func set_page(page: Dictionary) -> void:
 	if int(page.get("frontiers", 0)) > 0: %Status.text += " · %d depth-limited branches; select a caller to expand" % int(page.frontiers)
 	if _mode == "links":
 		for button in [%UsedBy, %Uses, %Trace]: button.disabled = _record.is_empty()
+		%ViewFlow.disabled = str(_record.get("identity", "")).is_empty()
 		if _direction == "incoming": %UsedBy.text = "Used By %d" % total
 		elif _direction == "outgoing": %Uses.text = "Uses %d" % total
 	if not _restore.is_empty():

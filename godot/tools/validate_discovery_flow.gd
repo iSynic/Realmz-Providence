@@ -18,6 +18,7 @@ func _run() -> void:
 	await shell._activate_session(opened)
 	flow = shell._commands._discovery.flow
 	view = flow.view
+	await _check_links_entry()
 	await shell._navigation.open_script_source({"source":"extra-action-point:40", "field":"actions[0]"})
 	await _settle()
 	await shell._commands.dispatch(&"navigate.view-flow")
@@ -52,6 +53,34 @@ func _node(identity: String) -> String:
 	for id in view.model.nodes:
 		if view.model.nodes[id].selection.identity == identity: return id
 	return ""
+
+func _check_links_entry() -> void:
+	await shell._navigation.open_script_target("simple-encounter", 0, "simple-encounter:0", {})
+	await _settle()
+	var discovery = shell._commands._discovery
+	await discovery.open_current_links("incoming")
+	await _settle()
+	var links = discovery._view
+	var button: Button = links.get_node("%ViewFlow")
+	assert(not button.disabled, "Loaded Links enables View Flow for its root record")
+	var rows: Tree = links.get_node("%Rows")
+	assert(rows.get_root().get_first_child() != null)
+	rows.get_root().get_first_child().select(0)
+	await _settle()
+	assert(not button.disabled, "Selecting a caller retains the encounter flow entry")
+	links.refresh_retaining_state()
+	await _settle()
+	assert(not button.disabled, "Refresh restores the flow entry")
+	links.show_links("outgoing")
+	await _settle()
+	assert(not button.disabled, "A record with no links can still open its rooted flow")
+	links.go_back()
+	await _settle()
+	button.pressed.emit()
+	await _settle()
+	assert(view.visible and not links.visible and view.model.root.identity == "simple-encounter:0")
+	assert(view.model.nodes.size() > 1, "The Links button opens actual encounter relationships")
+	view.close_view()
 
 func _check_connections() -> void:
 	var before: Dictionary = flow._context.call().duplicate(true)

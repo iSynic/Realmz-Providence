@@ -30,6 +30,8 @@ def main():
         client = Adapter(adapter, project)
         try:
             populate(client)
+            client.request("encounter.create-simple")
+            step(client, "extra-action-point:12", 2, 4, 0)
             step(client, "extra-action-point:40", 1, 1, 349)
             step(client, "extra-action-point:40", 2, 39, 995)
             if args.dense: populate_paging(client)
