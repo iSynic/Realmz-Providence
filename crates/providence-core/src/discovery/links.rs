@@ -9,13 +9,15 @@ use std::collections::BTreeMap;
 struct RecordLookup<'a> {
     identities: BTreeMap<&'a str, &'a DiscoveryRecord>,
     targets: BTreeMap<(&'a str, &'a str), Vec<&'a DiscoveryRecord>>,
+    opcodes: BTreeMap<(&'a str, u8), i16>,
 }
 
 impl<'a> RecordLookup<'a> {
-    fn new(records: &'a [DiscoveryRecord]) -> Self {
+    fn new(records: &'a [DiscoveryRecord], snapshot: &'a ProjectSnapshot) -> Self {
         let mut lookup = Self {
             identities: BTreeMap::new(),
             targets: BTreeMap::new(),
+            opcodes: BTreeMap::new(),
         };
         for row in records {
             lookup.identities.insert(&row.identity, row);
@@ -24,6 +26,34 @@ impl<'a> RecordLookup<'a> {
                 .entry((&row.kind, &row.native_id))
                 .or_default()
                 .push(row);
+        }
+        for (owner, actions) in snapshot
+            .world
+            .action_points
+            .iter()
+            .map(|r| (&r.identity.0, &r.actions))
+            .chain(
+                snapshot
+                    .extra_action_points
+                    .iter()
+                    .map(|r| (&r.identity.0, &r.actions)),
+            )
+            .chain(
+                snapshot
+                    .simple_encounters
+                    .iter()
+                    .map(|r| (&r.identity.0, &r.actions)),
+            )
+            .chain(
+                snapshot
+                    .complex_encounters
+                    .iter()
+                    .map(|r| (&r.identity.0, &r.actions)),
+            )
+        {
+            for action in actions {
+                lookup.opcodes.insert((owner, action.slot), action.opcode());
+            }
         }
         lookup
     }
@@ -53,6 +83,8 @@ impl<'a> RecordLookup<'a> {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoveryLink {
+    pub relationship: super::RelationshipKind,
+    pub contextual: bool,
     pub occurrence: String,
     pub source: String,
     pub field: String,
@@ -75,7 +107,7 @@ pub(super) fn derive(
     refs: &[ReferenceDescriptor],
     records: &[DiscoveryRecord],
 ) -> Vec<DiscoveryLink> {
-    let lookup = RecordLookup::new(records);
+    let lookup = RecordLookup::new(records, s);
     let mut links: Vec<_> = refs
         .iter()
         .filter(|r| !matches!(r.target_kind, crate::references::TargetKind::Monster))
@@ -91,6 +123,8 @@ pub(super) fn derive(
             .map(|record| super::labels::source_label(record, &r.field))
             .unwrap_or_else(|| r.source.0.clone());
         links.push(DiscoveryLink {
+            relationship: super::RelationshipKind::Reference,
+            contextual: false,
             occurrence: format!("{}|{}|monster|{}", r.source.0, r.field, r.target_id),
             source: r.source.0.clone(),
             field: r.field,
@@ -157,6 +191,11 @@ fn from_reference(
     let source = lookup.record(&r.source.0);
     let field = r.field.0.clone();
     DiscoveryLink {
+        relationship: relationship(r, &kind, lookup),
+        contextual: map_relative
+            && lookup
+                .record(&r.source.0)
+                .is_none_or(|r| r.kind != "action-point"),
         occurrence: format!("{}|{}|{kind}|{}", r.source.0, field, r.target_id),
         source: r.source.0.clone(),
         field,
@@ -179,18 +218,32 @@ fn from_reference(
             .filter(|r| !r.name.trim().is_empty())
             .map(|r| r.name.clone())
             .unwrap_or_else(|| format!("{} {}", kind.replace('-', " "), r.target_id)),
-        meaning: if eligibility_link(&r.field.0) {
-            "Permits this combination"
-        } else {
-            meaning(&kind)
-        }
-        .into(),
+        meaning: meaning(&kind, &r.field.0).into(),
         code_position: None,
         caller_context: None,
         resolution: r.resolution.clone(),
         root_reason: root_reason(source, &r.field.0),
         activity: reference_activity(s, r, map_relative).into(),
     }
+}
+
+fn relationship(
+    reference: &ReferenceDescriptor,
+    kind: &str,
+    lookup: &RecordLookup<'_>,
+) -> super::RelationshipKind {
+    if eligibility_link(&reference.field.0) {
+        return super::RelationshipKind::Eligibility;
+    }
+    let opcode = reference
+        .field
+        .0
+        .strip_prefix("actions[")
+        .and_then(|v| v.split(']').next())
+        .and_then(|v| v.parse::<u8>().ok())
+        .and_then(|slot| lookup.opcodes.get(&(reference.source.0.as_str(), slot)))
+        .copied();
+    super::RelationshipKind::for_action(opcode, kind)
 }
 
 pub(super) fn eligibility_link(field: &str) -> bool {
@@ -208,7 +261,10 @@ fn root_reason(source: Option<&DiscoveryRecord>, field: &str) -> Option<String> 
     }
 }
 
-fn meaning(kind: &str) -> &str {
+fn meaning(kind: &str, field: &str) -> &'static str {
+    if eligibility_link(field) {
+        return "Permits this combination";
+    }
     match kind {
         "message" => "Displays a string",
         "extra-action-point" => "Calls a macro",

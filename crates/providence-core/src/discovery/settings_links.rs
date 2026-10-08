@@ -121,6 +121,9 @@ fn describe_link(
         .map(|r| r.native_id.clone())
         .unwrap_or_else(|| lookup_id(field.kind, field.value).to_string());
     DiscoveryLink {
+        relationship: super::RelationshipKind::for_action(Some(action.opcode()), kind),
+        contextual: field.kind == ActionTargetKind::SameMapActionPoint
+            && context.map_identity.is_none(),
         occurrence: format!("{source}|{path}|{kind}|{id}"),
         source: source.into(),
         field: path.into(),

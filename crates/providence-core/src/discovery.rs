@@ -1,9 +1,11 @@
 //! Revision-local author discovery. Records and links are derived, never portable truth.
 mod catalog;
 mod execution;
+pub mod flow;
 mod labels;
 mod links;
 mod quests;
+mod relationship;
 mod settings_links;
 mod supplement;
 mod trace;
@@ -12,9 +14,14 @@ mod trace_cache;
 use crate::{model::ProjectSnapshot, references::ReferenceDescriptor};
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicU64, Ordering},
+};
 
 pub use links::DiscoveryLink;
 pub use quests::QuestOccurrence;
+pub use relationship::RelationshipKind;
 pub use trace::{TraceItem, TracePage, TraceQuery};
 
 #[derive(Debug, Clone, Serialize)]
@@ -46,9 +53,18 @@ pub struct DiscoveryIndex {
     incoming: BTreeMap<(String, String), Vec<usize>>,
     outgoing: BTreeMap<String, Vec<usize>>,
     traces: trace_cache::TraceCache,
+    cache_identity: OnceLock<u64>,
 }
 
 impl DiscoveryIndex {
+    /// A derived-index lifetime, including reopen at the same persisted revision.
+    pub fn cache_identity(&self) -> u64 {
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        *self
+            .cache_identity
+            .get_or_init(|| NEXT.fetch_add(1, Ordering::Relaxed))
+    }
+
     pub fn build(snapshot: &ProjectSnapshot, references: &[ReferenceDescriptor]) -> Self {
         let records = catalog::records(snapshot);
         let links = links::derive(snapshot, references, &records);

@@ -14,6 +14,9 @@ pub(super) fn dispatch(
         "discovery.preview" => preview(session, &params),
         "discovery.links" => links(session, &params),
         "discovery.trace" => trace(session, &params),
+        "discovery.flow" => {
+            crate::discovery_flow::read(session, &params, "session", || Ok(Default::default()))
+        }
         "quest.flow" => quest_flow(session, &params),
         _ => Err(format!("unknown method {method}")),
     }

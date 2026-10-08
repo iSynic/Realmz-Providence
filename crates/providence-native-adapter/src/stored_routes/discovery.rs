@@ -24,6 +24,9 @@ pub(super) fn dispatch(
     params: Value,
 ) -> Result<Value, String> {
     crate::session_routes::discovery::guard(session, &params)?;
+    if method == "discovery.flow" {
+        return super::discovery_flow::read(session, store, catalogs, monster_library, &params);
+    }
     if !matches!(method, "discovery.search" | "discovery.preview") {
         let mut result = crate::session_routes::dispatch(session, method, params)?;
         super::discovery_media::connect_targets(&mut result, catalogs);
@@ -87,7 +90,7 @@ fn search_page(session: &EditorSession, params: &Value, index: &DiscoveryIndex) 
     )
 }
 
-fn append_monsters(out: &mut Vec<DiscoveryRecord>, library: Option<&OpenMonsterLibrary>) {
+pub(super) fn append_monsters(out: &mut Vec<DiscoveryRecord>, library: Option<&OpenMonsterLibrary>) {
     let Some(library) = library else {
         return;
     };
@@ -115,7 +118,7 @@ fn append_monsters(out: &mut Vec<DiscoveryRecord>, library: Option<&OpenMonsterL
     }
 }
 
-fn cache_key(
+pub(super) fn cache_key(
     s: &EditorSession,
     store: Option<&ProjectStore>,
     c: CatalogViews<'_>,
@@ -135,7 +138,7 @@ fn cache_key(
     format!("{:x}", Sha256::digest(input.to_string()))
 }
 
-fn records(
+pub(super) fn records(
     s: &EditorSession,
     store: Option<&ProjectStore>,
     c: CatalogViews<'_>,

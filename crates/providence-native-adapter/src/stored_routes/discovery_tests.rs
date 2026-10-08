@@ -7,6 +7,8 @@ use providence_core::{
 };
 use serde_json::{Value, json};
 
+mod flow;
+
 fn asset(identity: &str, kind: &str, resource_type: &str, id: i32) -> AssetDescriptor {
     AssetDescriptor {
         identity: StableId(identity.into()),

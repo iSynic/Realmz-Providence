@@ -306,6 +306,8 @@ fn result_link(
         .unwrap_or_default();
     let eliminated = !contextual && result == -1 && field.starts_with("choiceResults[");
     DiscoveryLink {
+        relationship: super::RelationshipKind::Call,
+        contextual,
         occurrence: format!("{source}|{field}|{family}-result|{identity}"), source: source.into(), field: field.clone(),
         target_kind: format!("{family}-result"), target_id: if contextual { result.to_string() } else { identity },
         target_identity: target.map(|r| r.identity.clone()), target_scope: Some("scenario".into()),

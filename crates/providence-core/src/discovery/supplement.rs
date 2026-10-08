@@ -140,6 +140,8 @@ fn add(
         .iter()
         .find(|r| r.kind == kind && r.native_id == id.to_string());
     links.push(DiscoveryLink {
+        relationship: super::RelationshipKind::for_target(kind),
+        contextual: false,
         occurrence: format!("{source}|{field}|{kind}|{id}"),
         source: source.into(),
         field: field.into(),
