@@ -47,7 +47,7 @@ func initialize(documents: RefCounted, maps: ProvidenceMapDocumentController, re
 	_extra_actions = documents.view("scripts.macros")
 	_action_points = documents.view("scripts.action-points")
 	_globals = documents.view("scripts.global-macros")
-	_bind_route_tabs()
+	_bind_route_tabs(documents.view("scripts.quests"))
 	_global_commands.initialize(_globals, operations, _read_context, _accept_draft_response)
 	_global_commands.projection_applied.connect(func(projection): projection_applied.emit(projection))
 	_add_record(documents, operations, "encounters.simple", _encounters,
@@ -123,21 +123,16 @@ func _bind_complex_encounters() -> void:
 	_complex_encounters.selection_changed.connect(func(document, references): inspector_requested.emit("complex-encounter", document, references))
 
 
-func _bind_route_tabs() -> void:
+func _bind_route_tabs(quests: Control) -> void:
 	var routes := {"ActionPointsRouteTab": "scripts.action-points", "ExtraActionPointsRouteTab": "scripts.macros",
 		"GlobalMacrosRouteTab": "scripts.global-macros", "StoryFlagsRouteTab": "scripts.quests"}
-	var context_routes := {"AP": "scripts.action-points", "EX": "scripts.macros",
-		"GM": "scripts.global-macros", "SF": "scripts.quests"}
 	for view in [_action_points, _extra_actions]:
 		for name in routes:
 			var button := view.get_node("StoryRouteTabs/" + name) as Button
 			button.disabled = false
 			button.pressed.connect(func(): route_requested.emit(routes[name]))
-		var context := view.find_child("ContextRoutes", true, false) as Control
-		for name in context_routes:
-			var button := context.get_node(name) as Button
-			button.disabled = false
-			button.pressed.connect(func(): route_requested.emit(context_routes[name]))
+	for view in [_action_points, _extra_actions, _globals, quests]:
+		view.find_child("ContextRoutes", true, false).route_requested.connect(route_requested.emit)
 
 
 func _bind_action_points() -> void:

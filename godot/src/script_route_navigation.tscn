@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/script_route_navigation.gd" id="1"]
+[node name="ContextRoutes" type="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+script = ExtResource("1")
+[node name="AP" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+text = "AP  Action Points"
+alignment = 0
+[node name="EX" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+text = "EX  Extra Action Points"
+alignment = 0
+[node name="GM" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+text = "GM  Global Macros"
+alignment = 0
+[node name="SF" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+text = "SF  Story Flags"
+alignment = 0

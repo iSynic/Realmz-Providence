@@ -43,6 +43,7 @@ func _ready() -> void:
 	%List.item_activated.connect(_find_select)
 	%List.item_selected.connect(_find_select)
 	%Symbols.pressed.connect(_symbols)
+	%LockNodes.toggled.connect(graph.set_nodes_locked)
 	graph.record_selected.connect(select_node)
 	graph.occurrences_requested.connect(select_occurrences)
 	graph.helper_requested.connect(_queue_helper)
@@ -99,6 +100,7 @@ func present() -> void:
 
 func render(back_available: bool) -> void:
 	graph.display(model)
+	%LockNodes.set_pressed_no_signal(model.nodes_locked)
 	%UpstreamCaption.text = "UPSTREAM · %d LEVELS" % model.depth
 	%DownstreamCaption.text = "DOWNSTREAM · %d LEVELS" % model.depth
 	%Back.disabled = not back_available or loading

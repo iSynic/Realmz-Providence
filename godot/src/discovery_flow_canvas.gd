@@ -38,6 +38,7 @@ func display(value) -> void:
 	for id in grouping.visible:
 		if not cards.has(id): _add_card(id)
 		_update_card(id)
+		cards[id].draggable = not model.nodes_locked
 		cards[id].position_offset = _display_positions[id]
 	_build_edges()
 	highlight_selection()
@@ -145,12 +146,19 @@ static func caption(row: Dictionary) -> String:
 	return "%s %s" % [names.get(kind, kind.capitalize()), number]
 
 func _save_drag() -> void:
+	if model.nodes_locked:
+		for id in cards: cards[id].position_offset = _display_positions[id]
+		return
 	for id in cards:
 		if cards[id].position_offset.is_equal_approx(_display_positions[id]): continue
 		_display_positions[id] = cards[id].position_offset
 		if model.nodes.has(id): model.manual_positions[id] = true; model.positions[id] = cards[id].position_offset
 		else: model.group_positions[id] = cards[id].position_offset
 	save_positions()
+
+func set_nodes_locked(locked: bool) -> void:
+	model.nodes_locked = locked
+	for card: GraphNode in cards.values(): card.draggable = not locked
 
 func save_positions() -> void:
 	if model == null: return

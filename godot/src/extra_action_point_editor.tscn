@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource path="res://src/extra_action_point_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/action_step_workbench.tscn" type="PackedScene" id="2"]
+
+[ext_resource path="res://src/script_route_navigation.tscn" type="PackedScene" id="3"]
 
 [sub_resource type="SystemFont" id="RouteMonoFont"]
 font_names = PackedStringArray("Cascadia Mono", "Consolas", "Liberation Mono", "monospace")
@@ -85,30 +87,9 @@ theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
 theme_override_font_sizes/font_size = 11
 text = ""
 autowrap_mode = 2
-[node name="ContextRoutes" type="VBoxContainer" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster"]
+[node name="ContextRoutes" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster" instance=ExtResource("3") ]
 layout_mode = 2
-theme_override_constants/separation = 4
-[node name="AP" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/ContextRoutes"]
-layout_mode = 2
-disabled = true
-text = "AP  Action Points"
-alignment = 0
-[node name="EX" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/ContextRoutes"]
-layout_mode = 2
-toggle_mode = true
-button_pressed = true
-text = "EX  Extra Action Points"
-alignment = 0
-[node name="GM" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/ContextRoutes"]
-layout_mode = 2
-disabled = true
-text = "GM  Global Macros"
-alignment = 0
-[node name="SF" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/ContextRoutes"]
-layout_mode = 2
-disabled = true
-text = "SF  Story Flags"
-alignment = 0
+active_route = "scripts.macros"
 [node name="Heading" type="Label" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)

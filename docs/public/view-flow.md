@@ -18,8 +18,9 @@ unfinished edit. Apply a newly created record before opening its flow.
 - **Expand upstream/downstream** adds one level around the selection. Collapse
   removes that expansion while retaining records needed by other branches.
 - **Focus here** starts from the selected record. **Back** restores the previous
-  graph, positions and viewport. Drag cards to arrange them; Fit, Recenter and
-  zoom change only the view.
+  graph, positions and viewport. **Lock nodes** starts checked. Uncheck it to
+  drag cards, then check it to protect the arrangement. Refresh and Back retain
+  the lock setting. Fit, Recenter and zoom remain available while locked.
 - The visible legend and **Symbols & key** explain calls, checks, changes,
   uses, eligibility, warnings, selection and keyboard focus. The five filters
   work independently. State connections do not imply execution order.

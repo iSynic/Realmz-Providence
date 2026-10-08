@@ -30,6 +30,7 @@ func _run() -> void:
 	assert(flow.summary_error.is_empty(), flow.summary_error)
 	assert(view.model.summaries.has(view.root_id()), "The native flow must show a semantic program summary")
 	assert(view.model.summaries[view.root_id()].usedSteps == 4)
+	await preload("res://tools/discovery_flow_layout_checks.gd").new().run(self)
 	await preload("res://tools/discovery_flow_lifetime_checks.gd").new().dismiss_members(self)
 	await _check_connections()
 	await _check_keyboard_and_source()
@@ -38,6 +39,7 @@ func _run() -> void:
 	await _check_missing_and_themes()
 	await _check_filters_and_cancellation()
 	await _check_draft_guard()
+	await preload("res://tools/script_route_navigation_checks.gd").new().run(self)
 	await preload("res://tools/discovery_flow_v2_checks.gd").new().run(self)
 	await _check_stale_and_refresh()
 	await _check_retry()
@@ -215,6 +217,7 @@ func _check_history() -> void:
 	await flow._action("upstream")
 	await _settle()
 	assert(view.model.can_collapse(id))
+	view.get_node("%LockNodes").button_pressed = false
 	view.graph.cards[id].position_offset += Vector2(13, 19)
 	view.graph.zoom = 0.85
 	view.graph.scroll_offset = Vector2(24, 35)
@@ -228,11 +231,13 @@ func _check_history() -> void:
 	assert(view.model.root == before.root and view.model.positions == before.positions)
 	assert(view.model.selected == before.selected and view.model.groups == before.groups)
 	assert(is_equal_approx(view.graph.zoom, before.viewport.zoom) and view.graph.scroll_offset.is_equal_approx(before.viewport.scroll))
+	assert(not view.model.nodes_locked and not view.get_node("%LockNodes").button_pressed, "Back restores the unlocked layout state")
 	await flow._action("collapse")
 	assert(not view.model.can_collapse(id) and view.model.nodes.has(id))
 	view.graph.fit_content()
 	view.select_node(view.root_id())
 	view.select_edge(view.model.related()[0].id)
+	view.get_node("%LockNodes").button_pressed = true
 
 func _check_filters_and_cancellation() -> void:
 	view.get_node("%Calls").set_pressed_no_signal(false)
@@ -334,6 +339,8 @@ func _settle() -> void:
 func _capture(label: String) -> void:
 	var output := OS.get_environment("PROVIDENCE_FLOW_CAPTURE_ROOT")
 	if output.is_empty(): return
+	var selected := OS.get_environment("PROVIDENCE_FLOW_CAPTURE_LABELS")
+	if not selected.is_empty() and label not in selected.split(","): return
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()

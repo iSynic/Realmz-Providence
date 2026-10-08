@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="Script" path="res://src/global_macro_editor.gd" id="1"]
 [ext_resource type="PackedScene" path="res://src/global_macro_hook.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://src/global_macro_picker.tscn" id="3"]
 [ext_resource type="Theme" path="res://src/story_text_theme.tres" id="4"]
+[ext_resource type="PackedScene" path="res://src/script_route_navigation.tscn" id="5"]
 [node name="Global Macros" type="VBoxContainer"]
 layout_mode = 3
 anchors_preset = 15
@@ -43,41 +44,47 @@ theme_override_constants/margin_left = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_bottom = 12
-[node name="HookScroll" type="ScrollContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin"]
+[node name="HookContent" type="VBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+[node name="ContextRoutes" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent" instance=ExtResource("5")]
+active_route = "scripts.global-macros"
+[node name="HookScroll" type="ScrollContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent"]
 layout_mode = 2
 unique_name_in_owner = true
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
-[node name="GlobalMacroAssignments" type="VBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll"]
+[node name="GlobalMacroAssignments" type="VBoxContainer" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
-[node name="Heading" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments"]
+[node name="Heading" type="Label" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments"]
 layout_mode = 2
 text = "SCENARIO HOOKS"
 theme_type_variation = "StoryMacroHeading"
 
-[node name="StartGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+[node name="StartGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
 layout_mode = 2
 hook = "start"
 condition = "New adventure starts"
 
-[node name="DeathGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+[node name="DeathGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
 layout_mode = 2
 hook = "death"
 condition = "Party is killed"
 
-[node name="QuitGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+[node name="QuitGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
 layout_mode = 2
 hook = "quit"
 condition = "Player quits; excludes party death"
 
-[node name="ShopGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+[node name="ShopGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
 layout_mode = 2
 hook = "shop"
 condition = "Shop button; excludes scripted entry"
 
-[node name="TempleGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
+[node name="TempleGlobalMacroHook" parent="GlobalMacroEditorSurface/GlobalMacroMasterDetail/HookPanel/Margin/HookContent/HookScroll/GlobalMacroAssignments" instance=ExtResource("2")]
 layout_mode = 2
 hook = "temple"
 condition = "Temple button"

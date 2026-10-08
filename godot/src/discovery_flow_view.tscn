@@ -104,6 +104,11 @@ text = "◇ Eligibility"
 button_pressed = true
 [node name="FilterSpacer" type="Control" parent="Background/Body/FiltersBand/Filters"]
 size_flags_horizontal = 3
+[node name="LockNodes" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "Lock nodes"
+button_pressed = true
+tooltip_text = "Keep nodes in place. Uncheck to drag them; selection, panning and zoom remain available."
 [node name="Symbols" type="Button" parent="Background/Body/FiltersBand/Filters"]
 unique_name_in_owner = true
 text = "Symbols & key"

@@ -167,6 +167,7 @@ func _accept_replacement() -> void:
 	_replacement.viewport = _retained.viewport.duplicate()
 	_replacement.manual_positions = _retained.manual_positions.duplicate()
 	_replacement.group_positions = _retained.group_positions.duplicate()
+	_replacement.nodes_locked = _retained.nodes_locked
 	_replacement.revealed = _retained.revealed.duplicate()
 	_replacement.source_edge = _retained.source_edge if _replacement.edges.has(_retained.source_edge) else ""
 	_replacement.occurrence_filter = _retained.occurrence_filter.filter(func(id): return _replacement.edges.has(id))

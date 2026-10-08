@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource path="res://src/quest_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/quest_role_panel.tscn" type="PackedScene" id="2"]
 [ext_resource path="res://src/discovery_theme.tres" type="Theme" id="3"]
 [ext_resource path="res://theme/authoring_heading.tres" type="Font" id="4"]
+[ext_resource path="res://src/script_route_navigation.tscn" type="PackedScene" id="5"]
 [node name="Quests" type="HSplitContainer"]
 custom_minimum_size = Vector2(900, 0)
 size_flags_horizontal = 3
@@ -15,6 +16,8 @@ custom_minimum_size = Vector2(280, 0)
 [node name="QuestHeader" type="Label" parent="QuestBrowser"]
 theme_type_variation = &"QuestTitle"
 text = "QUESTS · STORY FLAGS"
+[node name="ContextRoutes" parent="QuestBrowser" instance=ExtResource("5")]
+active_route = "scripts.quests"
 [node name="QuestSearch" type="LineEdit" parent="QuestBrowser"]
 placeholder_text = "Filter quest ID, name or note…"
 [node name="QuestFilters" type="HBoxContainer" parent="QuestBrowser"]

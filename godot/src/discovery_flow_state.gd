@@ -8,6 +8,7 @@ var groups: Dictionary = {}
 var positions: Dictionary = {}
 var manual_positions: Dictionary = {}
 var group_positions: Dictionary = {}
+var nodes_locked := true
 var selected := ""
 var edge := ""
 var source_edge := ""
@@ -31,6 +32,7 @@ func reset(selection: Dictionary) -> void:
 	positions.clear()
 	manual_positions.clear()
 	group_positions.clear()
+	nodes_locked = true
 	selected = ""
 	edge = ""
 	source_edge = ""
@@ -135,7 +137,7 @@ func related() -> Array:
 func snapshot() -> Dictionary:
 	return {"root":root.duplicate(true), "nodes":nodes.duplicate(true), "edges":edges.duplicate(true),
 		"groups":groups.duplicate(true), "positions":positions.duplicate(), "selected":selected,
-		"manual_positions":manual_positions.duplicate(), "group_positions":group_positions.duplicate(),
+		"manual_positions":manual_positions.duplicate(), "group_positions":group_positions.duplicate(), "nodes_locked":nodes_locked,
 		"edge":edge, "step":step, "steps_expanded":steps_expanded, "inspector_tab":inspector_tab, "categories":categories.duplicate(),
 		"source_edge":source_edge, "occurrence_filter":occurrence_filter.duplicate(),
 		"depth":depth, "direction":direction, "summaries":summaries.duplicate(true), "revealed":revealed.duplicate(),
