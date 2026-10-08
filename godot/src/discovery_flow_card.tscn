@@ -1,0 +1,49 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/discovery_flow_card.gd" id="1"]
+[node name="Record" type="GraphNode"]
+custom_minimum_size = Vector2(220, 140)
+size = Vector2(220, 140)
+resizable = false
+script = ExtResource("1")
+[node name="Body" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(196, 118)
+mouse_filter = 2
+theme_override_constants/separation = 8
+[node name="Heading" type="HBoxContainer" parent="Body"]
+mouse_filter = 2
+[node name="Family" type="Label" parent="Body/Heading"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+mouse_filter = 2
+[node name="Badge" type="Label" parent="Body/Heading"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 10
+mouse_filter = 2
+[node name="Title" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 16
+text_overrun_behavior = 3
+mouse_filter = 2
+[node name="Summary" type="Label" parent="Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(196, 34)
+size_flags_vertical = 3
+autowrap_mode = 3
+max_lines_visible = 2
+text_overrun_behavior = 3
+theme_override_font_sizes/font_size = 12
+mouse_filter = 2
+[node name="Divider" type="HSeparator" parent="Body"]
+mouse_filter = 2
+[node name="Meta" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 10
+text_overrun_behavior = 3
+mouse_filter = 2
+[node name="Members" type="Button" parent="Body"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 26)
+text = "Show members →"

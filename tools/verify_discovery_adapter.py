@@ -70,15 +70,16 @@ def verify(adapter):
     adapter.request("project.save")
 
 
-def populate_paging(adapter):
+def populate_paging(adapter, include_branch=True):
     for native_id in range(100, 300):
         adapter.request("extra-action-point.create", {"nativeId": native_id})
         step(adapter, f"extra-action-point:{native_id}", 0, 47, 12)
-    adapter.request("extra-action-point.create", {"nativeId": 300})
-    adapter.request("extra-code.upsert", {"row": {"nativeId": 1, "values": [10, 1, 0, 12, 0]}})
-    adapter.request("extra-action-point.step.apply", {"edit": {"source":"extra-action-point:300", "slot":0,
-        "actionIdentity":"realmz.action.46", "targetNativeId":1,
-        "settings":{"values":{"testA":10,"testB":1,"branchMode":0,"target":12,"slot":0}}}})
+    if include_branch:
+        adapter.request("extra-action-point.create", {"nativeId": 300})
+        adapter.request("extra-code.upsert", {"row": {"nativeId": 1, "values": [10, 1, 0, 12, 0]}})
+        adapter.request("extra-action-point.step.apply", {"edit": {"source":"extra-action-point:300", "slot":0,
+            "actionIdentity":"realmz.action.46", "targetNativeId":1,
+            "settings":{"values":{"testA":10,"testB":1,"branchMode":0,"target":12,"slot":0}}}})
     page = adapter.request("quest.flow", {"id":12, "role":"changes", "origin":"extra-action-point:299|actions[0]"})
     assert page["originFound"] and page["offset"] == 192 and page["total"] == 200
     nodes, edges, page = flow.collect(adapter, "quest:12")

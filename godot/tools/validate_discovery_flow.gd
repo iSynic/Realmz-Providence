@@ -7,7 +7,8 @@ var view
 func _initialize() -> void: call_deferred("_run")
 
 func _run() -> void:
-	root.content_scale_size = DisplayServer.window_get_size()
+	var viewport := OS.get_environment("PROVIDENCE_FLOW_VIEWPORT").split("x")
+	root.content_scale_size = Vector2i(int(viewport[0]), int(viewport[1])) if viewport.size() == 2 else DisplayServer.window_get_size()
 	root.gui_embed_subwindows = true
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	shell = load("res://src/editor_shell.tscn").instantiate()
@@ -26,6 +27,9 @@ func _run() -> void:
 	assert(view.visible and view.model.nodes.size() > 1, "Navigate > View Flow opens the selected applied record")
 	assert(view.model.root.identity == "extra-action-point:40")
 	assert(view.model.edges.size() > 0)
+	assert(flow.summary_error.is_empty(), flow.summary_error)
+	assert(view.model.summaries.has(view.root_id()), "The native flow must show a semantic program summary")
+	assert(view.model.summaries[view.root_id()].usedSteps == 4)
 	await _check_connections()
 	await _check_keyboard_and_source()
 	await _check_history()
@@ -33,6 +37,7 @@ func _run() -> void:
 	await _check_missing_and_themes()
 	await _check_filters_and_cancellation()
 	await _check_draft_guard()
+	await preload("res://tools/discovery_flow_v2_checks.gd").new().run(self)
 	await _check_stale_and_refresh()
 	await _check_retry()
 	if OS.get_environment("PROVIDENCE_FLOW_DENSE") == "1": await _check_dense()
@@ -42,7 +47,7 @@ func _run() -> void:
 	await _settle()
 	shell._close_project()
 	await process_frame
-	assert(view.stale and view.get_node("%OpenRecord").disabled, "Closing the project invalidates its flow")
+	assert(not view.visible and not view.suspended, "Closing the project closes its flow and cancels reads")
 	view.close_view()
 	shell.queue_free()
 	await process_frame
@@ -91,16 +96,17 @@ func _check_connections() -> void:
 	var parallel: Array = related.filter(func(edge): return edge.reference.targetIdentity == "message:349")
 	assert(parallel.size() == 2 and parallel[0].id != parallel[1].id, "Every parallel occurrence is individually selectable")
 	view.select_edge(parallel[0].id)
-	var first: String = view.get_node("%Detail").get_parsed_text()
+	var first: String = view.inspector.get_node("%Detail").get_parsed_text()
 	view.select_edge(parallel[1].id)
-	assert(first != view.get_node("%Detail").get_parsed_text(), "Parallel steps show distinct owning fields")
+	assert(first != view.inspector.get_node("%Detail").get_parsed_text(), "Parallel steps show distinct owning fields")
 	view.select_node(root_id)
-	view.get_node("%NextEdge").pressed.emit()
+	view.inspector._tab("connections")
+	view.inspector.get_node("%Connections").item_selected.emit(0)
 	assert(not view.model.edge.is_empty())
 	var occurrence: Dictionary = view.model.edges[view.model.edge]
-	assert(view.get_node("%Detail").get_parsed_text().contains(occurrence.reference.meaning))
+	assert(view.inspector.get_node("%Detail").get_parsed_text().contains(occurrence.reference.meaning))
 	assert(not occurrence.reference.field.is_empty())
-	view.get_node("%NextEdge").pressed.emit()
+	view.inspector.get_node("%Connections").item_selected.emit(1)
 	assert(view.model.edge != occurrence.id)
 	await _settle()
 	assert(before == flow._context.call(), "Flow inspection does not mutate the project")
@@ -114,13 +120,16 @@ func _check_keyboard_and_source() -> void:
 	key.keycode = KEY_LEFT
 	view.graph.cards[root_id].gui_input.emit(key)
 	await _settle()
-	assert(view.model.selected != root_id, "Arrow keys select a nearby record")
+	assert(view.model.selected == root_id and view.graph._focused != root_id, "Arrow keys move focus independently of selection")
+	key.keycode = KEY_ENTER
+	view.graph.cards[view.graph._focused].gui_input.emit(key)
+	assert(view.model.selected != root_id, "Enter selects the focused record")
 	var edge_id := ""
 	for edge: Dictionary in view.model.edges.values():
 		if edge.reference.source == "extra-action-point:40" and edge.reference.field.begins_with("actions[1]"): edge_id = edge.id
 	assert(not edge_id.is_empty())
 	view.select_edge(edge_id)
-	view.get_node("%OpenSource").grab_focus()
+	view.inspector.get_node("%OpenSource").grab_focus()
 	await flow._action("open-source")
 	await _settle()
 	var macro = shell._documents.view("scripts.macros")
@@ -135,8 +144,8 @@ func _check_missing_and_themes() -> void:
 		if edge.reference.resolution == "missing": missing = edge.id
 	assert(not missing.is_empty())
 	view.select_edge(missing)
-	assert(view.get_node("%OpenRecord").disabled and not view.get_node("%OpenSource").disabled)
-	assert(view.get_node("%Detail").get_parsed_text().contains("Missing"))
+	assert(view.inspector.get_node("%OpenRecord").disabled and not view.inspector.get_node("%OpenSource").disabled)
+	assert(view.inspector.get_node("%Detail").get_parsed_text().contains("Missing"))
 	if root.size.x == 1600:
 		await _capture("missing")
 		for pair in [["light", "compact"], ["high-contrast", "balanced"]]:
@@ -166,9 +175,19 @@ func _check_dense() -> void:
 	await _settle()
 	assert(view.model.nodes.size() == 200 and view.model.edges.size() <= 600 and view.model.limited)
 	assert(view.get_node("%Status").text.contains("limit"))
+	view._find("XAP 298")
+	assert(view.get_node("%List").item_count == 1)
+	view._find_select(0)
+	assert(view.model.nodes[view.model.selected].selection.identity == "extra-action-point:298")
+	assert(view.graph.cards.has(view.model.selected), "Find reveals an exact member in a bounded dense group")
+	view._find("XAP 299")
+	assert(view.get_node("%List").get_item_metadata(0) == null, "Find cannot invent the excluded 201st record")
+	view.get_node("%FindResults").hide()
+	view.select_node(view.root_id())
 	print("FLOW_DENSE_NATIVE_MS ", elapsed)
-	if root.size.x == 1600: await _capture("dense")
+	await _capture("dense")
 	await _measure_selection()
+	await preload("res://tools/discovery_flow_lifetime_checks.gd").new().interrupted_refresh(self)
 	view.select_node(view.model.nodes.keys()[1])
 	await flow._action("focus")
 	await _settle()
@@ -186,7 +205,7 @@ func _measure_selection() -> void:
 			timings.append(float(Time.get_ticks_usec() - started) / 1000)
 		timings.sort()
 		print("FLOW_DENSE_%s_SELECTION_P95_MS " % ("COLD" if pass_index == 0 else "WARM"), timings[18])
-		if pass_index == 1: assert(timings[18] < 100, "Warm rendered selection budget exceeded")
+		if pass_index == 1: assert(timings[18] < 100, "Warm selection handler and preview budget exceeded")
 
 func _check_history() -> void:
 	var id := _node("extra-action-point:12")
@@ -198,7 +217,7 @@ func _check_history() -> void:
 	view.graph.cards[id].position_offset += Vector2(13, 19)
 	view.graph.zoom = 0.85
 	view.graph.scroll_offset = Vector2(24, 35)
-	view.graph.save_positions()
+	view.graph._save_drag()
 	var before: Dictionary = view.model.snapshot()
 	await flow._action("focus")
 	await _settle()
@@ -212,16 +231,18 @@ func _check_history() -> void:
 	assert(not view.model.can_collapse(id) and view.model.nodes.has(id))
 	view.graph.fit_content()
 	view.select_node(view.root_id())
-	view.get_node("%NextEdge").pressed.emit()
+	view.select_edge(view.model.related()[0].id)
 
 func _check_filters_and_cancellation() -> void:
 	view.get_node("%Calls").set_pressed_no_signal(false)
-	view.get_node("%State").set_pressed_no_signal(false)
+	view.get_node("%Checks").set_pressed_no_signal(false)
+	view.get_node("%Changes").set_pressed_no_signal(false)
 	await flow._action("filters")
 	await _settle()
 	for edge: Dictionary in view.model.edges.values(): assert(edge.relationship in ["reference", "eligibility"])
 	view.get_node("%Calls").set_pressed_no_signal(true)
-	view.get_node("%State").set_pressed_no_signal(true)
+	view.get_node("%Checks").set_pressed_no_signal(true)
+	view.get_node("%Changes").set_pressed_no_signal(true)
 	await flow._action("filters")
 	await _settle()
 	shell._operations.busy = true
@@ -275,7 +296,7 @@ func _check_stale_and_refresh() -> void:
 	quest.find_child("QuestLabel", true, false).text = "Updated applied quest label"
 	assert((await quest.commit_selected()).get("ok", false))
 	await _settle()
-	assert(view.stale and view.get_node("%Upstream").disabled and view.get_node("%OpenRecord").disabled)
+	assert(view.stale and view.get_node("%Upstream").disabled and view.inspector.get_node("%OpenRecord").disabled)
 	await _capture("stale")
 	await flow._action("refresh")
 	await _settle()

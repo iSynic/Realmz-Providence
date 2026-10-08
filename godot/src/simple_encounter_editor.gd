@@ -172,7 +172,12 @@ func read_state() -> Dictionary:
 
 
 func read_navigation_state() -> Dictionary:
-	return preload("res://src/encounter_navigation_state.gd").capture(read_state(), _list, _step_dialog)
+	return preload("res://src/encounter_navigation_state.gd").capture(read_state(), _list, _step_dialog, _discovery_context)
+
+var _discovery_context: Dictionary = {}
+
+func set_discovery_context(selection: Dictionary) -> void:
+	_discovery_context = selection.duplicate(true)
 
 func prime_navigation_state(state: Dictionary) -> void:
 	_search.set_block_signals(true)
@@ -180,6 +185,7 @@ func prime_navigation_state(state: Dictionary) -> void:
 	_search.set_block_signals(false)
 
 func restore_navigation_state(state: Dictionary) -> void:
+	_discovery_context = state.get("flowSelection", {}).duplicate(true)
 	_selected_result = clampi(int(state.get("result", 0)), 0, RESULT_COUNT - 1)
 	_selected_step = clampi(int(state.get("step", 0)), 0, STEPS_PER_RESULT - 1)
 	_highlight_result(_selected_result)

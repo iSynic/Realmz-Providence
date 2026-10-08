@@ -1,7 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 [ext_resource type="Script" path="res://src/discovery_flow_view.gd" id="1"]
 [ext_resource type="Theme" path="res://src/discovery_theme.tres" id="2"]
 [ext_resource type="Script" path="res://src/discovery_flow_canvas.gd" id="3"]
+[ext_resource type="PackedScene" path="res://src/discovery_flow_inspector.tscn" id="4"]
+[ext_resource type="Script" path="res://src/discovery_flow_legend.gd" id="5"]
 [node name="ViewFlow" type="Window"]
 title = "View Flow"
 size = Vector2i(1536, 836)
@@ -50,9 +52,21 @@ text = "Fit"
 [node name="Recenter" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
 unique_name_in_owner = true
 text = "Recenter"
-[node name="Refresh" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
+[node name="Refresh" type="Button" parent="Background/Body/TitlebarBand/Titlebar"]
 unique_name_in_owner = true
 text = "Refresh"
+[node name="Find" type="LineEdit" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(210, 32)
+size_flags_horizontal = 3
+placeholder_text = "Find in loaded records…"
+clear_button_enabled = true
+[node name="Depth" type="OptionButton" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
+[node name="Direction" type="OptionButton" parent="Background/Body/ToolbarBand/Toolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(166, 32)
 [node name="ZoomOut" type="Button" parent="Background/Body/ToolbarBand/Toolbar"]
 unique_name_in_owner = true
 text = "−"
@@ -70,16 +84,29 @@ theme_override_constants/margin_right = 16
 custom_minimum_size = Vector2(0, 35)
 [node name="Calls" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
 unique_name_in_owner = true
-text = "→ Calls and branches"
+text = "→ Calls"
 button_pressed = true
-[node name="State" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+[node name="Checks" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
 unique_name_in_owner = true
-text = "⇢ State checks and changes"
+text = "◇ Checks"
 button_pressed = true
-[node name="References" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+[node name="Uses" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
 unique_name_in_owner = true
-text = "⋯ Other references"
+text = "·· Uses"
 button_pressed = true
+[node name="Changes" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "■ Changes"
+button_pressed = true
+[node name="Eligibility" type="CheckBox" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "◇ Eligibility"
+button_pressed = true
+[node name="FilterSpacer" type="Control" parent="Background/Body/FiltersBand/Filters"]
+size_flags_horizontal = 3
+[node name="Symbols" type="Button" parent="Background/Body/FiltersBand/Filters"]
+unique_name_in_owner = true
+text = "Symbols & key"
 [node name="NoticeBand" type="PanelContainer" parent="Background/Body"]
 theme_type_variation = &"FlowNotice"
 [node name="Notice" type="Label" parent="Background/Body/NoticeBand"]
@@ -100,6 +127,8 @@ anchor_bottom = 1.0
 unique_name_in_owner = true
 size_flags_horizontal = 3
 size_flags_vertical = 3
+zoom_min = 0.5
+zoom_max = 1.5
 show_menu = false
 show_grid = false
 minimap_enabled = false
@@ -112,7 +141,7 @@ offset_left = 20.0
 offset_top = 16.0
 theme_type_variation = &"DiscoveryContext"
 theme_override_font_sizes/font_size = 11
-text = "UPSTREAM · 2 LEVELS"
+text = "UPSTREAM"
 mouse_filter = 2
 [node name="DownstreamCaption" type="Label" parent="Background/Body/Panes/GraphRegion"]
 unique_name_in_owner = true
@@ -123,57 +152,10 @@ offset_right = -20.0
 offset_top = 16.0
 theme_type_variation = &"DiscoveryContext"
 theme_override_font_sizes/font_size = 11
-text = "DOWNSTREAM · 2 LEVELS"
+text = "DOWNSTREAM"
 mouse_filter = 2
-[node name="Details" type="PanelContainer" parent="Background/Body/Panes"]
-custom_minimum_size = Vector2(350, 0)
-theme_type_variation = &"FlowDetails"
-[node name="Scroll" type="ScrollContainer" parent="Background/Body/Panes/Details"]
-horizontal_scroll_mode = 0
-[node name="DetailBody" type="VBoxContainer" parent="Background/Body/Panes/Details/Scroll"]
-size_flags_horizontal = 3
-[node name="DetailHeading" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
+[node name="Inspector" parent="Background/Body/Panes" instance=ExtResource("4")]
 unique_name_in_owner = true
-text = "SELECTED RECORD"
-theme_type_variation = &"DiscoveryContext"
-[node name="SelectedTitle" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-text = "Select a record"
-autowrap_mode = 3
-theme_type_variation = &"DiscoveryTitle"
-[node name="Connections" type="OptionButton" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-text = "Record details"
-fit_to_longest_item = false
-clip_text = true
-[node name="EdgeControls" type="HBoxContainer" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-[node name="ConnectionCount" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
-unique_name_in_owner = true
-text = "0 connections"
-size_flags_horizontal = 3
-[node name="PreviousEdge" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
-unique_name_in_owner = true
-text = "Previous"
-[node name="NextEdge" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody/EdgeControls"]
-unique_name_in_owner = true
-text = "Next"
-[node name="Detail" type="RichTextLabel" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 245)
-fit_content = true
-scroll_active = false
-selection_enabled = true
-[node name="OpenSource" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-text = "Open owning step"
-[node name="OpenRecord" type="Button" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-text = "Open in editor"
-[node name="DetailHint" type="Label" parent="Background/Body/Panes/Details/Scroll/DetailBody"]
-unique_name_in_owner = true
-text = "Select a connection for its exact owning field."
-autowrap_mode = 3
-theme_type_variation = &"DiscoveryContext"
 [node name="FooterBand" type="PanelContainer" parent="Background/Body"]
 custom_minimum_size = Vector2(0, 80)
 theme_type_variation = &"FlowFooter"
@@ -196,6 +178,12 @@ text = "Collapse expansion"
 [node name="Retry" type="Button" parent="Background/Body/FooterBand/Footer/Actions"]
 unique_name_in_owner = true
 text = "Retry"
+[node name="Spacer" type="Control" parent="Background/Body/FooterBand/Footer/Actions"]
+size_flags_horizontal = 3
+[node name="StateKey" type="Label" parent="Background/Body/FooterBand/Footer/Actions"]
+text = "ROOT Origin  ·  ! / Warning  ·  Fill: selection  ·  Outline: step target  ·  Dots: focus"
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
 [node name="StatusRow" type="HBoxContainer" parent="Background/Body/FooterBand/Footer"]
 custom_minimum_size = Vector2(0, 18)
 [node name="Status" type="Label" parent="Background/Body/FooterBand/Footer/StatusRow"]
@@ -203,7 +191,36 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 text = "Select an applied record to view its flow."
 autowrap_mode = 3
-[node name="Legend" type="Label" parent="Background/Body/FooterBand/Footer/StatusRow"]
+[node name="Legend" type="Control" parent="Background/Body/FooterBand/Footer/StatusRow"]
 unique_name_in_owner = true
-text = "Possible authored relationships"
-theme_type_variation = &"DiscoveryContext"
+custom_minimum_size = Vector2(548, 26)
+script = ExtResource("5")
+[node name="Overlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+[node name="FindResults" type="PanelContainer" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+offset_left = 360.0
+offset_top = 98.0
+offset_right = 800.0
+offset_bottom = 330.0
+[node name="List" type="ItemList" parent="Overlay/FindResults"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(420, 200)
+[node name="Helper" type="PanelContainer" parent="Overlay"]
+unique_name_in_owner = true
+visible = false
+z_index = 20
+mouse_filter = 2
+custom_minimum_size = Vector2(360, 100)
+[node name="Text" type="Label" parent="Overlay/Helper"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(336, 0)
+autowrap_mode = 3
+mouse_filter = 2
+[node name="GraphActions" type="PopupMenu" parent="."]
+unique_name_in_owner = true

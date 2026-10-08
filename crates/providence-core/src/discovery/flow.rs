@@ -1,6 +1,8 @@
 //! Bounded, derived relationship views. Graph identities never enter authored truth.
 mod graph;
 mod quest_edges;
+mod summary;
+pub use summary::{FlowSummary, describe_selection};
 #[cfg(test)]
 mod tests;
 mod traversal;
@@ -92,15 +94,22 @@ pub enum FlowCategory {
     Calls,
     State,
     References,
+    Checks,
+    Changes,
+    Uses,
+    Eligibility,
 }
 
 impl RelationshipKind {
-    fn category(self) -> FlowCategory {
-        match self {
-            Self::Call => FlowCategory::Calls,
-            Self::StateCheck | Self::StateChange => FlowCategory::State,
-            Self::Reference | Self::Eligibility => FlowCategory::References,
-        }
+    fn enabled(self, categories: &BTreeSet<FlowCategory>) -> bool {
+        let (specific, legacy) = match self {
+            Self::Call => (FlowCategory::Calls, FlowCategory::Calls),
+            Self::StateCheck => (FlowCategory::Checks, FlowCategory::State),
+            Self::StateChange => (FlowCategory::Changes, FlowCategory::State),
+            Self::Reference => (FlowCategory::Uses, FlowCategory::References),
+            Self::Eligibility => (FlowCategory::Eligibility, FlowCategory::References),
+        };
+        categories.contains(&specific) || categories.contains(&legacy)
     }
 }
 

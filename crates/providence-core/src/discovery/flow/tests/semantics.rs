@@ -61,6 +61,16 @@ fn quest_changes_and_checks_have_opposite_directions_and_exact_owners() {
     assert_eq!(changes.reference.field, "actions[0].target");
     assert_eq!(checks.reference.source, "extra-action-point:88");
     assert_eq!(checks.details.condition, "Quest is set (nonzero)");
+    for (category, expected) in [
+        (FlowCategory::Checks, RelationshipKind::StateCheck),
+        (FlowCategory::Changes, RelationshipKind::StateChange),
+    ] {
+        let mut filtered = query("quest:9", FlowDirection::Both, 1);
+        filtered.categories = [category].into();
+        let (_, edges, _) = collect(&graph, filtered);
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].relationship, expected);
+    }
 }
 
 #[test]

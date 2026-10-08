@@ -12,6 +12,38 @@ use std::{
     },
 };
 
+pub(crate) fn summaries(
+    session: &EditorSession,
+    params: &Value,
+    application: Option<&providence_core::rebuilt::ApplicationMediaCatalog>,
+) -> Result<Value, String> {
+    crate::session_routes::discovery::guard(session, params)?;
+    let selections: Vec<providence_core::discovery::flow::FlowSelection> = serde_json::from_value(
+        crate::request_params::coerce_integral_numbers(params["selections"].clone()),
+    )
+    .map_err(|error| format!("Invalid flow summary selection: {error}"))?;
+    if selections.is_empty() || selections.len() > 64 {
+        return Err("Request between 1 and 64 flow summaries.".into());
+    }
+    let items: Vec<_> = selections
+        .iter()
+        .map(|selection| {
+            match providence_core::discovery::flow::describe_selection(
+                session.snapshot(),
+                session.discovery(),
+                application,
+                selection,
+            ) {
+                Ok(summary) => json!({"id": selection.node_id(), "summary": summary}),
+                Err(error) => json!({"id": selection.node_id(), "error": error}),
+            }
+        })
+        .collect();
+    Ok(
+        json!({"items":items, "revision":session.revision(), "projectId":session.snapshot().project_id, "generation":params.get("generation")}),
+    )
+}
+
 #[cfg(test)]
 mod tests;
 
@@ -80,7 +112,10 @@ fn query(params: &Value) -> Result<FlowQuery, String> {
             query.insert(key.into(), value.clone());
         }
     }
-    serde_json::from_value(Value::Object(query)).map_err(|e| format!("Invalid flow query: {e}"))
+    serde_json::from_value(crate::request_params::coerce_integral_numbers(
+        Value::Object(query),
+    ))
+    .map_err(|e| format!("Invalid flow query: {e}"))
 }
 
 impl FlowCache {

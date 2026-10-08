@@ -8,6 +8,7 @@ import tempfile
 
 from adapter_test_client import Adapter
 from verify_discovery_adapter import populate, populate_paging, step
+from discovery_flow_v2_fixture import populate_v2, inject_ambiguous_resource
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,15 +35,18 @@ def main():
             step(client, "extra-action-point:12", 2, 4, 0)
             step(client, "extra-action-point:40", 1, 1, 349)
             step(client, "extra-action-point:40", 2, 39, 995)
-            if args.dense: populate_paging(client)
+            populate_v2(client, project)
+            if args.dense: populate_paging(client, include_branch=False)
             client.request("project.save")
         finally:
             client.close()
+        inject_ambiguous_resource(project)
         environment = os.environ.copy()
         environment["PROVIDENCE_ADAPTER_PATH"] = str(adapter)
         environment["PROVIDENCE_DISCOVERY_PROJECT"] = str(project)
         environment["PROVIDENCE_FLOW_CAPTURE_ROOT"] = ""
         environment["PROVIDENCE_FLOW_DENSE"] = "1" if args.dense else ""
+        environment["PROVIDENCE_FLOW_VIEWPORT"] = args.size
         if args.capture_root:
             args.capture_root.mkdir(parents=True, exist_ok=True)
             environment["PROVIDENCE_FLOW_CAPTURE_ROOT"] = str(args.capture_root.resolve())
@@ -56,7 +60,7 @@ def main():
         print(combined, flush=True)
         if args.capture_root:
             (args.capture_root / f"workflow-{args.size}.log").write_text(combined, encoding="utf-8")
-        if result.returncode or "SCRIPT ERROR" in combined or "Unicode parsing error" in combined or "PROVIDENCE_FLOW_NATIVE_OK" not in combined:
+        if result.returncode or "ERROR:" in combined or "Unicode parsing error" in combined or "PROVIDENCE_FLOW_NATIVE_OK" not in combined:
             raise RuntimeError("Native flow verification failed")
 
 

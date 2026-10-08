@@ -1,0 +1,107 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/discovery_flow_inspector.gd" id="1"]
+[node name="Inspector" type="PanelContainer"]
+custom_minimum_size = Vector2(416, 0)
+theme_type_variation = &"FlowDetails"
+script = ExtResource("1")
+[node name="Body" type="VBoxContainer" parent="."]
+theme_override_constants/separation = 12
+[node name="Family" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
+[node name="Title" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryTitle"
+theme_override_font_sizes/font_size = 22
+autowrap_mode = 3
+text = "Select a record"
+[node name="Meta" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+[node name="Tabs" type="HBoxContainer" parent="Body"]
+[node name="StepsTab" type="Button" parent="Body/Tabs"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Steps"
+[node name="ConnectionsTab" type="Button" parent="Body/Tabs"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Connections"
+[node name="DetailsTab" type="Button" parent="Body/Tabs"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Details"
+[node name="Caller" type="OptionButton" parent="Body"]
+unique_name_in_owner = true
+visible = false
+fit_to_longest_item = false
+clip_text = true
+[node name="Scroll" type="ScrollContainer" parent="Body"]
+unique_name_in_owner = true
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="Content" type="VBoxContainer" parent="Body/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+[node name="Context" type="Label" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+[node name="Steps" type="VBoxContainer" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+theme_override_constants/separation = 8
+[node name="ShowAllSteps" type="Button" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+visible = false
+text = "Show all 8 slots"
+[node name="Connections" type="ItemList" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 180)
+auto_height = false
+text_overrun_behavior = 3
+[node name="AllUses" type="Button" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "All loaded connections"
+[node name="Candidates" type="ItemList" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 100)
+visible = false
+[node name="StepFields" type="VBoxContainer" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+theme_override_constants/separation = 8
+[node name="Detail" type="RichTextLabel" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+fit_content = true
+scroll_active = false
+selection_enabled = true
+[node name="InspectTarget" type="Button" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "Inspect target →"
+[node name="InspectOwner" type="Button" parent="Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "Inspect owning program →"
+[node name="Actions" type="VBoxContainer" parent="Body"]
+theme_override_constants/separation = 8
+[node name="Buttons" type="HBoxContainer" parent="Body/Actions"]
+[node name="OpenSource" type="Button" parent="Body/Actions/Buttons"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Open step…"
+[node name="OpenRecord" type="Button" parent="Body/Actions/Buttons"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Open record…"
+[node name="Hint" type="Label" parent="Body/Actions"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 10
+autowrap_mode = 3
+text = "Opens the editor · existing draft guard applies"

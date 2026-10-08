@@ -62,10 +62,10 @@ impl FlowGraph {
             };
             let connection = &self.connections[*id];
             page.inspected += 1;
-            if state
-                .query
-                .categories
-                .contains(&connection.link.relationship.category())
+            if connection
+                .link
+                .relationship
+                .enabled(&state.query.categories)
                 && admissible(connection, &pending)
                 && !self.append(state, &mut page, &pending, connection)
             {

@@ -163,7 +163,10 @@ func route_record(record: Dictionary, destination_context: Dictionary = {}) -> v
 		var identity := str(record.identity)
 		var entry = destination_context.get("originReference", {}).get("codePosition")
 		var position := int(entry) if entry != null else 0
-		await _navigation.open_script_source({"source":identity.get_slice(":result:", 0), "field":"actions[%d]" % (int(identity.get_slice(":result:", 1)) * 8 + position)})
+		var selection := {"identity":identity, "scope":record.get("scope", "scenario")}
+		for key in ["entryPosition", "throughPosition", "callerContext"]:
+			if destination_context.get("originReference", {}).get(key) != null: selection[key] = destination_context.originReference[key]
+		await _navigation.open_script_source({"source":identity.get_slice(":result:", 0), "field":"actions[%d]" % (int(identity.get_slice(":result:", 1)) * 8 + position), "flowSelection":selection})
 		return
 	if kind == "scenario":
 		await _navigation.select_route("scenario.startup")

@@ -24,6 +24,9 @@ pub(super) fn dispatch(
     params: Value,
 ) -> Result<Value, String> {
     crate::session_routes::discovery::guard(session, &params)?;
+    if method == "discovery.flow-summaries" {
+        return crate::discovery_flow::summaries(session, &params, catalogs.application_media);
+    }
     if method == "discovery.flow" {
         return super::discovery_flow::read(session, store, catalogs, monster_library, &params);
     }
@@ -90,7 +93,10 @@ fn search_page(session: &EditorSession, params: &Value, index: &DiscoveryIndex) 
     )
 }
 
-pub(super) fn append_monsters(out: &mut Vec<DiscoveryRecord>, library: Option<&OpenMonsterLibrary>) {
+pub(super) fn append_monsters(
+    out: &mut Vec<DiscoveryRecord>,
+    library: Option<&OpenMonsterLibrary>,
+) {
     let Some(library) = library else {
         return;
     };

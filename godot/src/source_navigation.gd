@@ -39,6 +39,8 @@ static func open(navigation, reference: Dictionary) -> bool:
 	if not await navigation.open_script_target(kind, id, source, {}): return false
 	if navigation.session_epoch()!=epoch: return false
 	await _focus(navigation, source, slot, field)
+	if reference.get("flowSelection") is Dictionary and navigation.current_view().has_method("set_discovery_context"):
+		navigation.current_view().set_discovery_context(reference.flowSelection)
 	if kind == "rogue-encounter" and reference.get("callerContext") != null:
 		await navigation.current_view().select_calling_owner(str(reference.callerContext))
 	return navigation.session_epoch()==epoch

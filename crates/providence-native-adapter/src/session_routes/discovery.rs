@@ -12,6 +12,7 @@ pub(super) fn dispatch(
     match method {
         "discovery.search" => search(session, &params),
         "discovery.preview" => preview(session, &params),
+        "discovery.flow-summaries" => crate::discovery_flow::summaries(session, &params, None),
         "discovery.links" => links(session, &params),
         "discovery.trace" => trace(session, &params),
         "discovery.flow" => {

@@ -7,6 +7,10 @@ static func record(view: Control, route: String) -> Dictionary:
 	var kind := str(KINDS.get(route, ""))
 	var state: Dictionary = view.read_navigation_state() if view.has_method("read_navigation_state") else {}
 	if state.is_empty() and view.has_method("read_state"): state = view.read_state()
+	if state.get("flowSelection") is Dictionary and not state.flowSelection.is_empty():
+		var contextual: Dictionary = state.flowSelection.duplicate(true)
+		contextual.kind = "simple-encounter-result" if route == "encounters.simple" else "complex-encounter-result"
+		return contextual
 	if route == "text.messages": kind = str(state.get("mode", "message"))
 	var id := str(state.get("id", state.get("nativeId", "")))
 	var identity := str(state.get("identity", state.get("source", "")))
@@ -15,4 +19,17 @@ static func record(view: Control, route: String) -> Dictionary:
 	if kind == "monster": identity = "monster:%d:%s" % [int(state.get("setId", 0)), id]
 	if kind == "quest-flag": identity = "quest:" + id
 	if id.is_empty() and not identity.is_empty(): id = str(preload("res://src/source_navigation.gd").last_integer(identity))
-	return {"kind":kind, "nativeId":id, "identity":identity, "scope":state.get("scope", "scenario")}
+	var selection := {"kind":kind, "nativeId":id, "identity":identity, "scope":state.get("scope", "scenario")}
+	for key in ["entryPosition", "throughPosition", "callerContext"]:
+		if state.get(key) != null: selection[key] = state[key]
+	if kind == "rogue-encounter" and int(state.get("owner", -1)) >= 0:
+		selection.callerContext = "complex-encounter:%d" % int(state.owner)
+	return selection
+
+static func flow_selection(record: Dictionary) -> Dictionary:
+	var result := {"identity":record.get("identity", ""), "scope":record.get("scope", "scenario")}
+	for key in ["entryPosition", "throughPosition", "callerContext"]:
+		if record.get(key) != null: result[key] = record[key]
+	if not result.has("entryPosition") and record.get("tracePosition") != null: result.entryPosition = record.tracePosition
+	if not result.has("callerContext") and record.get("traceCallerContext") != null: result.callerContext = record.traceCallerContext
+	return result

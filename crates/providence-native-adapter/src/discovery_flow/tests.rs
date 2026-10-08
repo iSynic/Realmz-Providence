@@ -130,3 +130,45 @@ fn catalog_only_record_has_honest_empty_graph_without_project_transport() {
     assert!(!result.to_string().contains("must not be transported"));
     assert!(!result.to_string().contains("snapshot"));
 }
+
+#[test]
+fn semantic_batches_keep_guards_bounds_and_godot_integer_context() {
+    let session = fixture();
+    let before = session.persisted_state();
+    let mut p = params(&session);
+    p["selections"] = json!([{"identity":"extra-action-point:40","scope":"scenario"}]);
+    let response = summaries(&session, &p, None).unwrap();
+    assert_eq!(
+        response["items"][0]["summary"]["steps"]
+            .as_array()
+            .unwrap()
+            .len(),
+        8
+    );
+    assert_eq!(response["items"][0]["summary"]["usedSteps"], 1);
+    let mut wrong = p.clone();
+    wrong["projectId"] = json!("another-project");
+    assert!(summaries(&session, &wrong, None).is_err());
+    wrong = p.clone();
+    wrong["expectedRevision"] = json!(999);
+    assert!(summaries(&session, &wrong, None).is_err());
+    for count in [0, 65] {
+        wrong = p.clone();
+        wrong["selections"] = json!(vec![p["selections"][0].clone(); count]);
+        assert!(summaries(&session, &wrong, None).is_err());
+    }
+    p["root"] = json!({"identity":"simple-encounter:1:result:0","scope":"scenario","entryPosition":2.0,"throughPosition":5.0});
+    p["depth"] = json!(4.0);
+    let decoded = query(&p).unwrap();
+    assert_eq!(decoded.root.entry_position, Some(2));
+    assert_eq!(decoded.root.through_position, Some(5));
+    p["selections"] = json!([p["root"]]);
+    let response = summaries(&session, &p, None).unwrap();
+    assert!(
+        response["items"][0]["error"]
+            .as_str()
+            .unwrap()
+            .contains("unavailable")
+    );
+    assert_eq!(before, session.persisted_state());
+}

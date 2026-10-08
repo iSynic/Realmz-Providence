@@ -6,9 +6,20 @@ var nodes: Dictionary = {}
 var edges: Dictionary = {}
 var groups: Dictionary = {}
 var positions: Dictionary = {}
+var manual_positions: Dictionary = {}
+var group_positions: Dictionary = {}
 var selected := ""
 var edge := ""
-var categories: Array = ["calls", "state", "references"]
+var source_edge := ""
+var occurrence_filter: Array = []
+var step := -1
+var steps_expanded := false
+var inspector_tab := "steps"
+var categories: Array = ["calls", "checks", "changes", "uses", "eligibility"]
+var depth := 2
+var direction := "both"
+var summaries: Dictionary = {}
+var revealed: Dictionary = {}
 var viewport := {"zoom":1.0, "scroll":Vector2.ZERO}
 var limited := false
 
@@ -18,8 +29,17 @@ func reset(selection: Dictionary) -> void:
 	edges.clear()
 	groups.clear()
 	positions.clear()
+	manual_positions.clear()
+	group_positions.clear()
 	selected = ""
 	edge = ""
+	source_edge = ""
+	occurrence_filter.clear()
+	step = -1
+	steps_expanded = false
+	inspector_tab = "steps"
+	summaries.clear()
+	revealed.clear()
 	limited = false
 	viewport = {"zoom":1.0, "scroll":Vector2.ZERO}
 
@@ -63,7 +83,7 @@ func place_new_nodes() -> void:
 		var count := 0
 		for placed in positions:
 			if nodes.has(placed) and int(nodes[placed].depth) == layer: count += 1
-		positions[id] = Vector2(layer * 245, count * 155)
+		positions[id] = Vector2(layer * 268, count * 180)
 
 func _record_order(a: String, b: String) -> bool:
 	var left: Dictionary = nodes[a]
@@ -115,7 +135,33 @@ func related() -> Array:
 func snapshot() -> Dictionary:
 	return {"root":root.duplicate(true), "nodes":nodes.duplicate(true), "edges":edges.duplicate(true),
 		"groups":groups.duplicate(true), "positions":positions.duplicate(), "selected":selected,
-		"edge":edge, "categories":categories.duplicate(), "viewport":viewport.duplicate(), "limited":limited}
+		"manual_positions":manual_positions.duplicate(), "group_positions":group_positions.duplicate(),
+		"edge":edge, "step":step, "steps_expanded":steps_expanded, "inspector_tab":inspector_tab, "categories":categories.duplicate(),
+		"source_edge":source_edge, "occurrence_filter":occurrence_filter.duplicate(),
+		"depth":depth, "direction":direction, "summaries":summaries.duplicate(true), "revealed":revealed.duplicate(),
+		"viewport":viewport.duplicate(), "limited":limited}
+
+func source_reference() -> Dictionary:
+	if edges.has(edge): return _occurrence_source(edge)
+	var summary: Dictionary = summaries.get(selected, {})
+	for row: Dictionary in summary.get("steps", []):
+		if int(row.slot) == step:
+			return {"source":row.source, "field":row.field, "slot":row.slot, "callerContext":row.get("callerContext"), "flowSelection":nodes[selected].selection.duplicate(true)}
+	if edges.has(source_edge): return _occurrence_source(source_edge)
+	return {}
+
+func _occurrence_source(id: String) -> Dictionary:
+	var occurrence: Dictionary = edges[id]
+	var reference: Dictionary = occurrence.reference.duplicate(true)
+	var owner := owning_node(occurrence)
+	if nodes.has(owner): reference.flowSelection = nodes[owner].selection.duplicate(true)
+	return reference
+
+func owning_node(occurrence: Dictionary) -> String:
+	return occurrence.target if occurrence.relationship == "state-check" else occurrence.source
+
+func selected_step_edges() -> Array:
+	return edges.values().filter(func(occurrence): return owning_node(occurrence) == selected and preload("res://src/source_navigation.gd").action_slot(occurrence.reference.field) == step)
 
 func restore(value: Dictionary) -> void:
 	for key in value: set(key, value[key].duplicate(true) if value[key] is Dictionary or value[key] is Array else value[key])
