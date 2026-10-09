@@ -70,6 +70,8 @@ func _spells() -> void:
 	assert(view.catalog_query().class == 1)
 	var list: ItemList = view.get_node("%SpellRecordList")
 	assert(list.item_count > 64 and list.item_count == view._total)
+	list.select(0); list.item_selected.emit(0); await _settle()
+	assert(int(view.selected_definition().classicId) / 1000 == 1)
 	await _capture("spells-sorcerer")
 	var filter: OptionButton = view.get_node("%SpellClassFilter")
 	filter.select(2); filter.item_selected.emit(2); await _settle()
@@ -92,6 +94,8 @@ func _economy() -> void:
 	for identity in ["economy.items", "economy.treasure", "economy.shops", "economy.items"]:
 		var view = await _route(identity)
 		var navigation = view.get_node("EconomyNavigation")
+		if identity in ["economy.treasure", "economy.shops"]:
+			assert(_shell._inspector_panel.get_node("%InspectorIdentity").text == str(view.current_record().identity))
 		for name in navigation.ROUTES:
 			assert(navigation.get_node(name).button_pressed == (navigation.ROUTES[name] == identity))
 		if identity == "economy.items":

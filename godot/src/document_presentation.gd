@@ -107,6 +107,7 @@ func _present_selection(route: String, view: Control) -> void:
 	var references: Array = _read_references.call()
 	match route:
 		"records.decoded-records", "records.evidence": view.present_selection()
+		"economy.treasure", "economy.shops": view.present_selection()
 		"text.messages": view.activate()
 		"maps.land":
 			if _maps.document.selected_cell.x < 0: _maps.references.show_overview()
