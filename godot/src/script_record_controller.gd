@@ -181,8 +181,10 @@ func _opened_map_catalog(operation: ProvidenceEditorOperation, document: Diction
 
 func _read_catalog(operation: ProvidenceEditorOperation, query: Dictionary, guard: Dictionary) -> Dictionary:
 	if _methods.record not in ["actionPoint", "extraActionPoint"]: return await operation.request(_methods.list, query)
-	return await preload("res://src/record_catalog_reader.gd").load_all(
+	var response: Dictionary = await preload("res://src/record_catalog_reader.gd").load_all(
 		operation.request, _methods.list, func(): return _check_guard(guard).ok, query)
+	var checked := _check_guard(guard)
+	return checked if not checked.ok else response
 
 
 func _set_catalog(page: Dictionary, preferred: String) -> void:

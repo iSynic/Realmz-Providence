@@ -17,7 +17,12 @@ class Bridge extends "res://src/native_bridge.gd":
 		calls.append(method)
 		if method == fail_method: return {"ok": false, "outcomeUnknown": unknown, "error": "Controlled rejection"}
 		if method == "list":
-			if listed_elsewhere: return {"ok": true, "result": {"items": [], "total": 200}}
+			if listed_elsewhere:
+				var rows: Array = []
+				var offset := int(params.get("offset", 0))
+				for index in range(offset, mini(200, offset + int(params.get("limit", 25)))):
+					rows.append({"identity": "other-record:%d" % index, "nativeId": index + 10, "recordIndex": index + 10, "label": "Other record", "problems": 0})
+				return {"ok": true, "result": {"items": rows, "total": 200, "offset": offset, "revision": revision}}
 			return {"ok": true, "result": {"items": [{"identity": document.get("identity", ""), "nativeId": 2, "recordIndex": 2, "label": "Test record", "problems": 0}], "total": 1}}
 		if method == "open":
 			opened.append(str(params.identity))
