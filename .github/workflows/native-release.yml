@@ -70,7 +70,7 @@ jobs:
           for check in record_browsing economy_navigation battle_gallery step_pointer_selection action_step_workbench action_description_lifecycle script_workbench; do
             "$PROVIDENCE_GODOT_PATH" --headless --path godot --script "res://tools/validate_${check}.gd" > "$RUNNER_TEMP/${check}.log" 2>&1
             cat "$RUNNER_TEMP/${check}.log"
-            ! grep -E 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$RUNNER_TEMP/${check}.log"
+            if grep -E 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$RUNNER_TEMP/${check}.log"; then exit 1; fi
             grep -E 'PROVIDENCE_.*_OK' "$RUNNER_TEMP/${check}.log"
           done
           runtime="$RUNNER_TEMP/providence-release/bundle"
