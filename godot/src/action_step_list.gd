@@ -56,6 +56,19 @@ func add_item(text: String) -> void:
 	_apply_item_style(index)
 
 
+func set_item(index: int, text: String, metadata: Variant, color: Color) -> void:
+	if index < 0 or index > _items.size(): return
+	if index == _items.size(): add_item(text)
+	var item := _items[index]
+	# Keep the mouse-release target alive while draft reads update its presentation.
+	if item.get_meta("base_text") == text and _metadata[index] == metadata and _colors[index] == color: return
+	item.set_meta("base_text", text)
+	item.text = ("› " if item.has_focus() else "") + text
+	item.tooltip_text = text
+	_metadata[index] = metadata; _colors[index] = color
+	_apply_item_style(index)
+
+
 func set_item_metadata(index: int, value: Variant) -> void:
 	if index >= 0 and index < _metadata.size(): _metadata[index] = value
 
@@ -76,6 +89,9 @@ func item_semantic_color(index: int) -> Color:
 
 func select(index: int) -> void:
 	if index < 0 or index >= _items.size(): return
+	if _selected == index:
+		_items[index].set_pressed_no_signal(true)
+		return
 	_selected = index
 	for item_index in range(_items.size()):
 		_items[item_index].button_pressed = item_index == index

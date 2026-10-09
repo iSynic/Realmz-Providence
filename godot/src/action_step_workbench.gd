@@ -373,6 +373,7 @@ func _select_slot(index: int, describe := true, store_current := true) -> void:
 	invalidate_action_picker()
 	if store_current: _store_selected_controls()
 	_selected_slot = clampi(index, 0, 7)
+	_step_list.select(_selected_slot)
 	_form_description.clear()
 	_render_action_picker()
 	_render_editor()
@@ -400,16 +401,14 @@ func _select_action(identity: String) -> void:
 
 func _render_steps() -> void:
 	if _step_list == null: return
-	_step_list.clear()
 	for slot in range(8):
 		var draft := _draft_for_slot(slot)
 		var definition := _definition_for_draft(draft)
 		var occupied := not draft.is_empty()
 		var label := StepPresentation.action_label(definition) if occupied else "Empty step"
 		var detail := _step_detail(draft, definition) if occupied else "Choose an action"
-		_step_list.add_item("%d  %s\n    %s" % [slot + 1, label, detail])
-		_step_list.set_item_metadata(slot, {"slot": slot, "category": definition.get("category", "Empty")})
-		_step_list.set_item_semantic_color(slot, ProvidenceActionStepList.semantic_color(definition))
+		_step_list.set_item(slot, "%d  %s\n    %s" % [slot + 1, label, detail],
+			{"slot": slot, "category": definition.get("category", "Empty")}, ProvidenceActionStepList.semantic_color(definition))
 	_summary.text = "%d OF 8 USED  ·  ORDERED STEPS" % _draft_steps.size()
 	if _step_list.item_count > _selected_slot: _step_list.select(_selected_slot)
 
