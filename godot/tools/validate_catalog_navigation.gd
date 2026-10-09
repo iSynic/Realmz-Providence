@@ -47,8 +47,30 @@ func _scripts() -> void:
 		list.select(list.item_count - 1); list.item_selected.emit(list.item_count - 1)
 		await _settle()
 		assert(view.read_state().identity == str(view._summaries.back().identity))
+		if entry[0] == "scripts.action-points": await _action_point_filters(view, list)
 		list.ensure_current_is_visible()
 		await _capture(entry[0].replace(".", "-"))
+
+
+func _action_point_filters(view: Control, list: ItemList) -> void:
+	var identity := str(view.read_state().identity)
+	var filters := "ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters/"
+	await _click_button(view.get_node(filters + "All")); await _settle()
+	assert(view.read_state().filter == "all" and list.item_count == 63)
+	await _click_button(view.get_node(filters + "CurrentMap")); await _settle()
+	assert(view.read_state().filter == "current-map" and list.item_count == 60)
+	assert(view.read_state().identity == identity and view.current_map_identity() == "land:0")
+	assert(view._summaries.all(func(row): return str(row.identity).begins_with("action-point:land:0:")))
+	assert(view.get_node(filters + "CurrentMap").button_pressed and not view.get_node(filters + "All").button_pressed)
+
+
+func _click_button(button: Button) -> void:
+	var point := button.get_global_rect().get_center()
+	for pressed in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT; event.pressed = pressed
+		event.position = point; event.global_position = point
+		root.push_input(event, true); await process_frame
 
 
 func _battles() -> void:

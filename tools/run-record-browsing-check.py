@@ -14,6 +14,9 @@ def populate(adapter):
     adapter.request("map.create", {"levelType": "land"})
     for index in range(60):
         adapter.request("action-point.create", {"mapIdentity": "land:0", "x": index, "y": 5})
+    adapter.request("map.create", {"levelType": "land"})
+    for index in range(3):
+        adapter.request("action-point.create", {"mapIdentity": "land:1", "x": index, "y": 5})
     for index in range(150):
         adapter.request("extra-action-point.create", {"nativeId": index})
         allocation = adapter.request("battle.allocate")["allocation"]

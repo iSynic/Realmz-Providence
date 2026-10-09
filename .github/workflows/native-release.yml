@@ -67,7 +67,7 @@ jobs:
       - name: Catalog browsing and script interaction boundaries
         shell: bash
         run: |
-          for check in record_browsing economy_navigation battle_gallery step_pointer_selection action_step_workbench action_description_lifecycle script_workbench; do
+          for check in record_browsing economy_navigation battle_gallery step_pointer_selection current_map_filter action_step_workbench action_description_lifecycle script_workbench; do
             "$PROVIDENCE_GODOT_PATH" --headless --path godot --script "res://tools/validate_${check}.gd" > "$RUNNER_TEMP/${check}.log" 2>&1
             cat "$RUNNER_TEMP/${check}.log"
             if grep -E 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$RUNNER_TEMP/${check}.log"; then exit 1; fi
