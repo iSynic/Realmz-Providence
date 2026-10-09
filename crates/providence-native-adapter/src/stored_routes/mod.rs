@@ -15,8 +15,8 @@ mod project;
 mod rebuilt;
 pub(crate) use rebuilt::readiness_data;
 mod discovery;
-mod discovery_media;
 mod discovery_flow;
+mod discovery_media;
 #[cfg(test)]
 mod discovery_tests;
 mod reference;

@@ -386,7 +386,7 @@ dependencies = [
 
 [[package]]
 name = "providence-application-library"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "png",
  "providence-core",
@@ -400,7 +400,7 @@ dependencies = [
 
 [[package]]
 name = "providence-cli"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "base64",
  "providence-core",
@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "providence-core"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -422,7 +422,7 @@ dependencies = [
 
 [[package]]
 name = "providence-native-adapter"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "base64",
  "encoding_rs",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "providence-rebuilt-package"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "providence-core",
  "serde",
@@ -451,7 +451,7 @@ dependencies = [
 
 [[package]]
 name = "providence-rebuilt-preview"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -461,7 +461,7 @@ dependencies = [
 
 [[package]]
 name = "providence-storage"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "flate2",
  "providence-core",

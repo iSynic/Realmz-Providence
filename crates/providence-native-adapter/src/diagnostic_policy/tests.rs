@@ -143,13 +143,10 @@ fn optional_caller_filter_spans_families_preserves_errors_and_original_counts() 
         .project(Revision(1), &json!({"showAll":true}), &uncalled)
         .unwrap();
     assert_eq!(restored["total"], 6);
+    let invalid_params = json!({"hideUncalledWarnings":"yes"});
     assert!(
         findings
-            .project(
-                Revision(1),
-                &json!({"hideUncalledWarnings":"yes"}),
-                &uncalled
-            )
+            .project(Revision(1), &invalid_params, &uncalled)
             .is_err()
     );
 }

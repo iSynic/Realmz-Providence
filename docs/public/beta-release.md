@@ -1,15 +1,18 @@
-Providence's first native Godot/Rust beta replaces the React/Tauri editor.
+Providence v0.6.0-beta.2 improves the native Godot/Rust scenario editor.
 The final web release remains available as v0.5.9 and on `legacy/tauri`.
 
-Refreshed October 7, 2026:
+Changes since beta.1:
 
-- Fix Apply and navigation for imported Action Point drafts with unsupported
-  values, preserving untouched imported steps.
-- Add finding-type filters, adjustable page sizes, temporary hidden entries
-  and types, and an optional filter for warnings with no known callers.
-- Clarify diagnostics for retained monster tail records and imported defects.
-- Add an explicitly confirmed Classic export option to remove an eligible
-  partial Extra Code tail from the exported copy, retaining project source bytes.
+- Browse complete matching catalogs in Battles, Spells, Items, APs and XAPs.
+  Spell browsing starts with the Sorcerer class and lets you select another class.
+- Fix missed clicks when switching action steps; selection stays aligned with
+  the detail panel while draft reads and action descriptions refresh.
+- Keep Economy tabs and Inspector context aligned with the selected section.
+- Explore script links in native View Flow, with step summaries, navigation,
+  a legend and layouts locked by default. Member lists dismiss on outside clicks.
+- Restore shared script navigation and use Classic Quests terminology.
+
+Included native workflows:
 
 - Native Land and Dungeon editing, smart terrain, directional Magic Brush,
   special stamps, map overlays and JPEG export.
@@ -36,4 +39,5 @@ The release gate passed all 40 scenarios in the reference corpus: fresh import,
 Save/reopen, byte-exact no-edit Classic export and validation of actual Rebuilt
 archives. Rebuilt checks used an explicit application-rules audit profile;
 they do not establish the intended custom-rule selection for each campaign.
-The source-bound results are in `docs/public/compatibility-audit.json`.
+The source-bound beta.2 results are included as the release's
+`compatibility-audit.json` asset. The repository retains the earlier beta.1 audit.

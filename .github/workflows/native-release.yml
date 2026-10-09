@@ -64,6 +64,18 @@ jobs:
         run: |
           "$PROVIDENCE_GODOT_PATH" --headless --path godot --script res://tools/validate_startup_splash.gd
           "$PROVIDENCE_GODOT_PATH" --headless --path godot --script res://tools/validate_music_pcm.gd
+      - name: Catalog browsing and script interaction boundaries
+        shell: bash
+        run: |
+          for check in record_browsing economy_navigation battle_gallery step_pointer_selection action_step_workbench action_description_lifecycle script_workbench; do
+            "$PROVIDENCE_GODOT_PATH" --headless --path godot --script "res://tools/validate_${check}.gd" > "$RUNNER_TEMP/${check}.log" 2>&1
+            cat "$RUNNER_TEMP/${check}.log"
+            ! grep -E 'SCRIPT ERROR:|Parse Error:|^ERROR:' "$RUNNER_TEMP/${check}.log"
+            grep -E 'PROVIDENCE_.*_OK' "$RUNNER_TEMP/${check}.log"
+          done
+          runtime="$RUNNER_TEMP/providence-release/bundle"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then runtime="$runtime/Providence.app/Contents/MacOS"; fi
+          python tools/run-record-browsing-check.py --godot "$PROVIDENCE_GODOT_PATH" --bundle "$runtime" --output-root "$RUNNER_TEMP/catalog-browsing"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Providence-${{ matrix.platform }}
@@ -100,9 +112,9 @@ jobs:
       - name: Verify archives and prepare corresponding source
         run: |
           cd release
-          test -f Providence-v0.6.0-beta.1-windows-x64.zip
-          test -f Providence-v0.6.0-beta.1-macos-universal.zip
-          test -f Providence-v0.6.0-beta.1-linux-x64.tar.gz
+          test -f Providence-${GITHUB_REF_NAME}-windows-x64.zip
+          test -f Providence-${GITHUB_REF_NAME}-macos-universal.zip
+          test -f Providence-${GITHUB_REF_NAME}-linux-x64.tar.gz
           cat *.sha256 | tr -d '\r' > SHA256SUMS
           sha256sum --check SHA256SUMS
           git -C .. archive --format=tar.gz --prefix=Providence-${GITHUB_REF_NAME}/ --output="$PWD/Providence-${GITHUB_REF_NAME}-source.tar.gz" HEAD

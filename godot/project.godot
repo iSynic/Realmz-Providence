@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Providence vNext"
-config/version="0.6.0-beta.1"
+config/version="0.6.0-beta.2"
 run/main_scene="res://src/startup_splash.tscn"
 config/features=PackedStringArray("4.7")
 boot_splash/bg_color=Color(0, 0, 0, 1)

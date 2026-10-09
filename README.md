@@ -2,7 +2,7 @@
 
 **A native scenario authoring toolkit for Realmz.**
 
-[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.1) · [All releases](https://github.com/iSynic/Realmz-Providence/releases) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
+[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.2) · [All releases](https://github.com/iSynic/Realmz-Providence/releases) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
 
 ![Providence Land Editor](docs/screenshots/maps-land.png)
 
@@ -20,9 +20,9 @@ web release. `main` now contains the native editor.
 
 | Platform | Beta package |
 | --- | --- |
-| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-windows-x64.zip) |
-| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-macos-universal.zip) |
-| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.1/Providence-v0.6.0-beta.1-linux-x64.tar.gz) |
+| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.2/Providence-v0.6.0-beta.2-windows-x64.zip) |
+| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.2/Providence-v0.6.0-beta.2-macos-universal.zip) |
+| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.2/Providence-v0.6.0-beta.2-linux-x64.tar.gz) |
 
 Extract the complete archive and launch **Providence**. Keep the included native
 tools and support directories alongside the application. The macOS beta is
@@ -142,7 +142,8 @@ Linux x64 and universal macOS bundles from the same committed source.
 
 ## Status and licensing
 
-**v0.6.0-beta.1** is the first native beta. Please report problems with the exact
+**v0.6.0-beta.2** improves native catalog browsing, script selection and View Flow.
+Please report problems with the exact
 version, scenario, tool and steps to reproduce. Include a screenshot or diagnostic
 when useful; do not include private project data unless you intend to share it.
 

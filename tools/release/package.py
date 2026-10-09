@@ -101,7 +101,7 @@ def identity_manifest(runtime, resources, identity, godot):
     files = {p.relative_to(file_root).as_posix(): digest(p) for p in sorted(file_root.rglob("*"))
              if p.is_file() and p.name != editor_name and "_CodeSignature" not in p.parts}
     write_json(resources / "bundle-manifest.json", {"kind": "providence.native-release", "formatVersion": 1,
-        "version": "0.6.0-beta.1", "source": identity, "platform": platform.system(),
+        "version": "0.6.0-beta.2", "source": identity, "platform": platform.system(),
         "fileRoot": ".." if editor_name else ".",
         "godotVersion": output([godot, "--version"]), "buildIdentities": identities, "files": files,
         "macOSSeal": "The signed editor binary is covered by the application seal and release archive checksum." if editor_name else None})
@@ -121,7 +121,7 @@ def export(godot, bundle):
 def archive_bundle(bundle, destination):
     system = platform.system()
     suffix = {"Windows": "windows-x64.zip", "Linux": "linux-x64.tar.gz", "Darwin": "macos-universal.zip"}[system]
-    archive = destination / ("Providence-v0.6.0-beta.1-" + suffix)
+    archive = destination / ("Providence-v0.6.0-beta.2-" + suffix)
     if system == "Linux":
         with tarfile.open(archive, "w:gz") as target: target.add(bundle, arcname="Providence")
     elif system == "Darwin":

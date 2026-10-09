@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 
 from adapter_test_client import Adapter
@@ -33,11 +34,13 @@ def main():
     args = parser.parse_args()
     workspace = Path(__file__).resolve().parent.parent
     args.output_root.mkdir(parents=True, exist_ok=True)
+    suffix = ".exe" if os.name == "nt" else ""
+    resources = args.bundle.parent / "Resources" if sys.platform == "darwin" else args.bundle
     environment = {key: value for key, value in os.environ.items() if not key.startswith("PROVIDENCE_")}
-    environment.update(PROVIDENCE_ADAPTER_PATH=str(args.bundle / "providence-native-adapter.exe"),
-                       PROVIDENCE_CLI_PATH=str(args.bundle / "providence-cli.exe"),
-                       PROVIDENCE_APPLICATION_LIBRARY_ROOT=str(args.bundle / "reference-libraries/realmz-classic"),
-                       PROVIDENCE_CLASSIC_APPLICATION_DATA_ROOT=str(args.bundle / "Realmz Data"))
+    environment.update(PROVIDENCE_ADAPTER_PATH=str(args.bundle / ("providence-native-adapter" + suffix)),
+                       PROVIDENCE_CLI_PATH=str(args.bundle / ("providence-cli" + suffix)),
+                       PROVIDENCE_APPLICATION_LIBRARY_ROOT=str(resources / "reference-libraries/realmz-classic"),
+                       PROVIDENCE_CLASSIC_APPLICATION_DATA_ROOT=str(resources / "Realmz Data"))
     with tempfile.TemporaryDirectory(prefix="record-browsing-", dir=args.output_root) as temporary:
         project = Path(temporary) / "project"
         subprocess.run([environment["PROVIDENCE_CLI_PATH"], "project-new", "record-browsing", str(project)],
