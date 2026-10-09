@@ -23,9 +23,13 @@ func _run() -> void:
 			strip.route_requested.connect(func(route: String): requested.append(route))
 			for name: String in strip.ROUTES:
 				var button: Button = strip.get_node(name)
-				assert(button.disabled == (strip.ROUTES[name] == routes[i]))
+				assert(not button.disabled)
+				assert(button.button_pressed == (strip.ROUTES[name] == routes[i]))
 				assert(button.text.contains(str({"economy.treasure":76,"economy.items":999,"economy.shops":38}[strip.ROUTES[name]])))
-				if not button.disabled: button.pressed.emit()
+				button.button_pressed = not button.button_pressed
+				button.pressed.emit()
+				for sibling: String in strip.ROUTES:
+					assert(strip.get_node(sibling).button_pressed == (strip.ROUTES[sibling] == routes[i]), "Requested or canceled navigation must keep the actual current route highlighted")
 			assert(requested.size() == 2 and not requested.has(routes[i]))
 			view.free()
 	print("PROVIDENCE_ECONOMY_NAVIGATION_OK three-editors both-viewports sibling-routes active-route counts")

@@ -8,6 +8,7 @@ signal comparison_requested
 signal record_requested(native_id: int)
 signal inventory_requested
 signal palette_requested
+signal palette_art_requested
 signal operation_requested(kind: String)
 signal reference_requested(field: String)
 signal reference_open_requested(field: String)
@@ -91,12 +92,6 @@ func _bind_record_controls() -> void:
 		_offset = 0
 		inventory_requested.emit())
 	%BattleRecordList.item_selected.connect(func(index): record_requested.emit(int(%BattleRecordList.get_item_metadata(index))))
-	%Previous.pressed.connect(func():
-		_offset = maxi(0, _offset - 16)
-		inventory_requested.emit())
-	%Next.pressed.connect(func():
-		_offset += 16
-		inventory_requested.emit())
 	for pair in [[%NewBattle, "new"], [%CopyBattle, "copy"], [%ClearBattle, "clear"]]:
 		pair[0].pressed.connect(func(): operation_requested.emit(pair[1]))
 	%UsedBy.pressed.connect(used_by_requested.emit)
@@ -126,12 +121,7 @@ func _bind_palette_controls() -> void:
 	%ShowUnavailable.toggled.connect(func(_value):
 		_palette_offset = 0
 		palette_requested.emit())
-	%PalettePrevious.pressed.connect(func():
-		_palette_offset = maxi(0, _palette_offset - 32)
-		palette_requested.emit())
-	%PaletteNext.pressed.connect(func():
-		_palette_offset += 32
-		palette_requested.emit())
+	%MonsterPalette.visible_items_changed.connect(func(): palette_art_requested.emit())
 	%MonsterPalette.item_selected.connect(_choose_brush)
 	%MonsterPalette.item_activated.connect(func(index):
 		_choose_brush(index)
@@ -190,9 +180,8 @@ func set_inventory(result: Dictionary) -> void:
 		if int(row.nativeId) == current_selection():
 			%BattleRecordList.select(%BattleRecordList.item_count - 1)
 	%BattleRecordStatus.text = "%d records · %d matching" % [int(result.get("catalogTotal", _total)), _total]
-	%Page.text = "Page %d of %d" % [_offset / 16 + 1, maxi(1, ceili(_total / 16.0))]
-	%Previous.disabled = _offset == 0
-	%Next.disabled = _offset + _summaries.size() >= _total
+	%Page.text = "%d entries · scroll to browse" % _total
+	%Previous.hide(); %Next.hide()
 
 
 func set_monsters(rows: Array, reset := false) -> void:
@@ -212,9 +201,9 @@ func set_palette(result: Dictionary) -> void:
 	%PaletteStatus.text = "%d matching · %d placeable" % [_palette_total, int(page.get("placeableTotal", 0))]
 	%PaletteEmpty.visible = _palette_total == 0
 	%PaletteEmpty.text = "No matches. Clear the search or show unavailable entries." if int(page.get("placeableTotal", 0)) > 0 else "Create or transfer a scenario Monster in Monsters or Monster Library."
-	%PalettePage.text = "%d / %d" % [_palette_offset / 32 + 1, maxi(1, ceili(_palette_total / 32.0))]
-	%PalettePrevious.disabled = _palette_offset == 0
-	%PaletteNext.disabled = _palette_offset + _palette_rows.size() >= _palette_total
+	%PalettePage.text = "%d entries · Scroll to browse" % _palette_total
+	%PalettePrevious.hide()
+	%PaletteNext.hide()
 	_render_draft()
 
 
@@ -462,7 +451,11 @@ func clear_art() -> void:
 
 func visible_icon_ids() -> Array:
 	var ids: Array = []
-	for row in _monster_rows.values():
+	var rows: Array = %MonsterPalette.visible_records()
+	for value in draft.record.get("grid", []):
+		var id := absi(int(value))
+		if id != 0 and _monster_rows.has(id): rows.append(_monster_rows[id])
+	for row in rows:
 		if row.get("monster") is Dictionary:
 			var id := int(row.monster.get("iconId", 0))
 			if id != 0 and not id in ids:

@@ -29,14 +29,14 @@ func _run() -> void:
 	await _stock_sound()
 	await _missing_and_stale()
 	_controller.dispose(); _bridge.stop(); _view.queue_free(); _operations.queue_free(); await process_frame
-	print("PROVIDENCE_ITEM_CATALOG_ARTWORK_OK real-eight-stock-previews exact-ID missing-placeholder no-fallback current-draft-preserved stale-session continuous-form anchor-thumb focus-reveal")
+	print("PROVIDENCE_ITEM_CATALOG_ARTWORK_OK visible-stock-previews exact-ID missing-placeholder no-fallback current-draft-preserved stale-session continuous-form anchor-thumb focus-reveal")
 	quit()
 
 
 func _check_stock() -> void:
 	var list := _view.get_node("%ItemCollection")
-	assert(list.item_count == 8)
-	for index in 8:
+	assert(list.item_count > 8 and list.get_child_count() < 30)
+	for index in list.get_child_count():
 		var row := list.get_child(index)
 		assert(row.get_node("Margin/Body/Thumbnail/Picture").texture != null)
 		assert(not row.get_node("Margin/Body/Thumbnail/Placeholder").visible)

@@ -88,7 +88,7 @@ func _reload(operation: ProvidenceEditorOperation) -> Dictionary:
 	var identity := str(_view.selected_definition().get("id", ""))
 	_view.bind_document({})
 	_view.show_catalog_loading()
-	var response := await operation.request("spell.catalog", _view.catalog_query())
+	var response := await _read_catalog(operation, _view.catalog_query(), generation)
 	if generation != _generation: return _changed()
 	if not response.get("ok", false): _view.show_catalog_failure(response); return response
 	_view.show_catalog(response.result)
@@ -109,7 +109,7 @@ func load_catalog(query: Dictionary) -> void:
 		if request_id != _catalog_request or generation != _generation: return
 	if _bridge == null: return
 	_view.show_catalog_loading()
-	var response: Dictionary = await _operations.run_workflow(_bridge, "Browse Spells", func(operation): return await operation.request("spell.catalog", query))
+	var response: Dictionary = await _operations.run_workflow(_bridge, "Browse Spells", _read_catalog.bind(query, generation, request_id))
 	if request_id != _catalog_request or generation != _generation or query != _view.catalog_query(): return
 	if response.get("ok", false):
 		_view.show_catalog(response.result)
@@ -135,14 +135,22 @@ func _open(operation: ProvidenceEditorOperation, identity: String, generation: i
 	if generation != _generation or _view.has_unapplied_changes(): return _changed()
 	if not response.get("ok", false): return response
 	var query := _view.catalog_query()
-	query.seekIdentity = identity
-	var page := await operation.request("spell.catalog", query)
+	var spell_class := int(response.result.definition.classicId) / 1000
+	if int(query.get("class", 0)) != 0 and int(query.get("class", 0)) != spell_class:
+		query["class"] = spell_class; query.level = 0; query.query = ""
+	var page := await _read_catalog(operation, query, generation)
 	if not page.get("ok", false): return page
 	if generation != _generation or _view.has_unapplied_changes(): return _changed()
 	_catalog_request += 1
+	_view.set_catalog_query(query)
 	_view.bind_document(response.result)
 	_view.show_catalog(page.result)
 	return response
+
+
+func _read_catalog(operation: ProvidenceEditorOperation, query: Dictionary, generation: int, request_id := -1) -> Dictionary:
+	return await preload("res://src/record_catalog_reader.gd").load_all(operation.request, "spell.catalog",
+		func(): return generation == _generation and (request_id < 0 or request_id == _catalog_request), query)
 
 
 func validate_draft() -> void:

@@ -504,7 +504,7 @@ func route_identity() -> String:
 
 func _read_catalog(operation: ProvidenceEditorOperation) -> Dictionary:
 	var generation := _read_generation
-	return await preload("res://src/economy_record_catalog.gd").load_all(
+	return await preload("res://src/record_catalog_reader.gd").load_all(
 		func(method, params): return await _request(operation, method, params),
 		_list_method(), func(): return generation == _read_generation)
 

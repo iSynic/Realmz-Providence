@@ -60,7 +60,7 @@ func _load(rows: Array, request_id: int, generation: int) -> void:
 			# Presentation cache is bounded and revision-local; it is never content authority.
 			if _cache.size() >= 64: _cache.erase(_cache.keys()[0])
 			_cache[icon_id] = response.get("preview", {})
-		_view.set_catalog_artwork(index, str(row.identity), _cache[icon_id].get("texture"), str(_cache[icon_id].get("error", "")))
+		_view.set_catalog_artwork(int(row.get("catalogIndex", index)), str(row.identity), _cache[icon_id].get("texture"), str(_cache[icon_id].get("error", "")))
 
 
 func _resolve(operation: ProvidenceEditorOperation, icon_id: int) -> Dictionary:

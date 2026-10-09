@@ -5,6 +5,8 @@ var _failed := false
 var _open: Array = []
 var _times: Array[float] = []
 var _theme_switches: Array[float] = []
+var _dense_times: Array[float] = []
+var _dense_cold_times: Array[float] = []
 
 
 func _initialize() -> void:
@@ -26,13 +28,15 @@ func _run() -> void:
 	_times.sort()
 	if not _check(_times[int(_times.size() * 0.95)] < 100.0, "Gallery exceeds the existing 100ms visible-control budget: p95=%.2fms samples=%s" % [_times[int(_times.size() * 0.95)], _times]): return
 	_theme_switches.sort()
+	if not _check(_dense_times.max() < 100.0, "Continuous gallery exceeds the 100ms warm visible-control budget: %s" % [_dense_times]): return
+	print("PROVIDENCE_BATTLE_CONTINUOUS_GALLERY_OK entries=217 End=217 visible-artwork-window warm-max=%.2fms samples=%d cold-max=%.2fms" % [_dense_times.max(), _dense_times.size(), _dense_cold_times.max()])
 	print("PROVIDENCE_BATTLE_GALLERY_OK viewports=2 themes=6 row-arrows hover click enter double-click unavailable stale-refresh filtered-brush-rejected selection-scroll opaque-tooltip warm-p95=%.2fms cold-theme-max=%.2fms" % [_times[int(_times.size() * 0.95)], _theme_switches.back()])
 	_editor.queue_free(); quit(0)
 
 
-func _rows(unavailable := false) -> Array:
+func _rows(unavailable := false, count := 32) -> Array:
 	var rows: Array = []
-	for id in range(1, 33):
+	for id in range(1, count + 1):
 		rows.append({"nativeId": id, "identity": "monster:0:%d" % id, "label": "Gallery Monster %d" % id,
 			"available": not unavailable, "reason": "Missing exact Mega variant" if unavailable else "",
 			"monster": null if unavailable else {"size": 0, "iconId": id, "hitDice": id, "armor": 25}})
@@ -76,6 +80,22 @@ func _exercise(width: int) -> void:
 	await _filtered_brush(palette)
 	await _unavailable_and_stale(palette)
 	await _theme_regressions(palette)
+	await _continuous_catalog(palette)
+
+
+func _continuous_catalog(palette: Control) -> void:
+	for repeat in 3:
+		var started := Time.get_ticks_usec()
+		_bind(_rows(false, 217), 217); await process_frame
+		var elapsed := (Time.get_ticks_usec() - started) / 1000.0
+		if repeat == 0: _dense_cold_times.append(elapsed)
+		else: _dense_times.append(elapsed)
+	if not _check(palette.item_count == 217 and not _editor.get_node("%PaletteNext").visible, "Continuous gallery omitted records or retained page navigation"): return
+	palette.grab_focus(); await process_frame
+	_key(KEY_END); await process_frame
+	var last: Control = palette.get_node("%Tiles").get_child(216)
+	if not _check(_selected(palette) == 216 and palette.get_node("%TileScroll").get_global_rect().encloses(last.get_global_rect()), "End did not reach Monster 217"): return
+	if not _check(palette.visible_records().size() < 64 and _editor.visible_icon_ids().has(217), "Artwork selection ignored the visible catalog window"): return
 
 
 func _filtered_brush(palette: Control) -> void:

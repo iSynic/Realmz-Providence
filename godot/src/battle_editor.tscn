@@ -45,6 +45,7 @@ allow_reselect = true
 layout_mode = 2
 
 [node name="Previous" type="Button" parent="Inventory/Pages"]
+visible = false
 layout_mode = 2
 unique_name_in_owner = true
 text = "‹"
@@ -57,6 +58,7 @@ size_flags_horizontal = 3
 horizontal_alignment = 1
 
 [node name="Next" type="Button" parent="Inventory/Pages"]
+visible = false
 layout_mode = 2
 unique_name_in_owner = true
 text = "›"
@@ -287,6 +289,7 @@ size_flags_vertical = 3
 layout_mode = 2
 
 [node name="PalettePrevious" type="Button" parent="Author/Body/PalettePanel/PalettePages"]
+visible = false
 layout_mode = 2
 unique_name_in_owner = true
 text = "‹"
@@ -299,6 +302,7 @@ size_flags_horizontal = 3
 horizontal_alignment = 1
 
 [node name="PaletteNext" type="Button" parent="Author/Body/PalettePanel/PalettePages"]
+visible = false
 layout_mode = 2
 unique_name_in_owner = true
 text = "›"

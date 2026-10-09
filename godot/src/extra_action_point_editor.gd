@@ -40,7 +40,7 @@ var _attachments: Array = []
 var _working_actions: Array = []
 var _revision := 0
 var _page_offset := 0
-var _page_limit := 64
+var _page_limit := 128
 var _catalog_filter := "all"
 var _catalog_counts := {}
 var _search_generation := 0
@@ -106,8 +106,6 @@ func _ready() -> void:
 	_semantic_steps.preview_requested.connect(func(kind, id, identity, status):
 		if kind == "sound": sound_preview_requested.emit(id, identity, status)
 		elif kind == "sound-stop": sound_stop_requested.emit())
-	_previous_page.pressed.connect(func(): _change_page(-1))
-	_next_page.pressed.connect(func(): _change_page(1))
 	var filters := _catalog_filters()
 	for filter in filters:
 		var button := get_node("ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/ExtraActionPointFilters/" + filters[filter]) as Button
@@ -145,7 +143,7 @@ func set_summaries(result: Dictionary, revision: int, preferred_identity: String
 
 
 func list_query() -> Dictionary:
-	return {"offset": _page_offset, "limit": _page_limit, "search": _search.text, "filter": _catalog_filter}
+	return {"offset": 0, "limit": 128, "search": _search.text, "filter": _catalog_filter}
 
 
 func set_document(result: Dictionary) -> void:
@@ -656,12 +654,6 @@ func _set_catalog_filter(filter: String) -> void:
 	catalog_query_requested.emit(str(_document.get("identity", "")))
 
 
-func _change_page(direction: int) -> void:
-	if has_unapplied_changes(): return
-	_page_offset = maxi(0, _page_offset + direction * _page_limit)
-	catalog_query_requested.emit("")
-
-
 func _render_catalog_controls() -> void:
 	var filters := _catalog_filters()
 	for filter in filters:
@@ -670,10 +662,8 @@ func _render_catalog_controls() -> void:
 		var label: String = {"no-known-caller": "NO KNOWN CALLER", "authored-without-known-caller": "AUTHORED / NO CALLER"}.get(filter, filter.to_upper())
 		var count_key: String = {"no-known-caller": "noKnownCaller", "authored-without-known-caller": "authoredWithoutKnownCaller"}.get(filter, filter)
 		button.text = "%s  %d" % [label, int(_catalog_counts.get(count_key, 0))]
-	_previous_page.disabled = _page_offset <= 0
-	_next_page.disabled = _page_offset + _page_limit >= _total_records
-	var page_count := maxi(1, ceili(float(_total_records) / float(_page_limit)))
-	_page_status.text = "Page %d of %d" % [_page_offset / _page_limit + 1, page_count]
+	_previous_page.hide(); _next_page.hide()
+	_page_status.text = "%d entries · scroll to browse" % _total_records
 
 
 func _catalog_filters() -> Dictionary:

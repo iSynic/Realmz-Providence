@@ -26,7 +26,8 @@ var uses_handler: Callable
 var commit_handler: Callable
 var open_handler: Callable
 var _items: Array = []
-var _query := {"scope": "all", "category": "all", "query": "", "offset": 0, "limit": 8}
+var _query := {"scope": "all", "category": "all", "query": "", "offset": 0, "limit": 128}
+var _catalog_revision := -1
 var _total := 0
 var _locked := false
 var _pending := false
@@ -54,11 +55,10 @@ func _ready() -> void:
 		_query.query = text; _query.offset = 0; $SearchDelay.start())
 	$SearchDelay.timeout.connect(func(): catalog_requested.emit(catalog_query()))
 	%ItemCollection.item_selected.connect(_select_row)
+	%ItemCollection.visible_records_changed.connect(func(rows: Array): catalog_presented.emit(rows, _catalog_revision))
 	for pair in [[%AllSources, "all"], [%ScenarioSource, "scenario"], [%StockSource, "standard"]]: pair[0].pressed.connect(_filter.bind("scope", pair[1]))
 	for pair in [["AllItems", "all"], ["Weapons", "weapon"], ["Armor", "armor"], ["Accessories", "accessory"], ["Magic", "magic"], ["Supplies", "supply"]]:
 		find_child(pair[0], true, false).pressed.connect(_filter.bind("category", pair[1]))
-	%Previous.pressed.connect(func(): _change_page(maxi(0, int(_query.offset) - 8)))
-	%Next.pressed.connect(func(): _change_page(int(_query.offset) + 8))
 	for pair in [[%NewItem, "new"], [%CopyItem, "copy"], [%ClearItem, "clear"]]: pair[0].pressed.connect(_record_action.bind(pair[1]))
 	%CommitItemEdit.pressed.connect(commit_selected)
 	%DiscardItem.pressed.connect(discard_draft)
@@ -94,26 +94,24 @@ func _filter(field: String, value: Variant) -> void:
 
 
 func show_catalog(page: Dictionary) -> void:
+	var scroll: float = %ItemCollection.get_v_scroll_bar().value
 	_items = page.get("items", []).duplicate(true)
 	_total = int(page.get("total", 0))
 	_query.offset = int(page.get("offset", 0))
-	%ItemCollection.clear()
-	for row in _items:
-		%ItemCollection.add_record(row)
-		if row.identity == draft.definition.get("id"): %ItemCollection.select(%ItemCollection.item_count - 1)
-	%CatalogCount.text = "%d shown / %d matches" % [_items.size(), _total]
-	%Pages.text = "Page %d of %d" % [int(_query.offset) / 8 + 1, maxi(1, ceili(float(_total) / 8))]
-	%Previous.disabled = _locked or int(_query.offset) == 0
-	%Next.disabled = _locked or int(_query.offset) + _items.size() >= _total
+	_catalog_revision = int(page.get("revision", -1))
+	%ItemCollection.set_records(_items)
+	focus_catalog_identity(str(draft.definition.get("id", "")), false)
+	%ItemCollection.get_v_scroll_bar().set_deferred("value", scroll)
+	%CatalogCount.text = "%d matching entries" % _total
+	%Pages.text = "%d entries · scroll to browse" % _total
+	%Previous.hide(); %Next.hide()
 	%CatalogEmpty.visible = _items.is_empty()
 	%CatalogEmpty.text = "No matching items." if not str(_query.query).is_empty() else "No items in this view."
 	%StockNotice.text = str(page.get("stockReason", ""))
-	catalog_presented.emit(_items.duplicate(true), int(page.get("revision", -1)))
 
 
 func show_catalog_loading() -> void:
 	catalog_loading.emit()
-	_items.clear(); %ItemCollection.clear()
 	%CatalogCount.text = "Loading items…"
 	%Previous.disabled = true; %Next.disabled = true
 	%CatalogEmpty.hide()
@@ -412,10 +410,10 @@ func _refresh_filters() -> void:
 	for pair in [["AllItems", "all"], ["Weapons", "weapon"], ["Armor", "armor"], ["Accessories", "accessory"], ["Magic", "magic"], ["Supplies", "supply"]]: find_child(pair[0], true, false).set_pressed_no_signal(_query.category == pair[1])
 
 
-func _change_page(offset: int) -> void:
-	if _locked: return
-	_query.offset = offset
-	catalog_requested.emit(catalog_query())
+func focus_catalog_identity(identity: String, scroll := true) -> void:
+	var index := _items.find_custom(func(row): return str(row.identity) == identity)
+	%ItemCollection.select(index)
+	if scroll: %ItemCollection.ensure_current_is_visible()
 
 func supports_source_field(field: String) -> bool:
 	if field.begins_with("special["): field="special."+field.get_slice("[",1).get_slice("]",0)

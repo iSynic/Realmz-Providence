@@ -1,6 +1,6 @@
 extends SceneTree
 
-const Catalog = preload("res://src/economy_record_catalog.gd")
+const Catalog = preload("res://src/record_catalog_reader.gd")
 
 
 func _initialize() -> void: _run.call_deferred()

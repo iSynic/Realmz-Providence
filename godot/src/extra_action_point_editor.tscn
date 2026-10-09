@@ -173,6 +173,7 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/separation = 6
 [node name="ExtraActionPointPreviousPage" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/Paging"]
+visible = false
 unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
@@ -184,6 +185,7 @@ size_flags_horizontal = 3
 text = "Page 1"
 horizontal_alignment = 1
 [node name="ExtraActionPointNextPage" type="Button" parent="ExtraActionPointEditorSurface/ExtraActionPointMasterDetail/ExtraActionPointMasterPanel/ExtraActionPointMaster/Paging"]
+visible = false
 unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2

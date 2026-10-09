@@ -134,7 +134,7 @@ func _reload(operation: ProvidenceEditorOperation, preferred: String, guard: Dic
 		if str(params.mapIdentity).is_empty():
 			_set_catalog({"items": [], "total": 0}, "")
 			return {"ok": true}
-	var response := await operation.request(_methods.list, params)
+	var response := await _read_catalog(operation, params, guard)
 	if not response.get("ok", false): return response
 	var checked := _check_guard(guard)
 	if not checked.ok: return checked
@@ -171,12 +171,18 @@ func _opened_map_catalog(operation: ProvidenceEditorOperation, document: Diction
 	var map_identity := str(document.get("map",{}).get("identity",""))
 	if map_identity.is_empty() or map_identity == str(guard.state.get("mapIdentity","")): return {"ok":true}
 	var query: Dictionary = _view.list_query(); query.mapIdentity = map_identity; query.offset = 0
-	var response := await operation.request(_methods.list,query)
+	var response := await _read_catalog(operation, query, guard)
 	if not response.get("ok",false): return response
 	var checked := _check_guard(guard)
 	if not checked.ok: return checked
 	_set_catalog(response.result,identity)
 	return response
+
+
+func _read_catalog(operation: ProvidenceEditorOperation, query: Dictionary, guard: Dictionary) -> Dictionary:
+	if _methods.record not in ["actionPoint", "extraActionPoint"]: return await operation.request(_methods.list, query)
+	return await preload("res://src/record_catalog_reader.gd").load_all(
+		operation.request, _methods.list, func(): return _check_guard(guard).ok, query)
 
 
 func _set_catalog(page: Dictionary, preferred: String) -> void:

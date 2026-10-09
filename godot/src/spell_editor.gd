@@ -17,7 +17,7 @@ signal uses_page_requested(offset: int)
 var draft := preload("res://src/spell_record_draft.gd").new()
 var commit_handler: Callable
 var open_handler: Callable
-var _query := {"class": 0, "level": 0, "query": "", "offset": 0, "limit": 64, "showUnused": false}
+var _query := {"class": 1, "level": 0, "query": "", "offset": 0, "limit": 128, "showUnused": false}
 var _rows: Array = []
 var _total := 0
 var _locked := false
@@ -34,6 +34,7 @@ func _ready() -> void:
 	$Catalog/Routes.configure(route_identity())
 	$Catalog/Routes.route_requested.connect(func(identity: String): route_requested.emit(ProvidenceRouteCatalog.tab_for_route(identity)))
 	for text in ["All classes", "Sorcerer", "Priest", "Enchanter", "Special", "Custom"]: %SpellClassFilter.add_item(text)
+	%SpellClassFilter.select(1)
 	for level in 8: %SpellLevelFilter.add_item("All levels" if level == 0 else "Level %d" % level)
 	%SpellClassFilter.item_selected.connect(_filter.bind("class"))
 	%SpellLevelFilter.item_selected.connect(_filter.bind("level"))
@@ -45,8 +46,6 @@ func _ready() -> void:
 		_query.query = text; _query.offset = 0; $SearchDelay.start())
 	$SearchDelay.timeout.connect(func(): catalog_requested.emit(catalog_query()))
 	%SpellRecordList.item_selected.connect(_select_row)
-	%PreviousSpellsPage.pressed.connect(_page.bind(-1))
-	%NextSpellsPage.pressed.connect(_page.bind(1))
 	%PreviousSpell.pressed.connect(_neighbor.bind(-1))
 	%NextSpell.pressed.connect(_neighbor.bind(1))
 	%NewCustomSpell.pressed.connect(_record.bind("new"))
@@ -70,6 +69,13 @@ func apply_label() -> String: return "Apply Spell"
 func has_unapplied_changes() -> bool: return draft.dirty() or _pending
 func selected_definition() -> Dictionary: return draft.definition.duplicate(true)
 func catalog_query() -> Dictionary: return _query.duplicate(true)
+
+
+func set_catalog_query(query: Dictionary) -> void:
+	_query = query.duplicate(true)
+	%SpellClassFilter.select(int(_query.get("class", 1)))
+	%SpellLevelFilter.select(int(_query.level))
+	%SpellSearch.set_block_signals(true); %SpellSearch.text = str(_query.query); %SpellSearch.set_block_signals(false)
 func current_applied_record_index() -> int: return int(draft.definition.get("recordIndex", -1))
 func current_selection() -> int: return current_applied_record_index()
 func command_state(command_id: String) -> String:
@@ -92,12 +98,6 @@ func _draw() -> void:
 func _filter(index: int, field: String) -> void:
 	if _locked: return
 	_query[field] = index; _query.offset = 0
-	catalog_requested.emit(catalog_query())
-
-
-func _page(direction: int) -> void:
-	if _locked: return
-	_query.offset = maxi(0, int(_query.offset) + direction * int(_query.limit))
 	catalog_requested.emit(catalog_query())
 
 
@@ -216,9 +216,8 @@ func show_catalog(page: Dictionary) -> void:
 	for row in _rows:
 		%SpellRecordList.add_item("%d · %s%s" % [int(row.classicId), "Empty Custom slot" if row.get("empty", false) else str(row.name), " (Custom)" if row.scope == "scenario" and not row.get("empty", false) else ""])
 	%SpellRecordStatus.text = "%d matches · 105 Custom slots" % _total
-	%CatalogPage.text = "%d–%d / %d" % [0 if _rows.is_empty() else int(_query.offset)+1, int(_query.offset)+_rows.size(), _total]
-	%PreviousSpellsPage.disabled = _locked or int(_query.offset) == 0
-	%NextSpellsPage.disabled = _locked or int(_query.offset) + _rows.size() >= _total
+	%CatalogPage.text = "%d entries · scroll to browse" % _total
+	%PreviousSpellsPage.hide(); %NextSpellsPage.hide()
 	_restore_selection()
 
 

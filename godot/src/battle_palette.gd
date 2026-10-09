@@ -2,6 +2,7 @@ extends VBoxContainer
 
 signal item_selected(index: int)
 signal item_activated(index: int)
+signal visible_items_changed
 
 const TileScene = preload("res://src/battle_palette_tile.tscn")
 const Presentation = preload("res://src/battle_monster_presentation.gd")
@@ -19,6 +20,8 @@ func _ready() -> void:
 	resized.connect(_layout_tiles)
 	focus_entered.connect(_render_focus)
 	focus_exited.connect(_render_focus)
+	get_v_scroll_bar().value_changed.connect(func(_value): visible_items_changed.emit())
+	%TileScroll.resized.connect(func(): visible_items_changed.emit())
 	_layout_tiles()
 
 
@@ -37,6 +40,9 @@ func clear() -> void:
 
 func render_page(rows: Array, current_id: int, set_name: String) -> void:
 	var scroll := get_v_scroll_bar().value
+	if rows == _rows and set_name == _set_name:
+		select(_rows.find_custom(func(row): return int(row.nativeId) == current_id))
+		return
 	clear()
 	_rows = rows.duplicate(true); _set_name = set_name
 	for index in _rows.size():
@@ -80,7 +86,7 @@ func _update_card(index: int) -> void:
 
 
 func select(index: int) -> void:
-	if index < 0 or index >= _rows.size(): return
+	if index < -1 or index >= _rows.size(): return
 	_selected = index
 	for current in _cards.size(): _cards[current].set_pressed_no_signal(current == index)
 	_render_selection()
@@ -119,6 +125,14 @@ func get_selected_items() -> PackedInt32Array:
 
 func get_v_scroll_bar() -> VScrollBar:
 	return %TileScroll.get_v_scroll_bar()
+
+
+func visible_records() -> Array:
+	var rows: Array = []
+	var viewport_rect: Rect2 = %TileScroll.get_global_rect()
+	for index in _cards.size():
+		if viewport_rect.intersects(_cards[index].get_global_rect()): rows.append(_rows[index])
+	return rows
 
 
 func _choose(index: int, generation := -1) -> void:

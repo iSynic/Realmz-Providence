@@ -1,26 +1,87 @@
-extends VBoxContainer
+extends Control
 
 signal item_selected(index: int)
+signal visible_records_changed(rows: Array)
 
 const Row = preload("res://src/item_inventory_row.tscn")
+const ROW_HEIGHT := 56
+const ROW_PITCH := 62
+var _records: Array = []
 var _rows: Array[Button] = []
+var _active: Dictionary = {}
 var _selected := -1
 var _locked := false
+var _queued := false
+var _window := Vector2i(-1, -1)
+var _generation := 0
 var item_count: int:
-	get: return _rows.size()
+	get: return _records.size()
+
+
+func _ready() -> void:
+	get_v_scroll_bar().value_changed.connect(func(_value): _queue_window())
+	get_parent().resized.connect(_queue_window)
+	resized.connect(_queue_window)
 
 
 func clear() -> void:
-	for row in _rows:
-		remove_child(row)
-		row.queue_free()
-	_rows.clear()
-	_selected = -1
+	_clear_rows()
+	_records.clear(); _selected = -1; _window = Vector2i(-1, -1)
+	custom_minimum_size.y = 0
+
+
+func set_records(records: Array) -> void:
+	clear()
+	_records = records.duplicate(true)
+	custom_minimum_size.y = maxi(0, _records.size() * ROW_PITCH - 6)
+	_queue_window()
 
 
 func add_record(record: Dictionary) -> void:
-	var row: Button = Row.instantiate()
-	var index := _rows.size()
+	_records.append(record.duplicate(true))
+	custom_minimum_size.y = _records.size() * ROW_PITCH - 6
+	_queue_window()
+
+
+func _queue_window() -> void:
+	if _queued: return
+	_queued = true
+	_render_window.call_deferred()
+
+
+func _render_window() -> void:
+	_queued = false
+	if not is_inside_tree(): return
+	var bar := get_v_scroll_bar()
+	var start := clampi(floori(bar.value / ROW_PITCH) - 1, 0, _records.size())
+	var end := mini(_records.size(), ceili((bar.value + get_parent().size.y) / ROW_PITCH) + 2)
+	if _window == Vector2i(start, end):
+		for row in _rows: row.size.x = size.x
+		return
+	_window = Vector2i(start, end)
+	_clear_rows()
+	var visible: Array = []
+	for index in range(start, end):
+		var row: Button = Row.instantiate()
+		add_child(row); _rows.append(row); _active[index] = row
+		row.position = Vector2(0, index * ROW_PITCH)
+		row.size = Vector2(size.x, ROW_HEIGHT)
+		_bind_row(row, index)
+		var record: Dictionary = _records[index].duplicate(true)
+		record["catalogIndex"] = index
+		visible.append(record)
+	visible_records_changed.emit(visible)
+
+
+func _clear_rows() -> void:
+	_generation += 1
+	for row in _rows:
+		remove_child(row); row.queue_free()
+	_rows.clear(); _active.clear()
+
+
+func _bind_row(row: Button, index: int) -> void:
+	var record: Dictionary = _records[index]
 	var label := str(record.get("name", ""))
 	if label.is_empty(): label = str(record.get("unidentifiedName", ""))
 	if label.is_empty(): label = "Unnamed item"
@@ -33,15 +94,17 @@ func add_record(record: Dictionary) -> void:
 	row.get_node("Margin/Body/Thumbnail/Placeholder").text = "—" if int(record.get("iconId", 0)) == 0 else "…"
 	row.tooltip_text = "%s · %s\n%s" % [record.get("classicId", ""), label, context]
 	row.disabled = _locked
-	row.pressed.connect(func(): select(index); item_selected.emit(index))
-	row.gui_input.connect(_key.bind(index))
-	_rows.append(row)
-	add_child(row)
+	row.set_pressed_no_signal(index == _selected)
+	var generation := _generation
+	row.pressed.connect(func():
+		if generation == _generation: select(index); item_selected.emit(index))
+	row.gui_input.connect(func(event: InputEvent):
+		if generation == _generation: _key(event, index))
 
 
 func set_artwork(index: int, identity: String, picture: Texture2D, reason: String) -> void:
-	if index < 0 or index >= _rows.size(): return
-	var row := _rows[index]
+	if not _active.has(index): return
+	var row: Button = _active[index]
 	if row.get_meta("identity") != identity: return
 	row.get_node("Margin/Body/Thumbnail/Picture").texture = picture
 	row.get_node("Margin/Body/Thumbnail/Placeholder").visible = picture == null
@@ -50,15 +113,20 @@ func set_artwork(index: int, identity: String, picture: Texture2D, reason: Strin
 
 
 func select(index: int) -> void:
-	deselect_all()
-	if index < 0 or index >= _rows.size(): return
-	_selected = index
-	_rows[index].set_pressed_no_signal(true)
+	_selected = index if index >= 0 and index < _records.size() else -1
+	for logical in _active: _active[logical].set_pressed_no_signal(logical == _selected)
 
 
-func deselect_all() -> void:
-	for row in _rows: row.set_pressed_no_signal(false)
-	_selected = -1
+func ensure_current_is_visible() -> void:
+	if _selected < 0: return
+	var bar := get_v_scroll_bar()
+	var top := _selected * ROW_PITCH
+	if top < bar.value: bar.value = top
+	elif top + ROW_HEIGHT > bar.value + bar.page: bar.value = top + ROW_HEIGHT - bar.page
+	_queue_window()
+
+
+func deselect_all() -> void: select(-1)
 
 
 func get_selected_items() -> PackedInt32Array:
@@ -66,11 +134,10 @@ func get_selected_items() -> PackedInt32Array:
 
 
 func set_item_tooltip(index: int, label: String) -> void:
-	if index >= 0 and index < _rows.size(): _rows[index].tooltip_text = label + "\n" + _rows[index].get_node("Margin/Body/Labels/Context").text
+	if _active.has(index): _active[index].tooltip_text = label + "\n" + _active[index].get_node("Margin/Body/Labels/Context").text
 
 
-func get_v_scroll_bar() -> VScrollBar:
-	return get_parent().get_v_scroll_bar()
+func get_v_scroll_bar() -> VScrollBar: return get_parent().get_v_scroll_bar()
 
 
 func set_locked(locked: bool) -> void:
@@ -81,9 +148,12 @@ func set_locked(locked: bool) -> void:
 func _key(event: InputEvent, index: int) -> void:
 	if _locked: return
 	var delta := -1 if event.is_action_pressed("ui_up") else 1 if event.is_action_pressed("ui_down") else 0
-	if delta == 0 or _rows.is_empty(): return
-	var target := clampi(index + delta, 0, _rows.size() - 1)
-	_rows[target].grab_focus()
-	select(target)
-	item_selected.emit(target)
+	if delta == 0 or _records.is_empty(): return
+	var target := clampi(index + delta, 0, _records.size() - 1)
+	select(target); ensure_current_is_visible(); item_selected.emit(target)
+	_queue_focus.call_deferred(target)
 	accept_event()
+
+
+func _queue_focus(index: int) -> void:
+	if _active.has(index): _active[index].grab_focus()

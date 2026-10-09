@@ -10,6 +10,7 @@ var _bridge: Callable
 var _accept: Callable
 var _generation := 0
 var _palette_generation := 0
+var _art_generation := 0
 var _pending: Dictionary = {}
 var _art := preload("res://src/battle_art_loader.gd").new()
 
@@ -28,6 +29,7 @@ func initialize(view: ProvidenceBattleEditor, operations: ProvidenceEditorOperat
 	view.record_requested.connect(func(id): view.guard_navigation(open_record.bind(id)))
 	view.inventory_requested.connect(inventory)
 	view.palette_requested.connect(palette)
+	view.palette_art_requested.connect(palette_art)
 	view.operation_requested.connect(func(kind):
 		if kind == "clear":
 			review(kind)
@@ -48,6 +50,7 @@ func initialize(view: ProvidenceBattleEditor, operations: ProvidenceEditorOperat
 func teardown() -> void:
 	_generation += 1
 	_palette_generation += 1
+	_art_generation += 1
 	_pending.clear()
 	_art.clear()
 
@@ -87,13 +90,12 @@ func inventory() -> void:
 		failed.emit(str(response.get("error", "Battle search failed.")))
 
 
-func _inventory(operation: ProvidenceEditorOperation, preferred: int) -> Dictionary:
+func _inventory(operation: ProvidenceEditorOperation, _preferred: int) -> Dictionary:
 	var state := _view.read_state()
-	var params := {"offset": state.offset, "limit": 16, "search": state.search}
-	if preferred >= 0:
-		params["seekNativeId"] = preferred
+	var params := {"search": state.search}
 	var generation := _generation
-	var response := await operation.request("battle.list", params)
+	var response := await preload("res://src/record_catalog_reader.gd").load_all(
+		operation.request, "battle.list", func(): return generation == _generation and state == _view.read_state(), params)
 	if generation != _generation:
 		return _stale()
 	if response.get("ok", false):
@@ -363,16 +365,38 @@ func _load_palette(operation: ProvidenceEditorOperation, request_generation := -
 				return remainder
 			rows.append_array(remainder.result.page.items)
 		_view.set_monsters(rows, true)
-	query.merge({"search": state.paletteSearch, "showUnavailable": state.showUnavailable, "offset": state.paletteOffset, "limit": 32, "onlyRetained": false}, true)
-	response = await operation.request("battle-monster.list", {"expectedRevision": _view.draft.revision, "query": query})
+	query.merge({"search": state.paletteSearch, "showUnavailable": state.showUnavailable, "offset": 0, "onlyRetained": false}, true)
+	response = await preload("res://src/record_catalog_reader.gd").load_all(
+		_read_palette_page.bind(operation), "battle-monster.list", _current.bind(origin, request_generation), query)
 	if not _current(origin, request_generation):
 		return _stale()
 	if response.get("ok", false):
-		_view.set_palette(response.result)
+		_view.set_palette({"page": response.result})
 		var art_result := await _art.load(operation, _view, _current.bind(origin, request_generation))
 		if not art_result.get("ok", false):
 			return art_result
 	return response
+
+
+func _read_palette_page(method: String, query: Dictionary, operation: ProvidenceEditorOperation) -> Dictionary:
+	var response := await operation.request(method, {"expectedRevision": _view.draft.revision, "query": query})
+	if response.get("ok", false):
+		var page: Dictionary = response.result.page.duplicate(true)
+		page["revision"] = _view.draft.revision
+		response.result = page
+	return response
+
+
+func palette_art() -> void:
+	_art_generation += 1
+	var request_id := _art_generation
+	var origin := _view.authoring_generation()
+	while _operations.busy:
+		await _view.get_tree().process_frame
+		if request_id != _art_generation or origin != _view.authoring_generation(): return
+	if _bridge.call() == null or not _view.is_visible_in_tree(): return
+	await _operations.run_workflow(_bridge.call(), "Load Battle artwork", func(operation):
+		return await _art.load(operation, _view, func(): return request_id == _art_generation and origin == _view.authoring_generation()))
 
 
 func _load_references(operation: ProvidenceEditorOperation) -> Dictionary:

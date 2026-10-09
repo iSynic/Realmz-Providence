@@ -14,6 +14,7 @@ FILES = [".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "R
          "tools/music-preview-runtime.json", ".github/workflows/native-release.yml",
          "tools/verify-discovery-flow.py", "tools/adapter_test_client.py",
          "tools/discovery_flow_v2_fixture.py",
+         "tools/run-record-browsing-check.py",
          "tools/verify_discovery_adapter.py", "tools/verify_discovery_flow.py", "tools/run-godot-workflow.py"]
 PRIVATE_TOOLS = {"capture_special_paint.gd", "validate_character_navigation_native.gd", "validate_rule_source_native.gd",
                  "validate_treasure_player_beta.gd", "validate_treasure_pool_native.gd"}
