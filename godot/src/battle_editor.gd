@@ -47,8 +47,6 @@ var _move_origin := -1
 
 
 func _ready() -> void:
-	resized.connect(_resize_palette)
-	_resize_palette()
 	draft.changed.connect(_render_draft)
 	_bind_record_controls()
 	_bind_palette_controls()
@@ -68,10 +66,6 @@ func _ready() -> void:
 	%Recover.pressed.connect(recovery_requested.emit)
 	%Compare.pressed.connect(comparison_requested.emit)
 	_render_draft()
-
-
-func _resize_palette() -> void:
-	%PalettePanel.custom_minimum_size.x = 380 if get_viewport_rect().size.x >= 1800 else 300
 
 
 func _accept_impact() -> void:

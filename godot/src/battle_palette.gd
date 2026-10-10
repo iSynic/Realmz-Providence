@@ -21,12 +21,15 @@ func _ready() -> void:
 	focus_entered.connect(_render_focus)
 	focus_exited.connect(_render_focus)
 	get_v_scroll_bar().value_changed.connect(func(_value): visible_items_changed.emit())
-	%TileScroll.resized.connect(func(): visible_items_changed.emit())
+	%TileScroll.resized.connect(_layout_tiles)
 	_layout_tiles()
 
 
 func _layout_tiles() -> void:
-	if is_node_ready(): %Tiles.columns = 5 if size.x >= 360 else 4
+	if not is_node_ready(): return
+	var available: float = %TileScroll.size.x - get_v_scroll_bar().size.x
+	%Tiles.columns = maxi(1, floori((available + 6.0) / 70.0))
+	visible_items_changed.emit()
 
 
 func clear() -> void:

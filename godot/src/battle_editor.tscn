@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=10 format=3]
 [ext_resource type="Script" path="res://src/battle_editor.gd" id="1"]
 [ext_resource type="Script" path="res://src/battle_canvas.gd" id="2"]
 [ext_resource type="PackedScene" path="res://src/battle_reference_field.tscn" id="3"]
@@ -6,6 +6,11 @@
 [ext_resource type="PackedScene" path="res://src/battle_uses.tscn" id="5"]
 [ext_resource type="Script" path="res://src/battle_failure_window.gd" id="6"]
 [ext_resource type="PackedScene" path="res://src/battle_palette.tscn" id="7"]
+
+[ext_resource type="Script" path="res://src/battle_workspace_layout.gd" id="8"]
+
+[sub_resource type="StyleBoxFlat" id="PaletteDivider"]
+bg_color = Color(0.15, 0.20, 0.25, 1)
 
 [node name="BattleEditor" type="HBoxContainer"]
 size_flags_horizontal = 3
@@ -210,15 +215,20 @@ text = "Runs each round · negative XAP"
 theme_override_font_sizes/font_size = 10
 text_overrun_behavior = 3
 
-[node name="Body" type="HBoxContainer" parent="Author"]
+[node name="Body" type="HSplitContainer" parent="Author"]
 layout_mode = 2
+unique_name_in_owner = true
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 12
+theme_override_constants/autohide = 0
+theme_override_styles/split_bar_background = SubResource("PaletteDivider")
+script = ExtResource("8")
 
 [node name="PalettePanel" type="VBoxContainer" parent="Author/Body"]
 layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 0)
+size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
 [node name="Tools" type="HBoxContainer" parent="Author/Body/PalettePanel"]
@@ -324,26 +334,32 @@ unique_name_in_owner = true
 text = "Monster 0 is the empty-cell value."
 theme_override_font_sizes/font_size = 10
 
-[node name="GridPanel" type="VBoxContainer" parent="Author/Body"]
+[node name="Workspace" type="HBoxContainer" parent="Author/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="GridPanel" type="VBoxContainer" parent="Author/Body/Workspace"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="GridHeader" type="HBoxContainer" parent="Author/Body/GridPanel"]
+[node name="GridHeader" type="HBoxContainer" parent="Author/Body/Workspace/GridPanel"]
 layout_mode = 2
 
-[node name="GridHeading" type="Label" parent="Author/Body/GridPanel/GridHeader"]
+[node name="GridHeading" type="Label" parent="Author/Body/Workspace/GridPanel/GridHeader"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "BATTLE GRID"
 size_flags_horizontal = 3
 
-[node name="OccupantCount" type="Label" parent="Author/Body/GridPanel/GridHeader"]
+[node name="OccupantCount" type="Label" parent="Author/Body/Workspace/GridPanel/GridHeader"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "0 / 100 occupants"
 
-[node name="BattleCanvas" type="Control" parent="Author/Body/GridPanel"]
+[node name="BattleCanvas" type="Control" parent="Author/Body/Workspace/GridPanel"]
 tooltip_text = "Arrows select; Enter acts; Delete erases; Escape cancels dragging."
 layout_mode = 2
 unique_name_in_owner = true
@@ -353,40 +369,40 @@ size_flags_vertical = 3
 mouse_filter = 0
 script = ExtResource("2")
 
-[node name="GridHelp" type="Label" parent="Author/Body/GridPanel"]
+[node name="GridHelp" type="Label" parent="Author/Body/Workspace/GridPanel"]
 visible = false
 layout_mode = 2
 unique_name_in_owner = true
 text = ""
 theme_override_font_sizes/font_size = 10
 
-[node name="Placement" type="VBoxContainer" parent="Author/Body"]
+[node name="Placement" type="VBoxContainer" parent="Author/Body/Workspace"]
 tooltip_text = "Large monsters use their lower-right anchor. Erase targets the top visible occupant."
 layout_mode = 2
 custom_minimum_size = Vector2(250, 0)
 theme_override_constants/separation = 8
 
-[node name="PlacementIdentity" type="Label" parent="Author/Body/Placement"]
+[node name="PlacementIdentity" type="Label" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "No occupant selected"
 
-[node name="PlacementValue" type="Label" parent="Author/Body/Placement"]
+[node name="PlacementValue" type="Label" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = ""
 autowrap_mode = 2
 
-[node name="PlacementState" type="Label" parent="Author/Body/Placement"]
+[node name="PlacementState" type="Label" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = ""
 autowrap_mode = 2
 
-[node name="Pictures" type="HBoxContainer" parent="Author/Body/Placement"]
+[node name="Pictures" type="HBoxContainer" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 
-[node name="Facing" type="TextureRect" parent="Author/Body/Placement/Pictures"]
+[node name="Facing" type="TextureRect" parent="Author/Body/Workspace/Placement/Pictures"]
 layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 96)
@@ -395,7 +411,7 @@ expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
-[node name="Reverse" type="TextureRect" parent="Author/Body/Placement/Pictures"]
+[node name="Reverse" type="TextureRect" parent="Author/Body/Workspace/Placement/Pictures"]
 layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 96)
@@ -404,62 +420,62 @@ expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
-[node name="PictureLabels" type="HBoxContainer" parent="Author/Body/Placement"]
+[node name="PictureLabels" type="HBoxContainer" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 
-[node name="FacingLabel" type="Label" parent="Author/Body/Placement/PictureLabels"]
+[node name="FacingLabel" type="Label" parent="Author/Body/Workspace/Placement/PictureLabels"]
 layout_mode = 2
 size_flags_horizontal = 3
 horizontal_alignment = 1
 text = "Facing"
 theme_override_font_sizes/font_size = 11
 
-[node name="ReverseLabel" type="Label" parent="Author/Body/Placement/PictureLabels"]
+[node name="ReverseLabel" type="Label" parent="Author/Body/Workspace/Placement/PictureLabels"]
 layout_mode = 2
 size_flags_horizontal = 3
 horizontal_alignment = 1
 text = "Reverse"
 theme_override_font_sizes/font_size = 11
 
-[node name="AppearanceReason" type="Label" parent="Author/Body/Placement"]
+[node name="AppearanceReason" type="Label" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 visible = false
 autowrap_mode = 2
 
-[node name="MonsterFacts" type="Label" parent="Author/Body/Placement"]
+[node name="MonsterFacts" type="Label" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = ""
 autowrap_mode = 2
 
-[node name="ReplaceOccupant" type="Button" parent="Author/Body/Placement"]
+[node name="ReplaceOccupant" type="Button" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "Replace…"
 
-[node name="MoveOccupant" type="Button" parent="Author/Body/Placement"]
+[node name="MoveOccupant" type="Button" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "Move…"
 
-[node name="SelectedFriends" type="CheckBox" parent="Author/Body/Placement"]
+[node name="SelectedFriends" type="CheckBox" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "Force Friends"
 alignment = 1
 
-[node name="ClearCell" type="Button" parent="Author/Body/Placement"]
+[node name="ClearCell" type="Button" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "Clear Cell"
 
-[node name="OpenSelectedMonster" type="Button" parent="Author/Body/Placement"]
+[node name="OpenSelectedMonster" type="Button" parent="Author/Body/Workspace/Placement"]
 layout_mode = 2
 unique_name_in_owner = true
 text = "Open Monster"
 
-[node name="PlacementExplanation" type="Label" parent="Author/Body/Placement"]
+[node name="PlacementExplanation" type="Label" parent="Author/Body/Workspace/Placement"]
 visible = false
 layout_mode = 2
 unique_name_in_owner = true

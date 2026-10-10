@@ -10,7 +10,7 @@ script = ExtResource("1")
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 0
+horizontal_scroll_mode = 3
 
 [node name="Tiles" type="GridContainer" parent="TileScroll"]
 unique_name_in_owner = true

@@ -21,6 +21,8 @@ var _last_slot := -1
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_ALL
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	resized.connect(queue_redraw)
 	focus_exited.connect(cancel_gesture)
 	get_window().focus_exited.connect(cancel_gesture)
 	mouse_exited.connect(func():
@@ -40,7 +42,12 @@ func receive_art(icon_id: int, projection: Dictionary) -> void:
 
 
 func cell_size() -> float:
-	return minf(44.0, minf((size.x - 24.0) / 13.0, (size.y - 24.0) / 13.0))
+	return maxf(0.0, floorf(minf(size.x - 48.0, size.y - 48.0) / 13.0))
+
+
+func grid_rect() -> Rect2:
+	var extent := Vector2.ONE * cell_size() * 13.0
+	return Rect2((size - extent) * 0.5, extent)
 
 
 func footprint(id: int) -> Vector2i:
@@ -52,7 +59,7 @@ func footprint(id: int) -> Vector2i:
 func rect_for_slot(slot: int, dimensions := Vector2i.ONE) -> Rect2:
 	var step := cell_size()
 	var cell := Vector2i(slot / 13, slot % 13)
-	return Rect2(Vector2(24, 24) + Vector2(cell - dimensions + Vector2i.ONE) * step, Vector2(dimensions) * step)
+	return Rect2(grid_rect().position + Vector2(cell - dimensions + Vector2i.ONE) * step, Vector2(dimensions) * step)
 
 
 func visible_anchor(slot: int) -> int:
@@ -76,13 +83,14 @@ func _draw() -> void:
 	var border := panel.border_color if panel != null else Color("27313c")
 	var selection := get_theme_stylebox("pressed", "Button") as StyleBoxFlat
 	var accent := selection.border_color if selection != null else Color("9dcfff")
-	draw_rect(Rect2(Vector2(24, 24), Vector2.ONE * step * 13), background)
+	var board := grid_rect()
+	draw_rect(board, background)
 	for index in 14:
-		draw_line(Vector2(24 + step * index, 24), Vector2(24 + step * index, 24 + step * 13), border)
-		draw_line(Vector2(24, 24 + step * index), Vector2(24 + step * 13, 24 + step * index), border)
+		draw_line(board.position + Vector2(step * index, 0), board.position + Vector2(step * index, board.size.y), border)
+		draw_line(board.position + Vector2(0, step * index), board.position + Vector2(board.size.x, step * index), border)
 	for index in 13:
-		draw_string(get_theme_default_font(), Vector2(24 + step * index + 8, 16), str(index), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
-		draw_string(get_theme_default_font(), Vector2(2, 24 + step * index + 18), str(index), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
+		draw_string(get_theme_default_font(), board.position + Vector2(step * index + 8, -8), str(index), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
+		draw_string(get_theme_default_font(), board.position + Vector2(-22, step * index + 18), str(index), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
 	_draw_occupants(text, accent)
 	if selected_slot >= 0:
 		draw_rect(rect_for_slot(selected_slot), accent, false, 2)
@@ -201,7 +209,9 @@ func _select(slot: int) -> void:
 
 
 func _slot_at(point: Vector2) -> int:
-	var cell := Vector2i(floori((point.x - 24) / cell_size()), floori((point.y - 24) / cell_size()))
+	if cell_size() <= 0 or not grid_rect().has_point(point): return -1
+	var local := point - grid_rect().position
+	var cell := Vector2i(floori(local.x / cell_size()), floori(local.y / cell_size()))
 	return cell.x * 13 + cell.y if cell.x >= 0 and cell.x < 13 and cell.y >= 0 and cell.y < 13 else -1
 
 
