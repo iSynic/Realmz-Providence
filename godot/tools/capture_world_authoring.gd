@@ -15,7 +15,7 @@ func _run() -> void:
 	if args.size()!=2 or not FileAccess.file_exists(args[0].path_join("assets-corpus-disposable.marker")): push_error("A marked disposable World project is required."); quit(2); return
 	_output=args[1]; DirAccess.make_dir_recursive_absolute(_output)
 	root.gui_embed_subwindows=true
-	_shell=load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await process_frame
+	_shell=load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await _shell.startup_completed
 	_shell._bridge.stop(); _shell._bridge=ProvidenceNativeBridge.new(args[0].get_base_dir().path_join("world-capture-settings.cfg"))
 	var opened: Dictionary=_shell._bridge.start_project(args[0])
 	if not opened.get("ok",false): push_error(str(opened)); quit(1); return

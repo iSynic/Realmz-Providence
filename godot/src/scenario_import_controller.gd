@@ -11,6 +11,7 @@ var _context: Callable
 var _after_import: Callable
 var _bridge: RefCounted
 var _generation := 0
+var _cancel_requested := false
 
 
 func initialize(view: ProvidenceScenarioImportDialog, operations: ProvidenceEditorOperation, context: Callable, after_import: Callable) -> void:
@@ -18,6 +19,7 @@ func initialize(view: ProvidenceScenarioImportDialog, operations: ProvidenceEdit
 	_operations = operations
 	_context = context
 	_after_import = after_import
+	_view.canceled.connect(func(): _cancel_requested = true)
 
 
 func attach_session(bridge: RefCounted) -> void:
@@ -66,6 +68,10 @@ func _import(kind: String, method: String, params: Dictionary) -> bool:
 	var response := await _operations.run_workflow(_bridge, "Import " + kind, _submit.bind(kind, method, params, generation))
 	if not response.get("ok", false):
 		if response.get("stale", false): return false
+		if response.get("cancelled", false):
+			_view.hide()
+			status_changed.emit("Import cancelled. Your project is unchanged.")
+			return false
 		_report_failure(response)
 		return false
 	if generation != _generation: return false
@@ -88,7 +94,8 @@ func _report_failure(response: Dictionary) -> void:
 
 func _submit(operation: ProvidenceEditorOperation, kind: String, method: String, params: Dictionary, generation: int) -> Dictionary:
 	_view.apply_import_started()
-	var response := await operation.request(method, params)
+	_cancel_requested = false
+	var response := await _run_scenario_job(operation, params, generation) if kind == "scenario" else await operation.request(method, params)
 	if not response.get("ok", false): return response
 	if generation != _generation: return _stale()
 	projection_applied.emit(response.result)
@@ -101,6 +108,42 @@ func _submit(operation: ProvidenceEditorOperation, kind: String, method: String,
 	if generation != _generation: return _stale()
 	response["session"] = session
 	return response
+
+
+func _run_scenario_job(operation: ProvidenceEditorOperation, params: Dictionary, generation: int) -> Dictionary:
+	operation.show_progress("Importing scenario…", "Capturing source files", func(): _cancel_requested = true)
+	var response := await operation.request("project.import-classic-scenario.begin", params)
+	if not response.get("ok", false): return response
+	var job := {"jobId": int(response.result.jobId)}
+	if generation != _generation: return await _cancel_stale_job(operation, job)
+	while generation == _generation:
+		if _cancel_requested:
+			await operation.request("project.import-classic-scenario.cancel", job)
+			return {"ok": false, "cancelled": true, "error": "Import cancelled. Your project is unchanged."}
+		response = await operation.request("project.import-classic-scenario.status", job)
+		if generation != _generation: return await _cancel_stale_job(operation, job)
+		if not response.get("ok", false): return response
+		var state: Dictionary = response.result
+		if state.status == "failed": return {"ok": false, "error": state.get("error", "Import failed.")}
+		if state.status == "cancelled": return {"ok": false, "cancelled": true, "error": "Import cancelled."}
+		var count := "%d / %d %s" % [int(state.completedItems), int(state.totalItems), str(state.itemKind)] if int(state.get("totalItems", 0)) > 0 else "%d phases completed" % int(state.get("completedPhases", 0))
+		operation.show_progress(_phase_label(str(state.get("phase", ""))), count, func(): _cancel_requested = true)
+		if state.status == "ready":
+			if _cancel_requested: continue
+			operation.show_progress("Saving imported scenario…", "Finishing Save · Cancellation is unavailable")
+			return await operation.request("project.import-classic-scenario.commit", job)
+		await operation.get_tree().create_timer(0.08).timeout
+	await operation.request("project.import-classic-scenario.cancel", job)
+	return _stale()
+
+
+func _cancel_stale_job(operation: ProvidenceEditorOperation, job: Dictionary) -> Dictionary:
+	await operation.request("project.import-classic-scenario.cancel", job)
+	return _stale()
+
+
+static func _phase_label(phase: String) -> String:
+	return {"capture-inputs": "Capturing source files…", "source-preflight": "Checking source files…", "rules": "Loading rules…", "terrain": "Loading terrain…", "maps-and-combat": "Loading maps and battles…", "encounters-and-economy": "Loading encounters and items…", "optional-world": "Loading world records…", "items-and-spells": "Loading items and spells…", "media-and-solidity": "Decoding media…", "source-capture-and-bootstrap": "Preserving source records…", "commit": "Preparing imported scenario…"}.get(phase, "Importing scenario…")
 
 
 func _scenario_params(directory: String, application_directory: String) -> Dictionary:

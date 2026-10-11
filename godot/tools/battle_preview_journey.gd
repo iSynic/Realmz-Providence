@@ -32,7 +32,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _shell._project_session.open_project(project)
 	if not _check(_shell._session_view.connected, "Preview project did not open"): return
 	await _shell._navigation.select_route("combat.battles")

@@ -26,6 +26,12 @@ struct CommandTiming {
     history_snapshot_reused: bool,
 }
 
+struct ConnectionJobs {
+    validation: validation_jobs::Jobs,
+    imports: crate::scenario_import::jobs::Jobs,
+    integrity: crate::library_integrity::Inspection,
+}
+
 pub(crate) fn serve_io_with_libraries(
     session: &mut EditorSession,
     store: Option<&ProjectStore>,
@@ -35,7 +41,11 @@ pub(crate) fn serve_io_with_libraries(
     reader: impl BufRead,
     mut writer: impl Write,
 ) -> Result<(), String> {
-    let mut jobs = validation_jobs::Jobs::default();
+    let mut jobs = ConnectionJobs {
+        validation: validation_jobs::Jobs::default(),
+        imports: crate::scenario_import::jobs::Jobs::default(),
+        integrity: crate::library_integrity::Inspection::begin(catalogs),
+    };
     for line in reader.lines() {
         let line = line.map_err(|error| error.to_string())?;
         let request = match serde_json::from_str::<Request>(&line) {
@@ -68,7 +78,7 @@ fn process_request(
     store: Option<&ProjectStore>,
     catalogs: CatalogViews<'_>,
     mut monster_library: Option<&mut OpenMonsterLibrary>,
-    jobs: &mut validation_jobs::Jobs,
+    jobs: &mut ConnectionJobs,
     request: Request,
     startup_timing: Option<&crate::startup::StartupTiming>,
 ) -> Response {
@@ -93,7 +103,7 @@ fn process_request(
         .as_ref()
         .map(|library| library.session.revision());
     let started = Instant::now();
-    let mut response = dispatch(
+    let mut response = dispatch_with_imports(
         session,
         store,
         catalogs,
@@ -254,4 +264,47 @@ pub(crate) fn serve_io_with_application(
         reader,
         writer,
     )
+}
+
+fn dispatch_with_imports(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    catalogs: CatalogViews<'_>,
+    monster_library: Option<&mut OpenMonsterLibrary>,
+    jobs: &mut ConnectionJobs,
+    request: Request,
+) -> Response {
+    let imported = if request.method == "application-media.integrity-status" {
+        Some(Ok(jobs.integrity.status()))
+    } else {
+        jobs.imports
+            .dispatch(session, store, &request.method, &request.params)
+    };
+    if let Some(result) = imported {
+        match result {
+            Ok(result) => Response {
+                id: request.id,
+                ok: true,
+                result: Some(result),
+                error: None,
+                outcome_unknown: None,
+            },
+            Err(error) => Response {
+                id: request.id,
+                ok: false,
+                result: None,
+                error: Some(error),
+                outcome_unknown: None,
+            },
+        }
+    } else {
+        dispatch(
+            session,
+            store,
+            catalogs,
+            monster_library,
+            &mut jobs.validation,
+            request,
+        )
+    }
 }

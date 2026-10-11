@@ -5,9 +5,10 @@ use crate::scenario_preflight::resolve_classic_native_file;
 use providence_core::codecs::CLASSIC_SCENARIO_RESOURCE_SOURCE;
 use providence_core::codecs::classic_landlook_for_media_asset;
 use providence_core::codecs::classic_media_asset_identity;
-use providence_core::codecs::decode_classic_text_assets;
-use providence_core::codecs::derive_classic_media_catalog;
 use providence_core::codecs::is_classic_dungeon_tileset;
+use providence_core::codecs::{
+    decode_classic_text_assets_from_entries, derive_classic_media_catalog_with_progress,
+};
 use providence_core::model::AssetDescriptor;
 use providence_core::model::ClassicResourceKey;
 use providence_core::model::ClassicSourceBlob;
@@ -18,7 +19,6 @@ use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::PathBuf;
 
 use providence_core::codecs::{ClassicMediaCatalog, DecodedClassicTextAsset};
@@ -89,44 +89,71 @@ fn store_media_assets(
     store: &ProjectStore,
     catalog: &ClassicMediaCatalog,
 ) -> Result<Vec<AssetDescriptor>, String> {
-    let mut assets = Vec::with_capacity(catalog.assets.len());
-    for derived in &catalog.assets {
-        let runtime_blob = store
-            .put_blob(&derived.runtime_payload)
-            .map_err(|error| error.to_string())?;
-        let classic_payload_blob = store
-            .put_blob(&derived.classic_payload)
-            .map_err(|error| error.to_string())?;
-        let landlook = classic_landlook_for_media_asset(derived);
-        let dungeon_tileset = is_classic_dungeon_tileset(derived);
-        let identity = classic_media_asset_identity(derived);
-        assets.push(AssetDescriptor {
-            identity,
-            label: derived.label.clone(),
-            kind: derived.kind.clone(),
-            mime_type: Some(derived.mime_type.clone()),
-            classic_resource: Some(derived.resource.clone()),
-            scenario_music_slot: None,
-            blob: runtime_blob,
-            byte_length: derived.runtime_payload.len() as u64,
-            classic_payload_blob: Some(classic_payload_blob),
-            classic_payload_byte_length: Some(derived.classic_payload.len() as u64),
-            extension: Some(derived.extension.clone()),
-            width: derived.width,
-            height: derived.height,
-            duration_ms: derived.duration_ms,
-            sample_rate: derived.sample_rate,
-            channels: derived.channels,
-            tile_width: landlook.map(|_| 32).or(dungeon_tileset.then_some(16)),
-            tile_height: landlook.map(|_| 32).or(dungeon_tileset.then_some(16)),
-            columns: landlook.map(|_| 20).or(dungeon_tileset.then_some(4)),
-            rows: landlook.map(|_| 10).or(dungeon_tileset.then_some(4)),
-            landlook: landlook.or(dungeon_tileset.then_some(2)),
-            base_tile: None,
-            source: CLASSIC_SCENARIO_RESOURCE_SOURCE.into(),
-        });
-    }
-    Ok(assets)
+    let workers = std::thread::available_parallelism()
+        .map_or(1, usize::from)
+        .min(4);
+    let mut results = std::thread::scope(|scope| {
+        let handles = (0..workers)
+            .map(|worker| {
+                scope.spawn(move || {
+                    catalog
+                        .assets
+                        .iter()
+                        .enumerate()
+                        .skip(worker)
+                        .step_by(workers)
+                        .map(|(index, asset)| (index, store_media_asset(store, asset)))
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect::<Vec<_>>();
+        handles
+            .into_iter()
+            .flat_map(|handle| handle.join().expect("media storage worker panicked"))
+            .collect::<Vec<_>>()
+    });
+    results.sort_by_key(|(index, _)| *index);
+    results.into_iter().map(|(_, result)| result).collect()
+}
+
+fn store_media_asset(
+    store: &ProjectStore,
+    derived: &providence_core::codecs::ClassicMediaAsset,
+) -> Result<AssetDescriptor, String> {
+    let runtime_blob = store
+        .put_blob(&derived.runtime_payload)
+        .map_err(|error| error.to_string())?;
+    let classic_payload_blob = store
+        .put_blob(&derived.classic_payload)
+        .map_err(|error| error.to_string())?;
+    let landlook = classic_landlook_for_media_asset(derived);
+    let dungeon_tileset = is_classic_dungeon_tileset(derived);
+    let identity = classic_media_asset_identity(derived);
+    Ok(AssetDescriptor {
+        identity,
+        label: derived.label.clone(),
+        kind: derived.kind.clone(),
+        mime_type: Some(derived.mime_type.clone()),
+        classic_resource: Some(derived.resource.clone()),
+        scenario_music_slot: None,
+        blob: runtime_blob,
+        byte_length: derived.runtime_payload.len() as u64,
+        classic_payload_blob: Some(classic_payload_blob),
+        classic_payload_byte_length: Some(derived.classic_payload.len() as u64),
+        extension: Some(derived.extension.clone()),
+        width: derived.width,
+        height: derived.height,
+        duration_ms: derived.duration_ms,
+        sample_rate: derived.sample_rate,
+        channels: derived.channels,
+        tile_width: landlook.map(|_| 32).or(dungeon_tileset.then_some(16)),
+        tile_height: landlook.map(|_| 32).or(dungeon_tileset.then_some(16)),
+        columns: landlook.map(|_| 20).or(dungeon_tileset.then_some(4)),
+        rows: landlook.map(|_| 10).or(dungeon_tileset.then_some(4)),
+        landlook: landlook.or(dungeon_tileset.then_some(2)),
+        base_tile: None,
+        source: CLASSIC_SCENARIO_RESOURCE_SOURCE.into(),
+    })
 }
 
 fn text_occurrences(
@@ -272,15 +299,21 @@ fn prepare_media_source(
     let directory = PathBuf::from(required_string(params, "directory")?);
     let path = resolve_classic_native_file(&directory, "Scenario.rsrc")
         .ok_or_else(|| format!("{} is required", directory.join("Scenario.rsrc").display()))?;
-    let source_bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    let catalog = derive_classic_media_catalog(&source_bytes)
+    let source_bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let entries = crate::import_inputs::entries(&path, &source_bytes)
         .map_err(|error| format!("Scenario.rsrc media catalog is invalid: {error}"))?;
-    let text_catalog = decode_classic_text_assets(&source_bytes, "Scenario.rsrc")
-        .map_err(|error| format!("Scenario.rsrc text catalog is invalid: {error}"))?;
+    let progress = crate::scenario_import::item_progress::callback();
+    let catalog = derive_classic_media_catalog_with_progress(&entries, &|completed, total| {
+        if let Some(progress) = &progress {
+            progress("media resources", completed, total);
+        }
+    });
     let source_blob = store
         .put_blob(&source_bytes)
         .map_err(|error| error.to_string())?;
+    let text_catalog =
+        decode_classic_text_assets_from_entries(&entries, &source_blob, "Scenario.rsrc");
     let source = ClassicSourceBlob {
         native_path: "Scenario.rsrc".into(),
         blob: source_blob,

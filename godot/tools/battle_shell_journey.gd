@@ -38,7 +38,7 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900); root.content_scale_size = root.size; root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _shell._project_session.open_project(_project)
 	if not _check(_shell._session_view.connected, "The disposable project did not open"): return
 	if not _seed_caller(): return

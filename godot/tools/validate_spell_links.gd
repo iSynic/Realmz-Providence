@@ -21,7 +21,7 @@ func _run() -> void:
 	draft.definition.merge({"name": "Linked Moon Gate", "lookEnd": 0, "soundStart": 1, "queueIcon": 10}, true)
 	if not _check(bridge.request("spell.draft.apply", {"expectedRevision": 0, "draft": draft, "operationId": "a".repeat(64)}).get("ok", false), "Apply connected fixture"): return
 	bridge.stop()
-	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await process_frame
+	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await _shell.startup_completed
 	await _shell._project_session.open_project(project)
 	await _shell._navigation.select_route("rules.spells")
 	_view = _shell._documents.view("rules.spells")

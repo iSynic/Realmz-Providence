@@ -8,7 +8,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH","")
 	root.gui_embed_subwindows=true; root.size=Vector2i(1600,900)
 	var shell:Control=load("res://src/editor_shell.tscn").instantiate(); shell.set_script(CheckedShell); root.add_child(shell)
-	await _frames(3); shell._bridge.stop(); shell._bridge=MagicBridge.new(args[0].path_join("state-settings.cfg"))
+	await shell.startup_completed; shell._bridge.stop(); shell._bridge=MagicBridge.new(args[0].path_join("state-settings.cfg"))
 	var created:Dictionary=shell._bridge.create_project("brush-states",args[0].path_join("states-project"))
 	if _check(created.get("ok",false),"Brush states project creation failed"):
 		await shell._activate_session(created)

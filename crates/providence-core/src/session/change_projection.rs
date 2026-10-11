@@ -41,6 +41,7 @@ pub(super) fn build(
     changed_entities.truncate(CHANGE_PROJECTION_LIMIT);
     let affected_entities = affected.into_iter().take(CHANGE_PROJECTION_LIMIT).collect();
     ChangeProjection {
+        refresh_required: false,
         previous_revision,
         revision: session.revision(),
         changed_entities,

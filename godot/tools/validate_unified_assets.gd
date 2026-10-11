@@ -54,7 +54,7 @@ func _browse() -> void:
 		assert(panel.selection_context().scope == "supplied")
 		assert(panel.get_node("%Rename").disabled and panel.get_node("%Remove").disabled)
 	for call: Dictionary in bridge.calls:
-		assert(call.method.ends_with(".list") or call.method.ends_with(".preview") or call.method.ends_with(".collections") or call.method.ends_with(".describe") or call.method == "personal-library.open")
+		assert(call.method.ends_with(".list") or call.method.ends_with(".preview") or call.method.ends_with(".collections") or call.method.ends_with(".describe") or call.method in ["personal-library.open", "media.thumbnails"])
 
 
 func _filters_and_paging() -> void:

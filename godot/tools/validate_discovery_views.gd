@@ -9,7 +9,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	var project := OS.get_environment("PROVIDENCE_DISCOVERY_PROJECT")
 	var opened: Dictionary = _shell._bridge.start_demo() if project.is_empty() else _shell._bridge.start_project(project)
 	assert(opened.get("ok", false), str(opened))

@@ -14,7 +14,7 @@ var _valid := false
 var _style_identity := ""
 var _error_index := -1
 var _pending_navigation: Callable
-var _body_font := SystemFont.new()
+var _body_font := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["Source Sans 3", "Segoe UI"]))
 var _operations: ProvidenceEditorOperation
 var _generation := 0
 var _style_valid := true
@@ -53,7 +53,7 @@ func _run(label: String, workflow: Callable) -> Dictionary:
 
 
 func _ready() -> void:
-	apply_theme()
+	if theme == null: apply_theme()
 	visibility_changed.connect(func():
 		if not visible: %StyleWorkbench.cancel_pending())
 	close_requested.connect(request_cancel)
@@ -87,7 +87,6 @@ func apply_theme(mode := "dark", density := "balanced") -> void:
 	controls.density = density
 	theme = controls
 	$Background.add_theme_stylebox_override("panel", controls.get_stylebox("panel", "PanelContainer"))
-	_body_font.font_names = PackedStringArray(["Source Sans 3", "Segoe UI"])
 	%StyleWorkbench.get_node("%AuthorPreview").add_theme_font_override("normal_font", _body_font)
 	for control: Control in [editor, %DraftStatus, %NameError, %Availability, %FileStatus, %Outcome, %PreserveStyle]:
 		control.add_theme_font_override("font", _body_font)

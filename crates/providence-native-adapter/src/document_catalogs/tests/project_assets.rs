@@ -1,6 +1,26 @@
 use super::*;
 
 #[test]
+fn immediate_catalog_rows_defer_checks_without_claiming_unused_or_removable() {
+    let (snapshot, _) = item_and_map_artwork();
+    let session = EditorSession::new(snapshot);
+    let summary = project_asset_list(&session, &json!({"includeChecks": false})).unwrap();
+    for row in summary["items"].as_array().unwrap() {
+        assert_eq!(row["checksPending"], true);
+        assert_eq!(row["removable"], false);
+        assert!(row.get("usedBy").is_none());
+        assert!(row.get("problems").is_none());
+    }
+    for status in ["used", "unused", "problems"] {
+        let deferred =
+            project_asset_list(&session, &json!({"includeChecks": false, "status": status}))
+                .unwrap();
+        let checked = project_asset_list(&session, &json!({"status": status})).unwrap();
+        assert_eq!(deferred, checked);
+    }
+}
+
+#[test]
 fn item_artwork_uses_agree_with_removal_in_list_and_detail() {
     let (mut snapshot, mut picture) = item_and_map_artwork();
     for ambiguous in [false, true] {

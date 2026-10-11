@@ -6,6 +6,7 @@ class Bridge extends "res://src/native_bridge.gd":
 	var fail_identity := ""
 	var unknown := false
 	var png := ""
+	var catalog_revision := 7
 	func is_project_backed() -> bool:
 		return true
 	func begin_repair_recovery(method: String, params: Dictionary, owner: int, _reconnect: bool) -> Dictionary:
@@ -23,7 +24,10 @@ class Bridge extends "res://src/native_bridge.gd":
 				for index in 25:
 					rows.append({"identity": "icon:" + str(index), "label": "Asset " + str(index), "kind": "icon",
 						"classicResource": {"resourceType": "cicn", "resourceId": 30126 + index}, "previewCommand": "icon.preview"})
-				return {"ok": true, "result": {"revision": 7, "items": rows, "total": 25}}
+				return {"ok": true, "result": {"revision": catalog_revision, "items": rows, "total": 25}}
+			"media.thumbnails":
+				assert(params.items.size() <= 4)
+				return {"ok": true, "result": {"items": params.items.map(func(item): return {"identity": item.identity, "ok": true, "result": {"base64": png, "mimeType": "image/png", "width": 8, "height": 8, "thumbnail": true}})}}
 			"icon.preview", "application-media.preview":
 				return {"ok": true, "result": {"base64": png, "width": 8, "height": 8}}
 			"project-asset.open":
@@ -55,7 +59,7 @@ func _run() -> void:
 	bitmap.fill(Color.CORNFLOWER_BLUE)
 	_bridge.png = Marshalls.raw_to_base64(bitmap.save_png_to_buffer())
 	await _panel.show_scope(_bridge, "scenario")
-	assert(_bridge.calls.size() == 26 and _completed_previews == 25)
+	assert(_bridge.calls.size() == 8 and _completed_previews == 25)
 	await _panel._select(3)
 	await _check_completion()
 	await _check_borrowed_history()
@@ -86,9 +90,9 @@ func _check_completion() -> void:
 	assert(_panel.get_node("%Gallery").item_count == 25)
 	await _operations.completed
 	await process_frame
-	assert(_pending.ok and _completed_previews == 25 and _frames > before + 20)
+	assert(_pending.ok and _completed_previews == 25 and _frames > before + 2)
 	assert(_operations.last_metrics.maxFrameGapMs < 100)
-	assert(not _bridge.calls.any(func(entry): return not entry.method in ["project-asset.list", "icon.preview", "project-asset.open"]))
+	assert(not _bridge.calls.any(func(entry): return not entry.method in ["project-asset.list", "media.thumbnails", "icon.preview", "project-asset.open"]))
 
 
 func _check_borrowed_history() -> void:
@@ -121,12 +125,13 @@ func _check_rejected_and_unknown() -> void:
 	_bridge.fail_method = "project-asset.list"
 	assert(not (await _panel.reload(_bridge)).ok and not _operations.requires_reopen)
 	assert(_panel.get_node("%Preview").texture != null and _panel.get_node("%UseStock").disabled)
-	_bridge.fail_method = "icon.preview"
-	_bridge.fail_identity = "icon:4"
+	_bridge.fail_method = "media.thumbnails"
+	_bridge.fail_identity = ""
+	_bridge.catalog_revision += 1
 	_bridge.unknown = true
 	var count := _bridge.calls.size()
 	assert(not (await _panel.reload(_bridge)).ok and _operations.requires_reopen)
-	assert(_bridge.calls.size() == count + 6)
+	assert(_bridge.calls.size() == count + 2)
 	_bridge.fail_method = ""
 	_bridge.unknown = false
 	assert((await _panel.reload(_bridge)).ok and _operations.requires_reopen)
@@ -154,16 +159,16 @@ func _start_reload() -> void:
 func _check_stock_cache() -> void:
 	var count := _bridge.calls.size()
 	await _panel.show_scope(_bridge, "stock")
-	assert(_bridge.calls.size() == count + 26 and _completed_previews == 25)
+	assert(_bridge.calls.size() == count + 8 and _completed_previews == 25)
 	count = _bridge.calls.size()
 	assert((await _panel.reload(_bridge)).ok)
 	assert(_bridge.calls.size() == count + 1 and _completed_previews == 25)
 	await _panel.show_scope(_bridge, "scenario")
 	count = _bridge.calls.size()
 	await _panel.reload(_bridge)
-	assert(_bridge.calls.size() == count + 26)
+	assert(_bridge.calls.size() == count + 1)
 	_bridge.stop()
 	_operations.reset_session()
 	count = _bridge.calls.size()
 	await _panel.show_scope(_bridge, "stock")
-	assert(_bridge.calls.size() == count + 26 and _completed_previews == 25)
+	assert(_bridge.calls.size() == count + 8 and _completed_previews == 25)

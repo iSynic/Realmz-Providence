@@ -29,6 +29,18 @@ impl ReferenceLibraryStore {
         Ok((store, catalog))
     }
 
+    /// Native browsing checks catalog ownership immediately. Every payload read
+    /// remains hash verified, and complete inspection retains the strict path.
+    pub fn open_structural(
+        root: impl Into<PathBuf>,
+    ) -> Result<(Self, ApplicationMediaCatalog), StoreError> {
+        let store = Self { root: root.into() };
+        let catalog =
+            serde_json::from_slice::<ApplicationMediaCatalog>(&fs::read(store.catalog_path())?)?;
+        store.validate_catalog_structure(&catalog)?;
+        Ok((store, catalog))
+    }
+
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -65,6 +77,27 @@ impl ReferenceLibraryStore {
     }
 
     pub fn validate_catalog(&self, catalog: &ApplicationMediaCatalog) -> Result<(), StoreError> {
+        self.validate_catalog_structure(catalog)?;
+        for source in &catalog.sources {
+            let actual = self.read_blob(&source.blob)?.len() as u64;
+            if actual != source.byte_length {
+                return Err(StoreError::SourceBlobLengthMismatch {
+                    native_path: source.native_name.clone(),
+                    expected: source.byte_length,
+                    actual,
+                });
+            }
+        }
+        for asset in &catalog.assets {
+            self.validate_asset_payload(&asset.descriptor)?;
+        }
+        Ok(())
+    }
+
+    pub fn validate_catalog_structure(
+        &self,
+        catalog: &ApplicationMediaCatalog,
+    ) -> Result<(), StoreError> {
         if catalog.format_version != APPLICATION_MEDIA_CATALOG_FORMAT_VERSION {
             return Err(StoreError::InvalidApplicationMediaCatalog(format!(
                 "format version {} is not supported",
@@ -97,14 +130,7 @@ impl ReferenceLibraryStore {
                     source.priority
                 )));
             }
-            let actual = self.read_blob(&source.blob)?.len() as u64;
-            if actual != source.byte_length {
-                return Err(StoreError::SourceBlobLengthMismatch {
-                    native_path: source.native_name.clone(),
-                    expected: source.byte_length,
-                    actual,
-                });
-            }
+            crate::blob_store::content_addressed_blob_path(&self.root, &source.blob)?;
         }
         Ok(())
     }
@@ -134,7 +160,18 @@ impl ReferenceLibraryStore {
                     asset.descriptor.identity.0
                 )));
             }
-            self.validate_asset_payload(&asset.descriptor)?;
+            crate::blob_store::content_addressed_blob_path(&self.root, &asset.descriptor.blob)?;
+            let native = asset
+                .descriptor
+                .classic_payload_blob
+                .as_ref()
+                .ok_or_else(|| {
+                    StoreError::InvalidApplicationMediaCatalog(format!(
+                        "asset '{}' has no native payload identity",
+                        asset.descriptor.identity.0
+                    ))
+                })?;
+            crate::blob_store::content_addressed_blob_path(&self.root, native)?;
         }
         Ok(())
     }

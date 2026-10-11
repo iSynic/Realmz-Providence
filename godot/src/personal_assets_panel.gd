@@ -4,6 +4,8 @@ signal authoring_requested(action: String, context: Dictionary)
 signal library_changed
 signal scenario_changed(projection: Dictionary)
 signal artwork_applied(projection: Dictionary, record_index: int)
+signal catalog_ready
+signal artwork_ready
 @export var unified_browser := false
 
 const PAGE_SIZE := 25
@@ -39,6 +41,8 @@ var authoring_locked := false
 
 
 func _ready() -> void:
+	_catalog.rows_ready.connect(func(): catalog_ready.emit())
+	_catalog.artwork_ready.connect(func(): artwork_ready.emit())
 	_bind_preview()
 	theme_changed.connect(_refresh_theme_glyphs)
 	%EditResource.pressed.connect(_open_selected_resource)
@@ -232,9 +236,9 @@ func _load_page(offset: int, borrowed: ProvidenceEditorOperation = null) -> Dict
 	if _bridge == null: return {"ok": true}
 	_ensure_operations()
 	var generation := _generation
-	var state := _catalog_state()
+	var state := _catalog_query_state()
 	var response: Dictionary = await _catalog.load_page(_bridge, _scope, _catalog.page_params(state, offset),
-		_apply_page.bind(offset), func(): return generation == _generation and state == _catalog_state(), borrowed)
+		_apply_page.bind(offset), func(): return generation == _generation and state == _catalog_query_state(), borrowed)
 	if generation != _generation:
 		return {"ok": false, "connectionChanged": true, "error": "The asset browser session changed while loading."}
 	if not response.get("ok", false):
@@ -242,7 +246,15 @@ func _load_page(offset: int, borrowed: ProvidenceEditorOperation = null) -> Dict
 		%Status.text = str(response.get("error", "Assets could not load."))
 		for action: Button in [%OpenPreview, %FindScenarioUses, %UseStock, %Copy, %ReplaceScenario, %AddToLibrary, %RemoveScenario, %Rename, %Move, %Remove, %EditResource]:
 			action.disabled = true
+	elif _selected >= 0:
+		await _select(_selected, borrowed)
 	return response
+
+
+func _catalog_query_state() -> Dictionary:
+	var state := _catalog_state()
+	state.erase("selection")
+	return state
 
 
 func _catalog_state() -> Dictionary:
@@ -251,6 +263,15 @@ func _catalog_state() -> Dictionary:
 
 
 func _apply_page(result: Dictionary, previews: Dictionary, offset: int) -> Dictionary:
+	if result.get("thumbnailsOnly", false):
+		for index in _rows.size():
+			var identity := str(_rows[index].identity)
+			if not previews.has(identity): continue
+			if _previews.has(index) and not _previews[index].get("thumbnail", true) and not _previews[index].get("deferred", false): continue
+			_previews[index] = previews[identity]
+			if _previews[index].has("texture"): %Gallery.set_item_icon(index, _previews[index].texture)
+		if _selected >= 0 and _previews.has(_selected): _present_selection(_selected)
+		return {"ok": true, "result": result}
 	var revision := int(result.get("revision", 0))
 	if offset > 0 and _catalog_current and revision != _revision:
 		return {"ok": false, "error": "The asset library changed. Refresh before loading more assets."}
@@ -290,12 +311,28 @@ func _apply_page(result: Dictionary, previews: Dictionary, offset: int) -> Dicti
 
 func _select(index: int, borrowed: ProvidenceEditorOperation = null) -> Dictionary:
 	if index < 0 or index >= _rows.size(): return {"ok": true}
+	if _previews.get(index, {}).get("thumbnail", false) or _previews.get(index, {}).get("deferred", false):
+		_present_selection(index)
+		_ensure_operations()
+		if _operations.busy and borrowed == null: return {"ok": true}
+		return await _operations.run_workflow(_bridge, "Open asset preview", _full_preview.bind(index, _generation), borrowed)
 	if _scope != "scenario" or str(_rows[index].get("kind", "")) != "text-style-resource":
 		_present_selection(index)
 		return {"ok": true}
 	_ensure_operations()
 	return await _operations.run_workflow(_bridge, "Open asset details",
 		_select_workflow.bind(index, _generation, str(_rows[index].identity)), borrowed)
+
+
+func _full_preview(operation: ProvidenceEditorOperation, index: int, generation: int) -> Dictionary:
+	var row: Dictionary = _rows[index]
+	var response := await _catalog.read_preview(operation, _scope, row, _revision)
+	if generation != _generation or index != _selected or index >= _rows.size() or _rows[index].identity != row.identity:
+		return {"ok": false, "stale": true}
+	if response.get("ok", false): _previews[index] = response.decoded
+	_refresh_theme_glyphs()
+	_present_selection(index)
+	return response
 
 
 func _select_workflow(operation: ProvidenceEditorOperation, index: int, generation: int, identity: String) -> Dictionary:

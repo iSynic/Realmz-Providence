@@ -17,7 +17,6 @@ use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::PathBuf;
 
 use providence_core::codecs::MAP_LEVEL_BYTES;
@@ -72,7 +71,7 @@ fn read_dungeon_sources(directory: &std::path::Path) -> Result<BTreeMap<String, 
     let mut inputs = BTreeMap::new();
     for native_path in ["Data DL", "Data DDD", "Data RDD"] {
         let path = directory.join(native_path);
-        let bytes = fs::read(&path)
+        let bytes = crate::import_inputs::read(&path)
             .map_err(|error| format!("could not read {}: {error}", path.display()))?;
         inputs.insert(native_path.to_string(), bytes);
     }

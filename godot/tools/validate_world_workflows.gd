@@ -66,7 +66,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell.set_script(CheckedShell)
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_shell._bridge = Bridge.new(args[0].path_join("settings.cfg"))
 	_checkpoint("create project")

@@ -17,6 +17,7 @@ const REQUIRED_ADAPTER_PROTOCOL := 2
 
 var _process: Dictionary = {}
 var _stdio: FileAccess
+var _line_reader := preload("res://src/native_json_line_reader.gd").new()
 var _next_request_id := 1
 var _project_backed := false
 var _library_only := false
@@ -476,6 +477,7 @@ func _prepare_repair_reconnect() -> Dictionary:
 	var pid := int(_process.get("pid", -1))
 	if pid > 0 and OS.is_process_running(pid): OS.kill(pid)
 	_stdio = null
+	_line_reader = preload("res://src/native_json_line_reader.gd").new()
 	_process.clear()
 	_connection_epoch += 1
 	return connection
@@ -567,18 +569,23 @@ func _request(method: String, params: Dictionary) -> Dictionary:
 	_request_metrics.clear()
 	if _stdio == null:
 		return {"ok": false, "error": "Native adapter is not connected."}
+	if not connection_alive(): return {"ok": false, "outcomeUnknown": true, "error": "Native adapter closed the command stream."}
 	var request_id := _next_request_id
 	_next_request_id += 1
 	var started := Time.get_ticks_usec()
 	var request_params := params.duplicate() if measure_requests else params
 	if measure_requests:
 		request_params["measurePerformance"] = true
-	_stdio.store_line(preload("res://src/native_json.gd").stringify({"id": request_id, "method": method, "params": request_params}))
+	var request_line := preload("res://src/native_json.gd").stringify({"id": request_id, "method": method, "params": request_params})
+	_stdio.store_line(request_line)
 	_stdio.flush()
 	_request_metrics["writeUsec"] = Time.get_ticks_usec() - started
 	started = Time.get_ticks_usec()
-	var response_line := _stdio.get_line()
+	var response_line: String = _line_reader.read(_stdio, connection_alive)
 	_request_metrics["readWaitUsec"] = Time.get_ticks_usec() - started
+	if measure_requests:
+		_request_metrics["requestBytes"] = request_line.to_utf8_buffer().size() + 1
+		_request_metrics["responseBytes"] = response_line.to_utf8_buffer().size() + 1
 	if response_line.is_empty():
 		return {"ok": false, "outcomeUnknown": true, "error": "Native adapter closed the command stream."}
 	started = Time.get_ticks_usec()
@@ -624,6 +631,7 @@ func stop() -> void:
 	_repair_recovery_method = ""
 	_repair_reconnected = false
 	_stdio = null
+	_line_reader = preload("res://src/native_json_line_reader.gd").new()
 	_process.clear()
 	_project_backed = false
 	_library_only = false

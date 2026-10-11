@@ -18,7 +18,6 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
-use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -95,9 +94,9 @@ pub(crate) fn import_standard_spells(
     })?;
     let path = PathBuf::from(required_string(&params, "path")?);
     let text_path = PathBuf::from(required_string(&params, "textPath")?);
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    let text_bytes = fs::read(&text_path)
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let text_bytes = crate::import_inputs::read(&text_path)
         .map_err(|error| format!("could not read {}: {error}", text_path.display()))?;
     if bytes.len() < STANDARD_SPELL_BYTES {
         return Err(format!(
@@ -142,8 +141,8 @@ fn read_scenario_spell_source(
     store: &ProjectStore,
     path: &Path,
 ) -> Result<(DecodedSpellFile, ClassicSourceBlob), String> {
-    let bytes =
-        fs::read(path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < SCENARIO_SPELL_BYTES {
         return Err(format!(
             "Data Spell must contain all 105 records ({SCENARIO_SPELL_BYTES} bytes)"
@@ -178,7 +177,7 @@ fn prepare_scenario_spell_names(
     let text_path = params.get("textPath").and_then(Value::as_str);
     let text_bytes = text_path
         .map(|path| {
-            fs::read(path)
+            crate::import_inputs::read(path)
                 .map_err(|error| format!("could not read Data Spell name resource: {error}"))
         })
         .transpose()?;

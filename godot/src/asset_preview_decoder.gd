@@ -7,6 +7,7 @@ static func decode(response: Dictionary, row: Dictionary) -> Dictionary:
 	if not response.get("ok", false):
 		return {"error": str(response.get("error", "Preview unavailable."))}
 	var result: Dictionary = response.get("result", {})
+	if result.get("deferred", false): return {"deferred": true}
 	var mime := str(result.get("mimeType", ""))
 	var encoded := str(result.get("base64", ""))
 	if mime == "audio/x-mod": return {"music": true, "title": str(result.get("title", "Music")), "sourceBytes": int(result.get("sourceBytes", 0))}
@@ -22,6 +23,7 @@ static func decode(response: Dictionary, row: Dictionary) -> Dictionary:
 	if image.load_png_from_buffer(Marshalls.base64_to_raw(encoded)) != OK:
 		return {"error": "Preview unavailable."}
 	return {"texture": ImageTexture.create_from_image(image),
+		"thumbnail": result.get("thumbnail", false),
 		"width": result.get("width", row.get("width", image.get_width())),
 		"height": result.get("height", row.get("height", image.get_height()))}
 

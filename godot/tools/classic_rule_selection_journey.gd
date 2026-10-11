@@ -46,7 +46,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = FaultBridge.new(args[0].get_base_dir().path_join("settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	await shell._navigation.select_route("scenario.startup"); await settle()
 	view = shell._documents.view("scenario.startup"); dialog = view._rule_dialog

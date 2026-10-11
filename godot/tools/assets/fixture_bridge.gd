@@ -15,6 +15,10 @@ func _request(method: String, params: Dictionary = {}) -> Dictionary:
 	calls.append({"method": method, "params": params})
 	if method == failed_method:
 		return {"ok": false, "error": "Library temporarily unavailable"}
+	if method == "media.thumbnails":
+		assert(params.items.size() <= 4)
+		return {"ok": true, "result": {"items": params.items.map(func(item):
+			return {"ok": true, "result": {"deferred": true}} if not preview_payload.is_empty() else {"ok": true, "result": {"base64": png, "mimeType": "image/png", "width": 1, "height": 1, "thumbnail": true}})}}
 	if method == "session.describe":
 		return {"ok": true, "result": {"revision": 7}}
 	if method == "project-asset.open":
@@ -82,6 +86,7 @@ func _catalog_list(method: String, params: Dictionary) -> Dictionary:
 	var total := 0 if params.get("query") == "no results" else catalog_total
 	for index in range(offset, mini(total, offset + int(params.limit))):
 		var row := {"identity": label if index == 0 else label + str(index), "label": label, "name": label, "kind": "icon", "resource": {"resourceId": -189}, "classicResource": {"resourceId": -189, "resourceType": "cicn"}, "removable": true, "width": 1, "height": 1, "previewCommand": "icon.preview"}
+		row["blob"] = JSON.stringify(preview_payload).sha256_text() + png.sha256_text()
 		if method in ["media.library.list", "personal-library.list"]:
 			row["previewCommand"] = "personal-library.open"
 			row["prepared"] = false

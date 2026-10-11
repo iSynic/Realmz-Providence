@@ -27,7 +27,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_shell._bridge = FaultBridge.new(args[0].path_join("settings.cfg"))
 	var created: Dictionary = _shell._bridge.create_project("ap-draft-navigation", _path)

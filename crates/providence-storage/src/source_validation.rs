@@ -6,6 +6,14 @@ use std::collections::{BTreeMap, BTreeSet};
 
 impl ProjectStore {
     pub fn validate_source_blobs(&self, snapshot: &ProjectSnapshot) -> Result<(), StoreError> {
+        self.validate_source_blobs_cached(snapshot, &mut BTreeMap::new())
+    }
+
+    pub(super) fn validate_source_blobs_cached(
+        &self,
+        snapshot: &ProjectSnapshot,
+        lengths: &mut BTreeMap<BlobId, u64>,
+    ) -> Result<(), StoreError> {
         providence_core::snapshot::authoring_metadata::validate(snapshot)?;
         if let Some(context) = &snapshot.classic_rule_selection
             && !matches!(
@@ -17,9 +25,10 @@ impl ProjectStore {
                 "captured native selection has no installed verified capture channel".into(),
             ));
         }
-        let mut lengths = BTreeMap::new();
         for id in source_blob_ids(snapshot) {
-            lengths.insert(id, self.read_blob(id)?.len() as u64);
+            if !lengths.contains_key(id) {
+                lengths.insert(id.clone(), self.read_blob(id)?.len() as u64);
+            }
         }
         for source in &snapshot.classic_sources {
             check_length(

@@ -21,7 +21,7 @@ func _run() -> void:
 	if not populate_rule(bridge, "caste", 1): return
 	if not require(bridge.request("scenario-restrictions.update", {"expectedRevision": 2, "restrictions": {"description": "Linked restriction fixture", "maxPartySize": 6, "maxLevel": 0, "bannedRaces": ["classic.race.20"], "bannedCastes": ["classic.caste.21"]}, "operationId": "c".repeat(64)})): return
 	bridge.stop()
-	shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(shell); await process_frame
+	shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(project)
 	for kind in ["race", "caste"]:
 		await shell._navigation.select_route("rules." + kind + "s")

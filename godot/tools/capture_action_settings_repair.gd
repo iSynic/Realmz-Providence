@@ -50,7 +50,7 @@ func _prepare_scenario(temporary_root: String) -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_shell._bridge = CaptureBridge.new(temporary_root.path_join("settings.cfg"))
 	assert(_fixture.create(_shell._bridge, temporary_root.path_join("project")))

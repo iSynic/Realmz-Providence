@@ -10,7 +10,7 @@ func _initialize() -> void: _run.call_deferred()
 func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	var opened: Dictionary = _shell._bridge.start_project(OS.get_environment("PROVIDENCE_BROWSING_PROJECT"))
 	assert(opened.ok); await _shell._activate_session(opened)
 	var revision: int = _shell._session_view.revision

@@ -14,7 +14,7 @@ func _capture() -> void:
 	root.content_scale_size = DisplayServer.window_get_size()
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(arguments[0])
 	if not shell._session_view.connected:
 		push_error("Review project could not open.")

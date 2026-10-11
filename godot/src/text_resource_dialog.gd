@@ -74,7 +74,7 @@ func _request(method: String, params: Dictionary = {}) -> Dictionary:
 
 
 func _ready() -> void:
-	apply_theme()
+	if theme == null: apply_theme()
 	visibility_changed.connect(func():
 		if not visible:
 			_generation += 1
@@ -133,8 +133,7 @@ func apply_theme(mode := "dark", density := "balanced") -> void:
 	theme = story_controls
 	$Background.add_theme_stylebox_override("panel", controls.get_stylebox("panel", "PanelContainer"))
 	if _body_font == null:
-		_body_font = SystemFont.new()
-		_body_font.font_names = PackedStringArray(["Source Sans 3", "Segoe UI"])
+		_body_font = preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["Source Sans 3", "Segoe UI"]))
 	%StyleWorkbench.get_node("%AuthorPreview").add_theme_font_override("normal_font", _body_font)
 	for control: Control in [editor, %CurrentText, %RetainedText, %DraftStatus, %Outcome]:
 		control.add_theme_font_override("font", _body_font)

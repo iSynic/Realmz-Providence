@@ -24,7 +24,7 @@ pub(crate) fn import_mapstats_catalog_into_session(
     path: PathBuf,
     source: String,
 ) -> Result<(), String> {
-    let bytes = fs::read(&path)
+    let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read Map Stats {}: {error}", path.display()))?;
     if bytes.len() != MAPSTATS_REFERENCE_BYTES {
         return Err(format!(
@@ -78,8 +78,8 @@ pub(crate) fn import_mapstats_reference(
         )
     })?;
     let path = PathBuf::from(required_string(&params, "path")?);
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() != MAPSTATS_REFERENCE_BYTES {
         return Err(format!(
             "{source_name} must contain exactly {MAPSTATS_REFERENCE_BYTES} source bytes (the {MAPSTATS_CORE_BYTES}-byte runtime core plus its preserved tail); found {}",

@@ -130,70 +130,23 @@ pub fn decode_classic_text_assets(
     source: &str,
 ) -> Result<Vec<DecodedClassicTextAsset>, ClassicTextResourceError> {
     let source_blob = BlobId(format!("sha256:{:x}", Sha256::digest(bytes)));
-    let mut decoded = parse_resource_entries_preserving_duplicates(bytes)?
-        .into_iter()
+    let entries = parse_resource_entries_preserving_duplicates(bytes)?;
+    Ok(decode_classic_text_assets_from_entries(
+        &entries,
+        &source_blob,
+        source,
+    ))
+}
+
+pub fn decode_classic_text_assets_from_entries(
+    entries: &[super::ResourceEntry],
+    source_blob: &BlobId,
+    source: &str,
+) -> Vec<DecodedClassicTextAsset> {
+    let mut decoded = entries
+        .iter()
         .filter(|entry| matches!(&entry.resource_type, b"TEXT" | b"styl"))
-        .map(|entry| {
-            let (resource_type, kind, mime_type, extension, runtime_payload) =
-                if entry.resource_type == *b"TEXT" {
-                    (
-                        "TEXT",
-                        "text-resource",
-                        "text/plain",
-                        "txt",
-                        decode_mac_roman_text(&entry.data).into_bytes(),
-                    )
-                } else {
-                    (
-                        "styl",
-                        "text-style-resource",
-                        "application/octet-stream",
-                        "bin",
-                        entry.data.clone(),
-                    )
-                };
-            let runtime_blob = BlobId(format!("sha256:{:x}", Sha256::digest(&runtime_payload)));
-            let classic_blob = BlobId(format!("sha256:{:x}", Sha256::digest(&entry.data)));
-            let label = if entry.name.is_empty() {
-                format!("{resource_type} {}", entry.id)
-            } else {
-                entry.name.clone()
-            };
-            DecodedClassicTextAsset {
-                asset: AssetDescriptor {
-                    identity: StableId(format!("classic-resource:{resource_type}:{}", entry.id)),
-                    label,
-                    kind: kind.into(),
-                    mime_type: Some(mime_type.into()),
-                    classic_resource: Some(ClassicResourceKey {
-                        resource_type: resource_type.into(),
-                        resource_id: i32::from(entry.id),
-                    }),
-                    scenario_music_slot: None,
-                    blob: runtime_blob,
-                    byte_length: runtime_payload.len() as u64,
-                    classic_payload_blob: Some(classic_blob),
-                    classic_payload_byte_length: Some(entry.data.len() as u64),
-                    extension: Some(extension.into()),
-                    width: None,
-                    height: None,
-                    duration_ms: None,
-                    sample_rate: None,
-                    channels: None,
-                    tile_width: None,
-                    tile_height: None,
-                    columns: None,
-                    rows: None,
-                    landlook: None,
-                    base_tile: None,
-                    source: format!("{source} ({})", source_blob.0),
-                },
-                resource_name: entry.name,
-                resource_attributes: entry.attributes,
-                runtime_payload,
-                classic_payload: entry.data,
-            }
-        })
+        .map(|entry| decode_text_asset(entry, source_blob, source))
         .collect::<Vec<_>>();
     decoded.sort_by(|left, right| {
         left.asset
@@ -201,7 +154,84 @@ pub fn decode_classic_text_assets(
             .cmp(&right.asset.classic_resource)
             .then_with(|| left.asset.identity.cmp(&right.asset.identity))
     });
-    Ok(decoded)
+    decoded
+}
+
+fn decode_text_asset(
+    entry: &super::ResourceEntry,
+    source_blob: &BlobId,
+    source: &str,
+) -> DecodedClassicTextAsset {
+    let (resource_type, kind, mime_type, extension, runtime_payload) = text_family_payload(entry);
+    let runtime_blob = BlobId(format!("sha256:{:x}", Sha256::digest(&runtime_payload)));
+    let classic_blob = BlobId(format!("sha256:{:x}", Sha256::digest(&entry.data)));
+    let label = if entry.name.is_empty() {
+        format!("{resource_type} {}", entry.id)
+    } else {
+        entry.name.clone()
+    };
+    DecodedClassicTextAsset {
+        asset: AssetDescriptor {
+            identity: StableId(format!("classic-resource:{resource_type}:{}", entry.id)),
+            label,
+            kind: kind.into(),
+            mime_type: Some(mime_type.into()),
+            classic_resource: Some(ClassicResourceKey {
+                resource_type: resource_type.into(),
+                resource_id: i32::from(entry.id),
+            }),
+            scenario_music_slot: None,
+            blob: runtime_blob,
+            byte_length: runtime_payload.len() as u64,
+            classic_payload_blob: Some(classic_blob),
+            classic_payload_byte_length: Some(entry.data.len() as u64),
+            extension: Some(extension.into()),
+            width: None,
+            height: None,
+            duration_ms: None,
+            sample_rate: None,
+            channels: None,
+            tile_width: None,
+            tile_height: None,
+            columns: None,
+            rows: None,
+            landlook: None,
+            base_tile: None,
+            source: format!("{source} ({})", source_blob.0),
+        },
+        resource_name: entry.name.clone(),
+        resource_attributes: entry.attributes,
+        runtime_payload,
+        classic_payload: entry.data.clone(),
+    }
+}
+
+fn text_family_payload(
+    entry: &super::ResourceEntry,
+) -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    Vec<u8>,
+) {
+    if entry.resource_type == *b"TEXT" {
+        (
+            "TEXT",
+            "text-resource",
+            "text/plain",
+            "txt",
+            decode_mac_roman_text(&entry.data).into_bytes(),
+        )
+    } else {
+        (
+            "styl",
+            "text-style-resource",
+            "application/octet-stream",
+            "bin",
+            entry.data.clone(),
+        )
+    }
 }
 
 pub(super) fn decode_mac_roman_text(bytes: &[u8]) -> String {

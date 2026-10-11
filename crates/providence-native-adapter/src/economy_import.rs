@@ -15,7 +15,6 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
-use std::fs;
 use std::path::{Path, PathBuf};
 
 pub(crate) fn import_classic_treasures(
@@ -32,8 +31,8 @@ pub(crate) fn import_classic_treasures(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < TREASURE_RECORD_BYTES {
         return Err(format!(
             "Data TD must contain at least one complete {TREASURE_RECORD_BYTES}-byte record"
@@ -144,8 +143,8 @@ pub(crate) fn import_classic_option_labels(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < OPTION_LABEL_RECORD_BYTES {
         return Err(format!(
             "Data OD must contain at least one complete {OPTION_LABEL_RECORD_BYTES}-byte record"
@@ -192,8 +191,8 @@ fn read_shop_source(directory: &Path) -> Result<Vec<u8>, String> {
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < SHOP_RECORD_BYTES {
         return Err(format!(
             "Data SD must contain at least one complete {SHOP_RECORD_BYTES}-byte record"

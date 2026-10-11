@@ -9,6 +9,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	var shell: Control = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
+	if not shell.startup_presentable: await shell.startup_completed
 	await process_frame
 	var owners := {"maps": weakref(shell._maps), "document": weakref(shell._maps.document), "regions": weakref(shell._maps.regions),
 		"tileCatalog": weakref(shell._maps.tile_catalog),

@@ -6,7 +6,6 @@ use crate::{atomic_file::atomic_write, blob_store::sha256};
 use providence_core::{
     model::{BlobId, ProjectSnapshot, SNAPSHOT_FORMAT_VERSION},
     session::{EditorSession, Revision},
-    snapshot::to_deterministic_json,
 };
 use serde_json::Value;
 
@@ -21,28 +20,22 @@ impl ProjectStore {
         &self,
         snapshot: &ProjectSnapshot,
     ) -> Result<(Vec<u8>, String), StoreError> {
+        if snapshot.format_version != SNAPSHOT_FORMAT_VERSION {
+            return Err(StoreError::Snapshot(
+                providence_core::snapshot::SnapshotError::UnsupportedVersion(
+                    snapshot.format_version,
+                ),
+            ));
+        }
         fs::create_dir_all(&self.root)?;
         self.validate_asset_blobs(snapshot)?;
         self.validate_source_blobs(snapshot)?;
-        let json = to_deterministic_json(snapshot)?;
-        let Value::Object(mut fields) = serde_json::from_str(&json)? else {
-            return Err(StoreError::InvalidPortableSnapshot(
-                "canonical snapshot root is not an object".into(),
-            ));
-        };
-        if fields.len() != SNAPSHOT_SEGMENTS.len()
-            || SNAPSHOT_SEGMENTS
-                .iter()
-                .any(|name| !fields.contains_key(*name))
-        {
-            return Err(StoreError::InvalidPortableSnapshot(
-                "canonical snapshot fields do not match the segment contract".into(),
-            ));
-        }
+        let mut normalized = snapshot.clone();
+        normalized.normalize();
+        providence_core::snapshot::authoring_metadata::validate(&normalized)?;
         let mut segments = std::collections::BTreeMap::new();
         for name in SNAPSHOT_SEGMENTS {
-            let value = fields.remove(*name).expect("segment presence was checked");
-            let bytes = serde_json::to_vec(&value)?;
+            let bytes = crate::snapshot_segments::encode_segment(name, &normalized)?;
             segments.insert((*name).to_string(), self.put_blob(&bytes)?);
         }
         self.encode_portable_snapshot_manifest(segments)
@@ -123,6 +116,11 @@ impl ProjectStore {
             .get("method")
             .and_then(Value::as_str)
             .unwrap_or_default();
+        if method == "project.save"
+            && let Some(outcome) = self.reuse_durable_checkpoint(session)?
+        {
+            return Ok(outcome);
+        }
         let historical = self.prepare_history_snapshot(session, method)?;
         let history_snapshot_reused = historical.is_some();
         let (snapshot_bytes, snapshot_sha256) = match historical {
@@ -158,6 +156,9 @@ impl ProjectStore {
             })
             .err()
             .map(|error| error.to_string());
+        if infrastructure_warning.is_none() {
+            self.remember_checkpoint(session, &snapshot_sha256, state_blob.clone());
+        }
         Ok(CheckpointOutcome {
             snapshot_sha256,
             session_state_blob: Some(state_blob),

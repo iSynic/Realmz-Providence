@@ -30,7 +30,7 @@ impl CatalogQuery {
         }
     }
 
-    pub(super) fn page(&self, filtered: Vec<Value>) -> (Vec<Value>, usize, usize) {
+    pub(super) fn page<T>(&self, filtered: Vec<T>) -> (Vec<T>, usize, usize) {
         let total = filtered.len();
         let offset = if total == 0 {
             0

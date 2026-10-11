@@ -12,7 +12,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	root.gui_embed_subwindows = true; root.size = Vector2i(1600,900)
 	var shell: Control = load("res://src/editor_shell.tscn").instantiate()
-	shell.set_script(CheckedShell); root.add_child(shell); await _frames(3)
+	shell.set_script(CheckedShell); root.add_child(shell); await shell.startup_completed; await _frames(3)
 	shell._bridge.stop()
 	# The author journey uses the unmodified adapter and its real resolved artwork.
 	shell._bridge = preload("res://src/native_bridge.gd").new(args[0].path_join("settings.cfg"))

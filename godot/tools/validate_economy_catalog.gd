@@ -32,7 +32,7 @@ func _run() -> void:
 func _real_catalog(project: String) -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	var shell = load("res://src/editor_shell.tscn").instantiate()
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	var opened: Dictionary = shell._bridge.start_project(project)
 	assert(opened.ok); await shell._activate_session(opened)
 	await shell._navigation.select_route("economy.treasure")

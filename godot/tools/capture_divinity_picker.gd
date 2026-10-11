@@ -20,7 +20,7 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900); root.content_scale_size = root.size
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[0].path_join("picker-capture-settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	for context in [
 		["ap", "scripts.action-points", "action-point:land:0:0", "open_action_point", 7],

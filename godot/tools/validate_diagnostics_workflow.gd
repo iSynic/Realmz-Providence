@@ -17,7 +17,7 @@ func _run() -> void:
 	if args.size()!=2 or not args[0].get_file().begins_with("providence-ui-"): quit(1); return
 	work=args[0]; OS.set_environment("PROVIDENCE_PROJECT_PATH","")
 	root.size=Vector2i(1600,900);root.content_scale_size=root.size
-	shell=preload("res://src/editor_shell.tscn").instantiate();root.add_child(shell);await _idle()
+	shell=preload("res://src/editor_shell.tscn").instantiate();root.add_child(shell); await shell.startup_completed;await _idle()
 	shell._bridge.stop();shell._bridge=Bridge.new(work.path_join("settings.cfg"))
 	await _fresh_state()
 	for name in ["City of Bywater","Half Truth"]:

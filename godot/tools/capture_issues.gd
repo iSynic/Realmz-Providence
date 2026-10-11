@@ -24,7 +24,7 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900)
 	root.content_scale_size = root.size
 	_shell = load("res://src/editor_shell.tscn").instantiate()
-	root.add_child(_shell)
+	root.add_child(_shell); await _shell.startup_completed
 	await _settle()
 	_shell._bridge.stop()
 	_shell._bridge = load("res://src/native_bridge.gd").new(args[0].path_join("settings.cfg"))

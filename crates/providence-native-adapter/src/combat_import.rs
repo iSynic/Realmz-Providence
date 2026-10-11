@@ -18,7 +18,6 @@ use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::PathBuf;
 
 struct ImportedMonsterSets {
@@ -100,8 +99,8 @@ pub(crate) fn import_classic_battles(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < BATTLE_RECORD_BYTES {
         return Err(format!(
             "Data BD must contain at least one complete {BATTLE_RECORD_BYTES}-byte record"
@@ -159,7 +158,7 @@ fn read_monster_sets(directory: &std::path::Path) -> Result<ImportedMonsterSets,
             }
             continue;
         }
-        let bytes = fs::read(&path)
+        let bytes = crate::import_inputs::read(&path)
             .map_err(|error| format!("could not read {}: {error}", path.display()))?;
         if bytes.len() < MONSTER_RECORD_BYTES {
             return Err(format!(
@@ -188,7 +187,7 @@ fn read_monster_descriptions(
 ) -> Result<Vec<providence_core::model::MonsterDescription>, String> {
     let description_path = directory.join("Data DES");
     let monster_descriptions = if description_path.is_file() {
-        let bytes = fs::read(&description_path)
+        let bytes = crate::import_inputs::read(&description_path)
             .map_err(|error| format!("could not read {}: {error}", description_path.display()))?;
         if bytes.len() < MONSTER_DESCRIPTION_RECORD_BYTES {
             return Err(format!(

@@ -29,7 +29,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_bridge = CaptureBridge.new(_work.path_join("settings.cfg"))
 	_shell._bridge = _bridge

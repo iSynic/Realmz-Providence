@@ -14,7 +14,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell._bridge = preload("res://tools/validate_assets_corpus.gd").CorpusBridge.new("user://encounter-route-navigation-unused.cfg")
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _prepare_session()
 	var tabs: ProvidenceEncounterRouteTabs = _shell.get_node("%EncounterRouteTabs")
 	assert(not tabs.visible)

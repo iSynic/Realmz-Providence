@@ -680,6 +680,9 @@
     {
       "id": "economy.bag",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "reference-catalog.describe",
         "reference-catalog.list",
         "reference-catalog.open",
@@ -694,6 +697,9 @@
     {
       "id": "economy.vault",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "reference-catalog.describe",
         "reference-catalog.list",
         "reference-catalog.preview",
@@ -709,6 +715,9 @@
     {
       "id": "assets.project-assets",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "project-asset.list",
         "project-asset.open",
         "asset.import",
@@ -741,6 +750,9 @@
     {
       "id": "assets.pictures",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "picture.list",
         "picture.open",
         "picture.preview",
@@ -762,6 +774,9 @@
     {
       "id": "assets.sounds",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "sound.list",
         "sound.open",
         "sound.preview",
@@ -783,6 +798,9 @@
     {
       "id": "assets.icons",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "icon.list",
         "icon.open",
         "icon.preview",
@@ -804,6 +822,9 @@
     {
       "id": "assets.text-resources",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "text-resource.list",
         "text-resource.open",
         "text-resource.update",
@@ -826,6 +847,9 @@
     {
       "id": "assets.special-land",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "special-land.list",
         "special-land.open",
         "special-land.preview",
@@ -848,6 +872,9 @@
     {
       "id": "assets.library-assets",
       "commands": [
+        "asset-export.describe",
+        "asset-export.plan",
+        "asset-export.write",
         "application-media.describe",
         "application-media.list",
         "application-media.open",

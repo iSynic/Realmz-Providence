@@ -24,7 +24,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_MONSTER_LIBRARY_ROOT", args[0].path_join("monster-library"))
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _standalone_front_door()
 	if _failed: return
 	await _shell._project_session.open_project(args[0].path_join("project"))

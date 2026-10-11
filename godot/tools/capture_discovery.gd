@@ -14,7 +14,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	var opened: Dictionary = _shell._bridge.start_project(OS.get_environment("PROVIDENCE_DISCOVERY_PROJECT"))
 	assert(opened.get("ok", false), str(opened))
 	await _shell._activate_session(opened)

@@ -37,7 +37,7 @@ func _run() -> void:
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	shell.set_script(CheckedShell)
 	root.add_child(shell)
-	await _frames(3)
+	await shell.startup_completed
 	shell._bridge.stop()
 	shell._bridge = PaintBridge.new(args[0].path_join("settings.cfg"))
 	var created: Dictionary = shell._bridge.create_project("map-paint-workflow", args[0].path_join("project"))
@@ -184,9 +184,9 @@ func _exercise_persistence(shell, canvas) -> void:
 	_check(_tiles(shell, "land:1") == expected and canvas._tiles == expected, "Save/reopen lost the multi-cell stroke")
 	await shell._undo()
 	var restored := _tiles(shell, "land:1")
-	_check(restored == before and restored != expected and restored == canvas._tiles, "Durable Undo did not restore the whole final stroke")
+	_check(restored == before and restored != expected and _same_tiles(restored, canvas._tiles), "Durable Undo did not restore the whole final stroke")
 	await shell._redo()
-	_check(_tiles(shell, "land:1") == expected and canvas._tiles == expected, "Durable Redo did not restore the whole final stroke")
+	_check(_tiles(shell, "land:1") == expected and _same_tiles(canvas._tiles, expected), "Durable Redo did not restore the whole final stroke")
 
 
 func _exercise_viewport_input(shell, canvas) -> void:
@@ -251,6 +251,14 @@ func _tiles(shell, identity: String) -> Array:
 func _position(canvas, cell: Vector2i) -> Vector2:
 	var cell_size: float = canvas._cell_size()
 	return canvas._origin(cell_size) + (Vector2(cell) + Vector2(0.5, 0.5)) * cell_size
+
+
+func _same_tiles(first: Array, second: Array) -> bool:
+	if first.size() != second.size(): return false
+	# JSON parses tile numbers as floats; incremental canvas updates use integers.
+	for index in first.size():
+		if int(first[index]) != int(second[index]): return false
+	return true
 
 
 func _press(canvas, cell: Vector2i) -> void:

@@ -21,7 +21,7 @@ func _run() -> void:
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[1].path_join("settings.cfg"))
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	var created: Dictionary = shell._bridge.create_project("trouble-in-the-sword-lands", args[1].path_join("project"))
 	assert(created.get("ok", false), str(created))
 	await shell._activate_session(created)

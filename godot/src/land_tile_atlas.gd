@@ -51,12 +51,9 @@ func set_atlas(projection: Dictionary, expected_cells := 200) -> bool:
 	var pixels := Vector2i(int(projection.get("tileWidth", 0)), int(projection.get("tileHeight", 0)))
 	if geometry.x <= 0 or geometry.y <= 0 or geometry.x * geometry.y != expected_cells or pixels.x <= 0 or pixels.y <= 0:
 		return false
-	var image := Image.new()
-	if image.load_png_from_buffer(Marshalls.base64_to_raw(str(projection.get("base64", "")))) != OK:
-		return false
-	if image.get_size() != geometry * pixels:
-		return false
-	atlas_texture = ImageTexture.create_from_image(image)
+	var artwork := preload("res://src/map_atlas_artwork.gd").decode(projection)
+	if artwork.is_empty(): return false
+	atlas_texture = artwork.texture
 	tile_size = pixels
 	columns = geometry.x
 	rows = geometry.y

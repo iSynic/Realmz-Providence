@@ -12,7 +12,7 @@ func _run() -> void:
 		return
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(args[0])
 	assert(shell._bridge.is_project_backed())
 	var revision: int = shell._session_view.revision
@@ -22,6 +22,8 @@ func _run() -> void:
 			var button: Button = shell._document_tabs.get_current_tab_control().find_child(entry[0], true, false)
 			assert(button != null and button.is_visible_in_tree() and not button.disabled)
 			button.pressed.emit()
+			assert(shell._status.text == "Opening Assets…", "Assets entry must acknowledge immediately")
+			await shell._assets.catalog_ready
 			assert(not shell._unapplied_dialog.visible)
 			var library = shell._assets.library_workbench
 			assert(library != null and shell._document_tabs.get_current_tab_control() == library)

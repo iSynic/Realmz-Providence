@@ -53,7 +53,7 @@ func _run() -> void:
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	shell.set_script(CheckedShell)
 	root.add_child(shell)
-	await _frames(3)
+	await shell.startup_completed
 	shell._bridge.stop()
 	shell._bridge = PaintBridge.new(args[0].path_join("workspace-settings.cfg"))
 	print("PROVIDENCE_MAP_PAINT_WORKSPACE_ADAPTER ", shell._bridge._adapter_path())

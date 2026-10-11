@@ -27,7 +27,7 @@ fn ui_contract_commands_are_recognized_by_the_top_level_dispatcher() {
         })
         .collect::<BTreeSet<_>>();
     assert_eq!(screens.len(), 46);
-    assert_eq!(commands.len(), 330);
+    assert_eq!(commands.len(), 333);
     assert!(commands.contains("spell.draft.apply"));
     assert!(commands.contains("spell-reference.preview"));
     assert!(commands.contains("special-art.preview"));

@@ -18,7 +18,7 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900)
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[0].path_join("picker-check-settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	assert(shell._scripts._action_catalog.items[0].has("availabilityByScriptKind"), "The configured adapter must supply context availability")
 	for context in [

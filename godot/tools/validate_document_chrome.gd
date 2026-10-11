@@ -13,7 +13,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell._bridge = preload("res://tools/validate_assets_corpus.gd").CorpusBridge.new("user://maintenance-chrome-test-unused.cfg")
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	for viewport in [Vector2i(1920, 1080), Vector2i(1600, 900)]:
 		root.size = viewport
 		root.content_scale_size = viewport

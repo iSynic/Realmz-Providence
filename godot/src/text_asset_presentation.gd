@@ -9,8 +9,7 @@ static func glyph(kind: String) -> Texture2D:
 
 
 static func configure(panel: Control) -> void:
-	var body := SystemFont.new()
-	body.font_names = PackedStringArray(["Source Sans 3", "Segoe UI"])
+	var body := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["Source Sans 3", "Segoe UI"]))
 	for name in ["%TextPreview", "%StyleDescription", "%TextLimitation", "InspectorInset/Selection/Rights"]:
 		panel.get_node(name).add_theme_font_override("font", body)
 		panel.get_node(name).add_theme_font_size_override("font_size", 15 if name in ["%TextPreview", "%StyleDescription"] else 13)

@@ -6,6 +6,10 @@ class LibraryBridge extends "res://src/native_bridge.gd":
 	var png := ""
 	var mutation_delay_ms := 0
 	func _request(method: String, params: Dictionary = {}) -> Dictionary:
+		if method == "media.thumbnails":
+			assert(params.items.size() <= 4)
+			return {"ok": true, "result": {"items": params.items.map(func(_item):
+				return {"ok": true, "result": {"base64": png, "width": 1, "height": 1, "thumbnail": true}})}}
 		if method in ["personal-library.list", "media.library.list"]:
 			assert(params.limit == 25)
 			return {"ok": true, "result": {"revision": revision, "items": rows.duplicate(true), "total": rows.size()}}
@@ -41,6 +45,7 @@ func _run() -> void:
 	await panel.import_file("C:/fixture/Ruby.png")
 	for frame in 4:
 		await process_frame
+	while panel._operations.busy or panel._previews.is_empty(): await process_frame
 	assert(panel.get_node("%Gallery").item_count == 1)
 	await panel._select(0)
 	assert(panel.get_node("%Preview").texture != null)

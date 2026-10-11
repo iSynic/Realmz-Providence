@@ -15,7 +15,7 @@ func _run() -> void:
 		return
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _capture(args[0], args[1])
 	_shell._bridge.stop()
 	quit(0 if _passed else 1)

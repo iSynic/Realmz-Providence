@@ -17,7 +17,7 @@ func _run() -> void:
 	_output=args[1]; _quick=args.size()>2 and args[2]=="quick"
 	DirAccess.make_dir_recursive_absolute(_output)
 	root.gui_embed_subwindows=true
-	_shell=load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await process_frame
+	_shell=load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await _shell.startup_completed
 	_shell._bridge.stop(); _shell._bridge=ProvidenceNativeBridge.new(args[0].get_base_dir().path_join("settings.cfg"))
 	var opened: Dictionary = _shell._bridge.start_project(args[0]); assert(opened.get("ok",false),str(opened))
 	await _shell._activate_session(opened)

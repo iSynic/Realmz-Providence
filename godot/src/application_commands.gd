@@ -100,6 +100,7 @@ func configure_help(manual, code_helper) -> void:
 
 
 func refresh() -> void:
+	if not is_inside_tree(): return
 	if _session == null: return
 	var available: Dictionary = _preview.availability()
 	_bar.back_button.disabled = not _navigation.can_go_back() or _operations.busy or _operations.requires_reopen

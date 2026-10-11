@@ -26,6 +26,7 @@ func _run() -> void:
 	cache.remember("replacement", {"text": "ddd"})
 	assert(cache.find_preview("first").is_empty() and cache.find_preview("third").text == "c")
 	connection.epoch += 1
+	assert(not cache.connection_current(cache.connection_token()))
 	cache.attach_connection(connection)
 	assert(cache.find_preview("third").is_empty())
 	cache.remember("third", {"text": "new"})

@@ -26,7 +26,7 @@ impl ProjectStore {
     pub fn open_session_measured(
         root: impl Into<PathBuf>,
     ) -> Result<(Self, EditorSession, ProjectOpenTiming), StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self::at_root(root.into());
         let started = Instant::now();
         let snapshot = store.load_snapshot()?;
         let snapshot_load_ms = started.elapsed().as_secs_f64() * 1000.0;
@@ -35,6 +35,15 @@ impl ProjectStore {
         let index_rebuild_ms = started.elapsed().as_secs_f64() * 1000.0;
         let started = Instant::now();
         let session = store.restore_session(snapshot)?;
+        if let Some(previous) = store.current_session_manifest()
+            && previous.revision == session.revision()
+        {
+            let history = BlobId(format!(
+                "sha256:{}",
+                crate::blob_store::sha256(&serde_json::to_vec(&previous)?)
+            ));
+            store.remember_checkpoint(&session, &previous.snapshot_sha256, history);
+        }
         let timing = ProjectOpenTiming {
             snapshot_load_ms,
             index_rebuild_ms,

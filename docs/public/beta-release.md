@@ -1,16 +1,19 @@
-Providence v0.6.0-beta.2 improves the native Godot/Rust scenario editor.
+Providence v0.6.0-beta.3 improves the native Godot/Rust scenario editor.
 The final web release remains available as v0.5.9 and on `legacy/tauri`.
 
-Changes since beta.1:
+Changes since beta.2:
 
-- Browse complete matching catalogs in Battles, Spells, Items, APs and XAPs.
-  Spell browsing starts with the Sorcerer class and lets you select another class.
-- Fix missed clicks when switching action steps; selection stays aligned with
-  the detail panel while draft reads and action descriptions refresh.
-- Keep Economy tabs and Inspector context aligned with the selected section.
-- Explore script links in native View Flow, with step summaries, navigation,
-  a legend and layouts locked by default. Member lists dismiss on outside clicks.
-- Restore shared script navigation and use Classic Quests terminology.
+- Open projects and import scenarios faster, with phase progress and safe
+  cancellation. Keep the current project until its replacement is ready.
+- Reduce unchanged Save work and load artwork progressively with bounded caches.
+- Center and scale the Battle placement canvas; resize the Scenario Monsters
+  palette to use wider displays effectively.
+- Export individual or bulk Scenario, My Library and Stock assets, with category
+  selection and PNG, WAV, UTF-8 text and original MOD output.
+- Keep one original and at most one distinct converted file per entry. Reuse
+  already editable files instead of exporting duplicate PNGs or other assets.
+- Give Export a visible button surface and keyboard focus.
+- Filter Action Points by the current map while preserving stable selection.
 
 Included native workflows:
 
@@ -39,5 +42,5 @@ The release gate passed all 40 scenarios in the reference corpus: fresh import,
 Save/reopen, byte-exact no-edit Classic export and validation of actual Rebuilt
 archives. Rebuilt checks used an explicit application-rules audit profile;
 they do not establish the intended custom-rule selection for each campaign.
-The source-bound beta.2 results are included as the release's
+The source-bound beta.3 results are included as the release's
 `compatibility-audit.json` asset. The repository retains the earlier beta.1 audit.

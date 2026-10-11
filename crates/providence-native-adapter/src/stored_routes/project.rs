@@ -17,6 +17,19 @@ pub(super) fn dispatch(
     method: &str,
     params: Value,
 ) -> Result<Value, String> {
+    if matches!(
+        method,
+        "project.compile-classic-slice"
+            | "project.compile-classic-stuffit"
+            | "project.compile-rebuilt-package"
+    ) && let (Some(library), Some(catalog)) =
+        (catalogs.application_media_store, catalogs.application_media)
+    {
+        let current = library.load_catalog().map_err(|error| error.to_string())?;
+        if &current != catalog {
+            return Err("Stock catalog changed; reopen before exporting.".into());
+        }
+    }
     let application_media = catalogs.application_media;
     if method.starts_with("project.import-repair.") {
         return crate::import_repair::dispatch(session, store, method, &params);

@@ -54,9 +54,10 @@ fn open_requested_library(
         }
         "--application-library-root" => {
             require_unconfigured(libraries.application_media.is_some(), option)?;
-            let (store, catalog) = ReferenceLibraryStore::open(root).map_err(|error| {
-                format!("could not open application media library {root}: {error}")
-            })?;
+            let (store, catalog) =
+                ReferenceLibraryStore::open_structural(root).map_err(|error| {
+                    format!("could not open application media library {root}: {error}")
+                })?;
             libraries.application_media = Some(OpenApplicationMedia { store, catalog });
         }
         "--monster-library-root" => {

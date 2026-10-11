@@ -4,9 +4,7 @@ extends "res://src/item_theme.gd"
 
 func _rebuild() -> void:
 	super._rebuild()
-	var heading := SystemFont.new()
-	heading.font_names = PackedStringArray(["JetBrains Mono", "Consolas"])
-	heading.font_weight = 700
+	var heading := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["JetBrains Mono", "Consolas"]), 700)
 	for type in ["MediaHeading", "MediaTitle", "MediaCollectionHeading"]:
 		set_type_variation(type, "Label")
 		set_font("font", type, heading)

@@ -35,7 +35,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = CaptureBridge.new(scratch.path_join("settings.cfg")); shell._bridge.library_root = scratch.path_join("library")
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	var created: Dictionary = shell._bridge.create_project("release-polish", scratch.path_join("project")); assert(created.ok)
 	await shell._activate_session(created); await shell._navigation.select_route("maps.land"); await settle()
 	assert(shell._documents.identity_for_tab(shell._document_tabs.current_tab) == "maps.land")

@@ -1,0 +1,203 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/asset_export_dialog.gd" id="1"]
+
+[node name="AssetExportDialog" type="Window"]
+title = "Export assets"
+size = Vector2i(720, 650)
+min_size = Vector2i(680, 620)
+visible = false
+transient = true
+exclusive = true
+script = ExtResource("1")
+
+[node name="Background" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Inset" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="Inset"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Selection" type="Label" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Export asset categories"
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 3
+
+[node name="Intro" type="Label" parent="Inset/Content"]
+layout_mode = 2
+text = "Choose what to export from the complete catalogs. Files are grouped by source and category in a new folder."
+autowrap_mode = 3
+
+[node name="Scopes" type="HBoxContainer" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Scenario" type="CheckBox" parent="Inset/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Scenario"
+
+[node name="Library" type="CheckBox" parent="Inset/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "My Library"
+
+[node name="Stock" type="CheckBox" parent="Inset/Content/Scopes"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Stock"
+
+[node name="CategorySection" type="VBoxContainer" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="Inset/Content/CategorySection"]
+layout_mode = 2
+text = "CATEGORIES"
+
+[node name="Categories" type="GridContainer" parent="Inset/Content/CategorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 32
+theme_override_constants/v_separation = 4
+
+[node name="Pictures" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Pictures"
+
+[node name="Icons" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Icons"
+
+[node name="Portraits" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Portraits"
+
+[node name="Monsters" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Monster artwork"
+
+[node name="Tilesets" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Map and battle tilesets"
+
+[node name="SpecialLand" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Special Land"
+
+[node name="Sounds" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Sounds"
+
+[node name="Music" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Music"
+
+[node name="Text" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Text and styles"
+
+[node name="Other" type="CheckBox" parent="Inset/Content/CategorySection/Categories"]
+layout_mode = 2
+text = "Other resources"
+
+[node name="Separator" type="HSeparator" parent="Inset/Content"]
+layout_mode = 2
+
+[node name="Formats" type="VBoxContainer" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Originals" type="CheckBox" parent="Inset/Content/Formats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Original source files"
+tooltip_text = "Exact imported originals or retained Classic resources. Internal preview and generated resource copies are not exported."
+
+[node name="Converted" type="CheckBox" parent="Inset/Content/Formats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Editable files · PNG, WAV, UTF-8 text and MOD"
+tooltip_text = "At most one editable file per entry. An equivalent original is reused without a duplicate copy."
+
+[node name="Summary" type="Label" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+text = "Reading available assets…"
+
+[node name="Issues" type="TextEdit" parent="Inset/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+custom_minimum_size = Vector2(0, 100)
+size_flags_vertical = 3
+editable = false
+wrap_mode = 1
+
+[node name="Spacer" type="Control" parent="Inset/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Notice" type="Label" parent="Inset/Content"]
+layout_mode = 2
+text = "A new export folder keeps existing destination files intact. Unsupported conversions are listed in the export report."
+autowrap_mode = 3
+
+[node name="Actions" type="HBoxContainer" parent="Inset/Content"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="Refresh" type="Button" parent="Inset/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Refresh"
+
+[node name="Cancel" type="Button" parent="Inset/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
+[node name="Export" type="Button" parent="Inset/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Choose folder and export…"
+disabled = true
+
+[node name="OpenFolder" type="Button" parent="Inset/Content/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Open export folder"
+visible = false
+
+[node name="PrepareDelay" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 0.2
+one_shot = true
+
+[node name="Destination" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Choose export destination"
+file_mode = 2
+access = 2
+use_native_dialog = true

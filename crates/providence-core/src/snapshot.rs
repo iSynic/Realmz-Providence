@@ -51,6 +51,17 @@ pub fn from_json(json: &str) -> Result<ProjectSnapshot, SnapshotError> {
     Ok(snapshot)
 }
 
+/// Typed current-format segments share the same normalization as JSON loading.
+pub fn from_current_snapshot(
+    mut snapshot: ProjectSnapshot,
+) -> Result<ProjectSnapshot, SnapshotError> {
+    if snapshot.format_version != SNAPSHOT_FORMAT_VERSION {
+        return Err(SnapshotError::UnsupportedVersion(snapshot.format_version));
+    }
+    migration::apply(&mut snapshot, SNAPSHOT_FORMAT_VERSION, None)?;
+    Ok(snapshot)
+}
+
 #[cfg(test)]
 #[path = "snapshot/editor_metadata_tests.rs"]
 mod editor_metadata_tests;

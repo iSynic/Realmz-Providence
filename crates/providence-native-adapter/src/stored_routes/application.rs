@@ -24,6 +24,14 @@ pub(super) fn dispatch(
         "application-media.preview" => {
             application_media_preview(application_media, application_media_store, &params)
         }
+        "application-media.inspect-integrity" => {
+            let store = application_media_store.ok_or("Configure a Stock library first.")?;
+            let current = store.load_catalog().map_err(|error| error.to_string())?;
+            if Some(&current) != application_media {
+                return Err("Stock catalog changed; reopen the project.".into());
+            }
+            Ok(json!({"status": "complete"}))
+        }
         "application-media.import-classic-library" => import_classic_application_media(params),
         _ => crate::session_routes::dispatch(session, method, params),
     }

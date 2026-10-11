@@ -12,11 +12,11 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	print("PROVIDENCE_LOADED_ACTION_POINTS_ADAPTER " + _shell._bridge._adapter_path())
 	var opened: Dictionary = _shell._bridge.start_demo() if project.is_empty() else _shell._bridge.start_project(project)
 	assert(opened.get("ok", false), str(opened))
-	await _shell._activate_session(opened)
+	await _activate_with_guard(opened)
 	assert(_shell._document_tabs.current_tab == _shell._documents.tab_for_route("scripts.action-points"))
 	var ordinary: Control = _shell._documents.view("scripts.action-points")
 	var extra: Control = _shell._documents.view("scripts.macros")
@@ -54,6 +54,21 @@ func _run() -> void:
 	await process_frame
 	print("PROVIDENCE_LOADED_ACTION_POINTS_OK populated=AP+XAP tabs=button-signals viewports=1600+1920 selected-heading=coherent optional-sound=checked linked-draft=apply-target-return")
 	quit()
+
+
+func _activate_with_guard(opened: Dictionary) -> void:
+	var guarded_frames: Array[int] = []
+	var observe := func():
+		if _shell._operations.busy and _shell._operations.label == "Open":
+			var refused: Dictionary = _shell._bridge.request("session.describe")
+			assert(not refused.get("ok", false) and refused.get("busy", false), "Partial activation admitted an unrelated request")
+			guarded_frames.append(1)
+	process_frame.connect(observe)
+	var activated: Dictionary = await _shell._activate_session(opened)
+	process_frame.disconnect(observe)
+	assert(activated.get("ok", false), str(activated))
+	assert(guarded_frames.size() >= 2, "Activation did not stage guarded work across frames")
+	assert(_shell._session_view.revision == int(opened.result.revision))
 
 
 func _check_linked_draft_navigation(ordinary: Control, extra: Control) -> void:
@@ -99,7 +114,7 @@ func _check_sound_history(extra: Control, workbench: ProvidenceActionStepWorkben
 	workbench._editor_scroll.scroll_vertical = 12
 	var xap_identity: String = extra.selected_identity()
 	_shell._navigation.clear_history()
-	await _shell._open_script_sound(native_id)
+	await _shell._navigation.open_script_sound(native_id)
 	assert(_shell._documents.identity_for_tab(_shell._document_tabs.current_tab) == "assets.sounds")
 	assert(_shell._navigation.can_go_back())
 	await _shell._navigation.navigate_back()

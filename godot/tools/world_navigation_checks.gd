@@ -94,7 +94,9 @@ func _stock_return(shell: Control, gallery: Control, check: Callable, settle: Ca
 	check.call(gallery._rows.size() == 1 and gallery._rows[0].ownership == "stock", "Stock gallery query lost exact source ownership.")
 	gallery.get_node("%SpecialGallery").select(0); gallery.get_node("%SpecialGallery").item_selected.emit(0); await settle.call(shell)
 	gallery.get_node("%SpecialSearch").grab_focus()
-	gallery.get_node("%SpecialOpen").pressed.emit(); await settle.call(shell)
+	gallery.get_node("%SpecialOpen").pressed.emit()
+	if shell._assets._initializing: await shell._assets.catalog_ready
+	await settle.call(shell)
 	check.call(not gallery.is_visible_in_tree() and shell._navigation.can_go_back(), "Visible Stock Open artwork failed to leave World with a return location.")
 	await shell._navigation.navigate_back(); await settle.call(shell)
 	check.call(gallery.is_visible_in_tree() and gallery.get_node("%SpecialSearch").text == "-90" and int(gallery.selected_choice().get("value", 0)) == -90,

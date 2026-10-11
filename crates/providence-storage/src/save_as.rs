@@ -39,9 +39,7 @@ impl ProjectStore {
         let staging = TempDirBuilder::new()
             .prefix(".providence-save-as-")
             .tempdir_in(&canonical_parent)?;
-        let target = Self {
-            root: staging.path().to_path_buf(),
-        };
+        let target = Self::at_root(staging.path().to_path_buf());
         let snapshots = std::iter::once(session.snapshot())
             .chain(session.undo_history().iter().map(|entry| &entry.snapshot))
             .chain(session.redo_history().iter().map(|entry| &entry.snapshot));

@@ -10,7 +10,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[1].path_join("settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await load_scenario(args[0], args[1].path_join("hax"))
 	for viewport in [Vector2i(1920,1080), Vector2i(1600,900)]:
 		root.size = viewport; root.content_scale_size = viewport

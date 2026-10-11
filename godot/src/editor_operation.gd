@@ -16,6 +16,27 @@ var _previous_frame := 0
 var _maximum_frame_gap := 0
 var _media_read_lease := false
 var _media_read_reconnect := false
+var _cancel_action := Callable()
+var _cancel_requested := false
+var _progress: Window
+
+
+func _ready() -> void:
+	_progress = preload("res://src/operation_progress.tscn").instantiate()
+	add_child(_progress)
+	_progress.cancel_requested.connect(request_cancel)
+
+
+func show_progress(phase: String, count: String = "", cancel_action: Callable = Callable()) -> void:
+	_cancel_action = cancel_action
+	if _progress != null: _progress.present(phase, count, cancel_action.is_valid())
+
+
+func request_cancel() -> void:
+	if not busy or not _cancel_action.is_valid() or _cancel_requested: return
+	_cancel_requested = true
+	_cancel_action.call()
+	show_progress("Cancelling…")
 
 
 func begin(bridge, operation_label: String) -> bool:
@@ -33,6 +54,7 @@ func _claim(bridge, operation_label: String) -> bool:
 	_previous_frame = _started
 	_maximum_frame_gap = 0
 	last_metrics = {}
+	_cancel_requested = false
 	busy_changed.emit(true, label)
 	return true
 
@@ -157,7 +179,10 @@ func open_project(candidate, path: String, options: Dictionary = {}) -> Dictiona
 	if not busy or _bridge.connection_epoch() != _epoch: return _unavailable()
 	var started: Dictionary = candidate.begin_project_start(path, options)
 	if not started.get("ok", false): return started
-	return await _wait_for_candidate(candidate)
+	show_progress("Opening project…", "Loading project records and restoring history", candidate.stop)
+	var response := await _wait_for_candidate(candidate)
+	_cancel_action = Callable()
+	return {"ok": false, "cancelled": true, "error": "Opening cancelled. Your current project remains open."} if _cancel_requested else response
 
 
 func create_project(candidate, project_id: String, path: String) -> Dictionary:
@@ -225,6 +250,8 @@ func finish(response: Dictionary, local_recovery: bool = false, notify_completio
 		"maxFrameGapMs": float(_maximum_frame_gap) / 1000.0}
 	_bridge.release_operation(get_instance_id())
 	_bridge = null
+	_cancel_action = Callable()
+	if _progress != null: _progress.hide()
 	busy = false
 	requires_reopen = requires_reopen or bool(response.get("outcomeUnknown", false))
 	busy_changed.emit(false, label)

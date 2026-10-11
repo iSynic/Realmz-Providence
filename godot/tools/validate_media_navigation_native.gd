@@ -15,7 +15,8 @@ func _run() -> void:
 		push_error("Marked disposable project and receipt path required"); quit(2); return
 	root.gui_embed_subwindows = true; root.size = Vector2i(1600, 900)
 	shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(shell)
-	await process_frame; await shell._project_session.open_project(args[0])
+	if not shell.startup_presentable: await shell.startup_completed
+	await shell._project_session.open_project(args[0])
 	if not _check(shell._bridge.is_project_backed(), "open imported review project"): return
 	await shell._assets.open_library("scenario"); workbench = shell._assets.library_workbench
 	var panel: Control = workbench.get_node("%Gallery")

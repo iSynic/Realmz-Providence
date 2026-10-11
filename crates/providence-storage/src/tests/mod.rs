@@ -27,6 +27,7 @@ mod history_preparation;
 mod index;
 mod libraries;
 mod lifecycle;
+mod loading_integrity;
 mod migration;
 mod project_open;
 mod reference_uses;

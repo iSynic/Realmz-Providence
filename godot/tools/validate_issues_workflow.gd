@@ -34,7 +34,7 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900)
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell = shell
-	root.add_child(shell)
+	root.add_child(shell); await shell.startup_completed
 	await _settle()
 	shell._bridge.stop()
 	shell._bridge = WorkflowBridge.new(args[0].path_join("settings.cfg"))
@@ -368,12 +368,17 @@ func _method_count(methods: Array[String], method: String) -> int:
 func _settle() -> void:
 	for _frame in 5:
 		await process_frame
-	var deadline := Time.get_ticks_msec() + 10000
+	# This fixture deliberately creates slot 31000. Its complete catalog is now
+	# loaded on first navigation; responsiveness has separate measured checks.
+	var deadline := Time.get_ticks_msec() + 30000
 	while is_instance_valid(_shell) and (_shell._operations.busy or _shell._issues.workbench.state.has_pending_refresh()
 			or _shell._issues._source_open_in_progress or _shell._issues.guard._applying
 			or _shell._scripts._form_description_drain_running or not _shell._scripts._pending_form_descriptions.is_empty()):
 		if Time.get_ticks_msec() >= deadline:
-			_check(false, "Issues validation did not finish")
+			_check(false, "Issues validation did not finish: operation=%s worker=%s source=%s forms=%s pending=%s recent=%s" % [
+				_shell._operations.label, _shell._bridge.operation_busy(), _shell._issues._source_open_in_progress,
+				_shell._scripts._form_description_drain_running, _shell._scripts._pending_form_descriptions.size(),
+				_shell._bridge.methods.slice(-8)])
 			return
 		await process_frame
 

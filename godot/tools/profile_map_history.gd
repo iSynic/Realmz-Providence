@@ -19,6 +19,7 @@ var _action_started := 0
 var _busy_feedback_ms := 0.0
 var _last_frame := 0
 var _max_frame_gap := 0
+var _peak_static_memory := 0.0
 var _bridge: TimingBridge
 
 
@@ -38,7 +39,6 @@ func _run() -> void:
 	await _shell._activate_session(described)
 	await _shell._load_first_map()
 	await _shell._navigation.select_tab(1)
-	await _frames(3)
 	var probe := _paint_probe()
 	if probe.is_empty(): return _finish()
 	var report := _new_report(args[1], described)
@@ -66,7 +66,7 @@ func _prepare_shell(temporary_root: String) -> void:
 	process_frame.connect(_record_frame)
 	_shell._operations.busy_changed.connect(func(busy: bool, _label: String):
 		if busy and _action_started > 0 and _busy_feedback_ms < 0: _busy_feedback_ms = float(Time.get_ticks_usec() - _action_started) / 1000.0)
-	await _frames(3)
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_bridge = TimingBridge.new(temporary_root.path_join("settings.cfg"))
 	_shell._bridge = _bridge
@@ -99,11 +99,12 @@ func _paint_probe() -> Dictionary:
 
 
 func _new_report(directory: String, described: Dictionary) -> Dictionary:
+	var identity := _bridge.request("build.identity")
 	return {"adapter": _bridge._adapter_path(), "adapterSha256": FileAccess.get_sha256(_bridge._adapter_path()),
 		"cli": _bridge._cli_path(), "cliSha256": FileAccess.get_sha256(_bridge._cli_path()),
 		"godot": OS.get_executable_path(), "godotVersion": Engine.get_version_info().get("string", ""),
 		"processor": OS.get_processor_name(), "operatingSystem": OS.get_name(),
-		"buildConfiguration": "release" if "/release/" in _bridge._adapter_path().replace("\\", "/") else "debug",
+		"buildIdentity": identity.get("result", {}),
 		"sourceDirectory": directory, "sourceFiles": _source_files(directory), "counts": described.result.counts,
 		"mapIdentity": _shell._maps.document.identity, "warmupOperations": 3, "samples": [],
 		"scope": "disposable full import; actual asynchronous Undo and Redo; headless Godot"}
@@ -175,6 +176,7 @@ func _write_report(path: String, report: Dictionary) -> void:
 
 func _record_frame() -> void:
 	if _action_started == 0: return
+	_peak_static_memory = maxf(_peak_static_memory, Performance.get_monitor(Performance.MEMORY_STATIC))
 	var now := Time.get_ticks_usec()
 	_max_frame_gap = maxi(_max_frame_gap, now - _last_frame)
 	_last_frame = now

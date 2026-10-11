@@ -31,9 +31,7 @@ impl ProjectStore {
         let root = path.parent().ok_or_else(|| {
             StoreError::InvalidPortableSnapshot("snapshot path has no parent directory".into())
         })?;
-        let store = Self {
-            root: root.to_path_buf(),
-        };
+        let store = Self::at_root(root.to_path_buf());
         store.load_snapshot_document(&fs::read(path)?)
     }
 
@@ -90,6 +88,9 @@ impl ProjectStore {
         &self,
         manifest: &PortableSnapshotManifest,
     ) -> Result<ProjectSnapshot, StoreError> {
+        if manifest.snapshot_format_version == SNAPSHOT_FORMAT_VERSION {
+            return self.load_current_segments(manifest);
+        }
         let mut fields = serde_json::Map::new();
         for name in SNAPSHOT_SEGMENTS {
             let omitted = (*name == "importInterpretationVersion"
@@ -133,6 +134,26 @@ impl ProjectStore {
         }
         let json = serde_json::to_string(&Value::Object(fields))?;
         Ok(from_json(&json)?)
+    }
+
+    fn load_current_segments(
+        &self,
+        manifest: &PortableSnapshotManifest,
+    ) -> Result<ProjectSnapshot, StoreError> {
+        let mut snapshot =
+            ProjectSnapshot::new_authored(providence_core::model::StableId("loading".into()));
+        for name in SNAPSHOT_SEGMENTS {
+            let id = manifest.segments.get(*name).ok_or_else(|| {
+                StoreError::InvalidPortableSnapshot(format!("missing segment {name}"))
+            })?;
+            replace_segment(&mut snapshot, name, &self.read_blob(id)?)?;
+        }
+        if snapshot.format_version != SNAPSHOT_FORMAT_VERSION {
+            return Err(StoreError::InvalidPortableSnapshot(
+                "formatVersion segment disagrees with manifest".into(),
+            ));
+        }
+        Ok(providence_core::snapshot::from_current_snapshot(snapshot)?)
     }
 
     pub(super) fn load_segmented_snapshot_from_base(

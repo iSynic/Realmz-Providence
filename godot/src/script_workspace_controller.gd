@@ -81,6 +81,9 @@ func _add_record(documents: RefCounted, operations: ProvidenceEditorOperation, r
 func _refresh_record(operation: ProvidenceEditorOperation, record: String) -> Dictionary:
 	if operation == null:
 		return await _operations.run_workflow(_bridge, "Load script authoring", _refresh_record.bind(record))
+	if record == "actionPoint" and _maps.maps.is_empty():
+		var maps_response := await _maps.reload_catalog(operation)
+		if not maps_response.get("ok", false): return maps_response
 	if record in ["actionPoint", "extraActionPoint", "encounter", "complexEncounter"]:
 		var catalog_response := await _load_action_catalog(operation)
 		if not catalog_response.get("ok", false): return _action_catalog_failure(catalog_response)

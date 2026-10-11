@@ -150,12 +150,19 @@ pub(super) fn decode_item_texts_for_bases(
     bases: &[i16],
 ) -> Result<(ItemTextCatalog, Vec<String>), ItemCodecError> {
     let entries = parse_resource_entries_preserving_duplicates(bytes)?;
+    decode_item_texts_from_entries(&entries, bases)
+}
+
+pub(super) fn decode_item_texts_from_entries(
+    entries: &[ResourceEntry],
+    bases: &[i16],
+) -> Result<(ItemTextCatalog, Vec<String>), ItemCodecError> {
     let mut texts = BTreeMap::<i16, [String; 3]>::new();
     let mut warnings = Vec::new();
     for base in bases.iter().copied() {
         for field in 0..3 {
             let resource_id = base + field;
-            let entry = unique_family(&entries, resource_id)?
+            let entry = unique_family(entries, resource_id)?
                 .ok_or(ItemCodecError::MissingTextFamily(resource_id))?;
             let (strings, complete) = decode_available_string_list_payload(&entry.data);
             if !complete {

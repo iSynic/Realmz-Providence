@@ -9,12 +9,9 @@ static func configure(inset: MarginContainer, browser := false) -> void:
 	var node := func(path: String) -> Node: return selection.get_node(names.get(path, path))
 	selection.custom_minimum_size.x = 236
 	selection.add_theme_constant_override("separation", 8 if browser else 12)
-	var ui := SystemFont.new()
-	ui.font_names = PackedStringArray(["JetBrains Mono", "Consolas"])
-	var body := SystemFont.new()
-	body.font_names = PackedStringArray(["Source Sans 3", "Segoe UI"])
-	var bold := body.duplicate() as SystemFont
-	bold.font_weight = 700
+	var ui := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["JetBrains Mono", "Consolas"]))
+	var body := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["Source Sans 3", "Segoe UI"]))
+	var bold := preload("res://theme/control_fonts.gd").get_font(body.font_names, 700)
 	var local_theme := Theme.new()
 	local_theme.default_font = ui
 	local_theme.default_font_size = 12
@@ -40,8 +37,7 @@ static func configure(inset: MarginContainer, browser := false) -> void:
 	if browser:
 		selection.get_node("Heading").hide()
 		var name: Label = inset.get_node("%Name")
-		var title := ui.duplicate() as SystemFont
-		title.font_weight = 700
+		var title := preload("res://theme/control_fonts.gd").get_font(ui.font_names, 700)
 		name.add_theme_font_override("font", title)
 		name.add_theme_font_size_override("font_size", 18)
 		caption.add_theme_font_override("font", ui)

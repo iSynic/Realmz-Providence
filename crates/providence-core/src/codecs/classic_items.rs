@@ -4,7 +4,7 @@ use crate::model::{
     BlobId, ItemRuleDefinition, SourcedItemRule, SourcedScenarioItemRule, StableId,
 };
 
-use super::classic_item_text::{decode_item_texts, decode_item_texts_for_bases};
+use super::classic_item_text::{decode_item_texts, decode_item_texts_from_entries};
 
 use super::{ResourceForkError, RuleNameCodecError, parse_resource_entries_preserving_duplicates};
 
@@ -185,29 +185,27 @@ pub fn decode_scenario_item_rules(
     if bytes.len() != ITEM_RECORD_BYTES * SCENARIO_ITEM_DEFINITIONS {
         return Err(ItemCodecError::InvalidScenarioBinaryLength(bytes.len()));
     }
-    let (texts, mut warnings) = match text_bytes {
-        Some(text_bytes) => {
-            let entries = parse_resource_entries_preserving_duplicates(text_bytes)?;
-            let has_item_text_family = entries
-                .iter()
-                .any(|entry| entry.resource_type == *b"STR#" && (800..=802).contains(&entry.id));
-            if has_item_text_family {
-                decode_item_texts_for_bases(text_bytes, &[800])?
-            } else {
-                (
-                    BTreeMap::new(),
-                    vec![
-                        "The supplied item-text resource fork contains no STR# 800 through 802 family; unrelated resources are preserved unchanged"
-                            .into(),
-                    ],
-                )
-            }
-        }
-        None => (
-            BTreeMap::new(),
-            vec!["Item names and descriptions were not imported because no item-text resource fork was supplied. Include Data NI.rsrc or Scenario.rsrc when importing; names will remain blank until supplied or authored.".into()],
-        ),
-    };
+    let entries = text_bytes
+        .map(parse_resource_entries_preserving_duplicates)
+        .transpose()?;
+    decode_scenario_item_rules_from_entries(
+        bytes,
+        entries.as_deref(),
+        source_blob,
+        text_source_blob,
+    )
+}
+
+pub fn decode_scenario_item_rules_from_entries(
+    bytes: &[u8],
+    entries: Option<&[super::ResourceEntry]>,
+    source_blob: BlobId,
+    text_source_blob: Option<BlobId>,
+) -> Result<DecodedScenarioItemFile, ItemCodecError> {
+    if bytes.len() != ITEM_RECORD_BYTES * SCENARIO_ITEM_DEFINITIONS {
+        return Err(ItemCodecError::InvalidScenarioBinaryLength(bytes.len()));
+    }
+    let (texts, mut warnings) = scenario_item_texts(entries)?;
     let mut rules = Vec::with_capacity(SCENARIO_ITEM_DEFINITIONS);
     for (record_index, row) in bytes.chunks_exact(ITEM_RECORD_BYTES).enumerate() {
         let stored_id = read_i16(row, 2) as i16;
@@ -238,6 +236,35 @@ pub fn decode_scenario_item_rules(
         });
     }
     Ok(DecodedScenarioItemFile { rules, warnings })
+}
+
+type ScenarioItemTexts = (BTreeMap<i16, [String; 3]>, Vec<String>);
+
+fn scenario_item_texts(
+    entries: Option<&[super::ResourceEntry]>,
+) -> Result<ScenarioItemTexts, ItemCodecError> {
+    match entries {
+        Some(entries) => {
+            let has_item_text_family = entries
+                .iter()
+                .any(|entry| entry.resource_type == *b"STR#" && (800..=802).contains(&entry.id));
+            if has_item_text_family {
+                decode_item_texts_from_entries(entries, &[800])
+            } else {
+                Ok((
+                    BTreeMap::new(),
+                    vec![
+                        "The supplied item-text resource fork contains no STR# 800 through 802 family; unrelated resources are preserved unchanged"
+                            .into(),
+                    ],
+                ))
+            }
+        }
+        None => Ok((
+            BTreeMap::new(),
+            vec!["Item names and descriptions were not imported because no item-text resource fork was supplied. Include Data NI.rsrc or Scenario.rsrc when importing; names will remain blank until supplied or authored.".into()],
+        )),
+    }
 }
 
 pub fn encode_scenario_item_rules(

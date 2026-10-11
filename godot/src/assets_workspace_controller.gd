@@ -6,6 +6,8 @@ signal save_requested
 signal save_as_requested
 signal status_changed(message: String)
 signal failed(message: String)
+signal catalog_ready
+signal artwork_ready
 
 const Routes = preload("res://src/route_catalog.gd")
 const Workspace = preload("res://src/unified_assets_editor.tscn")
@@ -28,6 +30,8 @@ var _text_preview: Callable
 var _import_menu: PopupMenu
 var _operations: ProvidenceEditorOperation
 var _generation := 0
+var _initializing := false
+var initialization_metrics: Dictionary = {}
 
 
 func initialize(parent: Control, tabs: TabContainer, items: ProvidenceItemEditor, guard: Callable, select_tab: Callable, operations: ProvidenceEditorOperation) -> void:
@@ -78,6 +82,8 @@ func teardown() -> void:
 
 
 func configure_workbench(workbench: Control) -> void:
+	workbench.get_node("%Gallery").catalog_ready.connect(func(): catalog_ready.emit())
+	workbench.get_node("%Gallery").artwork_ready.connect(func(): artwork_ready.emit())
 	workbench.configure_operations(_operations)
 	workbench.configure_text_links(_source_opener,_text_preview)
 	workbench.set_meta("owns_asset_workspace", true)
@@ -178,13 +184,25 @@ func return_to_artwork() -> void:
 
 
 func open_library(scope: String) -> void:
+	if _initializing: return
+	status_changed.emit("Opening Assets…")
 	if not is_instance_valid(library_workbench):
+		_initializing = true
+		await _parent.get_tree().process_frame
+		var started := Time.get_ticks_usec()
 		library_workbench = Workspace.instantiate()
-		_tabs.add_child(library_workbench)
+		initialization_metrics["instantiateMs"] = float(Time.get_ticks_usec() - started) / 1000.0
+		await library_workbench.prepare_async(_parent.get_tree())
+		await _parent.get_tree().process_frame
+		started = Time.get_ticks_usec()
+		await library_workbench.initialize_staged(_tabs)
+		initialization_metrics["readyMs"] = float(Time.get_ticks_usec() - started) / 1000.0
 		configure_workbench(library_workbench)
+		_initializing = false
 	library_workbench.attach_session(_bridge)
-	await library_workbench.show_scope(scope)
+	library_workbench.prepare_scope(scope)
 	await _select_tab.call(library_workbench.get_index())
+	await library_workbench.activate()
 	status_changed.emit({"personal": "My Library · personal and supplied artwork collections",
 		"scenario": "Scenario Assets · all resource types", "stock": "Stock Assets · all resource types"}[scope])
 

@@ -9,7 +9,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await process_frame
 	_check_adapter_protocol(shell)
 	assert(not shell._session_view.connected, "Ordinary startup must not launch a demo project")

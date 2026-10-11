@@ -9,10 +9,12 @@ const PALETTES := {
 
 @export_enum("dark", "light", "high-contrast") var mode := "dark":
 	set(value):
+		if mode == value: return
 		mode = value
 		_rebuild()
 @export_enum("balanced", "compact") var density := "balanced":
 	set(value):
+		if density == value: return
 		density = value
 		_rebuild()
 
@@ -25,8 +27,7 @@ func _rebuild() -> void:
 	if not PALETTES.has(mode):
 		return
 	var colors: Array = PALETTES[mode].map(func(hex: String): return Color(hex))
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["JetBrains Mono", "Cascadia Mono", "Consolas"])
+	var font := preload("res://theme/control_fonts.gd").get_font(PackedStringArray(["JetBrains Mono", "Cascadia Mono", "Consolas"]))
 	default_font = font
 	default_font_size = 13
 	var padding := 5.5 if density == "compact" else 8.5

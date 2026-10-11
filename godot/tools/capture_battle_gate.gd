@@ -37,7 +37,7 @@ func _run() -> void:
 	root.size = Vector2i(_width, 1080 if _width == 1920 else 900)
 	root.content_scale_size = root.size; root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _open_project(_project)
 	await _ordinary_states()
 	if not _failed: await _failure_states()

@@ -4,7 +4,7 @@ use providence_core::codecs::RACE_RECORD_BYTES;
 use providence_core::codecs::decode_caste_rules;
 use providence_core::codecs::decode_race_rules;
 use providence_core::codecs::decode_rule_name_catalog;
-use providence_core::codecs::decode_scenario_item_rules;
+use providence_core::codecs::decode_scenario_item_rules_from_entries;
 use providence_core::codecs::decode_standard_item_rules;
 use providence_core::codecs::derive_caste_eligibility;
 use providence_core::codecs::encode_caste_rules;
@@ -16,7 +16,6 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
-use std::fs;
 
 pub(crate) fn import_race_rules(
     session: &mut EditorSession,
@@ -28,7 +27,8 @@ pub(crate) fn import_race_rules(
             .to_string()
     })?;
     let path = required_string(&params, "path")?;
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Data Race: {error}"))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Data Race: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let decoded = decode_race_rules(&bytes, Some(blob));
     if decoded.rules.len() != 30 {
@@ -81,7 +81,8 @@ pub(crate) fn import_caste_rules(
         );
     }
     let path = required_string(&params, "path")?;
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Data Caste: {error}"))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Data Caste: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let mut decoded = decode_caste_rules(&bytes, Some(blob));
     if decoded.rules.len() != 30 || !decoded.trailing_bytes.is_empty() {
@@ -117,7 +118,8 @@ pub(crate) fn import_rule_names(
             .to_string()
     })?;
     let path = required_string(&params, "path")?;
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Custom Names: {error}"))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Custom Names: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let source = params
         .get("source")
@@ -144,8 +146,9 @@ pub(crate) fn import_standard_items(
     })?;
     let path = required_string(&params, "path")?;
     let text_path = required_string(&params, "textPath")?;
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Data ID: {error}"))?;
-    let text_bytes = fs::read(&text_path)
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Data ID: {error}"))?;
+    let text_bytes = crate::import_inputs::read(&text_path)
         .map_err(|error| format!("could not read Data ID text resource: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let text_blob = store
@@ -183,10 +186,11 @@ pub(crate) fn import_scenario_items(
     })?;
     let path = required_string(&params, "path")?;
     let text_path = params.get("textPath").and_then(Value::as_str);
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Data NI: {error}"))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Data NI: {error}"))?;
     let text_bytes = text_path
         .map(|path| {
-            fs::read(path)
+            crate::import_inputs::read(path)
                 .map_err(|error| format!("could not read scenario item text resource: {error}"))
         })
         .transpose()?;
@@ -195,8 +199,18 @@ pub(crate) fn import_scenario_items(
         .as_ref()
         .map(|bytes| store.put_blob(bytes).map_err(|error| error.to_string()))
         .transpose()?;
-    let decoded = decode_scenario_item_rules(&bytes, text_bytes.as_deref(), blob, text_blob)
+    let entries = text_path
+        .zip(text_bytes.as_ref())
+        .map(|(path, bytes)| crate::import_inputs::entries(std::path::Path::new(path), bytes))
+        .transpose()
         .map_err(|error| format!("scenario item catalog failed native validation: {error}"))?;
+    let decoded = decode_scenario_item_rules_from_entries(
+        &bytes,
+        entries.as_deref().map(Vec::as_slice),
+        blob,
+        text_blob,
+    )
+    .map_err(|error| format!("scenario item catalog failed native validation: {error}"))?;
     let round_trip = encode_scenario_item_rules(&decoded.rules, &bytes)
         .map_err(|error| format!("scenario item catalog failed native validation: {error}"))?;
     if round_trip != bytes {

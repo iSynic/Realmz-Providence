@@ -8,7 +8,7 @@ func _run() -> void:
 	var fixture:Dictionary=JSON.parse_string(FileAccess.get_file_as_string(args[1]))
 	root.gui_embed_subwindows=true; root.size=Vector2i(1600,900)
 	var shell:Control=load("res://src/editor_shell.tscn").instantiate(); shell.set_script(CheckedShell); root.add_child(shell)
-	await _frames(3); shell._bridge.stop(); shell._bridge=preload("res://src/native_bridge.gd").new(args[0].path_join("settings.cfg"))
+	await shell.startup_completed; shell._bridge.stop(); shell._bridge=preload("res://src/native_bridge.gd").new(args[0].path_join("settings.cfg"))
 	var opened:Dictionary=shell._bridge.start_project(fixture.project)
 	if _check(opened.get("ok",false),"Terrain gallery project failed to open"):
 		await shell._activate_session(opened); await shell._maps.document.load_map(fixture.identity)

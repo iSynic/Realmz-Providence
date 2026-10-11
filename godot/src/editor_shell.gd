@@ -2,6 +2,8 @@ extends Control
 
 signal startup_completed
 
+@onready var _library_integrity = %LibraryIntegrityMonitor
+
 var startup_presentable := false
 
 const EditorOperation = preload("res://src/editor_operation.gd")
@@ -75,7 +77,7 @@ func _ready() -> void:
 
 
 func _initialize_startup() -> void:
-	_compose_shell()
+	await _compose_shell()
 	var user_args := OS.get_cmdline_user_args()
 	if SmokeArgumentRouter.route_pre_session(self, user_args):
 		return
@@ -121,13 +123,16 @@ func _compose_shell() -> void:
 	_bind_command_bar()
 	_bind_document_workspace()
 	_bind_domain_navigation()
+	await get_tree().process_frame
 	_inspector_panel = %InspectorPanel
 	_layout.initialize(_explorer_panel, _domain_sidebar, _primary_workspace, _document_inspector_split, %InspectorHost)
 	_documents_host.add_child(_build_document_area())
+	await get_tree().process_frame
 	_bind_inspector()
 	_initialize_map_document()
 	_initialize_issues_workspace()
 	_initialize_assets_workspace()
+	await get_tree().process_frame
 	_session_view.initialize(_document_changes, _operations, _problem_commands, _problem_dock, func(): return _bridge.is_project_backed())
 	_session_view.history_changed.connect(_commands.set_history)
 	_session_view.project_changed.connect(_assets.project_changed)
@@ -141,7 +146,7 @@ func _compose_shell() -> void:
 	_navigation.layout_requested.connect(_presentation.apply_layout)
 	_navigation.history_changed.connect(func(_can_back: bool, _can_forward: bool): _commands.refresh())
 	_bind_draft_controller()
-	_maps.initialize_paint.call_deferred()
+	await _maps.initialize_paint()
 	for tab in _document_tabs.get_tab_count():
 		var identity := _documents.identity_for_tab(tab)
 		_document_changes.register_document(identity, preload("res://src/document_interests.gd").for_route(identity))
@@ -232,6 +237,7 @@ func _show_import_scenario() -> void:
 
 
 func _close_project() -> void:
+	_library_integrity.stop()
 	if _operations.busy: return
 	_draft_navigation.cancel()
 	_bridge.stop()
@@ -262,26 +268,38 @@ func _close_project() -> void:
 	_status.text = "No project open"
 
 
-func _activate_session(response: Dictionary) -> Dictionary:
+func _activate_session(response: Dictionary, preferred_route := "") -> Dictionary:
+	_history.reset()
+	_session_view.attach(response.get("result", {}) as Dictionary)
+	if not _operations.begin(_bridge, "Open"): return _activation_failed()
+	if not preferred_route.is_empty():
+		_document_tabs.set_block_signals(true)
+		_document_tabs.current_tab = _documents.tab_for_route(preferred_route)
+		_document_tabs.set_block_signals(false)
 	_draft_navigation.cancel()
 	_workbenches.attach_session(_bridge)
 	_scenario_import.attach_session(_bridge)
 	_problem_commands.attach_session(_bridge)
 	_item_commands.attach_session(_bridge)
 	_scripts.attach_session(_bridge)
+	await get_tree().process_frame
+	if not _operations.busy: return _activation_failed()
 	_assets.attach_session(_bridge, _session_view.context)
 	_maps.attach_session(_bridge)
-	_history.reset()
 	_document_changes.clear()
 	_item_editor.show_save_state("", false)
-	_apply_session(response.get("result", {}) as Dictionary)
-	var refreshed := await _refresh_session_projections()
-	if not refreshed.get("ok", false): return refreshed
+	await _apply_session(response.get("result", {}) as Dictionary, true)
+	_operations.finish({"ok": true}, false, false)
+	var route := _documents.identity_for_tab(_document_tabs.current_tab)
+	if route in ["maps.land", "maps.dungeon"]:
+		var refreshed := await _refresh_session_projections()
+		if not refreshed.get("ok", false): return refreshed
 	_issues.session_changed(_bridge, _session_view.revision)
 	await _presentation.select_document(_document_tabs.current_tab)
 	_workbenches.configure_compile_capabilities(_bridge.is_project_backed())
 	_map_context_sidebar.set_editable(_bridge.is_project_backed())
 	_commands.refresh()
+	await _library_integrity.start(_bridge, _operations, _show_error)
 	return _activation_failed() if _operations.requires_reopen else {"ok": true}
 
 
@@ -382,7 +400,7 @@ func _bind_string_workbench() -> void:
 	_strings = _documents.view("text.messages")
 	_strings.selection_changed.connect(_set_message_inspector)
 	_strings.projection_applied.connect(_session_view.apply)
-	_strings.configure_navigation(_navigation.select_route, _open_message_source, _draft_navigation.request)
+	_strings.configure_navigation(_navigation.select_route, _navigation.open_script_source, _draft_navigation.request)
 	_strings.failed.connect(_show_error)
 	_documents.register_controller("text.messages", preload("res://src/workbench_controller.gd").new("text.messages", _strings, _strings.refresh_workbench))
 
@@ -391,8 +409,8 @@ func _bind_record_workbenches() -> void:
 	_scripts.initialize(_documents, _maps.document, _session_view.context, _accept, _draft_apply.accept, _operations, _draft_navigation.request)
 	_scripts.projection_applied.connect(_session_view.apply)
 	_scripts.message_requested.connect(_strings.open_native)
-	_scripts.sound_requested.connect(_open_script_sound)
-	_scripts.sound_preview_requested.connect(_preview_script_sound)
+	_scripts.sound_requested.connect(_navigation.open_script_sound)
+	_scripts.sound_preview_requested.connect(_navigation.preview_script_sound)
 	_scripts.sound_stop_requested.connect(func(): _media.sounds.stop_preview())
 	_scripts.semantic_target_requested.connect(_navigation.open_script_target)
 	EditorHelpBinding.bind_scripts(_scripts, %DivinityCodeHelper, %DivinityManualReader)
@@ -465,8 +483,8 @@ func _bind_inspector() -> void:
 		editor.document_applied.connect(_inspector_panel.show_rule_record)
 
 
-func _apply_session(session: Dictionary) -> void:
-	_session_view.attach(session)
+func _apply_session(session: Dictionary, projection_attached := false) -> void:
+	if not projection_attached: _session_view.attach(session)
 	_navigation.clear_history()
 	_command_bar.set_project_identity(_session_view.project_id, _bridge.is_project_backed())
 	_documents.attach_session()
@@ -475,24 +493,11 @@ func _apply_session(session: Dictionary) -> void:
 	_item_editor.set_items([], _session_view.revision)
 	_scripts.reset_projection(_session_view.revision)
 	_media.attach_session(_bridge)
+	if projection_attached: await get_tree().process_frame
 	_workbenches.reset_projection()
 	_set_item_inspector({})
 	_commands.refresh()
 	_status.text = "Ready · revision %d · native Rust session" % _session_view.revision
-
-
-func _open_message_use(index: int) -> void:
-	await _open_message_source(_strings.use_reference(index))
-
-
-func _open_script_sound(native_id: int) -> void: await _navigation.open_script_sound(native_id)
-
-
-func _preview_script_sound(native_id: int, identity: String, status: String) -> void: await _navigation.preview_script_sound(native_id, identity, status)
-
-
-func _open_message_source(reference: Dictionary) -> void:
-	await _navigation.open_script_source(reference)
 
 
 func _on_vault_artwork_applied(projection: Dictionary, record_index: int) -> void:
@@ -681,21 +686,13 @@ func _initialize_assets_workspace() -> void:
 
 func _complete_import(kind: String, _projection: Dictionary, session: Dictionary) -> Dictionary:
 	if kind != "items":
-		var activated := await _activate_session(session)
+		var activated := await _activate_session(session, "maps.land")
 		if not activated.get("ok", false): return activated
-	var items: Dictionary = await _item_commands.reload()
-	if not items.get("ok", false): return items
 	match kind:
 		"scenario":
 			_render_explorer(_maps.document.maps)
 			await _navigation.select_route("maps.land")
 		"land":
-			if not await _strings.reload(): return _activation_failed()
-			if not await _scripts.reload_simple_encounters(): return _activation_failed()
-			if not await _scripts.reload_extra_action_points(): return _activation_failed()
-			if not await _scripts.reload_global_macros(): return _activation_failed()
-			var media: Dictionary = await _media.special_land.reload()
-			if not media.get("ok", false): return media
 			await _navigation.select_route("maps.land")
 		"items":
 			await _navigation.select_route("economy.items")

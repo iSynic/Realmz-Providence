@@ -12,13 +12,19 @@ var _collection_offset := 0
 var _collection_revision := -1
 var _operations: ProvidenceEditorOperation
 var _stale := true
+var _pending_scope := false
+var _staging := false
 var _generation := 0
 @onready var _header_parts: Array[Node] = [$Header, $Body/Content/Scopes, %WorkspaceStatus]
 var _media_commands := preload("res://src/media_command_controller.gd").new()
 
 
 func _ready() -> void:
-	apply_theme()
+	if not _staging: _bind_workbench()
+
+
+func _bind_workbench() -> void:
+	if theme == null: apply_theme()
 	if _operations == null:
 		var owned := ProvidenceEditorOperation.new()
 		add_child(owned)
@@ -28,6 +34,7 @@ func _ready() -> void:
 	%MediaDialog.review_source_requested.connect(_open_review_source)
 	_media_commands.changed.connect(_media_committed)
 	_bind_media_recovery()
+	_bind_export_controls()
 	%ReconcileMedia.pressed.connect(_reconcile_media)
 	%AllCollections.pressed.connect(func(): await show_scope("personal"))
 	%AllMedia.pressed.connect(%Gallery.show_kind.bind("all"))
@@ -59,6 +66,18 @@ func _ready() -> void:
 	%Gallery.artwork_applied.connect(func(projection, record_index): artwork_applied.emit(projection, record_index))
 	%Supplied.artwork_applied.connect(func(projection, record_index): artwork_applied.emit(projection, record_index))
 	%Supplied.scenario_changed.connect(func(projection): scenario_changed.emit(projection))
+
+
+func _bind_export_controls() -> void:
+	var menu: PopupMenu = %ExportAssets.get_popup()
+	menu.add_item("Export selected asset…", 0)
+	menu.add_item("Export categories…", 1)
+	menu.about_to_popup.connect(func():
+		var unavailable := _bridge == null or _operations.busy or _operations.requires_reopen
+		menu.set_item_disabled(0, unavailable or selected_asset_identity().is_empty())
+		menu.set_item_disabled(1, unavailable))
+	menu.id_pressed.connect(func(id: int):
+		await %AssetExportDialog.open_export(_bridge, _operations, _scope, selected_asset_identity() if id == 0 else ""))
 
 
 func _bind_media_recovery() -> void:
@@ -95,6 +114,7 @@ func _lock_from_shared_recovery(message: String) -> void:
 
 func reload(bridge) -> void:
 	_generation += 1
+	%AssetExportDialog.detach_session()
 	_bridge = bridge
 	_media_commands.attach_session(bridge)
 	if bridge == null:
@@ -109,6 +129,7 @@ func reload(bridge) -> void:
 
 func attach_session(bridge) -> void:
 	_generation += 1
+	%AssetExportDialog.detach_session()
 	_bridge = bridge
 	_media_commands.attach_session(bridge)
 	_stale = true
@@ -120,6 +141,12 @@ func mark_stale() -> void:
 
 func current_scope() -> String:
 	return _scope
+
+
+func prepare_scope(scope: String) -> void:
+	_scope = scope
+	_stale = true
+	_pending_scope = true
 
 
 func selected_asset_kind() -> String:
@@ -186,7 +213,10 @@ func set_item_opener(opener: Callable) -> void:
 
 
 func activate() -> void:
-	if _stale: await recheck_selection()
+	if _pending_scope:
+		_pending_scope = false
+		await show_scope(_scope)
+	elif _stale: await recheck_selection()
 
 
 func recheck_selection() -> void:
@@ -225,6 +255,7 @@ func show_scope(scope: String) -> void:
 		%WorkspaceStatus.show()
 		return
 	_scope = scope
+	%ExportAssets.show()
 	_select_collection(%AllCollections if scope == "personal" else null)
 	%Scenario.set_pressed_no_signal(scope == "scenario")
 	%Stock.set_pressed_no_signal(scope == "stock")
@@ -349,6 +380,7 @@ func _configure_item_selection() -> void:
 		return
 	%Import.hide()
 	%NewText.hide()
+	%ExportAssets.hide()
 	%NewCollection.hide()
 	%Gallery.get_node("%Import").hide()
 	%Gallery.get_node("%NewCollection").hide()
@@ -470,9 +502,42 @@ func apply_theme(mode := "dark", density := "balanced") -> void:
 	controls.mode = mode; controls.density = density
 	theme = controls
 	%MediaDialog.get_node("Inset").theme = controls
+	%AssetExportDialog.get_node("Inset").theme = controls
 	%Gallery.get_node("%MediaPreview").get_node("Inset").theme = controls
 	%Gallery.get_node("%TextDialog").apply_theme(mode, density)
 	%NewTextDialog.apply_theme(mode, density)
+
+
+func prepare_async(tree: SceneTree, mode := "dark", density := "balanced") -> void:
+	# Prepare hidden dialog themes before entering the tree, one per frame.
+	var controls = preload("res://src/media_theme.gd").new()
+	controls.mode = mode; controls.density = density
+	theme = controls
+	for target in [%MediaDialog.get_node("Inset"), %AssetExportDialog.get_node("Inset"), %Gallery.get_node("%MediaPreview").get_node("Inset")]:
+		target.theme = controls
+		await tree.process_frame
+	for dialog in [%Gallery.get_node("%TextDialog"), %NewTextDialog]:
+		dialog.apply_theme(mode, density)
+		await tree.process_frame
+
+
+func initialize_staged(tabs: TabContainer) -> void:
+	# The named scene owns the final structure; enter expensive child scenes on
+	# separate main-thread frames, then connect the complete workbench once.
+	_staging = true
+	var parts: Array = []
+	for part in [%Gallery, %Supplied, %NewTextDialog, %MediaDialog, %AssetExportDialog]:
+		parts.append({"node": part, "parent": part.get_parent(), "index": part.get_index(), "owner": part.owner})
+		part.owner = null
+		part.get_parent().remove_child(part)
+	tabs.add_child(self)
+	for part: Dictionary in parts:
+		await get_tree().process_frame
+		part.parent.add_child(part.node)
+		part.parent.move_child(part.node, mini(part.index, part.parent.get_child_count() - 1))
+		part.node.owner = part.owner
+	_staging = false
+	_bind_workbench()
 
 func configure_text_links(source_opener: Callable, preview_opener: Callable) -> void:
 	%Gallery.configure_text_links(source_opener,preview_opener)

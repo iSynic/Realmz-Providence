@@ -16,7 +16,7 @@ func _capture() -> void:
 		return
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(args[0])
 	if not shell._bridge.is_project_backed() or shell._bridge.current_project_path() != args[0]:
 		push_error("Disposable review project did not open.")

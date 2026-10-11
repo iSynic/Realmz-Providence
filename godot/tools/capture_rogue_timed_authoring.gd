@@ -19,7 +19,7 @@ func _run() -> void:
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[0].path_join("encounter-capture-settings.cfg"))
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	if not shell._bridge.is_project_backed(): return _fail("Fixture failed to open.")
 	await shell._navigation.select_route("encounters.rogue"); await settle()

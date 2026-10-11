@@ -7,7 +7,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	root.size = Vector2i(1600, 900); root.gui_embed_subwindows = true
 	var shell: Control = load("res://src/editor_shell.tscn").instantiate(); shell.set_script(CheckedShell); root.add_child(shell)
-	await _frames(3); shell._bridge.stop(); shell._bridge = SmartBridge.new(args[0].path_join("chrome-settings.cfg"))
+	await shell.startup_completed; shell._bridge.stop(); shell._bridge = SmartBridge.new(args[0].path_join("chrome-settings.cfg"))
 	var created: Dictionary = shell._bridge.create_project("maps-chrome", args[0].path_join("chrome-project"))
 	if _check(created.get("ok", false), "Maps chrome project creation failed"):
 		await shell._activate_session(created)

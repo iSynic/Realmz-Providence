@@ -36,7 +36,7 @@ func _run() -> void:
 	var prior := OS.get_environment("PROVIDENCE_PROJECT_PATH"); OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	root.size = Vector2i(1600, 900); root.gui_embed_subwindows = true
 	var shell: Control = load("res://src/editor_shell.tscn").instantiate(); shell.set_script(CheckedShell); root.add_child(shell)
-	await _frames(3)
+	await shell.startup_completed
 	shell._bridge.stop(); shell._bridge = AreaBridge.new(args[0].path_join("area-settings.cfg"))
 	var created: Dictionary = shell._bridge.create_project("land-area", args[0].path_join("area-project"))
 	if _check(created.get("ok", false), "Area project could not be created"):

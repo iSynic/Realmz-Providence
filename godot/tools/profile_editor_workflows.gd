@@ -6,6 +6,26 @@ const WARMUP := 2
 const SAMPLES := 8
 var _project_path := ""
 var _probe: Dictionary = {}
+var _first_usable_ms := -1.0
+var _artwork_ms := -1.0
+var _status_feedback_ms := -1.0
+
+
+func _prepare_shell(temporary_root: String) -> void:
+	await super._prepare_shell(temporary_root)
+	_shell._maps.document.document_opened.connect(func(_map, _reset): _record_milestone(false))
+	_shell._maps.document.artwork_ready.connect(func(): _record_milestone(true))
+	_shell._assets.catalog_ready.connect(func(): _record_milestone(false))
+	_shell._assets.artwork_ready.connect(func(): _record_milestone(true))
+	_shell._assets.status_changed.connect(func(_message):
+		if _action_started > 0 and _status_feedback_ms < 0: _status_feedback_ms = float(Time.get_ticks_usec() - _action_started) / 1000.0)
+
+
+func _record_milestone(artwork: bool) -> void:
+	if _action_started == 0: return
+	var elapsed := float(Time.get_ticks_usec() - _action_started) / 1000.0
+	if artwork: _artwork_ms = elapsed
+	elif _first_usable_ms < 0: _first_usable_ms = elapsed
 
 
 func _run() -> void:
@@ -62,12 +82,24 @@ func _measure_workflow(workflow: String, index: int) -> Dictionary:
 	_last_frame = _action_started
 	_max_frame_gap = 0
 	_busy_feedback_ms = -1
+	_first_usable_ms = -1
+	_artwork_ms = -1
+	_status_feedback_ms = -1
+	_peak_static_memory = Performance.get_monitor(Performance.MEMORY_STATIC)
 	var previous_revision: int = _shell._session_view.revision
 	await _perform(workflow, index)
+	var first_usable_ms := _first_usable_ms if _first_usable_ms >= 0 else float(Time.get_ticks_usec() - _action_started) / 1000.0
 	await _settle()
 	_bridge = _shell._bridge
 	var calls: Array = _bridge.calls.duplicate(true)
 	var sample := {"workflow": workflow, "index": index - WARMUP,
+		"firstUsableMs": first_usable_ms, "artworkCompleteMs": _artwork_ms if _artwork_ms >= 0 else null,
+		"backgroundCompleteMs": float(Time.get_ticks_usec() - _action_started) / 1000.0,
+		"staticMemoryBytes": Performance.get_monitor(Performance.MEMORY_STATIC),
+		"peakStaticMemoryBytes": _peak_static_memory, "statusFeedbackMs": _status_feedback_ms,
+		"requestCount": calls.size(),
+		"requestBytes": calls.reduce(func(total, call): return total + int(call.bridge.get("requestBytes", 0)), 0),
+		"responseBytes": calls.reduce(func(total, call): return total + int(call.bridge.get("responseBytes", 0)), 0),
 		"inputToVisibleMs": float(Time.get_ticks_usec() - _action_started) / 1000.0,
 		"maxFrameGapMs": float(_max_frame_gap) / 1000.0, "busyFeedbackMs": _busy_feedback_ms,
 		"previousRevision": previous_revision, "revision": _shell._session_view.revision, "requests": calls}
@@ -101,7 +133,7 @@ func _settle() -> void:
 	var idle_frames := 0
 	while idle_frames < 2:
 		await process_frame
-		idle_frames = 0 if _shell._operations.busy or _shell._issues.workbench.state.has_pending_refresh() else idle_frames + 1
+		idle_frames = 0 if _shell._operations.busy or _shell._issues.workbench.state.has_pending_refresh() or _shell._library_integrity.pending else idle_frames + 1
 
 
 func _boundaries() -> Dictionary:

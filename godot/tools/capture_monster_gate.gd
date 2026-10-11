@@ -28,7 +28,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	if _amendment and _route_name == "library": await _standalone()
 	await _shell._project_session.open_project(args[0])
 	if not _shell._session_view.connected: _fail("The review project did not open"); return

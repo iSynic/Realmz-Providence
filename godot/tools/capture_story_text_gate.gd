@@ -31,7 +31,7 @@ func _run() -> void:
 	root.size=Vector2i(_width,900 if _width==1600 else 1080)
 	root.content_scale_size=root.size; root.gui_embed_subwindows=true
 	OS.set_environment("PROVIDENCE_PROJECT_PATH","")
-	_shell=preload("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell)
+	_shell=preload("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await _shell.startup_completed
 	_shell._bridge.stop(); _shell._bridge=Bridge.new(_work.path_join("settings.cfg"))
 	_assert(_shell._bridge.create_project("moon-gate-chronicle",_work.path_join("project")))
 	await _shell._activate_session(_shell._bridge.request("session.describe"))

@@ -15,7 +15,6 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
-use std::fs;
 use std::path::PathBuf;
 
 pub(crate) fn import_classic_complex_encounters(
@@ -79,8 +78,8 @@ pub(crate) fn import_classic_rogue_encounters(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < ROGUE_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data TD2 must contain at least one complete {ROGUE_ENCOUNTER_RECORD_BYTES}-byte record"
@@ -135,8 +134,8 @@ pub(crate) fn import_classic_timed_encounters(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < TIMED_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data TD3 must contain at least one complete {TIMED_ENCOUNTER_RECORD_BYTES}-byte record"
@@ -187,7 +186,7 @@ fn read_complex_encounter_sources(
     if rogue_path.is_file() {
         imported.push((
             "Data TD2".to_string(),
-            fs::read(&rogue_path)
+            crate::import_inputs::read(&rogue_path)
                 .map_err(|error| format!("could not read {}: {error}", rogue_path.display()))?,
         ));
     }
@@ -207,8 +206,8 @@ fn read_complex_encounters(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     if bytes.len() < COMPLEX_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data ED2 must contain at least one complete {COMPLEX_ENCOUNTER_RECORD_BYTES}-byte record"

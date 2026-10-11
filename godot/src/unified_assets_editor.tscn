@@ -1,9 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 [ext_resource type="Script" path="res://src/unified_assets_editor.gd" id="1"]
 [ext_resource type="PackedScene" path="res://src/unified_asset_gallery.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://src/vault_editor.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://src/new_text_dialog.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://src/media_authoring_dialog.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://src/asset_export_dialog.tscn" id="6"]
 
 [sub_resource type="SystemFont" id="HeadingFont"]
 font_names = PackedStringArray("Source Sans 3", "Segoe UI")
@@ -56,6 +57,15 @@ custom_minimum_size = Vector2(180, 34)
 size_flags_vertical = 4
 text = "Import to My Library…"
 disabled = true
+
+[node name="ExportAssets" type="MenuButton" parent="Header/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(110, 34)
+size_flags_vertical = 4
+text = "Export…"
+flat = false
+focus_mode = 2
 
 [node name="NewText" type="Button" parent="Header/Heading"]
 unique_name_in_owner = true
@@ -279,4 +289,7 @@ standalone_copy = true
 unique_name_in_owner = true
 
 [node name="MediaDialog" parent="." instance=ExtResource("5")]
+unique_name_in_owner = true
+
+[node name="AssetExportDialog" parent="." instance=ExtResource("6")]
 unique_name_in_owner = true

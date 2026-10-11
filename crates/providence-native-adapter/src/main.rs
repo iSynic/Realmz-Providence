@@ -3,6 +3,7 @@
 mod application_media_import;
 mod application_terrain;
 mod artwork_conflict;
+mod asset_export;
 mod asset_import;
 mod catalogs;
 mod classic_compilation;
@@ -31,6 +32,7 @@ mod encounter_import;
 mod extra_code_commands;
 mod icon_media;
 mod image_files;
+mod import_inputs;
 mod import_repair;
 mod item_catalog;
 mod item_drafts;
@@ -41,6 +43,7 @@ mod land_paint_intent;
 mod land_tile_catalog;
 mod level_settings;
 mod library_arguments;
+mod library_integrity;
 mod magic_brush;
 mod map_artwork;
 mod map_creation;
@@ -51,6 +54,7 @@ mod map_selection_commands;
 mod map_thumbnail;
 mod mapstats_import;
 mod media_problems;
+mod media_thumbnails;
 mod monster_appearance_defaults;
 mod monster_appearance_import;
 mod monster_appearance_views;
@@ -232,7 +236,8 @@ fn serve(
     timing: startup::StartupTiming,
 ) -> Result<(), String> {
     let stdin = io::stdin();
-    let mut stdout = io::stdout().lock();
+    let stdout = io::stdout();
+    let mut stdout = io::BufWriter::with_capacity(64 * 1024, stdout.lock());
     serve_io_with_libraries(
         &mut session,
         store.as_ref(),

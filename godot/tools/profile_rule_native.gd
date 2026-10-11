@@ -24,7 +24,7 @@ func run() -> void:
 		if not imported.get("ok", false): push_error(str(imported)); bridge.stop(); quit(1); return
 	bridge.stop()
 	shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(project)
 	process_frame.connect(frame_tick)
 	var measurements := {}

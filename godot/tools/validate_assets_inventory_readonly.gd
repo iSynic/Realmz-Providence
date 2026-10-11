@@ -22,7 +22,7 @@ func _run() -> void:
 		return
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	_shell = load("res://src/editor_shell.tscn").instantiate()
-	root.add_child(_shell)
+	root.add_child(_shell); await _shell.startup_completed
 	await _shell._project_session.open_project(args[0])
 	if not _check(_shell._bridge.is_project_backed(), "Project did not open"):
 		return

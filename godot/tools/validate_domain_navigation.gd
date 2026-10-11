@@ -9,7 +9,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var shell := (load("res://src/editor_shell.tscn") as PackedScene).instantiate() as Control
-	root.add_child(shell)
+	root.add_child(shell); await shell.startup_completed
 	await _settle(shell)
 	var tabs := _verified_tabs(shell)
 	await shell._navigation.select_tab(32)
@@ -92,7 +92,7 @@ func _settle(shell: Control) -> void:
 	var stable := 0
 	while Time.get_ticks_msec() < deadline:
 		await process_frame
-		stable = stable + 1 if not shell._operations.busy and not shell._bridge.operation_busy() else 0
+		stable = stable + 1 if not shell._operations.busy and not shell._bridge.operation_busy() and not shell._assets._initializing else 0
 		if stable >= 4: return
 	_fail("Navigation did not settle within its bounded wait")
 

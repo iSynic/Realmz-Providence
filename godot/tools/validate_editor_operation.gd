@@ -36,6 +36,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_operation = Operation.new()
 	root.add_child(_operation)
+	_check(not _operation._progress.visible, "Idle startup exposed a progress window")
 	process_frame.connect(func(): _frames += 1)
 	_history.operations = _operation
 	_history.refresh_visible = func(_projection): return {"ok": true}
@@ -153,15 +154,17 @@ func _changed_connection() -> void:
 
 func _candidate_connection() -> void:
 	_bridge.stop()
-	for interrupt in ["none", "current", "candidate"]:
+	for interrupt in ["none", "current", "candidate", "cancel"]:
 		_operation.reset_session()
 		var candidate := SlowCandidate.new()
 		candidate.response = {"ok": false, "error": "Controlled open rejection"}
 		_check(_operation.begin(_bridge, "Open"), "Open could not reserve the current connection")
 		if interrupt == "current": create_timer(0.01).timeout.connect(_bridge.change_epoch)
 		if interrupt == "candidate": create_timer(0.01).timeout.connect(candidate.change_epoch)
+		if interrupt == "cancel": create_timer(0.01).timeout.connect(_operation.request_cancel)
 		var response: Dictionary = await _operation.open_project(candidate, "controlled-project")
 		_check(not response.ok, "Rejected candidate connection succeeded")
+		if interrupt == "cancel": _check(response.get("cancelled", false) and not _operation.requires_reopen, "Cancelling Open changed or locked the active session")
 		_check(bool(response.get("outcomeUnknown", false)) == (interrupt == "current"), "Failed candidate reads were not isolated from the current session")
 		_operation.finish(response)
 		candidate.stop()

@@ -17,7 +17,6 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
-use std::fs;
 use std::path::PathBuf;
 
 pub(crate) fn import_classic_player_maps(
@@ -34,8 +33,8 @@ pub(crate) fn import_classic_player_maps(
     if !path.is_file() {
         return Err(format!("{} is required", path.display()));
     }
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     let decoded = decode_checked_player_maps(&bytes)?;
     let sources = replace_sources(
         &session.snapshot().classic_sources,
@@ -91,8 +90,8 @@ pub(crate) fn import_classic_player_map_names(
             "warning": "Scenario.rsrc is absent; Player Map names were not imported",
         }));
     };
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let available_names =
         decode_player_map_name_string_list(&bytes, PLAYER_MAP_AVAILABLE_NAMES_RESOURCE_ID)

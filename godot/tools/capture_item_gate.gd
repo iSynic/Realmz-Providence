@@ -42,7 +42,7 @@ func _run() -> void:
 	root.size = Vector2i(_width, 1080 if _width == 1920 else 900); root.content_scale_size = root.size; root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell._bridge = FaultBridge.new(_output.path_join("settings-%d.cfg" % _width))
-	root.add_child(_shell); await process_frame
+	root.add_child(_shell); await _shell.startup_completed
 	await _shell._project_session.open_project(project)
 	if not _check(_shell._session_view.connected, "Capture project did not open"): return
 	await _shell._navigation.select_route("economy.items")

@@ -240,7 +240,7 @@ func _verify_controls(surface: Control, route_id: String) -> bool:
 
 func _verify_shell_navigation() -> bool:
 	var shell := (load("res://src/editor_shell.tscn") as PackedScene).instantiate() as Control
-	root.add_child(shell)
+	root.add_child(shell); await shell.startup_completed
 	for viewport in [Vector2i(1600, 900), Vector2i(1920, 1080)]:
 		root.size = viewport
 		root.content_scale_size = viewport

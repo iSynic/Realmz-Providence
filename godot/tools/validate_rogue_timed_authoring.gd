@@ -21,7 +21,7 @@ func _run() -> void:
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(project.path_join("encounter-check-settings.cfg"))
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(project)
 	await settle()
 	if not shell._bridge.is_project_backed(): return _fail("The fixture session did not open.")

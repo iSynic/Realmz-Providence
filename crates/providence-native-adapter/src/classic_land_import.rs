@@ -31,7 +31,6 @@ use providence_storage::ProjectStore;
 use serde_json::Value;
 use serde_json::json;
 use std::collections::BTreeMap;
-use std::fs;
 use std::path::PathBuf;
 
 use providence_core::codecs::{EXTRA_ACTION_POINT_RECORD_BYTES, MAP_LEVEL_BYTES};
@@ -85,8 +84,8 @@ fn read_source(
     inputs: &mut BTreeMap<String, Vec<u8>>,
 ) -> Result<(), String> {
     let path = directory.join(native_path);
-    let bytes =
-        fs::read(&path).map_err(|error| format!("could not read {}: {error}", path.display()))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read {}: {error}", path.display()))?;
     inputs.insert(native_path.to_string(), bytes);
     Ok(())
 }

@@ -12,7 +12,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ReadFailureBridge.new(args[0].path_join("capture-settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	await _callers()
 	for viewport in [Vector2i(1920,1080), Vector2i(1600,900)]:

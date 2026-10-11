@@ -173,7 +173,7 @@ static func _verify_string_navigation(shell: Control) -> bool:
 	if not shell._strings._message_meta.text.contains("2 uses"):
 		Fixture._smoke_fail(shell, "String Editor did not expose the selected string usage count")
 		return false
-	await shell._open_message_use(0)
+	await shell._navigation.open_script_source(shell._strings.use_reference(0))
 	if shell._document_tabs.current_tab not in [2, 3, 5]:
 		Fixture._smoke_fail(shell, "String Editor Used By navigation did not open the source document")
 		return false

@@ -138,6 +138,7 @@ func attach_session(bridge: RefCounted) -> void:
 
 
 func initialize_paint() -> void:
+	await _dialog_owner.get_tree().process_frame
 	paint.connect_editor(_land, _inspector)
 	paint.projection_applied.connect(projection_applied.emit)
 	paint.status_changed.connect(status_changed.emit)

@@ -14,7 +14,7 @@ func _run() -> void:
 	if args.size()>1: _capture_root=args[1]
 	OS.set_environment("PROVIDENCE_PROJECT_PATH",""); root.size=Vector2i(1600,900); root.gui_embed_subwindows=true
 	var shell:Control=load("res://src/editor_shell.tscn").instantiate(); shell.set_script(CheckedShell); root.add_child(shell)
-	await _frames(3); shell._bridge.stop(); shell._bridge=SlowPreviewBridge.new(args[0].path_join("cancel-settings.cfg"))
+	await shell.startup_completed; shell._bridge.stop(); shell._bridge=SlowPreviewBridge.new(args[0].path_join("cancel-settings.cfg"))
 	var created:Dictionary=shell._bridge.create_project("brush-cancel",args[0].path_join("cancel-project"))
 	if _check(created.get("ok",false),"Cancellation project creation failed"):
 		await shell._activate_session(created)

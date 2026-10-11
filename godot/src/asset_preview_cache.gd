@@ -1,7 +1,15 @@
 extends RefCounted
 
+static var _shared: RefCounted
+
+
+static func shared() -> RefCounted:
+	if _shared == null: _shared = load("res://src/asset_preview_cache.gd").new(256, 64 * 1024 * 1024)
+	return _shared
+
 var _bridge: RefCounted
 var _epoch := -1
+var _generation := 0
 var _entries: Dictionary = {}
 var _recent: Array[String] = []
 var _bytes := 0
@@ -19,9 +27,18 @@ func attach_connection(bridge: RefCounted) -> void:
 	if bridge == _bridge and epoch == _epoch: return
 	_bridge = bridge
 	_epoch = epoch
+	_generation += 1
 	_entries.clear()
 	_recent.clear()
 	_bytes = 0
+
+
+func connection_token() -> int:
+	return _generation
+
+
+func connection_current(token: int) -> bool:
+	return token == _generation and _bridge != null and _bridge.connection_epoch() == _epoch
 
 
 func find_preview(identity: String) -> Dictionary:

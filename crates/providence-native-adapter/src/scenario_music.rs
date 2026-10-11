@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::path::Path;
 
 use providence_core::{
     codecs::{SCENARIO_MUSIC_FILES, scenario_music_asset},
@@ -26,7 +26,8 @@ pub(super) fn import_into(
         let Some(path) = resolve_classic_native_file(directory, name) else {
             continue;
         };
-        let bytes = fs::read(&path).map_err(|error| format!("could not read {name}: {error}"))?;
+        let bytes = crate::import_inputs::read(&path)
+            .map_err(|error| format!("could not read {name}: {error}"))?;
         let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
         match scenario_music_asset(index as u8 + 1, &bytes, blob) {
             Ok(asset) => assets.push(asset),
@@ -59,6 +60,7 @@ mod tests {
         model::{ProjectSnapshot, StableId},
     };
     use std::collections::BTreeMap;
+    use std::fs;
 
     use crate::scenario_import::capture_scenario_sources;
 

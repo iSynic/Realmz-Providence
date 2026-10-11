@@ -112,3 +112,62 @@ fn corrupt_history_only_source_rejects_save_before_replacing_portable_truth() {
     ));
     assert_eq!(fs::read(store.snapshot_path()).unwrap(), before);
 }
+
+#[test]
+fn unchanged_save_reuses_verified_history_and_never_aliases_a_cloned_session() {
+    let temporary = tempfile::tempdir().unwrap();
+    let store = ProjectStore::create(temporary.path(), &snapshot("Before")).unwrap();
+    let mut session = EditorSession::new(snapshot("Before"));
+    edit(&mut session, "One");
+    store
+        .checkpoint_session(&session, &json!({"method":"message.update"}))
+        .unwrap();
+    let root = fs::read(store.snapshot_path()).unwrap();
+    let state = store.current_session_manifest().unwrap();
+    assert!(
+        store
+            .checkpoint_session(&session, &json!({"method":"project.save"}))
+            .unwrap()
+            .history_snapshot_reused
+    );
+    assert_eq!(fs::read(store.snapshot_path()).unwrap(), root);
+    assert_eq!(store.current_session_manifest().unwrap(), state);
+    assert_segmented_history(&store, &session);
+    let mut branch = session.clone();
+    edit(&mut branch, "Other");
+    edit(&mut session, "Original");
+    store
+        .checkpoint_session(&session, &json!({"method":"message.update"}))
+        .unwrap();
+    assert_ne!(branch.checkpoint_identity(), session.checkpoint_identity());
+    assert!(
+        !store
+            .checkpoint_session(&branch, &json!({"method":"project.save"}))
+            .unwrap()
+            .history_snapshot_reused
+    );
+    assert_eq!(store.load_snapshot().unwrap().messages[0].text, "Other");
+}
+
+#[test]
+fn unchanged_save_checks_corrupt_durable_segments_before_acknowledging() {
+    let temporary = tempfile::tempdir().unwrap();
+    let store = ProjectStore::create(temporary.path(), &snapshot("Before")).unwrap();
+    let mut session = EditorSession::new(snapshot("Before"));
+    edit(&mut session, "One");
+    store
+        .checkpoint_session(&session, &json!({"method":"message.update"}))
+        .unwrap();
+    let before = fs::read(store.snapshot_path()).unwrap();
+    let manifest = store.portable_snapshot_manifest(&before).unwrap().unwrap();
+    fs::write(
+        store.blob_path(&manifest.segments["messages"]).unwrap(),
+        b"corrupt",
+    )
+    .unwrap();
+    assert!(matches!(
+        store.checkpoint_session(&session, &json!({"method":"project.save"})),
+        Err(StoreError::BlobDigestMismatch(_))
+    ));
+    assert_eq!(fs::read(store.snapshot_path()).unwrap(), before);
+}

@@ -13,7 +13,7 @@ func _run() -> void:
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", "")
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	var opened: Dictionary = shell._bridge.start_project(OS.get_environment("PROVIDENCE_DISCOVERY_PROJECT"))
 	assert(opened.get("ok", false), str(opened))
 	await shell._activate_session(opened)

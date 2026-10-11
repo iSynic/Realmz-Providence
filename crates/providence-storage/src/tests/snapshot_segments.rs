@@ -22,6 +22,10 @@ fn segment_table_matches_every_canonical_field_and_encoding() {
     for name in SNAPSHOT_SEGMENTS {
         let expected = canonical.get(*name).expect("named canonical field");
         let bytes = serde_json::to_vec(expected).unwrap();
+        assert_eq!(
+            crate::snapshot_segments::encode_segment(name, &source).unwrap(),
+            bytes
+        );
         assert!(segment_matches(name, &bytes, &source).unwrap());
         replace_segment(&mut reconstructed, name, &bytes).unwrap();
         let changed = changed_segment_bytes(name, &source, &base).unwrap();

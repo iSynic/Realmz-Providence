@@ -10,7 +10,7 @@ func _run() -> void:
 	root.content_scale_size = DisplayServer.window_get_size()
 	root.gui_embed_subwindows = true
 	_shell = load("res://src/editor_shell.tscn").instantiate()
-	root.add_child(_shell)
+	root.add_child(_shell); await _shell.startup_completed
 	await _settle()
 	assert(_shell._command_bar.search_button.disabled)
 	await _capture("no-project")

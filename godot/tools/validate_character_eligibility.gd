@@ -17,7 +17,7 @@ func _run() -> void:
 		root.content_scale_size = DisplayServer.window_get_size()
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _shell._project_session.open_project(args[0])
 	assert(_shell._bridge.is_project_backed())
 	print("ELIGIBILITY_ADAPTER " + _shell._bridge._adapter_path())

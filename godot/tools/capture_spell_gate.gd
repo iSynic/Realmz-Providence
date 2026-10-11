@@ -29,7 +29,7 @@ func _run() -> void:
 	var applied := bridge.request("spell.draft.apply", {"expectedRevision": 0, "draft": draft, "operationId": "a".repeat(64)})
 	if not applied.get("ok", false): push_error(str(applied)); bridge.stop(); quit(1); return
 	bridge.stop()
-	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await process_frame
+	_shell = load("res://src/editor_shell.tscn").instantiate(); root.add_child(_shell); await _shell.startup_completed
 	await _shell._project_session.open_project(project)
 	await _shell._navigation.select_route("rules.spells")
 	_view = _shell._documents.view("rules.spells")

@@ -103,38 +103,22 @@ fn push_chunk(png: &mut Vec<u8>, chunk_type: [u8; 4], data: &[u8]) -> Result<(),
 }
 
 fn adler32(bytes: &[u8]) -> u32 {
-    const MODULUS: u32 = 65_521;
-    let mut first = 1u32;
-    let mut second = 0u32;
-    for byte in bytes {
-        first = (first + u32::from(*byte)) % MODULUS;
-        second = (second + first) % MODULUS;
-    }
-    (second << 16) | first
+    adler2::adler32_slice(bytes)
 }
 
-struct Crc32(u32);
+struct Crc32(crc32fast::Hasher);
 
 impl Crc32 {
     fn new() -> Self {
-        Self(u32::MAX)
+        Self(crc32fast::Hasher::new())
     }
 
     fn update(&mut self, bytes: &[u8]) {
-        for byte in bytes {
-            self.0 ^= u32::from(*byte);
-            for _ in 0..8 {
-                self.0 = if self.0 & 1 == 1 {
-                    (self.0 >> 1) ^ 0xedb8_8320
-                } else {
-                    self.0 >> 1
-                };
-            }
-        }
+        self.0.update(bytes);
     }
 
     fn finish(self) -> u32 {
-        !self.0
+        self.0.finalize()
     }
 }
 
@@ -160,6 +144,13 @@ mod tests {
     fn png_uses_multiple_valid_stored_blocks_for_large_images() {
         let rgba = vec![37; 256 * 256 * 4];
         let png = encode_runtime_rgba_png(&rgba, 256, 256).unwrap();
+        use sha2::Digest;
+        // Independent Python zlib CRC/Adler oracle, with the original stored-block
+        // layout. Checksum acceleration must never change content-addressed bytes.
+        assert_eq!(
+            format!("{:x}", sha2::Sha256::digest(&png)),
+            "5cadda7eb7658f4fba645b3361a000ea86c532f0c28068545522fd779e350905"
+        );
         let (width, height, decoded) = decode_stored_rgba_png(&png);
         assert_eq!((width, height), (256, 256));
         assert_eq!(decoded, rgba);

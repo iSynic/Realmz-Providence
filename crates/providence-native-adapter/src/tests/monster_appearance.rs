@@ -471,6 +471,7 @@ fn application_appearance_fixture(
         ambiguous_resources: Vec::new(),
         failures: Vec::new(),
     };
+    application_store.save_catalog(&application).unwrap();
     (application_store, application)
 }
 

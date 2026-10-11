@@ -26,8 +26,12 @@ pub(crate) fn project_asset_list(session: &EditorSession, params: &Value) -> Res
         .and_then(Value::as_str)
         .unwrap_or("all")
         .trim();
-    let references = session.references();
-    let diagnostics = session.diagnostics();
+    let checks = catalog_checks(session, params);
+    let (references, diagnostics) = checks
+        .as_ref()
+        .map_or((&[][..], &[][..]), |(references, diagnostics)| {
+            (references.as_slice(), diagnostics.as_slice())
+        });
     let mut matches = session
         .snapshot()
         .assets
@@ -35,20 +39,9 @@ pub(crate) fn project_asset_list(session: &EditorSession, params: &Value) -> Res
         .filter(|asset| identity.is_none_or(|identity| asset.identity.0 == identity))
         .filter(|asset| media_kind_matches(&asset.kind, kind))
         .filter(|asset| asset_matches_query(asset, &query))
-        .filter(|asset| asset_status_matches(asset, params, &references, &diagnostics))
+        .filter(|asset| asset_status_matches(asset, params, references, diagnostics))
         .collect::<Vec<_>>();
-    matches.sort_by(|left, right| {
-        (
-            left.kind.as_str(),
-            left.classic_resource.as_ref(),
-            left.identity.0.as_str(),
-        )
-            .cmp(&(
-                right.kind.as_str(),
-                right.classic_resource.as_ref(),
-                right.identity.0.as_str(),
-            ))
-    });
+    matches.sort_by(compare_assets);
     let total = matches.len();
     let (mut offset, limit) = page(params);
     if let Some(identity) = params.get("seekIdentity").and_then(Value::as_str)
@@ -62,7 +55,13 @@ pub(crate) fn project_asset_list(session: &EditorSession, params: &Value) -> Res
         .into_iter()
         .skip(offset)
         .take(limit)
-        .map(|asset| project_asset_row(session, asset, &references, &diagnostics))
+        .map(|asset| {
+            if checks.is_some() {
+                project_asset_row(session, asset, references, diagnostics)
+            } else {
+                project_asset_summary(asset)
+            }
+        })
         .collect::<Vec<_>>();
 
     Ok(json!({
@@ -73,6 +72,34 @@ pub(crate) fn project_asset_list(session: &EditorSession, params: &Value) -> Res
         "total": total,
         "truncated": offset.saturating_add(limit) < total,
     }))
+}
+
+fn compare_assets(left: &&AssetDescriptor, right: &&AssetDescriptor) -> std::cmp::Ordering {
+    (
+        left.kind.as_str(),
+        left.classic_resource.as_ref(),
+        left.identity.0.as_str(),
+    )
+        .cmp(&(
+            right.kind.as_str(),
+            right.classic_resource.as_ref(),
+            right.identity.0.as_str(),
+        ))
+}
+
+fn catalog_checks(
+    session: &EditorSession,
+    params: &Value,
+) -> Option<(
+    Vec<providence_core::references::ReferenceDescriptor>,
+    Vec<providence_core::validation::Diagnostic>,
+)> {
+    (params["includeChecks"].as_bool() != Some(false)
+        || matches!(
+            params["status"].as_str(),
+            Some("used" | "unused" | "problems")
+        ))
+    .then(|| (session.references(), session.diagnostics()))
 }
 
 fn asset_status_matches(
@@ -140,6 +167,7 @@ pub(crate) fn project_asset_open(session: &EditorSession, params: &Value) -> Res
         "removable": removal.is_ok(),
         "removalReason": asset_removal_reason(&removal),
         "previewCommand": preview_command(asset),
+        "blob": asset.blob,
         "usedBy": used_by.into_iter().skip(offset).take(limit).collect::<Vec<_>>(),
         "pairedText": paired_text(&snapshot.assets, asset),
         "useTargets": use_targets,
@@ -249,9 +277,20 @@ fn project_asset_row(
         .count();
     let removal = session.check_asset_removal(&asset.identity);
     let removal_reason = asset_removal_reason(&removal);
+    let mut row = project_asset_summary(asset);
+    let fields = row.as_object_mut().expect("asset summary is an object");
+    fields.remove("checksPending");
+    fields.extend(serde_json::from_value::<serde_json::Map<String, Value>>(json!({
+        "usedBy": used_by, "problems": problems, "removable": removal.is_ok(), "removalReason": removal_reason,
+    })).expect("asset checks are an object"));
+    row
+}
+
+fn project_asset_summary(asset: &AssetDescriptor) -> Value {
     json!({
         "identity": asset.identity,
         "label": asset.label,
+        "blob": asset.blob,
         "kind": asset.kind,
         "mimeType": asset.mime_type,
         "classicResource": asset.classic_resource,
@@ -261,11 +300,10 @@ fn project_asset_row(
         "height": asset.height,
         "durationMs": asset.duration_ms,
         "source": asset.source,
-        "usedBy": used_by,
-        "problems": problems,
         "previewCommand": preview_command(asset),
-        "removable": removal.is_ok(),
-        "removalReason": removal_reason,
+        "checksPending": true,
+        "removable": false,
+        "removalReason": "Check artwork uses before removing this resource.",
     })
 }
 

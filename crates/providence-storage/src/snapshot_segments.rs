@@ -59,6 +59,24 @@ macro_rules! snapshot_segments {
                 _ => Err(unknown_segment(name)),
             }
         }
+
+        pub(super) fn encode_segment(
+            name: &str, snapshot: &ProjectSnapshot,
+        ) -> Result<Vec<u8>, StoreError> {
+            match name {
+                $($name => Ok(serde_json::to_vec(&serde_json::to_value(&snapshot.$field)?)?),)+
+                _ => Err(unknown_segment(name)),
+            }
+        }
+
+        pub(super) fn segment_equal(
+            name: &str, left: &ProjectSnapshot, right: &ProjectSnapshot,
+        ) -> Result<bool, StoreError> {
+            match name {
+                $($name => Ok(left.$field == right.$field),)+
+                _ => Err(unknown_segment(name)),
+            }
+        }
     };
 }
 

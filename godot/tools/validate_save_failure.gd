@@ -25,7 +25,7 @@ func _run() -> void:
 	var shell = load("res://src/editor_shell.tscn").instantiate()
 	shell.set_script(CheckedShell)
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	var actual_bridge = shell._bridge
 	var failing := FailingBridge.new()
 	var revision: int = shell._session_view.revision

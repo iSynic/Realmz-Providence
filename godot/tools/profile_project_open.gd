@@ -14,7 +14,7 @@ func _run() -> void:
 	await _shell._activate_session(described)
 	await _shell._navigation.select_tab(ROUTES.tab_for_route("maps.land"))
 	await _settle()
-	var history_edits := clampi(int(OS.get_environment("PROVIDENCE_PROFILE_HISTORY_EDITS")),0,32)
+	var history_edits := clampi(int(OS.get_environment("PROVIDENCE_PROFILE_HISTORY_EDITS")),0,64)
 	for index in history_edits:
 		if not await _paint(_paint_probe()): return _finish()
 	var report := _new_report(args[1], described)

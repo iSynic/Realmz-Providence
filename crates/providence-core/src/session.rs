@@ -135,6 +135,8 @@ pub struct ChangeProjection {
     pub reference_changes_total: usize,
     pub affected_diagnostics_total: usize,
     pub references_unchanged: bool,
+    #[serde(default)]
+    pub refresh_required: bool,
     pub truncated: bool,
     pub can_undo: bool,
     pub can_redo: bool,
@@ -176,7 +178,7 @@ pub struct PersistedSessionState {
     pub redo: Vec<SessionHistoryEntry>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct EditorSession {
     snapshot: ProjectSnapshot,
     revision: Revision,
@@ -184,6 +186,26 @@ pub struct EditorSession {
     redo: Vec<SessionHistoryEntry>,
     projections: projections::SessionProjections,
     staging_import: bool,
+    instance_id: u64,
+}
+
+fn next_session_id() -> u64 {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
+
+impl Clone for EditorSession {
+    fn clone(&self) -> Self {
+        Self {
+            snapshot: self.snapshot.clone(),
+            revision: self.revision,
+            undo: self.undo.clone(),
+            redo: self.redo.clone(),
+            projections: self.projections.clone(),
+            staging_import: self.staging_import,
+            instance_id: next_session_id(),
+        }
+    }
 }
 
 impl EditorSession {
@@ -199,11 +221,18 @@ impl EditorSession {
             redo: Vec::new(),
             projections: projections::SessionProjections::default(),
             staging_import: false,
+            instance_id: next_session_id(),
         }
     }
 
     pub fn revision(&self) -> Revision {
         self.revision
+    }
+
+    /// Ephemeral host cache key. Clones have distinct identities; every change
+    /// to truth or history advances revision. This key is never portable state.
+    pub fn checkpoint_identity(&self) -> (u64, Revision) {
+        (self.instance_id, self.revision)
     }
 
     pub fn can_undo(&self) -> bool {
@@ -229,6 +258,7 @@ impl EditorSession {
             redo: state.redo,
             projections: projections::SessionProjections::default(),
             staging_import: false,
+            instance_id: next_session_id(),
         }
     }
 
@@ -339,13 +369,10 @@ impl EditorSession {
             ));
         }
         imported.normalize();
-        let before = std::mem::replace(&mut self.snapshot, imported);
-        let changed_entities = vec![self.snapshot.project_id.clone()];
-        let settings_affected =
-            action_settings::affected_sources(&before, &self.snapshot, &changed_entities);
+        self.snapshot = imported;
         self.undo.clear();
         self.redo.clear();
-        Ok(self.advance(changed_entities, false, settings_affected))
+        Ok(self.import_refresh_projection(vec![self.snapshot.project_id.clone()]))
     }
 
     fn apply(&mut self, command: EditorCommand) -> Result<ChangeProjection, SessionError> {

@@ -14,8 +14,35 @@ use providence_core::session::EditorCommand;
 use providence_core::session::EditorSession;
 use providence_core::session::ExtraActionPointRecordDraft;
 use providence_core::validation::Severity;
+use serde::Serialize;
 use serde_json::Value;
 use serde_json::json;
+
+mod catalog_metrics;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtraActionCatalogRow {
+    identity: StableId,
+    native_id: NativeRecordId,
+    descriptor: String,
+    label: String,
+    populated_actions: usize,
+    used_by: usize,
+    problems: usize,
+    errors: usize,
+    warnings: usize,
+    information: usize,
+    reusable: bool,
+    #[serde(rename = "macro")]
+    macro_action: bool,
+    battle: bool,
+    monster: bool,
+    likely_padding: bool,
+    runtime_residue: bool,
+    authored_without_known_caller: bool,
+    needs_trace: bool,
+}
 
 pub(super) fn dispatch(
     session: &mut EditorSession,
@@ -57,8 +84,7 @@ fn extra_action_point_apply_draft(
 
 fn extra_action_point_list(session: &mut EditorSession, params: Value) -> Result<Value, String> {
     let query = CatalogQuery::from_params(&params, 64);
-    let diagnostics = session.diagnostics();
-    let references = session.references();
+    let metrics = catalog_metrics::CatalogMetrics::new(session.diagnostics(), session.references());
     let all_items = session
         .snapshot()
         .extra_action_points
@@ -67,24 +93,24 @@ fn extra_action_point_list(session: &mut EditorSession, params: Value) -> Result
             extra_action_catalog_row(
                 row,
                 descriptor(session, &row.identity),
-                &diagnostics,
-                &references,
+                metrics.diagnostics(&row.identity),
+                metrics.callers(row.native_id.0),
             )
         })
         .collect::<Vec<_>>();
     let counts = json!({
         "all": all_items.len(),
-        "macro": all_items.iter().filter(|item| item["macro"].as_bool() == Some(true)).count(),
-        "battle": all_items.iter().filter(|item| item["battle"].as_bool() == Some(true)).count(),
-        "monster": all_items.iter().filter(|item| item["monster"].as_bool() == Some(true)).count(),
-        "noKnownCaller": all_items.iter().filter(|item| item["usedBy"].as_u64().unwrap_or(0) == 0).count(),
-        "padding": all_items.iter().filter(|item| item["likelyPadding"].as_bool() == Some(true)).count(),
-        "residue": all_items.iter().filter(|item| item["runtimeResidue"].as_bool() == Some(true)).count(),
-        "authoredWithoutKnownCaller": all_items.iter().filter(|item| item["authoredWithoutKnownCaller"].as_bool() == Some(true)).count(),
-        "trace": all_items.iter().filter(|item| item["needsTrace"].as_bool() == Some(true)).count(),
-        "errors": all_items.iter().filter(|item| item["errors"].as_u64().unwrap_or(0) > 0).count(),
-        "warnings": all_items.iter().filter(|item| item["warnings"].as_u64().unwrap_or(0) > 0).count(),
-        "information": all_items.iter().filter(|item| item["information"].as_u64().unwrap_or(0) > 0).count(),
+        "macro": all_items.iter().filter(|item| item.macro_action).count(),
+        "battle": all_items.iter().filter(|item| item.battle).count(),
+        "monster": all_items.iter().filter(|item| item.monster).count(),
+        "noKnownCaller": all_items.iter().filter(|item| item.used_by == 0).count(),
+        "padding": all_items.iter().filter(|item| item.likely_padding).count(),
+        "residue": all_items.iter().filter(|item| item.runtime_residue).count(),
+        "authoredWithoutKnownCaller": all_items.iter().filter(|item| item.authored_without_known_caller).count(),
+        "trace": all_items.iter().filter(|item| item.needs_trace).count(),
+        "errors": all_items.iter().filter(|item| item.errors > 0).count(),
+        "warnings": all_items.iter().filter(|item| item.warnings > 0).count(),
+        "information": all_items.iter().filter(|item| item.information > 0).count(),
     });
     let filtered = all_items
         .into_iter()
@@ -107,8 +133,8 @@ fn extra_action_catalog_row(
     row: &ExtraActionPoint,
     descriptor: &str,
     diagnostics: &[providence_core::validation::Diagnostic],
-    references: &[providence_core::references::ReferenceDescriptor],
-) -> Value {
+    used_by: usize,
+) -> ExtraActionCatalogRow {
     let related_diagnostics = diagnostics
         .iter()
         .filter(|diagnostic| diagnostic.entity.as_ref() == Some(&row.identity))
@@ -126,40 +152,33 @@ fn extra_action_catalog_row(
         .iter()
         .filter(|diagnostic| diagnostic.severity == Severity::Information)
         .count();
-    let used_by = references
-        .iter()
-        .filter(|reference| {
-            reference.target_kind == providence_core::references::TargetKind::ExtraActionPoint
-                && reference.target_id == row.native_id.0.to_string()
-        })
-        .count();
     let first_action = row.actions.first().and_then(|action| {
         providence_core::action_authoring::action_definition_for_opcode(action.raw_opcode)
     });
     let flags = extra_action_flags(row, used_by, problems);
-    json!({
-        "identity": row.identity,
-        "nativeId": row.native_id,
-        "descriptor": descriptor,
-        "label": first_action.map_or_else(
+    ExtraActionCatalogRow {
+        identity: row.identity.clone(),
+        native_id: row.native_id,
+        descriptor: descriptor.to_owned(),
+        label: first_action.map_or_else(
             || format!("Extra Action Point {}", row.native_id.0),
             |action| format!("Extra Action Point {} · {}", row.native_id.0, action.label),
         ),
-        "populatedActions": row.actions.len(),
-        "usedBy": used_by,
-        "problems": problems,
-        "errors": error_count,
-        "warnings": warning_count,
-        "information": information_count,
-        "reusable": extra_action_is_reusable(row),
-        "macro": flags.macro_action,
-        "battle": flags.battle_action,
-        "monster": flags.monster_action,
-        "likelyPadding": flags.likely_padding,
-        "runtimeResidue": flags.runtime_residue,
-        "authoredWithoutKnownCaller": flags.authored_without_known_caller,
-        "needsTrace": flags.needs_trace,
-    })
+        populated_actions: row.actions.len(),
+        used_by,
+        problems,
+        errors: error_count,
+        warnings: warning_count,
+        information: information_count,
+        reusable: extra_action_is_reusable(row),
+        macro_action: flags.macro_action,
+        battle: flags.battle_action,
+        monster: flags.monster_action,
+        likely_padding: flags.likely_padding,
+        runtime_residue: flags.runtime_residue,
+        authored_without_known_caller: flags.authored_without_known_caller,
+        needs_trace: flags.needs_trace,
+    }
 }
 
 struct ExtraActionFlags {
@@ -196,33 +215,27 @@ fn extra_action_is_reusable(row: &ExtraActionPoint) -> bool {
         && row.actions.is_empty()
 }
 
-fn extra_action_matches(item: &Value, query: &CatalogQuery) -> bool {
+fn extra_action_matches(item: &ExtraActionCatalogRow, query: &CatalogQuery) -> bool {
     let matches_filter = match query.filter.as_str() {
         "all" => true,
-        "macro" => item["macro"].as_bool() == Some(true),
-        "battle" => item["battle"].as_bool() == Some(true),
-        "monster" => item["monster"].as_bool() == Some(true),
-        "no-known-caller" => item["usedBy"].as_u64().unwrap_or(0) == 0,
-        "padding" => item["likelyPadding"].as_bool() == Some(true),
-        "residue" => item["runtimeResidue"].as_bool() == Some(true),
-        "authored-without-known-caller" => {
-            item["authoredWithoutKnownCaller"].as_bool() == Some(true)
-        }
-        "trace" => item["needsTrace"].as_bool() == Some(true),
-        "errors" => item["errors"].as_u64().unwrap_or(0) > 0,
-        "warnings" => item["warnings"].as_u64().unwrap_or(0) > 0,
-        "information" => item["information"].as_u64().unwrap_or(0) > 0,
+        "macro" => item.macro_action,
+        "battle" => item.battle,
+        "monster" => item.monster,
+        "no-known-caller" => item.used_by == 0,
+        "padding" => item.likely_padding,
+        "residue" => item.runtime_residue,
+        "authored-without-known-caller" => item.authored_without_known_caller,
+        "trace" => item.needs_trace,
+        "errors" => item.errors > 0,
+        "warnings" => item.warnings > 0,
+        "information" => item.information > 0,
         _ => false,
     };
     matches_filter
         && (query.search.is_empty()
-            || format!(
-                "{} {}",
-                item["nativeId"],
-                item["label"].as_str().unwrap_or("")
-            )
-            .to_ascii_lowercase()
-            .contains(&query.search))
+            || format!("{} {}", item.native_id.0, item.label)
+                .to_ascii_lowercase()
+                .contains(&query.search))
 }
 
 fn extra_action_point_open(session: &mut EditorSession, params: Value) -> Result<Value, String> {

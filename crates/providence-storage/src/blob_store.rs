@@ -12,6 +12,22 @@ use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
 impl ProjectStore {
+    /// Adopt a verified, already durable staging blob without rewriting its bytes.
+    /// Both stores treat CAS payloads as immutable; the checkpoint rechecks them.
+    pub fn adopt_blob(&self, source: &ProjectStore, id: &BlobId) -> Result<(), StoreError> {
+        let bytes = source.read_blob(id)?;
+        let destination = self.blob_path(id)?;
+        let parent = destination.parent().expect("blob parent");
+        fs::create_dir_all(parent)?;
+        match fs::hard_link(source.blob_path(id)?, &destination) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                self.read_blob(id).map(|_| ())
+            }
+            Err(_) => self.put_blob(&bytes).map(|_| ()),
+        }
+    }
+
     pub fn put_blob(&self, bytes: &[u8]) -> Result<BlobId, StoreError> {
         let digest = sha256(bytes);
         let id = BlobId(format!("{BLOB_ALGORITHM}:{digest}"));
@@ -51,9 +67,16 @@ impl ProjectStore {
     }
 
     pub fn validate_asset_blobs(&self, snapshot: &ProjectSnapshot) -> Result<(), StoreError> {
+        self.validate_asset_blobs_cached(snapshot, &mut std::collections::BTreeMap::new())
+    }
+
+    pub(super) fn validate_asset_blobs_cached(
+        &self,
+        snapshot: &ProjectSnapshot,
+        lengths: &mut std::collections::BTreeMap<BlobId, u64>,
+    ) -> Result<(), StoreError> {
         for asset in &snapshot.assets {
-            let bytes = self.read_blob(&asset.blob)?;
-            let actual = bytes.len() as u64;
+            let actual = self.verified_blob_length(&asset.blob, lengths)?;
             if actual != asset.byte_length {
                 return Err(StoreError::AssetBlobLengthMismatch {
                     asset: asset.identity.0.clone(),
@@ -62,8 +85,7 @@ impl ProjectStore {
                 });
             }
             if let Some(blob) = &asset.classic_payload_blob {
-                let classic = self.read_blob(blob)?;
-                let actual = classic.len() as u64;
+                let actual = self.verified_blob_length(blob, lengths)?;
                 let expected = asset.classic_payload_byte_length.unwrap_or(actual);
                 if actual != expected {
                     return Err(StoreError::AssetClassicPayloadLengthMismatch {
@@ -81,6 +103,19 @@ impl ProjectStore {
             }
         }
         Ok(())
+    }
+
+    fn verified_blob_length(
+        &self,
+        id: &BlobId,
+        lengths: &mut std::collections::BTreeMap<BlobId, u64>,
+    ) -> Result<u64, StoreError> {
+        if let Some(length) = lengths.get(id) {
+            return Ok(*length);
+        }
+        let length = self.read_blob(id)?.len() as u64;
+        lengths.insert(id.clone(), length);
+        Ok(length)
     }
 
     pub(super) fn blob_path(&self, id: &BlobId) -> Result<PathBuf, StoreError> {

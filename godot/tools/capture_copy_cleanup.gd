@@ -24,7 +24,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = preload("res://tools/validate_assets_corpus.gd").CorpusBridge.new(args[0].path_join("copy-settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	await shell._project_session.open_project(args[0]); await settle()
 	sheet = Image.create(1600, int(ceil(float((ROUTES.size() + 2) * 2) / 4.0)) * 225, false, Image.FORMAT_RGB8)
 	sheet.fill(Color("202020"))

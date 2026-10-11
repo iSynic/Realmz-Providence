@@ -40,6 +40,11 @@ pub(crate) fn dispatch(
     method: &str,
     params: Value,
 ) -> Result<Value, String> {
+    if method == "media.thumbnails" {
+        return crate::media_thumbnails::batch(&params, |preview, params| {
+            dispatch(session, store, catalogs, None, preview, params)
+        });
+    }
     if let Some(request) = characters::resolve(method) {
         return request.dispatch(session, store, catalogs, method, &params);
     }
@@ -47,6 +52,7 @@ pub(crate) fn dispatch(
         return request.dispatch(session, store, catalogs, method, params);
     }
     match method.split('.').next().unwrap_or_default() {
+        "asset-export" => crate::asset_export::dispatch(session, store, catalogs, method, &params),
         "shop" if method == "shop.unverified.list" => shop_sources::list(session, store, &params),
         "discovery" => discovery::dispatch(
             session,

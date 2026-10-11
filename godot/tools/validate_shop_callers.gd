@@ -17,7 +17,7 @@ func _run() -> void:
 	root.gui_embed_subwindows = true
 	shell = load("res://src/editor_shell.tscn").instantiate()
 	shell._bridge = ProvidenceNativeBridge.new(args[1].path_join("settings.cfg"))
-	root.add_child(shell); await process_frame
+	root.add_child(shell); await shell.startup_completed
 	assert(shell._bridge.create_project("shop-callers", args[1].path_join("project")).ok)
 	var imported: Dictionary = shell._bridge.request("project.import-classic-scenario", {
 		"directory": args[0], "expectedRevision": 0, "applicationDataDirectory": OS.get_environment("PROVIDENCE_APPLICATION_RULES_ROOT")})

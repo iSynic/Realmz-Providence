@@ -8,7 +8,7 @@ use crate::model::{ProjectSnapshot, StableId};
 impl EditorSession {
     /// Runs a private import from fresh truth. Intermediate projections require a
     /// refresh and are never an authoring acknowledgement. The live session owns
-    /// the final atomic commit, complete projections and durable checkpoint.
+    /// the final atomic commit and durable checkpoint. Views are requested separately.
     pub fn stage_classic_import<T, E>(
         project_id: StableId,
         decode: impl FnOnce(&mut Self) -> Result<T, E>,
@@ -23,13 +23,20 @@ impl EditorSession {
         &mut self,
         command: EditorCommand,
     ) -> Result<ChangeProjection, SessionError> {
-        let mut changed = self.apply_domain_command(command)?;
+        let changed = self.apply_domain_command(command)?;
+        Ok(self.import_refresh_projection(changed))
+    }
+
+    pub(super) fn import_refresh_projection(
+        &mut self,
+        mut changed: Vec<StableId>,
+    ) -> ChangeProjection {
         self.projections = super::projections::SessionProjections::default();
         let previous_revision = self.revision;
         self.revision.0 += 1;
         let total = changed.len();
         changed.truncate(CHANGE_PROJECTION_LIMIT);
-        Ok(ChangeProjection {
+        ChangeProjection {
             previous_revision,
             revision: self.revision,
             affected_entities: changed.clone(),
@@ -41,10 +48,11 @@ impl EditorSession {
             reference_changes_total: 0,
             affected_diagnostics_total: 0,
             references_unchanged: false,
+            refresh_required: true,
             truncated: true,
             can_undo: false,
             can_redo: false,
-        })
+        }
     }
 }
 

@@ -29,7 +29,7 @@ func _run() -> void:
 	root.content_scale_size = Vector2i(1600, 900)
 	_shell = (load("res://src/editor_shell.tscn") as PackedScene).instantiate()
 	root.add_child(_shell)
-	await _frames(6)
+	await _shell.startup_completed
 	var opened: Dictionary = _shell._bridge.start_project(args[0], args[1])
 	if not opened.get("ok", false): return _fail(str(opened.get("error", "Publish fixture did not open.")))
 	await _shell._activate_session(opened)

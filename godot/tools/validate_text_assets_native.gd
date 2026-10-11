@@ -54,7 +54,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell.set_script(CheckedShell)
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	_shell._bridge.stop()
 	_shell._bridge = TestBridge.new(args[0].get_base_dir().path_join("settings.cfg"))
 	var created: Dictionary = _shell._bridge.create_project("text-workflow", args[0])

@@ -23,7 +23,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell._bridge = preload("res://tools/validate_assets_corpus.gd").CorpusBridge.new(args[0].path_join("test-settings.cfg"))
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	await _verify(args[0])
 	_shell._bridge.stop()
 	quit(0 if _passed else 1)

@@ -156,6 +156,7 @@ fn find_asset<'a>(
 fn application_media_list_item(asset: &ApplicationMediaAsset) -> Value {
     json!({
         "identity": asset.descriptor.identity, "label": asset.descriptor.label,
+        "blob": asset.descriptor.blob,
         "kind": asset.descriptor.kind, "mimeType": asset.descriptor.mime_type,
         "classicResource": asset.descriptor.classic_resource, "byteLength": asset.descriptor.byte_length,
         "width": asset.descriptor.width, "height": asset.descriptor.height,

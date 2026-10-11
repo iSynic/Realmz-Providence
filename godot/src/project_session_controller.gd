@@ -82,7 +82,10 @@ func open_project(project_path: String) -> void:
 	if not bool(response.get("ok", false)):
 		_operations.requires_reopen = _operations.requires_reopen or was_recovery
 		candidate.stop()
-		failed.emit(str(response.get("error", "Project open failed.")))
+		if response.get("cancelled", false):
+			status_changed.emit("Opening cancelled · Your current project remains open.")
+		else:
+			failed.emit(str(response.get("error", "Project open failed.")))
 		_operations.notify_completed(response)
 		return
 	bridge.stop()

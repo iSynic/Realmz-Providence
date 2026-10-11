@@ -1,5 +1,7 @@
 mod bootstrap;
 mod inputs;
+pub(crate) mod item_progress;
+pub(crate) mod jobs;
 mod timing;
 use inputs::ScenarioSources;
 
@@ -28,9 +30,7 @@ use crate::scenario_music;
 use crate::scenario_preflight::resolve_classic_native_file;
 use crate::spell_import::import_classic_spells;
 use crate::spell_import::import_standard_spells;
-use providence_core::codecs::{
-    decode_special_land_solidity, parse_resource_entries_preserving_duplicates,
-};
+use providence_core::codecs::decode_special_land_solidity;
 use providence_core::model::ClassicSourceBlob;
 use providence_core::model::ProjectSnapshot;
 use providence_core::model::SpecialLandSolidityCatalog;
@@ -50,6 +50,16 @@ pub(crate) fn import_classic_scenario(
     store: Option<&ProjectStore>,
     params: Value,
 ) -> Result<Value, String> {
+    import_classic_scenario_with_progress(session, store, params, None)
+}
+
+fn import_classic_scenario_with_progress(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    params: Value,
+    progress: Option<timing::Progress>,
+) -> Result<Value, String> {
+    let _inputs = crate::import_inputs::Scope::begin();
     let store = store.ok_or_else(|| {
         "project.import-classic-scenario requires serve-project so the complete source set is durable"
             .to_string()
@@ -62,7 +72,7 @@ pub(crate) fn import_classic_scenario(
             session.revision().0
         ));
     }
-    let mut timing = timing::ImportTiming::new(&params);
+    let mut timing = timing::ImportTiming::new(&params, progress);
     let sources = timing.run("source-preflight", || ScenarioSources::read(&params))?;
     let (imported, (steps, source_report, music_omissions)) =
         EditorSession::stage_classic_import(session.snapshot().project_id.clone(), |scratch| {
@@ -188,7 +198,8 @@ fn rule_path(sources: &ScenarioSources, family: &str) -> std::path::PathBuf {
 
 fn race_import_path(sources: &ScenarioSources) -> Result<std::path::PathBuf, String> {
     let path = rule_path(sources, "Data Race");
-    let bytes = fs::read(&path).map_err(|error| format!("could not read Data Race: {error}"))?;
+    let bytes = crate::import_inputs::read(&path)
+        .map_err(|error| format!("could not read Data Race: {error}"))?;
     if path.starts_with(&sources.scenario_directory)
         && bytes.len() < 30 * providence_core::codecs::RACE_RECORD_BYTES
     {
@@ -392,9 +403,9 @@ pub(crate) fn scenario_item_text_path(
         let Some(path) = resolve_classic_native_file(directory, native_path) else {
             continue;
         };
-        let bytes =
-            fs::read(&path).map_err(|error| format!("could not read {native_path}: {error}"))?;
-        let entries = parse_resource_entries_preserving_duplicates(&bytes)
+        let bytes = crate::import_inputs::read(&path)
+            .map_err(|error| format!("could not read {native_path}: {error}"))?;
+        let entries = crate::import_inputs::entries(&path, &bytes)
             .map_err(|error| format!("could not inspect {native_path} item text: {error}"))?;
         if entries
             .iter()
@@ -423,7 +434,7 @@ fn import_media_and_solidity(
     steps.push("scenario-music".into());
 
     let solidity_path = sources.scenario_directory.join("Data Solids");
-    let solidity_bytes = fs::read(&solidity_path)
+    let solidity_bytes = crate::import_inputs::read(&solidity_path)
         .map_err(|error| format!("could not read {}: {error}", solidity_path.display()))?;
     let solidity_blob = store
         .put_blob(&solidity_bytes)
@@ -528,7 +539,7 @@ pub(crate) fn capture_scenario_sources(
         let Some(path) = resolve_classic_native_file(directory, native_path) else {
             continue;
         };
-        let bytes = fs::read(&path)
+        let bytes = crate::import_inputs::read(&path)
             .map_err(|error| format!("could not read source {}: {error}", path.display()))?;
         total_bytes = total_bytes.saturating_add(bytes.len() as u64);
         sources.push(ClassicSourceBlob {

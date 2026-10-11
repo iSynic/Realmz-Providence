@@ -18,7 +18,7 @@ func _run() -> void:
 	_shell = load("res://src/editor_shell.tscn").instantiate()
 	_shell._bridge = load("res://src/native_bridge.gd").new(args[0].path_join("test-settings.cfg"))
 	root.add_child(_shell)
-	await process_frame
+	if not _shell.startup_presentable: await _shell.startup_completed
 	var opened: Dictionary = _shell._bridge.start_project(args[0], "", catalog_root)
 	if not bool(opened.get("ok", false)):
 		_fail(str(opened.get("error")))

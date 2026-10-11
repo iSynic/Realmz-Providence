@@ -3,6 +3,7 @@ extends RefCounted
 
 signal catalog_changed(maps: Array)
 signal document_opened(map: Dictionary, reset_selection: bool)
+signal artwork_ready
 signal document_cleared
 signal tile_catalog_changed(catalog: Dictionary)
 signal status_changed(message: String)
@@ -126,6 +127,7 @@ func load_first_async(operation: ProvidenceEditorOperation) -> Dictionary:
 
 
 func _load_first(operation: ProvidenceEditorOperation, generation: int) -> Dictionary:
+	operation.show_progress("Loading map catalog…")
 	var catalog := await _reload_catalog(operation, generation)
 	if not catalog.get("ok", false): return catalog
 	if maps.is_empty():
@@ -142,10 +144,12 @@ func load_map(map_identity: String, borrowed: ProvidenceEditorOperation = null) 
 
 
 func _load_map(operation: ProvidenceEditorOperation, map_identity: String, generation: int) -> Dictionary:
+	operation.show_progress("Loading selected map…")
 	var response := await operation.request("map.open", {"identity": map_identity, "includeDiagnostics":false,"includeReferences":false})
 	if not response.get("ok", false): return response
 	if generation != _generation: return _session_changed()
 	apply_document(response.result, true)
+	operation.show_progress("Loading map artwork…")
 	var atlas := await operation.request("map.render-atlas", {"identity": map_identity})
 	if generation != _generation: return _session_changed()
 	if not atlas.get("ok", false):
@@ -153,6 +157,7 @@ func _load_map(operation: ProvidenceEditorOperation, map_identity: String, gener
 		return atlas
 	var applied := apply_atlas(atlas.result)
 	_show_atlas_status(atlas.result, applied)
+	artwork_ready.emit()
 	return {"ok": true}
 
 

@@ -22,7 +22,7 @@ func _run() -> void:
 	root.content_scale_size = DisplayServer.window_get_size()
 	var shell := load("res://src/editor_shell.tscn").instantiate() as Control
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	await shell._project_session.open_project(args[0])
 	var ordinary := surface == "stock-sound-ap"
 	var route := "scripts.action-points" if ordinary else "scripts.macros"

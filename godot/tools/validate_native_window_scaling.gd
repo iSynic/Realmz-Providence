@@ -11,7 +11,7 @@ func _run() -> void:
 	assert(ProjectSettings.get_setting("display/window/stretch/mode") == "disabled")
 	var shell: Control = load("res://src/editor_shell.tscn").instantiate()
 	root.add_child(shell)
-	await process_frame
+	if not shell.startup_presentable: await shell.startup_completed
 	var reference_sizes := {}
 	for viewport in VIEWPORTS:
 		root.size = viewport

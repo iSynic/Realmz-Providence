@@ -34,6 +34,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+mod checkpoint_reuse;
 mod history_checkpoint;
 mod history_preparation;
 #[cfg(test)]
@@ -120,9 +121,16 @@ pub struct SearchHit {
 #[derive(Debug, Clone)]
 pub struct ProjectStore {
     root: PathBuf,
+    checkpoint: std::sync::Arc<std::sync::Mutex<Option<checkpoint_reuse::VerifiedCheckpoint>>>,
 }
 
 impl ProjectStore {
+    fn at_root(root: PathBuf) -> Self {
+        Self {
+            root,
+            checkpoint: Default::default(),
+        }
+    }
     pub fn create_new(
         root: impl Into<PathBuf>,
         snapshot: &ProjectSnapshot,
@@ -138,7 +146,7 @@ impl ProjectStore {
         root: impl Into<PathBuf>,
         snapshot: &ProjectSnapshot,
     ) -> Result<Self, StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self::at_root(root.into());
         fs::create_dir_all(&store.root)?;
         store.save_snapshot(snapshot)?;
         store.rebuild_index(snapshot)?;
@@ -146,7 +154,7 @@ impl ProjectStore {
     }
 
     pub fn open(root: impl Into<PathBuf>) -> Result<(Self, ProjectSnapshot), StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self::at_root(root.into());
         let snapshot = store.load_snapshot()?;
         store.index_matches_snapshot()?;
         Ok((store, snapshot))

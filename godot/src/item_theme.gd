@@ -13,9 +13,7 @@ func _rebuild() -> void:
 	set_block_signals(true)
 	super._rebuild()
 	var c: Array = ITEM_COLORS[mode].map(func(hex: String): return Color(hex))
-	var bold := SystemFont.new()
-	bold.font_names = (default_font as SystemFont).font_names
-	bold.font_weight = 700
+	var bold := preload("res://theme/control_fonts.gd").get_font((default_font as SystemFont).font_names, 700)
 	for variation in ["ItemHeading", "ItemTitle", "ItemName", "ItemFieldLabel", "ItemContext", "ItemId"]:
 		set_type_variation(variation, "Label")
 	for variation in ["ItemHeading", "ItemTitle", "ItemName", "ItemFieldLabel"]:
