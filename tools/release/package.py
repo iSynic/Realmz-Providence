@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import platform
 import plistlib
+import re
+import tomllib
 import shutil
 import subprocess
 import tarfile
@@ -13,6 +15,8 @@ from common import ROOT, digest, executable, external_directory, git_identity, o
 from music import install_music
 from notices import install_notices
 from windows_runtime import verify_static_crt
+
+VERSION = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
 
 BINARIES = ["providence-cli", "providence-native-adapter", "providence-rebuilt-preview",
             "providence-application-library"]
@@ -101,7 +105,7 @@ def identity_manifest(runtime, resources, identity, godot):
     files = {p.relative_to(file_root).as_posix(): digest(p) for p in sorted(file_root.rglob("*"))
              if p.is_file() and p.name != editor_name and "_CodeSignature" not in p.parts}
     write_json(resources / "bundle-manifest.json", {"kind": "providence.native-release", "formatVersion": 1,
-        "version": "0.6.0-beta.3", "source": identity, "platform": platform.system(),
+        "version": VERSION, "source": identity, "platform": platform.system(),
         "fileRoot": ".." if editor_name else ".",
         "godotVersion": output([godot, "--version"]), "buildIdentities": identities, "files": files,
         "macOSSeal": "The signed editor binary is covered by the application seal and release archive checksum." if editor_name else None})
@@ -121,7 +125,7 @@ def export(godot, bundle):
 def archive_bundle(bundle, destination):
     system = platform.system()
     suffix = {"Windows": "windows-x64.zip", "Linux": "linux-x64.tar.gz", "Darwin": "macos-universal.zip"}[system]
-    archive = destination / ("Providence-v0.6.0-beta.3-" + suffix)
+    archive = destination / ("Providence-v" + VERSION + "-" + suffix)
     if system == "Linux":
         with tarfile.open(archive, "w:gz") as target: target.add(bundle, arcname="Providence")
     elif system == "Darwin":
@@ -171,7 +175,16 @@ def smoke_editor(bundle, runtime):
         raise ValueError("Exported editor reported an error; see startup-smoke.log")
 
 
+def verify_release_versions():
+    for name, key in [("project.godot", "config/version"), ("export_presets.cfg", "application/version")]:
+        source = (ROOT / "godot" / name).read_text(encoding="utf-8")
+        versions = re.findall(r"^" + re.escape(key) + r'="([^"]+)"$', source, re.MULTILINE)
+        if versions != [VERSION]:
+            raise ValueError(f"Editor version differs from workspace {VERSION}: {name}: {versions}")
+
+
 def main(args):
+    verify_release_versions()
     destination = external_directory(args.output)
     cache = external_directory(args.cache)
     target = external_directory(args.target)
