@@ -149,12 +149,8 @@ static func _compile_exact_bytes(shell: Control, project_path: String, source_di
 		return {}
 	var source_ld := FileAccess.get_file_as_bytes(source_directory.path_join("Data LD"))
 	var compiled_ld := FileAccess.get_file_as_bytes(first_output.path_join("Data LD"))
-	var changed_map_bytes: Array[int] = []
-	for index in range(min(source_ld.size(), compiled_ld.size())):
-		if source_ld[index] != compiled_ld[index]:
-			changed_map_bytes.append(index)
-	if source_ld.size() != compiled_ld.size() or changed_map_bytes != [3286, 3287]:
-		Fixture._smoke_fail(shell, "Action Point marker repair changed bytes outside its declared Data LD word")
+	if source_ld != compiled_ld:
+		Fixture._smoke_fail(shell, "Action Point header and target edits changed an untouched Data LD marker")
 		return {}
 	for native_path in ["Data SD2", "Data ED"]:
 		if FileAccess.get_file_as_bytes(source_directory.path_join(native_path)) != FileAccess.get_file_as_bytes(first_output.path_join(native_path)):
