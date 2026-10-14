@@ -2,6 +2,7 @@ class_name ProvidenceMapCanvas
 extends Control
 
 signal cell_selected(x: int, y: int, tile: int, action_point: Dictionary)
+signal record_selection_requested(cell: Vector2i, point: Vector2)
 signal action_point_placement_requested(cell: Vector2i, action_point: Dictionary)
 signal placement_canceled
 signal action_point_activated(identity: String)
@@ -27,6 +28,7 @@ const ACTION_POINT_COLORS := {
 
 var _tiles: Array = []
 var _action_points: Array = []
+var _markers := preload("res://src/map_marker_index.gd").new()
 var _selected := Vector2i(-1, -1)
 var _atlas_texture: Texture2D
 var _terrain_textures: Dictionary = {}
@@ -45,6 +47,7 @@ var _pan_offset := Vector2.ZERO
 var _panning := false
 var _interaction_mode := "select"
 var _show_action_points := true
+var _action_point_filters := {}
 var _show_real_tiles := true
 var _paint_stroke := preload("res://src/map_paint_stroke.gd").new()
 var _paint_preview_tile := 0
@@ -75,7 +78,9 @@ func create_image_export(cell_pixels: float, overlays: bool) -> ProvidenceMapCan
 	copy._export_overlays = overlays
 	copy.size = Vector2.ONE * cell_pixels * MAP_SIZE
 	copy._tiles = _tiles.duplicate()
+	copy._action_point_filters = _action_point_filters.duplicate()
 	copy._action_points = _action_points.duplicate(true)
+	copy._markers.set_rows(copy._action_points)
 	copy._atlas_texture = _atlas_texture
 	copy._atlas_tile_size = _atlas_tile_size
 	copy._atlas_columns = _atlas_columns
@@ -102,6 +107,7 @@ func set_document(tiles: Array, action_points: Array) -> void:
 	cancel_paint_stroke()
 	_tiles = tiles
 	_action_points = action_points
+	_markers.set_rows(action_points)
 	_selected = Vector2i(-1, -1)
 	zoom_working()
 	queue_redraw()
@@ -111,6 +117,7 @@ func refresh_document(tiles: Array, action_points: Array) -> void:
 	cancel_paint_stroke()
 	_tiles = tiles
 	_action_points = action_points
+	_markers.set_rows(action_points)
 	if _selected.x >= 0:
 		select_cell(_selected.x, _selected.y, false, false)
 	queue_redraw()
@@ -252,6 +259,11 @@ func toggle_action_points() -> bool:
 	return _show_action_points
 
 
+func set_action_point_filters(filters: Dictionary) -> void:
+	_action_point_filters = filters.duplicate()
+	queue_redraw()
+
+
 func set_action_points_visible(visible: bool) -> void:
 	_show_action_points = visible
 	queue_redraw()
@@ -264,6 +276,8 @@ func set_real_tiles_visible(value: bool) -> void:
 
 func action_point_marker_contract() -> Dictionary:
 	return {
+		"visible": _show_action_points,
+		"filters": _action_point_filters.duplicate(),
 		"shape": "diamond-with-center-dot",
 		"colors": ACTION_POINT_COLORS.duplicate(),
 	}
@@ -278,13 +292,14 @@ func pan_offset() -> Vector2:
 
 
 func read_navigation_state() -> Dictionary:
-	return {"zoom":_zoom,"pan":[_pan_offset.x,_pan_offset.y],"cell":[_selected.x,_selected.y],"showActionPoints":_show_action_points}
+	return {"zoom":_zoom,"pan":[_pan_offset.x,_pan_offset.y],"cell":[_selected.x,_selected.y],"showActionPoints":_show_action_points,"actionPointFilters":_action_point_filters.duplicate()}
 
 
 func restore_navigation_state(state: Dictionary, notify := false) -> void:
 	cancel_paint_stroke()
 	_zoom = clampf(float(state.get("zoom",1)),MIN_ZOOM,MAX_ZOOM)
 	var pan: Array = state.get("pan",[0,0]); _pan_offset = Vector2(float(pan[0]),float(pan[1])) if pan.size()==2 else Vector2.ZERO
+	_action_point_filters = state.get("actionPointFilters", {}).duplicate()
 	_clamp_pan(_cell_size()); _show_action_points = bool(state.get("showActionPoints",true))
 	var cell: Array = state.get("cell",[-1,-1])
 	if cell.size()==2 and int(cell[0])>=0: select_cell(int(cell[0]),int(cell[1]),false,notify)
@@ -388,6 +403,8 @@ func _gui_input(event: InputEvent) -> void:
 	var y := int(floor(local_position.y / cell_size))
 	if x < 0 or y < 0 or x >= MAP_SIZE or y >= MAP_SIZE:
 		return
+	if _interaction_mode == "select" and record_selection_requested.has_connections():
+		record_selection_requested.emit(Vector2i(x, y), mouse.position); accept_event(); return
 	select_cell(x, y, false)
 	if _interaction_mode == "action-point":
 		action_point_placement_requested.emit(Vector2i(x,y), _action_point_at(x,y))
@@ -399,9 +416,7 @@ func _gui_input(event: InputEvent) -> void:
 			paint_stroke_started.emit()
 			paint_stroke_changed.emit(_paint_stroke.cells.size())
 	elif mouse.double_click:
-		var action_point := _action_point_at(x, y)
-		if not action_point.is_empty():
-			action_point_activated.emit(str(action_point.get("identity", "")))
+		activate_selected_action_point()
 	accept_event()
 
 
@@ -548,6 +563,7 @@ func _draw() -> void:
 	if _show_action_points:
 		for action_point_value in _action_points:
 			var action_point := action_point_value as Dictionary
+			if not preload("res://src/action_point_activation_presentation.gd").matches(action_point.get("activation", {}), _action_point_filters): continue
 			var coordinate := action_point.get("coordinate", {}) as Dictionary
 			var x := int(coordinate.get("x", -1))
 			var y := int(coordinate.get("y", -1))
@@ -641,12 +657,12 @@ func _clamp_pan(cell_size: float) -> void:
 
 
 func _action_point_at(x: int, y: int) -> Dictionary:
-	for candidate in _action_points:
-		var row := candidate as Dictionary
-		var coordinate := row.get("coordinate", {}) as Dictionary
-		if int(coordinate.get("x", -1)) == x and int(coordinate.get("y", -1)) == y:
-			return row
-	return {}
+	var rows := action_points_at(Vector2i(x, y))
+	return rows[0] if not rows.is_empty() else {}
+
+
+func action_points_at(cell: Vector2i) -> Array:
+	return _markers.all_at(cell).filter(func(row): return preload("res://src/action_point_activation_presentation.gd").matches(row.get("activation", {}), _action_point_filters))
 
 
 func _tile_color(tile: int) -> Color:
@@ -689,6 +705,10 @@ func _draw_dungeon_behavior_overlay(destination: Rect2, cell_index: int) -> void
 func cell_rect(cell: Vector2i) -> Rect2:
 	var extent := _cell_size()
 	return Rect2(_origin(extent) + Vector2(cell) * extent, Vector2.ONE * extent)
+
+
+func set_record_highlight(selection: Dictionary) -> void:
+	get_node("MapViewOverlay").set_selection(selection)
 
 
 func visible_cell_bounds() -> Rect2i:

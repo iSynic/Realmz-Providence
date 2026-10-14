@@ -26,6 +26,8 @@ struct ContextIdentity {
 
 #[derive(Default)]
 pub(crate) struct Cache {
+    stock_items: Vec<providence_core::model::ItemRuleDefinition>,
+    stock_spells: Vec<providence_core::model::SpellDefinition>,
     session: Option<EditorSession>,
     media: Option<ApplicationMediaCatalog>,
     findings: Option<Findings>,
@@ -34,6 +36,19 @@ pub(crate) struct Cache {
 }
 
 impl Cache {
+    pub(crate) fn with_catalogs(catalogs: crate::catalogs::CatalogViews<'_>) -> Self {
+        Self {
+            stock_items: catalogs
+                .stock_items
+                .map(|stock| stock.definitions.clone())
+                .unwrap_or_default(),
+            stock_spells: catalogs
+                .stock_spells
+                .map(|stock| stock.definitions.clone())
+                .unwrap_or_default(),
+            ..Self::default()
+        }
+    }
     pub(crate) fn evaluate(
         &mut self,
         snapshot: ProjectSnapshot,
@@ -45,9 +60,16 @@ impl Cache {
         self.update_project(snapshot, revision, media);
         let session = self.session.as_ref().expect("cached session");
         let Some((target, store)) = target else {
-            let findings = self
-                .findings
-                .get_or_insert_with(|| Findings::collect(session, self.media.as_ref()));
+            let findings = self.findings.get_or_insert_with(|| {
+                Findings::collect_with_standard_catalog(
+                    session,
+                    self.media.as_ref(),
+                    providence_core::validation::findings::StandardCatalog {
+                        items: &self.stock_items,
+                        spells: &self.stock_spells,
+                    },
+                )
+            });
             let uncalled = super::diagnostic_policy::uncalled_records(session, params);
             return findings.project(revision, params, &uncalled);
         };

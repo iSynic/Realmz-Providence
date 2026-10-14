@@ -7,3 +7,4 @@ use dungeon_fixture::{DungeonFixture, dungeon_fixture};
 use fixtures::topology_snapshot;
 mod dungeon;
 mod land;
+mod markers;

@@ -4,7 +4,7 @@ signal pane_requested(pane: String)
 signal width_changed(width: int)
 signal recovery_requested
 
-const PANES := ["Map Setup", "Paint Inspector", "Dungeon Draw", "Selection Inspector", "Land Layout", "Land Tiles", "Random Rectangles", "Action Point Placement"]
+const PANES := ["Map Setup", "Paint Inspector", "Dungeon Draw", "Selection Inspector", "Action Points", "Player Maps", "Land Layout", "Land Tiles", "Random Rectangles", "Action Point Placement"]
 var _panels: Dictionary = {}
 var _current := ""
 var _collapsed := false
@@ -32,7 +32,8 @@ func set_recovery_available(enabled: bool) -> void:
 
 func mount(panel: Control, key: String) -> void:
 	_panels[key] = panel
-	if panel.get_parent() != %InspectorContent: panel.reparent(%InspectorContent)
+	var host: Control = %RecordHost if panel.get_meta("self_scrolling", false) else %InspectorContent
+	if panel.get_parent() != host: panel.reparent(host)
 	panel.size_flags_horizontal = SIZE_EXPAND_FILL
 	panel.size_flags_vertical = SIZE_EXPAND_FILL
 	panel.visible = key == _current and not _collapsed
@@ -50,7 +51,8 @@ func show_pane(key: String, label: String) -> void:
 	_label = label
 	var index := PANES.find(label)
 	if index >= 0: %InspectorChooser.select(index)
-	for panel: Control in _panels.values(): panel.visible = panel == _panels.get(key) and not _collapsed
+	for panel: Control in _panels.values():
+		if panel.get_parent() in [%InspectorContent, %RecordHost]: panel.visible = panel == _panels.get(key) and not _collapsed
 	%InspectorEmpty.visible = not _panels.has(key) and not _collapsed
 	_apply_collapse()
 
@@ -80,7 +82,10 @@ func _remember_size() -> void:
 
 func _apply_collapse() -> void:
 	%InspectorHeader.visible = not _collapsed
-	%InspectorScroll.visible = not _collapsed
+	var panel: Control = _panels.get(_current)
+	var record_host: bool = panel != null and panel.get_parent() == %RecordHost
+	%InspectorScroll.visible = not _collapsed and not record_host
+	%RecordHost.visible = not _collapsed and record_host
 	%ShowMapInspector.visible = _collapsed
 	custom_minimum_size.x = 136 if _collapsed else 352
 	if get_parent() is SplitContainer:

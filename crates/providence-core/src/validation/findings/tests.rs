@@ -1,5 +1,7 @@
 use super::*;
 mod monster_tails;
+mod player_map_details;
+mod stock_defaults;
 mod uncalled_imports;
 use crate::{
     model::{ClassicAction, ExtraActionPoint, NativeRecordId, ProjectSnapshot, StableId},

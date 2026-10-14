@@ -125,11 +125,7 @@ fn additional(
         | "spell-rules.import-standard" => imports::dispatch(session, store, method, params),
         "asset.import" => crate::asset_import::import(session, store, params),
         "record.open" => open_record(session, catalogs, &params),
-        "validation.list" => crate::text_export::validation_list_projection(
-            session,
-            catalogs.application_media,
-            &params,
-        ),
+        "validation.list" => crate::diagnostic_policy::list(session, catalogs, &params),
         "action-definition.list"
         | "action-form.describe"
         | "action-form.coverage"

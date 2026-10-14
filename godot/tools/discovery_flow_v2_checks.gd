@@ -130,7 +130,7 @@ func _range(host) -> void:
 	await host._capture("v2-range")
 	await host.flow._action("open-source")
 	await host._settle()
-	assert(not view.visible, "Open step navigates through the ordinary editor")
+	assert(view.visible, "Open step leaves the native Flow window available beside the editor")
 	var destination: Dictionary = host.shell._documents.view("encounters.simple").read_navigation_state()
 	assert(view.model.same_selection(destination.flowSelection, selection), "The destination editor receives the complete entry range")
 	await host.shell._commands.dispatch(&"navigate.view-flow")

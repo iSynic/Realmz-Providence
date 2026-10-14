@@ -27,9 +27,17 @@ pub(super) fn preview(
     if intent.tolerance == ShapeTolerance::Literal {
         return Ok(best);
     }
-    let (editable, ground) = editable_cells(snapshot, map, atlas);
-    let candidates =
+    let (editable, ground) = editable_cells(snapshot, map, atlas, profile, &original);
+    let mut candidates =
         shape_adjustment::candidates(&original, &editable, intent.tolerance.cells(), canceled);
+    if intent.preset != "water" && !best.unresolved.is_empty() {
+        candidates.extend(shape_adjustment::widening_candidates(
+            &original,
+            &editable,
+            intent.tolerance.cells(),
+            canceled,
+        ));
+    }
     for mask in candidates.into_iter().skip(1) {
         if canceled() {
             return Err(map_paint::invalid(
@@ -118,6 +126,8 @@ fn editable_cells(
     snapshot: &ProjectSnapshot,
     map: &MapLevel,
     atlas: Option<&crate::terrain_joining::AtlasEvidence>,
+    profile: &Profile,
+    original: &[MapCoordinate],
 ) -> (Vec<bool>, Vec<Option<i16>>) {
     use crate::land_tile_catalog::{LandTileCategory, semantics};
     let look = map.runtime.as_ref().and_then(|r| r.landlook).unwrap_or(-1);
@@ -133,7 +143,21 @@ fn editable_cells(
         })
         .collect();
     let ground = local_ground(&map.tiles, &open);
-    (vec![true; 8100], ground)
+    let mut editable: Vec<_> = map
+        .tiles
+        .iter()
+        .map(|&raw| {
+            map_paint::terrain_tile(raw).is_some_and(|tile| {
+                open.contains(&(tile as i16)) || profile.family.contains(&(tile as i16))
+            })
+        })
+        .collect();
+    // Explicit strokes may replace artwork. Automatic contour expansion may only
+    // use open ground or this terrain family, never a neighboring authored feature.
+    for cell in original {
+        editable[usize::from(cell.y) * 90 + usize::from(cell.x)] = true;
+    }
+    (editable, ground)
 }
 
 // Removed shoreline inherits nearby mapped ground, never an unrelated map-wide material.

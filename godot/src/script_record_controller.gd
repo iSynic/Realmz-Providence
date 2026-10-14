@@ -169,7 +169,8 @@ func _open(operation: ProvidenceEditorOperation, identity: String, guard: Dictio
 func _opened_map_catalog(operation: ProvidenceEditorOperation, document: Dictionary, identity: String, guard: Dictionary) -> Dictionary:
 	if _methods.record != "actionPoint": return {"ok":true}
 	var map_identity := str(document.get("map",{}).get("identity",""))
-	if map_identity.is_empty() or map_identity == str(guard.state.get("mapIdentity","")): return {"ok":true}
+	if map_identity.is_empty(): return {"ok":true}
+	if map_identity == str(guard.state.get("mapIdentity","")) and _view.catalog_revision() == int(document.get("revision", -1)): return {"ok":true}
 	var query: Dictionary = _view.list_query(); query.mapIdentity = map_identity; query.offset = 0
 	var response := await _read_catalog(operation, query, guard)
 	if not response.get("ok",false): return response

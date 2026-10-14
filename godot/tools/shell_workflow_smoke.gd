@@ -119,16 +119,21 @@ static func _verify_land_workspace(shell: Control) -> bool:
 static func _verify_map_selection(shell: Control) -> bool:
 	while shell._operations.busy: await shell.get_tree().process_frame
 	await shell._maps.chrome.request_tool("select")
-	shell._workbenches.land.select_cell(18, 23)
-	while shell._operations.busy: await shell.get_tree().process_frame
+	var canvas: ProvidenceMapCanvas = shell._workbenches.land.get_node("%LandMapCanvas")
+	shell._maps.context_tools._click(Vector2i(18, 23), canvas.cell_rect(Vector2i(18, 23)).get_center(), canvas)
+	for frame in 1200:
+		await shell.get_tree().process_frame
+		if not shell._operations.busy and not shell._maps.context_tools._reading and not shell._maps.context_tools._queued: break
 	await shell.get_tree().process_frame
 	var map_preview_target = shell._preview_workspace.current_target()
 	if (
 		str((shell._map_inspector.find_child("SelectedCoordinate", true, false) as Label).text) != "CELL 18, 23"
-		or not bool((shell._map_inspector.find_child("SelectedActionPointPanel", true, false) as PanelContainer).visible)
+		or shell._maps.context_tools.selected == null
+		or shell._maps.context_tools.selected.kind != ProvidenceMapSelectionTarget.Kind.ACTION_POINT
+		or shell._maps.context_tools._panels.ap.get_node("%StepList").item_count != 8
 		or map_preview_target != {"kind": "map-location", "id": "land:0", "mapId": "land:0", "x": 18, "y": 23}
 	):
-		Fixture._smoke_fail(shell, "map selection did not populate its Inspector and exact preview target")
+		Fixture._smoke_fail(shell, "map selection did not populate its Inspector and exact preview target: coordinate=%s selected=%s steps=%d preview=%s mode=%s" % [shell._map_inspector.find_child("SelectedCoordinate", true, false).text, str(shell._maps.context_tools.selected), shell._maps.context_tools._panels.ap.get_node("%StepList").item_count, str(map_preview_target), shell._maps.mode])
 		return false
 	return true
 

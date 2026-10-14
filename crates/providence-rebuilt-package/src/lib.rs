@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod native_tiles;
+
 use providence_core::rebuilt::{
     RebuiltV3AssetIndex, RebuiltV3ContentDocument, RebuiltV3Manifest, RebuiltV3WorldDocument,
 };

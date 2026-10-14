@@ -162,11 +162,12 @@ func _compose_shell() -> void:
 	_preview_workspace.failed.connect(_show_error)
 	_preview_workspace.selection_changed.connect(_commands.refresh)
 	_bind_application_commands()
+	_maps.context_tools.initialize(self, _maps, _documents, _operations, _navigation, _scripts, _workbenches.player_map_commands, _draft_apply, _commands, _session_view.context, _draft_navigation)
 	_commands.refresh()
 
 
 func _bind_project_dialogs() -> void:
-	_project_session.initialize(_operations, _activate_session, _session_view.context, _draft_apply.has_draft)
+	_project_session.initialize(_operations, _activate_session, _session_view.context, _draft_apply.has_any_draft)
 	_project_session.status_changed.connect(func(message: String): _status.text = message)
 	_project_session.failed.connect(_show_error)
 	_project_session.assets_save_state.connect(_set_assets_save_state)
@@ -285,8 +286,8 @@ func _activate_session(response: Dictionary, preferred_route := "") -> Dictionar
 	await get_tree().process_frame
 	if not _operations.busy: return _activation_failed()
 	_assets.attach_session(_bridge, _session_view.context)
-	_maps.attach_session(_bridge)
 	_document_changes.clear()
+	_maps.attach_session(_bridge)
 	_item_editor.show_save_state("", false)
 	await _apply_session(response.get("result", {}) as Dictionary, true)
 	_operations.finish({"ok": true}, false, false)
@@ -414,6 +415,7 @@ func _bind_record_workbenches() -> void:
 	_scripts.sound_stop_requested.connect(func(): _media.sounds.stop_preview())
 	_scripts.semantic_target_requested.connect(_navigation.open_script_target)
 	EditorHelpBinding.bind_scripts(_scripts, %DivinityCodeHelper, %DivinityManualReader)
+	_scripts.map_behavior_requested.connect(_maps.reveal_cell_behavior)
 	_scripts.map_reveal_requested.connect(_maps.reveal_coordinate)
 	_scripts.route_requested.connect(_navigation.select_route)
 	_scripts.compile_requested.connect(func(): await _navigation.select_route("export.export-plan"))
@@ -648,7 +650,6 @@ func _initialize_map_document() -> void:
 	_maps.title_changed.connect(_command_bar.set_location)
 	_maps.inspector_visibility_requested.connect(_presentation.set_inspector_visible)
 	_maps.assets_requested.connect(func(): _draft_navigation.request(_assets.open_library.bind("scenario"), "opening Scenario Assets"))
-	_maps.attach_session(_bridge)
 
 
 func _initialize_issues_workspace() -> void:
@@ -688,11 +689,9 @@ func _complete_import(kind: String, _projection: Dictionary, session: Dictionary
 	if kind != "items":
 		var activated := await _activate_session(session, "maps.land")
 		if not activated.get("ok", false): return activated
+	if kind == "scenario": _render_explorer(_maps.document.maps)
 	match kind:
-		"scenario":
-			_render_explorer(_maps.document.maps)
-			await _navigation.select_route("maps.land")
-		"land":
+		"scenario", "land":
 			await _navigation.select_route("maps.land")
 		"items":
 			await _navigation.select_route("economy.items")

@@ -19,6 +19,7 @@ signal simple_encounter_open_requested(native_id: int)
 signal extra_action_point_open_requested(native_id: int)
 signal action_point_open_requested(record_index: int)
 signal semantic_target_open_requested(kind: String, native_id: int, identity: String, context: Dictionary)
+signal map_behavior_requested(map_identity: String, x: int, y: int)
 signal map_reveal_requested(map_identity: String, x: int, y: int)
 signal action_target_search_requested(query: Dictionary)
 signal action_form_describe_requested(query: Dictionary, request_id: int, draft_slot: int)
@@ -45,11 +46,10 @@ var _references: Array = []
 var _used_by: Array = []
 var _working_actions: Array = []
 var _revision := 0
+var _catalog_revision := -1
 var _page_offset := 0
 var _page_limit := 128
 var _list_total := 0
-var _catalog_counts := {}
-var _catalog_filter := "current-map"
 var _search_generation := 0
 var _updating := false
 var _selected_action_slot := -1
@@ -57,6 +57,8 @@ var commit_handler: Callable
 var _draft_controls_locked := false
 @onready var _map_picker: OptionButton = %ActionPointMapPicker
 @onready var _inventory_summary: Label = %ActionPointInventorySummary
+@onready var _catalog: GridContainer = %ActionPointFilters
+@onready var _entry: PanelContainer = %EntryPanel
 @onready var _search: LineEdit = %ActionPointSearch
 @onready var _list: ItemList = %ActionPointCollection
 @onready var _previous_page: Button = %ActionPointPreviousPage
@@ -123,10 +125,10 @@ func _ready() -> void:
 	_semantic_steps.preview_requested.connect(func(kind, id, identity, status):
 		if kind == "sound": sound_preview_requested.emit(id, identity, status)
 		elif kind == "sound-stop": sound_stop_requested.emit())
-	var filters := {"current-map": "CurrentMap", "all": "All", "active": "Active", "reusable": "Reusable", "warnings": "Warnings"}
-	for filter in filters:
-		var button := get_node("ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters/" + filters[filter]) as Button
-		button.pressed.connect(_set_catalog_filter.bind(filter))
+	_catalog.changed.connect(func(): reset_catalog_page(); catalog_query_requested.emit(selected_identity()))
+	_entry.changed.connect(_update_validation)
+	_entry.earlier_requested.connect(func(identity): navigation_requested.emit(row_open_requested.emit.bind(identity), "opening the earlier Action Point"))
+	_entry.secret_requested.connect(func(): map_behavior_requested.emit(_map_identity, int(_trigger_x.value), int(_trigger_y.value)))
 	_create_button.pressed.connect(func(): create_requested.emit(_map_identity, int(_new_x.value), int(_new_y.value)))
 	_duplicate_button.pressed.connect(func(): duplicate_requested.emit(str(_document.get("identity", "")), int(_new_x.value), int(_new_y.value)))
 	_clear_button.pressed.connect(_show_clear_confirmation)
@@ -145,8 +147,8 @@ func _ready() -> void:
 
 
 func _fit_header_grid() -> void:
-	if _header_grid != null: _header_grid.columns = 3 if get_viewport_rect().size.x >= 1500.0 else 2
-	if _activation_status != null: _activation_status.visible = get_viewport_rect().size.y > 900.0
+	if _header_grid != null: _header_grid.columns = 2
+	if _activation_status != null: _activation_status.visible = false
 
 
 func set_maps(maps: Array) -> void:
@@ -186,7 +188,8 @@ func set_summaries(result: Dictionary, revision: int, preferred_identity: String
 	_page_offset = int(result.get("offset", 0))
 	_page_limit = int(result.get("limit", _page_limit))
 	_list_total = int(result.get("total", _summaries.size()))
-	_catalog_counts = (result.get("counts", {}) as Dictionary).duplicate(true)
+	_catalog.present(result.get("counts", {}))
+	_catalog_revision = revision
 	_revision = revision
 	var map := result.get("map", {}) as Dictionary
 	if not map.is_empty():
@@ -195,11 +198,15 @@ func set_summaries(result: Dictionary, revision: int, preferred_identity: String
 		_select_map_picker(_map_identity)
 	_trigger_map.text = _map_name
 	_render_list(previous_identity)
-	_render_catalog_controls()
+	_render_catalog_page()
 
 
 func list_query() -> Dictionary:
-	return {"offset": 0, "limit": 128, "search": _search.text, "filter": _catalog_filter}
+	return {"offset": 0, "limit": 128, "search": _search.text, "filter": _catalog.scope, "activationFilters": _catalog.filters()}
+
+
+func catalog_revision() -> int:
+	return _catalog_revision
 
 
 func set_document(result: Dictionary) -> void:
@@ -209,6 +216,7 @@ func set_document(result: Dictionary) -> void:
 	_references = (result.get("references", []) as Array).duplicate(true)
 	_used_by = (result.get("usedBy", []) as Array).duplicate(true)
 	_working_actions = (_document.get("actions", []) as Array).duplicate(true)
+	%Callers.tooltip_text = "%d known direct-call / chance-change fields. Open incoming Links for exact owners; these links do not establish execution order." % int(result.get("knownActivationLinksTotal", 0))
 	_revision = int(result.get("revision", _revision))
 	var map := result.get("map", {}) as Dictionary
 	if not map.is_empty():
@@ -221,13 +229,14 @@ func set_document(result: Dictionary) -> void:
 	_header_grid.show()
 	_step_authoring.hide()
 	_semantic_steps.show()
+	_entry.set_document(_document)
 	_populate_document()
 	_duplicate_button.disabled = false
 	_clear_button.disabled = false
 	_semantic_steps.set_document(str(_document.get("identity", "")), result.get("steps", []) as Array,
 		{"mapIdentity": _map_identity, "levelType": str(map.get("levelType", "")), "scriptKind": "action-point"})
-	_update_validation()
 	_saved_record_draft = _record_draft()
+	_update_validation()
 	if previous_identity == str(_document.get("identity", "")):
 		preload("res://src/record_navigation.gd").focus_action(_actions, _action_target, previous_slot, false)
 	restore_catalog_selection()
@@ -255,7 +264,7 @@ func _open_semantic_target(kind: String, native_id: int, identity: String, conte
 
 
 func read_state() -> Dictionary:
-	return {"identity": str(_document.get("identity", "")), "draft": _record_draft(), "query": _search.text, "filter": _catalog_filter, "offset": _page_offset, "mapIdentity": _map_identity, "slot": _selected_action_slot, "step": _semantic_steps.read_state()}
+	return {"identity": str(_document.get("identity", "")), "draft": _record_draft(), "query": _search.text, "filter": _catalog.scope, "activationFilters": _catalog.filters(), "offset": _page_offset, "mapIdentity": _map_identity, "slot": _selected_action_slot, "step": _semantic_steps.read_state()}
 
 
 func read_navigation_state() -> Dictionary:
@@ -269,10 +278,10 @@ func prime_navigation_state(state: Dictionary) -> void:
 	_search.set_block_signals(true)
 	_search.text = str(state.get("query", ""))
 	_search.set_block_signals(false)
-	_catalog_filter = str(state.get("filter", "current-map"))
+	_catalog.restore(state)
 	_page_offset = maxi(0, int(state.get("offset", 0)))
 	_map_identity = str(state.get("mapIdentity", _map_identity))
-	_render_catalog_controls()
+	_render_catalog_page()
 
 
 func restore_navigation_state(state: Dictionary) -> void:
@@ -298,7 +307,9 @@ func accept_saved_document(document: Dictionary) -> void:
 
 
 func accept_saved_draft(record_draft: Dictionary) -> void:
+	_entry.acknowledge(record_draft.get("entryMarker"), int(record_draft.get("header", {}).get("chancePercent", 0)))
 	_saved_record_draft = record_draft.duplicate(true)
+	_saved_record_draft["entryMarker"] = null
 	_semantic_steps.accept_saved_draft(record_draft)
 	_update_validation()
 
@@ -322,6 +333,7 @@ func has_unapplied_changes() -> bool:
 func discard_draft() -> void:
 	_semantic_steps.discard_draft()
 	_apply_saved_header()
+	_entry.discard()
 	_update_validation()
 
 
@@ -360,7 +372,7 @@ func _render_list(preferred_identity: String) -> void:
 		if problem_count > 0:
 			_list.set_item_custom_fg_color(_list.item_count - 1, Color("ff9cad"))
 		visible_indexes.append(index)
-	_inventory_summary.text = "%d shown  |  %d matching  |  %d on map" % [_list.item_count, _list_total, int(_catalog_counts.get("current-map", _list_total))]
+	_inventory_summary.text = "%d shown  |  %d matching  |  %d on map" % [_list.item_count, _list_total, _catalog.map_count(_list_total)]
 	if _list.item_count == 0:
 		_document.clear()
 		_clear_document()
@@ -531,6 +543,7 @@ func _record_draft() -> Dictionary:
 			"chancePercent": int(_chance.value),
 		},
 		"steps": _semantic_steps.draft_steps(),
+		"entryMarker": _entry.draft_value(),
 	}
 
 
@@ -570,6 +583,9 @@ func can_apply_draft() -> bool:
 func _update_validation() -> void:
 	if _updating or _validation == null:
 		return
+	var coordinate: Variant = {"x": int(_trigger_x.value), "y": int(_trigger_y.value)} if _placed.button_pressed else null
+	_entry.update_placement(coordinate, _draft_controls_locked)
+	_catalog.set_locked(_draft_controls_locked or has_unapplied_changes())
 	var problem := str(draft_error().get("error", ""))
 	%Callers.disabled = _document.is_empty()
 	_commit.disabled = _draft_controls_locked or _document.is_empty() or not problem.is_empty()
@@ -623,22 +639,7 @@ func _on_search_changed(_text: String) -> void:
 	catalog_query_requested.emit(str(_document.get("identity", "")))
 
 
-func _set_catalog_filter(filter: String) -> void:
-	if has_unapplied_changes():
-		_render_catalog_controls()
-		return
-	_catalog_filter = filter
-	_page_offset = 0
-	_render_catalog_controls()
-	catalog_query_requested.emit(str(_document.get("identity", "")))
-
-
-func _render_catalog_controls() -> void:
-	var filters := {"current-map": "CurrentMap", "all": "All", "active": "Active", "reusable": "Reusable", "warnings": "Warnings"}
-	for filter in filters:
-		var button := get_node("ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters/" + filters[filter]) as Button
-		button.button_pressed = _catalog_filter == filter
-		button.text = "%s  %d" % [filter.to_upper(), int(_catalog_counts.get(filter, 0))]
+func _render_catalog_page() -> void:
 	_previous_page.hide(); _next_page.hide()
 	_page_status.text = "%d entries · scroll to browse" % _list_total
 
@@ -679,7 +680,7 @@ func _reveal_trigger() -> void:
 
 
 func _reveal_destination() -> void:
-	var destination_identity := "land:%d" % int(_post_level.value)
+	var destination_identity := "%s:%d" % [str(_document.get("levelType", "land")), int(_post_level.value)]
 	map_reveal_requested.emit(destination_identity, int(_post_x.value), int(_post_y.value))
 
 

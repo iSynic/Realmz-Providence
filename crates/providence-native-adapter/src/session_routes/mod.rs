@@ -1,4 +1,5 @@
 pub(crate) mod action_authoring;
+mod action_point_catalog;
 mod action_points;
 mod battle_authoring;
 mod battles;

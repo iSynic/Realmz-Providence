@@ -29,6 +29,14 @@ func _rebuild() -> void:
 		set_stylebox("normal", type, make_panel_style(palette[1] if type == "Button" else app, palette[5], 1, 7, 14 if type == "Button" else 8))
 		set_stylebox("focus", type, make_panel_style(Color.TRANSPARENT, palette[6], 2, 7, 8))
 	set_stylebox("pressed", "Button", make_panel_style(selected, palette[6], 1, 7, 14))
+	# Reserve the same label area while hovering, pressing and disabling actions.
+	for state in ["hover", "disabled", "hover_pressed"]:
+		var box := get_stylebox(state, "Button").duplicate() as StyleBoxFlat
+		box.content_margin_left = 14
+		box.content_margin_right = 14
+		box.content_margin_top = 7
+		box.content_margin_bottom = 7
+		set_stylebox(state, "Button", box)
 	set_stylebox("normal", "IssuesPrimary", make_panel_style(selected, palette[6], 1, 8, 14))
 	set_stylebox("hover", "IssuesPrimary", make_panel_style(selected.lightened(0.06), palette[6], 1, 8, 14))
 	var row := make_panel_style(palette[0], palette[5], 0, 5, 8, 0)

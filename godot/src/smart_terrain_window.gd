@@ -127,7 +127,7 @@ func display_plan() -> Dictionary:
 
 func present(plan: Dictionary) -> void:
 	_plan = {"draft":draft(),"data":plan.duplicate(true)}
-	counts.text = "%d mask cells · %d changed · %d unchanged · %d transition warnings" % [mask.size(),plan.paintedCells.size(),plan.unchangedCells,plan.unresolvedCells.size()]
+	counts.text = "%d mask cells · %d total tile changes · %d transition warnings" % [mask.size(),plan.paintedCells.size(),plan.unresolvedCells.size()]
 	if not plan.get("retiledNeighbors", []).is_empty(): counts.text += " · %d re-tiled neighbors" % plan.retiledNeighbors.size()
 	counts.text += " · %d added · %d removed" % [plan.get("addedCells",[]).size(),plan.get("removedCells",[]).size()]
 	status.text = str(plan.get("unresolvedReason") if plan.get("unresolvedReason") != null else "Warning: approximate transitions. Apply keeps the previewed tiles.") if not plan.unresolvedCells.is_empty() else ""

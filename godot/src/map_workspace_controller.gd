@@ -29,6 +29,7 @@ var special_placement := preload("res://src/land_special_placement.gd").new()
 var ap_placement := preload("res://src/map_ap_placement_controller.gd").new()
 var world_special := preload("res://src/world_special_catalog_controller.gd").new()
 var chrome := preload("res://src/map_workspace_chrome.gd").new()
+var context_tools := preload("res://src/map_context_tools.gd").new()
 var mode := "select"
 var _registry
 var _operations: ProvidenceEditorOperation
@@ -48,9 +49,11 @@ var _accept_draft: Callable
 
 func initialize(registry, operations: ProvidenceEditorOperation, inspector: ProvidenceMapInspector, sidebar, inspector_host: Control, record_inspector: Control, dialog_owner: Node) -> void:
 	_registry = registry
+	context_tools.failed.connect(failed.emit)
 	_operations = operations
 	_land = registry.view("maps.land")
 	_inspector = inspector
+	inspector.curated_records = true
 	_sidebar = sidebar
 	_inspector_host = inspector_host
 	_record_inspector = record_inspector
@@ -116,6 +119,7 @@ func configure_commands(read_context: Callable, read_references: Callable, accep
 
 
 func attach_session(bridge: RefCounted) -> void:
+	context_tools.attach_session(bridge)
 	document.attach_session(bridge)
 	references.attach_session(bridge)
 	lifecycle.attach_session(bridge)
@@ -216,7 +220,7 @@ func has_unapplied_changes() -> bool:
 	if paint_resources.has_unapplied_changes(): return true
 	if land_authoring.has_unapplied_changes(): return true
 	if settings.has_unapplied_changes(): return true
-	if regions.has_unapplied_changes(): return true
+	if not regions.pinned and regions.has_unapplied_changes(): return true
 	if document.is_dungeon: return _registry.view("maps.dungeon").has_unapplied_changes()
 	return document.selected_cell.x >= 0 and _inspector.tile_value() != document.original_tile
 
@@ -234,7 +238,7 @@ func discard_draft() -> void:
 	paint_resources.discard_draft()
 	land_authoring.discard_draft()
 	settings.discard_draft()
-	regions.discard_draft()
+	if not regions.pinned: regions.discard_draft()
 	if document.is_dungeon: _registry.view("maps.dungeon").discard_draft()
 	else: _inspector.set_tile_value(document.original_tile)
 
@@ -252,7 +256,7 @@ func commit_selected() -> Dictionary:
 	if paint_resources.has_unapplied_changes(): return await paint_resources.commit_selected()
 	if land_authoring.has_unapplied_changes(): return await land_authoring.commit_selected()
 	if settings.has_unapplied_changes(): return await settings.commit_selected()
-	if regions.has_unapplied_changes(): return await regions.commit_selected()
+	if not regions.pinned and regions.has_unapplied_changes(): return await regions.commit_selected()
 	if document.is_dungeon: return await _registry.view("maps.dungeon").commit_selected()
 	await paint.commit_cell()
 	return {}
@@ -429,6 +433,12 @@ func select_special_land(resource_id: int) -> void:
 	special_placement.choose_for_draft(resource_id,"Place Special Land %d on %s" % [resource_id,document.identity],paint.workspace.tiles_dock.ui.special,special_placement.select_placement)
 
 
+func reveal_cell_behavior(identity: String, x: int, y: int) -> void:
+	await reveal_coordinate(identity, x, y)
+	while _operations.busy: await _operations.completed
+	if document.identity == identity and not document.is_dungeon and document.selected_cell == Vector2i(x, y) and _navigation.current_route() == "maps.land": await cell_behavior.open()
+
+
 func reveal_coordinate(identity: String, x: int, y: int) -> void:
 	if _operations.busy: return
 	await document.load_map(identity)
@@ -448,6 +458,7 @@ func open_special_reference(choice: Dictionary) -> void:
 
 
 func teardown() -> void:
+	context_tools.attach_session(null)
 	ap_placement.attach_session(null)
 	world_special.attach_session(null)
 	special_placement.attach_session(null)
@@ -468,6 +479,7 @@ func teardown() -> void:
 
 
 func dispose() -> void:
+	context_tools.dispose()
 	ap_placement.dispose()
 	chrome.dispose()
 	world_special.dispose()

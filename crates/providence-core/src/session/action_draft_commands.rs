@@ -39,6 +39,13 @@ impl EditorSession {
         row.post_action_y = draft.header.post_action_y;
         row.chance_percent = draft.header.chance_percent;
         changed.extend(replace_action_point(&mut staged, row)?);
+        if let Some(enabled) = draft.entry_marker {
+            changed.extend(super::action_point_entry::set_marker(
+                &mut staged,
+                &draft.source,
+                enabled,
+            )?);
+        }
         finish(&mut self.snapshot, staged, changed)
     }
 

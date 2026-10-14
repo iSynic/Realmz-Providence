@@ -68,4 +68,3 @@ func _search_text(entry: Dictionary) -> String:
 	return ("%s %s %s %s %s %s %s" % [entry.get("opcode", ""), entry.get("label", ""),
 		entry.get("category", ""), entry.get("description", ""), manual.get("title", ""),
 		str(manual.get("codes", [])), manual.get("fullText", "")]).to_lower()
-

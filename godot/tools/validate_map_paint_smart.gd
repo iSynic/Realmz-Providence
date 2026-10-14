@@ -75,7 +75,7 @@ func _mask_gestures(shell) -> void:
 	await controller.open(); await _settle(shell)
 	window.get_node("%MaskShape").select(4)
 	window.get_node("%MaskShape").item_selected.emit(4); await _frames(2)
-	_check(shell._maps.land_authoring.options.match == "connected-exact", "Connected Smart mask inherited prior Paint matching")
+	_check(shell._maps.land_authoring.options.match == "connected-family", "Connected Smart mask must use terrain family rather than prior Paint matching")
 	controller.discard_draft()
 	_check(shell._maps.land_authoring.options.match == "connected-behavior", "Smart mask did not restore Paint matching")
 

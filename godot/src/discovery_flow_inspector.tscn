@@ -21,6 +21,16 @@ unique_name_in_owner = true
 theme_type_variation = &"DiscoveryContext"
 theme_override_font_sizes/font_size = 11
 autowrap_mode = 3
+[node name="Activation" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_type_variation = &"DiscoveryContext"
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+visible = false
+[node name="EarlierAP" type="Button" parent="Body"]
+unique_name_in_owner = true
+visible = false
+text = "Inspect earlier AP at this coordinate…"
 [node name="Tabs" type="HBoxContainer" parent="Body"]
 [node name="StepsTab" type="Button" parent="Body/Tabs"]
 unique_name_in_owner = true

@@ -15,6 +15,7 @@ pub(super) fn candidates(
     let source = current.clone();
     let outside = exterior_background(&source);
     let distances = boundary_distances(&source);
+    let mut bounds = shape_bounds::ShapeBounds::new(&source, tolerance);
     let mut candidates = vec![original.to_vec()];
     // Tolerance bounds distance, not the number of relaxation passes. Let a local
     // contour settle without granting it additional space on subsequent passes.
@@ -37,28 +38,83 @@ pub(super) fn candidates(
             {
                 continue;
             }
-            let count = ring(i)
-                .into_iter()
-                .flatten()
-                .filter(|j| current[*j])
-                .count();
-            let next = if count >= 5 {
-                true
-            } else if count <= 3 {
-                false
-            } else {
+            let Some(next) = relaxed_value(&current, i) else {
                 continue;
             };
-            if current[i] == next || !simple_point(&current, i) {
+            if current[i] == next || !bounds.allows(i, next) || !simple_point(&current, i) {
                 continue;
             }
             current[i] = next;
+            bounds.record(i, next);
             changed = true;
         }
         if !changed {
             break;
         }
         candidates.push(cells(&current));
+    }
+    candidates
+}
+
+fn relaxed_value(mask: &[bool], i: usize) -> Option<bool> {
+    let count = ring(i).into_iter().flatten().filter(|j| mask[*j]).count();
+    match count {
+        0..=3 => Some(false),
+        4 => None,
+        _ => Some(true),
+    }
+}
+
+// Thin forest and mountain strokes lack stream tiles. Offer wider contours
+// without deleting the stroke, consuming a hole, or merging separate regions.
+// Planning accepts a candidate only when its resolved terrain scores better.
+pub(super) fn widening_candidates(
+    original: &[MapCoordinate],
+    editable: &[bool],
+    tolerance: u8,
+    canceled: &mut impl FnMut() -> bool,
+) -> Vec<Vec<MapCoordinate>> {
+    let mut current = vec![false; 8100];
+    for cell in original {
+        current[index(*cell)] = true;
+    }
+    let source = current.clone();
+    let outside = exterior_background(&source);
+    let mut candidates = vec![];
+    for _ in 0..tolerance {
+        let before = current.clone();
+        for i in 0..8100 {
+            if canceled() {
+                return vec![];
+            }
+            if !before[i]
+                && editable[i]
+                && outside[i]
+                && cardinal(i).into_iter().flatten().any(|j| before[j])
+                && simple_point(&current, i)
+            {
+                current[i] = true;
+            }
+        }
+        if current == before {
+            break;
+        }
+        let mut rounded = current.clone();
+        for i in 0..8100 {
+            if rounded[i]
+                && !source[i]
+                && cardinal(i)
+                    .into_iter()
+                    .flatten()
+                    .filter(|&j| rounded[j])
+                    .count()
+                    <= 1
+                && simple_point(&rounded, i)
+            {
+                rounded[i] = false;
+            }
+        }
+        candidates.push(cells(&rounded));
     }
     candidates
 }

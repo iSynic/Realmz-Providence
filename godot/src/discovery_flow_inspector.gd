@@ -23,6 +23,7 @@ var _owner := ""
 var _visible_step_key := ""
 
 func _ready() -> void:
+	%EarlierAP.pressed.connect(func(): caller_requested.emit({"kind": "action-point", "identity": str(_summary.get("activation", {}).get("shadowedBy", "")), "scope": "scenario"}))
 	%StepsTab.pressed.connect(_tab.bind("steps"))
 	%ConnectionsTab.pressed.connect(_tab.bind("connections"))
 	%DetailsTab.pressed.connect(_tab.bind("details"))
@@ -45,6 +46,11 @@ func present(model, row: Dictionary, enabled: bool) -> void:
 	%Title.text = preload("res://src/discovery_flow_canvas.gd").caption(row) if not row.is_empty() else "Select a record"
 	%Meta.text = "%d used steps · 8 slots · %s" % [int(_summary.get("usedSteps", 0)), row.get("selection", {}).get("scope", "scenario")] if _summary.get("program", false) else str(row.get("label", ""))
 	if row.get("resolution") in ["missing", "ambiguous"]: %Meta.text = str(row.resolution).capitalize() + " reference · source retained"
+	var activation: Dictionary = _summary.get("activation", {}) if _summary.get("activation") is Dictionary else {}
+	%Activation.visible = not activation.is_empty()
+	%Activation.text = preload("res://src/action_point_activation_presentation.gd").summary(activation) + "\nApplied state · runtime conditions remain separate."
+	%EarlierAP.visible = activation.get("shadowedBy") != null
+	%EarlierAP.disabled = not enabled
 	%StepsTab.disabled = not _summary.get("program", false)
 	if _model.inspector_tab == "steps" and %StepsTab.disabled and (_summary.has("program") or enabled): _model.inspector_tab = "details"
 	%StepsTab.text = "Steps %d" % int(_summary.get("usedSteps", 0))
@@ -187,7 +193,7 @@ func _connections() -> void:
 	%Connections.clear()
 	var rows: Array = _model.related() if occurrence_filter.is_empty() else occurrence_filter.filter(func(id): return _model.edges.has(id)).map(func(id): return _model.edges[id])
 	for edge: Dictionary in rows:
-		var index: int = %Connections.add_item(str(edge.reference.sourceLabel) + " · " + str(edge.reference.meaning))
+		var index: int = %Connections.add_item(str(edge.relationship).replace("state-", "").capitalize() + " · " + str(edge.reference.sourceLabel) + " · " + str(edge.reference.meaning))
 		%Connections.set_item_metadata(index, edge.id)
 		%Connections.set_item_tooltip(index, str(edge.reference.sourceLabel) + "\n" + str(edge.reference.meaning) + "\n" + str(edge.reference.targetLabel))
 		if edge.id == _model.edge: %Connections.select(index)

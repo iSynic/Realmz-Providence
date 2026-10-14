@@ -8,6 +8,14 @@ signal reveal_requested
 signal leave_requested
 signal draft_changed
 signal reference_requested(field: String, context: Dictionary, focus: Control)
+signal detach_requested
+
+
+func set_map_actions_available(available: bool) -> void:
+	_map_actions_available = available
+	%DrawRegion.disabled = _locked or not available; %RevealRegion.disabled = _locked or not available
+	%DrawRegion.tooltip_text = "Draw on the owning map." if available else "Return to this rectangle's map to draw its bounds."
+	if not available: %DrawRegion.set_pressed_no_signal(false)
 
 const REFERENCE_FIELDS := {"battleLow": "BattleLow", "battleHigh": "BattleHigh", "soundId": "SoundId", "textId": "TextId", "door0": "Door0", "door1": "Door1", "door2": "Door2"}
 var identity := ""
@@ -22,9 +30,14 @@ var _map: Dictionary = {}
 var _creating := false
 var _binding := false
 var _locked := false
+var _map_actions_available := true
 
 
 func _ready() -> void:
+	%AdvancedToggle.toggled.connect(func(expanded):
+		%AdvancedFields.visible = expanded
+		%AdvancedToggle.text = "▾ Door calls and Option…" if expanded else "▸ Door calls and Option…")
+	%DetachRegion.pressed.connect(detach_requested.emit)
 	%RegionSlots.item_selected.connect(func(index):
 		var selected: int = %RegionSlots.get_item_id(index)
 		%RegionSlots.select(19 - slot)
@@ -62,7 +75,8 @@ func set_projection(result: Dictionary) -> void:
 	for row: Dictionary in result.slots:
 		%RegionSlots.add_item("Region %d · %s" % [int(row.slot), "Active" if row.present else "Empty / reusable"], int(row.slot))
 	%RegionSlots.select(19 - slot)
-	%RegionHeading.text = "ENCOUNTER REGION %d" % slot
+	%RegionHeading.text = "RECTANGLE %d" % slot
+	%MapSummary.text = "%s %d · %d,%d → %d,%d" % [str(_map.levelType).capitalize(), int(_map.nativeIndex), int(_baseline.left), int(_baseline.top), int(_baseline.right), int(_baseline.bottom)]
 	_locked = false
 	%ReconcileRegion.hide()
 	discard_draft()
@@ -191,6 +205,7 @@ func set_loading(value: bool) -> void:
 		else: control.disabled = value
 	for field in REFERENCE_FIELDS: get_node("%" + REFERENCE_FIELDS[field]).disabled = value
 	for button in [%ApplyRegion, %ClearRegion, %DrawRegion, %DiscardRegion, %LeaveRegions]: button.disabled = value
+	set_map_actions_available(_map_actions_available)
 	if not value: _changed()
 
 

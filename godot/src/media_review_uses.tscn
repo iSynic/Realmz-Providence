@@ -29,4 +29,3 @@ text = "Refresh uses"
 [node name="Fields" type="ItemList" parent="."]
 custom_minimum_size = Vector2(0, 76)
 theme_override_font_sizes/font_size = 12
-

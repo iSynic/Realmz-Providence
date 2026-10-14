@@ -175,4 +175,3 @@ func _check_populated(view: Control, ordinary: bool) -> void:
 	if ordinary:
 		for name in ["ActionPointChance", "ActionPointTriggerX", "ActionPointTriggerY", "ActionPointPostLevel", "ActionPointPostX", "ActionPointPostY"]:
 			assert(view.get_node("%" + name).is_visible_in_tree(), name)
-

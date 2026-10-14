@@ -2,6 +2,7 @@ extends RefCounted
 
 signal changed
 const DEFAULTS := {"realTiles":true,"coordinates":false,"secrets":false,"combatClearing":false,"actionPoints":true,"randomRectangles":false,"playerMaps":false,"smooth":false}
+var activation_filters := {}
 var identity := ""
 var flags: Dictionary = DEFAULTS.duplicate()
 var entries := {"randomRectangles":[],"playerMaps":[]}
@@ -55,11 +56,12 @@ func set_all(enabled: bool) -> void:
 
 
 func read_navigation_state() -> Dictionary:
-	return {"identity":identity,"flags":flags.duplicate(),"selected":selected.duplicate(true)}
+	return {"identity":identity,"flags":flags.duplicate(),"selected":selected.duplicate(true),"activationFilters":activation_filters.duplicate()}
 
 
 func restore_navigation_state(state: Dictionary) -> bool:
 	if str(state.get("identity",""))!=identity: return false
+	activation_filters = state.get("activationFilters", {}).duplicate()
 	for key in DEFAULTS: flags[key]=bool(state.get("flags",{}).get(key,DEFAULTS[key]))
 	for group in entries:
 		selected[group]={}

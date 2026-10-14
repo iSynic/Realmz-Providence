@@ -293,6 +293,9 @@ impl Region<'_> {
                         continue;
                     };
                     if self.positions[usize::from(y) * 90 + usize::from(x)] != usize::MAX {
+                        if self.narrow_link(i, d) {
+                            domain &= water_domains::wet_domain(d);
+                        }
                         continue;
                     }
                     let raw = self.map.tiles[usize::from(y) * 90 + usize::from(x)];
@@ -303,6 +306,20 @@ impl Region<'_> {
                 domain
             })
             .collect()
+    }
+
+    // Connectivity alone permits one dry break in a loop. A contact without
+    // a selected 2-by-2 block on either side is a stream link, even when another
+    // wet route reaches the same cell around the rest of an outlined shape.
+    fn narrow_link(&self, cell: usize, direction: usize) -> bool {
+        let Some(other) = self.neighbors[cell][direction] else {
+            return false;
+        };
+        [(direction + 1) % 4, (direction + 3) % 4]
+            .into_iter()
+            .all(|side| {
+                self.neighbors[cell][side].is_none() || self.neighbors[other][side].is_none()
+            })
     }
 
     fn occupancy_domain(&self, cell: usize, boundary_ports: bool, interior_radius: i16) -> u64 {

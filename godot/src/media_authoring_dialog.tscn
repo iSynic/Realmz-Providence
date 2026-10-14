@@ -453,4 +453,3 @@ one_shot = true
 
 [node name="Audio" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
-

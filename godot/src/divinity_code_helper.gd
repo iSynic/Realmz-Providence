@@ -243,4 +243,3 @@ func _input(event: InputEvent) -> void:
 		_select(clampi(index + (1 if event.keycode == KEY_DOWN else -1), 0, _visible_entries.size() - 1))
 		_list.ensure_current_is_visible()
 		get_viewport().set_input_as_handled()
-

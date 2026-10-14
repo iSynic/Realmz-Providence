@@ -6,8 +6,7 @@ use crate::request_params::required_string;
 use crate::request_params::required_u8;
 use crate::request_params::required_u64;
 use crate::request_params::required_value;
-use crate::session_routes::catalog_page::CatalogQuery;
-use providence_core::model::{ActionPoint, MapLevel, StableId};
+use providence_core::model::{ActionPoint, StableId};
 use providence_core::session::ActionPointRecordDraft;
 use providence_core::session::ActionStepEdit;
 use providence_core::session::EditorCommand;
@@ -21,7 +20,7 @@ pub(super) fn dispatch(
     params: Value,
 ) -> Result<Value, String> {
     match method {
-        "action-point.list" => action_point_list(session, params),
+        "action-point.list" => super::action_point_catalog::list(session, params),
         "action-point.open" => action_point_open(session, params),
         "action-point.update" => action_point_update(session, params),
         "action-point.apply-draft" => action_point_apply_draft(session, params),
@@ -29,6 +28,7 @@ pub(super) fn dispatch(
         "action-point.creation-review" => action_point_creation_review(session, params),
         "action-point.duplicate" => action_point_duplicate(session, params),
         "action-point.clear" => action_point_clear(session, params),
+        "action-point.entry-marker" => action_point_entry_marker(session, params),
         "action-point.step.apply" => action_point_step_apply(session, params),
         "action-point.step.move" => action_point_step_move(session, params),
         "action-point.step.duplicate" => action_point_step_duplicate(session, params),
@@ -49,91 +49,6 @@ fn action_point_apply_draft(session: &mut EditorSession, params: Value) -> Resul
         EditorCommand::ApplyActionPointDraft { draft },
         source,
     )
-}
-
-fn action_point_list(session: &mut EditorSession, params: Value) -> Result<Value, String> {
-    let map_identity = required_string(&params, "mapIdentity")?;
-    let map = session
-        .snapshot()
-        .world
-        .maps
-        .iter()
-        .find(|map| map.identity.0 == map_identity)
-        .ok_or_else(|| format!("map {map_identity} was not found"))?;
-    let rows = &session.snapshot().world.action_points;
-    let diagnostics = session.diagnostics();
-    let references = session.references();
-    let source_ids = rows
-        .iter()
-        .map(|row| row.identity.clone())
-        .collect::<std::collections::BTreeSet<_>>();
-    let all_items = rows
-        .iter()
-        .map(|row| {
-            let current_map = belongs_to_map(row, map);
-            catalog_row(
-                row,
-                descriptor(session, &row.identity),
-                current_map,
-                &diagnostics,
-                &references,
-                &source_ids,
-            )
-        })
-        .collect::<Vec<_>>();
-    let counts = json!({
-        "all": all_items.len(),
-        "current-map": all_items.iter().filter(|item| item["currentMap"].as_bool() == Some(true)).count(),
-        "active": all_items.iter().filter(|item| item["active"].as_bool() == Some(true)).count(),
-        "reusable": all_items.iter().filter(|item| item["reusable"].as_bool() == Some(true)).count(),
-        "warnings": all_items.iter().filter(|item| item["problems"].as_u64().unwrap_or(0) > 0).count(),
-    });
-    let query = CatalogQuery::from_params(&params, 100);
-    let filtered = all_items
-        .into_iter()
-        .filter(|item| action_point_matches(item, &query))
-        .collect::<Vec<_>>();
-    let (items, offset, total) = query.page(filtered);
-    Ok(json!({
-        "map": {
-            "identity": map.identity,
-            "levelType": map.level_type,
-            "nativeIndex": map.native_index,
-            "name": map.name,
-        },
-        "items": items,
-        "offset": offset,
-        "limit": query.limit,
-        "total": total,
-        "counts": counts,
-        "filter": query.filter,
-        "search": query.search,
-        "truncated": offset.saturating_add(query.limit) < total,
-    }))
-}
-
-fn belongs_to_map(row: &ActionPoint, map: &MapLevel) -> bool {
-    row.level_type == map.level_type && row.level_index == map.native_index
-}
-
-fn action_point_matches(item: &Value, query: &CatalogQuery) -> bool {
-    let matches_filter = match query.filter.as_str() {
-        "all" => true,
-        "current-map" => item["currentMap"].as_bool() == Some(true),
-        "active" => item["active"].as_bool() == Some(true),
-        "reusable" => item["reusable"].as_bool() == Some(true),
-        "warnings" => item["problems"].as_u64().unwrap_or(0) > 0,
-        _ => false,
-    };
-    matches_filter
-        && (query.search.is_empty()
-            || format!(
-                "{} {}",
-                item["recordIndex"],
-                item["label"].as_str().unwrap_or("")
-            )
-            .to_ascii_lowercase()
-            .contains(&query.search))
 }
 
 fn action_point_open(session: &mut EditorSession, params: Value) -> Result<Value, String> {
@@ -165,6 +80,7 @@ fn action_point_open(session: &mut EditorSession, params: Value) -> Result<Value
         .filter(|diagnostic| diagnostic.entity.as_ref() == Some(&identity))
         .collect::<Vec<_>>();
     let steps = crate::session_routes::action_authoring::step_projections(session, &row.actions);
+    let known_links = known_activation_links(session, &identity);
     Ok(json!({
         "revision": session.revision(),
         "map": {
@@ -173,13 +89,28 @@ fn action_point_open(session: &mut EditorSession, params: Value) -> Result<Value
             "nativeIndex": map.native_index,
             "name": map.name,
         },
-        "actionPoint": action_point_document(row, descriptor(session, &row.identity)),
+        "actionPoint": action_point_document(row, descriptor(session, &row.identity), session.snapshot()),
         "references": references,
         "usedBy": used_by,
         "diagnostics": diagnostics,
         "steps": steps,
+        "knownActivationLinks": known_links.iter().take(128).collect::<Vec<_>>(),
+        "knownActivationLinksTotal": known_links.len(),
         "extraCodeAttachments": action_point_attachments(session, row),
     }))
+}
+
+fn known_activation_links<'a>(
+    session: &'a EditorSession,
+    identity: &StableId,
+) -> Vec<&'a providence_core::discovery::DiscoveryLink> {
+    use providence_core::discovery::RelationshipKind::{Call, StateChange};
+    session
+        .discovery()
+        .incoming("action-point", &identity.0)
+        .into_iter()
+        .filter(|link| matches!(link.relationship, Call | StateChange))
+        .collect()
 }
 
 fn action_point_used_by(
@@ -350,54 +281,7 @@ fn execute_and_open(
     Ok(json!({ "change": change, "document": document }))
 }
 
-fn catalog_row(
-    row: &ActionPoint,
-    descriptor: &str,
-    current_map: bool,
-    diagnostics: &[providence_core::validation::Diagnostic],
-    references: &[providence_core::references::ReferenceDescriptor],
-    source_ids: &std::collections::BTreeSet<StableId>,
-) -> Value {
-    let reusable = row.classic_door_id <= 0 && row.coordinate.is_none() && row.actions.is_empty();
-    let problems = diagnostics
-        .iter()
-        .filter(|diagnostic| diagnostic.entity.as_ref() == Some(&row.identity))
-        .count();
-    let used_by = references
-        .iter()
-        .filter(|reference| {
-            reference.target_kind == providence_core::references::TargetKind::ActionPoint
-                && reference.target_id == row.record_index.to_string()
-                && source_ids.contains(&reference.source)
-        })
-        .count();
-    let coordinate = row
-        .coordinate
-        .map(|coordinate| format!("{}, {}", coordinate.x, coordinate.y));
-    json!({
-        "identity": row.identity,
-        "recordIndex": row.record_index,
-        "descriptor": descriptor,
-        "label": coordinate.map_or_else(
-            || if reusable {
-                format!("Action Point {} · reusable", row.record_index)
-            } else {
-                format!("Action Point {} · preserved disabled row", row.record_index)
-            },
-            |coordinate| format!("Action Point {} ({coordinate})", row.record_index),
-        ),
-        "coordinate": row.coordinate,
-        "chancePercent": row.chance_percent,
-        "currentMap": current_map,
-        "active": row.coordinate.is_some() && row.chance_percent > 0,
-        "reusable": reusable,
-        "populatedActions": row.actions.len(),
-        "usedBy": used_by,
-        "problems": problems,
-    })
-}
-
-fn descriptor<'a>(session: &'a EditorSession, source: &StableId) -> &'a str {
+pub(super) fn descriptor<'a>(session: &'a EditorSession, source: &StableId) -> &'a str {
     session
         .snapshot()
         .script_descriptors
@@ -406,10 +290,34 @@ fn descriptor<'a>(session: &'a EditorSession, source: &StableId) -> &'a str {
         .map_or("", |item| item.text.as_str())
 }
 
-fn action_point_document(row: &ActionPoint, descriptor: &str) -> Value {
+fn action_point_document(
+    row: &ActionPoint,
+    descriptor: &str,
+    snapshot: &providence_core::model::ProjectSnapshot,
+) -> Value {
     let mut value = serde_json::to_value(row).expect("Action Point serialization is infallible");
     value["descriptor"] = Value::String(descriptor.to_owned());
+    value["activation"] = json!(providence_core::action_point_activation::project(
+        snapshot, row
+    ));
     value
+}
+
+fn action_point_entry_marker(session: &mut EditorSession, params: Value) -> Result<Value, String> {
+    let source = StableId(required_string(&params, "identity")?);
+    let enabled = params
+        .get("enabled")
+        .and_then(Value::as_bool)
+        .ok_or("enabled must be a boolean")?;
+    let draft = session
+        .action_point_entry_marker_draft(&source, enabled)
+        .map_err(|error| error.to_string())?;
+    execute_and_open(
+        session,
+        &params,
+        EditorCommand::ApplyActionPointDraft { draft },
+        source,
+    )
 }
 
 fn action_point_attachments(session: &EditorSession, row: &ActionPoint) -> Vec<Value> {

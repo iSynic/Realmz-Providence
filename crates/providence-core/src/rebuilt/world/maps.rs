@@ -92,6 +92,7 @@ fn project_map(
         metadata: input.metadata,
         topology_format: topology.topology_format,
         cells: topology.cells,
+        classic_tile_values: None,
         boat_replacement_profiles: topology.boat_replacement_profiles,
         random_rectangles: input.random_rectangles,
     }

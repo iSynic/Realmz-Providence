@@ -20,6 +20,7 @@ pub(super) fn actionable(
     let uncalled = if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
         let mut records = uncalled_imported_records(snapshot, &called);
         records.extend(super::monster_tails::uncalled(snapshot, references));
+        records.extend(super::player_map_details::unused(snapshot, references));
         records
     } else {
         BTreeSet::new()

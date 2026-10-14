@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource path="res://src/land_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/map_canvas.gd" type="Script" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource path="res://src/map_view_filters.tscn" type="PackedScene" id="7"]
 [ext_resource path="res://src/map_view_overlay.gd" type="Script" id="8"]
 [ext_resource path="res://src/map_image_export_dialog.tscn" type="PackedScene" id="9"]
+[ext_resource path="res://src/map_overlay_controller.gd" type="Script" id="10"]
 
 [node name="LandEditor" type="VBoxContainer"]
 layout_mode = 2
@@ -19,6 +20,10 @@ script = ExtResource("1")
 [node name="MapSectionTabs" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 5
+
+[node name="OverlayController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("10")
 
 [node name="CanvasSection" type="Button" parent="MapSectionTabs"]
 layout_mode = 2

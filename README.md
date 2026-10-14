@@ -2,7 +2,7 @@
 
 **A native scenario authoring toolkit for Realmz.**
 
-[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.3) Â· [All releases](https://github.com/iSynic/Realmz-Providence/releases) Â· [Build from source](docs/public/building.md) Â· [Licensing](SOURCE-LICENSE.md)
+[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.4) Â· [All releases](https://github.com/iSynic/Realmz-Providence/releases) Â· [Build from source](docs/public/building.md) Â· [Licensing](SOURCE-LICENSE.md)
 
 ![Providence Land Editor](docs/screenshots/maps-land.png)
 
@@ -20,9 +20,9 @@ web release. `main` now contains the native editor.
 
 | Platform | Beta package |
 | --- | --- |
-| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.3/Providence-v0.6.0-beta.3-windows-x64.zip) |
-| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.3/Providence-v0.6.0-beta.3-macos-universal.zip) |
-| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.3/Providence-v0.6.0-beta.3-linux-x64.tar.gz) |
+| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-windows-x64.zip) |
+| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-macos-universal.zip) |
+| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-linux-x64.tar.gz) |
 
 Extract the complete archive and launch **Providence**. Keep the included native
 tools and support directories alongside the application. The macOS beta is
@@ -32,6 +32,8 @@ signed ad hoc and is not notarized. If macOS blocks its first launch, use Finder
 The Compatibility renderer requires OpenGL 3.3. Linux builds target x64 systems
 with glibc 2.35 or newer. A Rebuilt installation is optional for authoring and
 export; interactive playtest uses a separate compatible Rebuilt process.
+
+[Action Point activation and filters](docs/public/action-points.md) explain entry markers, dormant records and applied Flow context.
 
 ## Why Providence?
 
@@ -142,7 +144,7 @@ Linux x64 and universal macOS bundles from the same committed source.
 
 ## Status and licensing
 
-**v0.6.0-beta.3** improves loading and import responsiveness, adds asset export, and makes the Battle layout adjustable.
+**v0.6.0-beta.4** improves loading and import responsiveness, adds asset export, and makes the Battle layout adjustable.
 Please report problems with the exact
 version, scenario, tool and steps to reproduce. Include a screenshot or diagnostic
 when useful; do not include private project data unless you intend to share it.

@@ -69,6 +69,9 @@ func select_document(tab: int) -> void:
 	if _encounter_route_tabs != null: _encounter_route_tabs.present_route(route)
 	if _issues.tab_changed(tab): return
 	var view := _tabs.get_tab_control(tab)
+	if view.get_meta("detached_editor", false):
+		set_inspector_visible(false); _command_bar.set_route_has_commit(false)
+		selection_changed.emit(); return
 	if view.get_meta("owns_asset_workspace", false):
 		await view.activate()
 		if tab != _tabs.current_tab: return

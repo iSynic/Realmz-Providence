@@ -5,10 +5,13 @@ var state := preload("res://src/map_view_filter_state.gd").new()
 var _controls := {}
 var _expanded := {"randomRectangles":true,"playerMaps":true}
 var _context_available := false
+var _action_points: Array = []
+var _unmatched: Array = []
 
 
 func _ready() -> void:
 	state.changed.connect(_render)
+	%APStatusFields.changed.connect(func(filters): state.activation_filters = filters; _render())
 	%MapOverlayButton.pressed.connect(open_menu)
 	%OverlayClose.pressed.connect(close_menu)
 	%OverlayShowAll.pressed.connect(func(): state.set_all(true))
@@ -28,10 +31,16 @@ func set_context(identity: String, rectangles: Array, footprints: Array) -> void
 	state.set_context(identity,rectangles,footprints)
 
 
+func set_action_points(rows: Array, unmatched: Array) -> void:
+	_action_points = rows.duplicate(true)
+	_unmatched = unmatched.duplicate(true)
+	_render()
+
+
 func open_menu() -> void:
 	if not _context_available: return
 	var point: Vector2 = %MapOverlayButton.global_position + Vector2(0,%MapOverlayButton.size.y)
-	var desired := Rect2i(Vector2i(point),Vector2i(396,570))
+	var desired := Rect2i(Vector2i(point),Vector2i(420, mini(810, get_window().size.y - 100)))
 	desired.position.y=mini(desired.position.y,get_window().size.y-desired.size.y-8)
 	desired.position.x=mini(desired.position.x,get_window().size.x-desired.size.x-8)
 	%MapOverlayPopup.popup(desired)
@@ -66,10 +75,16 @@ func _render() -> void:
 		_controls[key].set_pressed_no_signal(enabled)
 		_controls[key].disabled=not _context_available or state.entries.has(key) and state.entries[key].is_empty()
 		if enabled: active+=1
-	%OverlayActiveCount.text="%d active" % active
+	%APStatusFields.set_filters(state.activation_filters)
+	var visible_points: int = _action_points.filter(func(row): return preload("res://src/action_point_activation_presentation.gd").matches(row.get("activation", {}), state.activation_filters)).size() if state.flags.actionPoints else 0
+	%APVisibleCount.text = "%d of %d APs visible%s" % [visible_points, _action_points.size(), " · %d entry markers without APs" % _unmatched.size() if not _unmatched.is_empty() else ""]
+	%APVisibleCount.tooltip_text = "Markers without APs are preserved map content. Inspect their cells; they do not identify an executable AP."
+	%OverlayActiveCount.text="%d overlays · AP %d/%d%s" % [active, visible_points, _action_points.size(), " · filtered" if %APStatusFields.active_count() > 0 else ""]
 	_render_group("randomRectangles",true)
 	_render_group("playerMaps",true)
-	changed.emit(state.flags.duplicate(),state.visible_entries("randomRectangles"),state.visible_entries("playerMaps"))
+	var flags: Dictionary = state.flags.duplicate()
+	flags["actionPointFilters"] = state.activation_filters.duplicate()
+	changed.emit(flags,state.visible_entries("randomRectangles"),state.visible_entries("playerMaps"))
 
 
 func _render_group(group: String, rebuild: bool) -> void:

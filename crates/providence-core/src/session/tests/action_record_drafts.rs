@@ -147,6 +147,7 @@ fn action_point_descriptor_is_trimmed_and_an_empty_value_removes_it() {
     let mut session = EditorSession::new(placed_snapshot());
     let source = StableId("action-point:land:0:0".into());
     let draft = |descriptor: &str| ActionPointRecordDraft {
+        entry_marker: None,
         source: source.clone(),
         descriptor: descriptor.into(),
         header: header(),

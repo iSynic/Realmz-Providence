@@ -174,6 +174,10 @@ fn map_open(session: &mut EditorSession, params: Value) -> Result<Value, String>
         .map(|action_point| {
             let mut projection = json!(action_point);
             projection["overlayKind"] = json!(action_point_overlay_kind(&action_point.actions));
+            projection["activation"] = json!(providence_core::action_point_activation::project(
+                session.snapshot(),
+                action_point
+            ));
             projection
         })
         .collect::<Vec<_>>();

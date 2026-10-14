@@ -93,7 +93,7 @@ func present() -> void:
 		var focused := get_parent().get_viewport().gui_get_focus_owner()
 		if focused != null: _focus = weakref(focused)
 	var available := get_parent().get_viewport().get_visible_rect().size
-	popup_centered(Vector2i(maxf(1080, available.x - 48), maxf(680, available.y - 48)))
+	preload("res://src/native_tool_placement.gd").reveal(self, Vector2i(maxf(1080, available.x - 48), maxf(680, available.y - 48)))
 	inspector.custom_minimum_size.x = 440 if available.x >= 1900 else 416
 	suspended = false
 	%Close.grab_focus()
@@ -355,7 +355,8 @@ func suspend_for_navigation() -> void:
 	_dismiss_find()
 	graph.save_positions()
 	suspended = true
-	hide()
+	if force_native: get_tree().root.grab_focus()
+	else: hide()
 
 func resume_after_canceled_navigation() -> void:
 	if suspended: present()

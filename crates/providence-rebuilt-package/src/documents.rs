@@ -17,7 +17,9 @@ pub(crate) struct Documents {
 impl Documents {
     pub fn parse(bytes: &BTreeMap<String, Vec<u8>>) -> Result<Self, RebuiltV3ArchiveError> {
         let (_, content) = parse_canonical_json("content.json", &bytes["content.json"])?;
-        let (_, world) = parse_canonical_json("world.json", &bytes["world.json"])?;
+        let (world_value, world): (_, RebuiltV3WorldDocument) =
+            parse_canonical_json("world.json", &bytes["world.json"])?;
+        crate::native_tiles::validate_presence(world.schema_version, &world_value)?;
         let (_, scenario) = parse_canonical_json("scenario.json", &bytes["scenario.json"])?;
         let (_, assets) = parse_canonical_json("assets/index.json", &bytes["assets/index.json"])?;
         Ok(Self {
@@ -37,6 +39,7 @@ impl Documents {
             &self.assets,
         )?;
         validate_content(manifest, &self.content)?;
+        crate::native_tiles::validate(manifest.schema_version, &self.world)?;
         validate_start(manifest, &self.world)?;
         validate_hooks(&self.scenario)?;
         validate_assets(manifest, &self.assets)
@@ -198,7 +201,7 @@ fn validate_monster_schema_ranges(
     for monster in monsters {
         let invalid = match schema_version {
             3 => monster.magic_to_hit < 0 || monster.random_weapon_table > 10,
-            4 | 5 => monster.random_weapon_table > 32_768,
+            4..=6 => monster.random_weapon_table > 32_768,
             _ => true,
         };
         if invalid {

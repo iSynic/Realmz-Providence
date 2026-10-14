@@ -190,6 +190,7 @@ func apply_document(result: Dictionary, reset_selection: bool) -> void:
 		_land.refresh_document(map.get("tiles", []), result.get("actionPoints", []), result.get("terrainTiles", []))
 	preview_view.get_node("%RandomRegionOverlay").set_document(identity, (map.get("runtime") if map.get("runtime") is Dictionary else {}).get("randomRectangles", []))
 	_land.set_view_projection({} if is_dungeon else result)
+	_dungeon.set_view_projection(result if is_dungeon else {})
 	tile_catalog_changed.emit(result.get("tileCatalog", {}))
 	document_opened.emit(map, reset_selection)
 
@@ -343,6 +344,7 @@ func clear() -> void:
 	_land.set_view_projection({})
 	_land.name = "No Map Open"
 	_dungeon.set_document({})
+	_dungeon.set_view_projection({})
 	_dungeon.clear_render_atlas()
 	for view in [_land, _dungeon]: view.get_node("%RandomRegionOverlay").set_document("", [])
 	_sidebar.set_selected_map("")

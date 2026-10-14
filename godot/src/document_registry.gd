@@ -6,23 +6,27 @@ const Routes = preload("res://src/route_catalog.gd")
 var _tabs: TabContainer
 var _views: Dictionary = {}
 var _controllers: Dictionary = {}
+var _route_tabs: Dictionary = {}
 
 
 func initialize(tabs: TabContainer) -> void:
 	_tabs = tabs
 	_views.clear()
+	_route_tabs.clear()
 	_controllers.clear()
 	for page in tabs.get_children():
 		var identity := str(page.get_meta("route_identity", ""))
 		assert(not identity.is_empty() and not _views.has(identity), "Each document needs one stable route identity")
 		assert(Routes.tab_for_route(identity) == tabs.get_tab_idx_from_control(page), "Document scene order must preserve existing route destinations")
 		_views[identity] = page
+		_route_tabs[identity] = tabs.get_tab_idx_from_control(page)
 	# Multiple donor routes may intentionally share one native document.
 	for domain in Routes.ROUTES.values():
 		for route in domain.routes:
 			var tab := int(route[1])
 			if tab >= 0:
 				_views[str(route[3])] = tabs.get_tab_control(tab)
+				_route_tabs[str(route[3])] = tab
 
 
 func view(identity: String) -> Control:
@@ -30,8 +34,7 @@ func view(identity: String) -> Control:
 
 
 func tab_for_route(identity: String) -> int:
-	var page := view(identity)
-	return _tabs.get_tab_idx_from_control(page) if page != null else -1
+	return int(_route_tabs.get(identity, -1))
 
 
 func identity_for_tab(tab: int) -> String:

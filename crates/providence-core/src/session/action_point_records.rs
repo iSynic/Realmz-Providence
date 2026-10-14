@@ -179,12 +179,24 @@ pub(super) fn refresh_action_point_marker(
     level_index: u32,
     coordinate: MapCoordinate,
 ) -> Result<Option<StableId>, SessionError> {
-    let should_be_marked = snapshot.world.action_points.iter().any(|candidate| {
+    let occupied = snapshot.world.action_points.iter().any(|candidate| {
         candidate.level_type == level_type
             && candidate.level_index == level_index
             && candidate.coordinate == Some(coordinate)
-            && candidate.chance_percent > 0
     });
+    if occupied {
+        return Ok(None);
+    }
+    write_action_point_marker(snapshot, level_type, level_index, coordinate, false)
+}
+
+pub(super) fn write_action_point_marker(
+    snapshot: &mut ProjectSnapshot,
+    level_type: LevelType,
+    level_index: u32,
+    coordinate: MapCoordinate,
+    enabled: bool,
+) -> Result<Option<StableId>, SessionError> {
     let expected_map_identity = StableId(format!(
         "{}:{level_index}",
         match level_type {
@@ -209,7 +221,7 @@ pub(super) fn refresh_action_point_marker(
                 coordinate.x, coordinate.y
             ),
         })?;
-    let updated = if should_be_marked {
+    let updated = if enabled {
         ensure_action_point_marker(current, level_type)
     } else {
         clear_action_point_marker(current, level_type)
@@ -347,7 +359,10 @@ pub(super) fn validate_action_point_replacement(
             reason: "native level and record identity cannot be changed".into(),
         });
     }
-    if let Some(coordinate) = action_point.coordinate {
+    if let Some(coordinate) = action_point
+        .coordinate
+        .filter(|_| existing.coordinate != action_point.coordinate)
+    {
         let collision =
             snapshot
                 .world

@@ -189,4 +189,3 @@ max_value = 32767
 allow_greater = true
 allow_lesser = true
 tooltip_text = "Luck · maximum"
-

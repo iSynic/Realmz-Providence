@@ -53,4 +53,3 @@ static func run(tree: SceneTree, bridge) -> void:
 	await tree.process_frame
 	media_panel.queue_free()
 	await tree.create_timer(0.1).timeout
-

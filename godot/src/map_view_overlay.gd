@@ -4,6 +4,11 @@ var hints: Dictionary = {}
 var flags: Dictionary = {}
 var footprints: Array = []
 var _canvas: ProvidenceMapCanvas
+var _selection: Dictionary = {}
+
+
+func set_selection(selection: Dictionary) -> void:
+	_selection = selection.duplicate(true); queue_redraw()
 
 
 func create_image_export_overlay() -> Control:
@@ -54,6 +59,23 @@ func _draw() -> void:
 		draw_rect(rectangle,Color("9dcfff"),false,2)
 		draw_string(get_theme_default_font(),rectangle.position+Vector2(3,14),"PM%d" % int(row.nativeId),HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("9dcfff"))
 	if flags.get("coordinates",false): _coordinates()
+	_draw_selection()
+
+
+func _draw_selection() -> void:
+	if _selection.is_empty(): return
+	var id := str(_selection.get("identity", ""))
+	var rows: Array = footprints
+	var regions: Control = _canvas.get_node("RandomRegionOverlay")
+	if int(_selection.kind) == ProvidenceMapSelectionTarget.Kind.RANDOM_RECTANGLE:
+		if not regions.display_enabled: return
+		rows = regions.regions
+		if regions.filter_active and not regions.visible_ids.has(id): return
+	for row: Dictionary in rows:
+		if str(row.get("identity", "")) != id: continue
+		var first := _canvas.cell_rect(Vector2i(int(row.left), int(row.top)))
+		var rectangle := Rect2(first.position, first.size * Vector2(int(row.right) - int(row.left), int(row.bottom) - int(row.top)))
+		draw_rect(rectangle, Color(0.61, 0.81, 1.0, 0.13)); draw_rect(rectangle, Color("eff6ff"), false, 3)
 
 
 func _cells(values: Array, color: Color) -> void:

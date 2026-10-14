@@ -15,6 +15,7 @@ mod world_route_projection_tests;
 
 mod action_document_safety;
 mod action_documents;
+mod action_point_activation;
 mod battle_authoring;
 mod battle_import;
 mod classic_rule_selection;

@@ -44,5 +44,3 @@ static func prepare(editor: Control, tree: SceneTree) -> bool:
 				regions[region] = {"x": control.global_position.x - surface.global_position.x, "y": control.global_position.y - surface.global_position.y, "width": control.size.x, "height": control.size.y}
 		print("PROVIDENCE_SCENARIO_GEOMETRY %s %s" % [scenario_surface, JSON.stringify(regions)])
 	return true
-
-

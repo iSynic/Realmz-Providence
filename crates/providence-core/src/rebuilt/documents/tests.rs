@@ -1,12 +1,14 @@
 use super::*;
 mod fixtures;
+#[path = "tests/native_tile_values.rs"]
+mod native_tile_values;
 use crate::model::{BlobId, LevelType, StableId};
 use fixtures::*;
 
 const MEDIA: &[u8] = b"controlled tileset payload";
 
 #[test]
-fn imported_native_monster_values_select_schema_v4_for_every_package_document() {
+fn imported_native_monster_values_select_schema_v6_for_every_package_document() {
     let mut snapshot = snapshot();
     snapshot.origin = ProjectOrigin::Imported {
         compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
@@ -21,11 +23,11 @@ fn imported_native_monster_values_select_schema_v4_for_every_package_document() 
     snapshot.monster_sets.push(set);
 
     let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[])
-        .expect("representable imported monster values use schema v4");
-    assert_eq!(artifact.manifest.manifest.schema_version, 4);
+        .expect("representable imported monster values use schema v6");
+    assert_eq!(artifact.manifest.manifest.schema_version, 6);
     assert_eq!(
         artifact.manifest.manifest.schema_hash,
-        super::super::REBUILT_V4_SCHEMA_SHA256
+        super::super::REBUILT_V6_SCHEMA_SHA256
     );
     let manifest: serde_json::Value =
         serde_json::from_slice(&artifact.manifest.canonical_json).unwrap();
@@ -34,13 +36,13 @@ fn imported_native_monster_values_select_schema_v4_for_every_package_document() 
     let world: serde_json::Value = serde_json::from_slice(&artifact.world.canonical_json).unwrap();
     let scenario: serde_json::Value = serde_json::from_slice(&artifact.scenario_json).unwrap();
     let assets: serde_json::Value = serde_json::from_slice(&artifact.asset_index_json).unwrap();
-    assert_eq!(manifest["schemaVersion"], 4);
+    assert_eq!(manifest["schemaVersion"], 6);
     for document in [content, world, scenario, assets] {
-        assert_eq!(document["schemaVersion"], 4);
+        assert_eq!(document["schemaVersion"], 6);
     }
     assert_eq!(
         manifest["schemaHash"],
-        super::super::REBUILT_V4_SCHEMA_SHA256
+        super::super::REBUILT_V6_SCHEMA_SHA256
     );
     assert_eq!(artifact.content.document.monsters[0].magic_to_hit, i8::MIN);
     assert_eq!(
@@ -50,7 +52,7 @@ fn imported_native_monster_values_select_schema_v4_for_every_package_document() 
 }
 
 #[test]
-fn incomplete_extra_code_tail_uses_v5_without_fabricating_an_executable_row() {
+fn incomplete_extra_code_tail_uses_v6_without_fabricating_an_executable_row() {
     let mut snapshot = snapshot();
     snapshot.origin = ProjectOrigin::Imported {
         compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
@@ -65,10 +67,10 @@ fn incomplete_extra_code_tail_uses_v5_without_fabricating_an_executable_row() {
     add_tail_requests(&mut snapshot);
     let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[])
         .expect("tail is guarded metadata");
-    assert_eq!(artifact.manifest.manifest.schema_version, 5);
+    assert_eq!(artifact.manifest.manifest.schema_version, 6);
     assert_eq!(
         artifact.manifest.manifest.schema_hash,
-        super::super::REBUILT_V5_SCHEMA_SHA256
+        super::super::REBUILT_V6_SCHEMA_SHA256
     );
     let scenario: serde_json::Value = serde_json::from_slice(&artifact.scenario_json).unwrap();
     assert_eq!(
@@ -96,7 +98,7 @@ fn incomplete_extra_code_tail_uses_v5_without_fabricating_an_executable_row() {
     ] {
         assert_eq!(
             serde_json::from_slice::<serde_json::Value>(bytes).unwrap()["schemaVersion"],
-            5
+            6
         );
     }
 }

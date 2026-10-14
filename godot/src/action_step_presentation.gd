@@ -1,6 +1,19 @@
 class_name ProvidenceActionStepPresentation
 extends RefCounted
 
+
+static func render_list(list: ProvidenceActionStepList, heading: Label, drafts: Dictionary, definitions: Dictionary, selected: int) -> void:
+	for slot in range(8):
+		var draft: Dictionary = drafts.get(slot, {})
+		var definition: Dictionary = preload("res://src/action_step_description_state.gd").definition(draft, definitions)
+		var occupied := not draft.is_empty()
+		var label := action_label(definition) if occupied else "Empty step"
+		var detail := step_detail(draft, definition) if occupied else "Choose an action"
+		list.set_item(slot, "%d  %s\n    %s" % [slot + 1, label, detail],
+			{"slot": slot, "category": definition.get("category", "Empty")}, ProvidenceActionStepList.semantic_color(definition))
+	heading.text = "%d OF 8 USED  ·  ORDERED STEPS" % drafts.size()
+	list.select(selected)
+
 static func action_label(definition: Dictionary, fallback := "Empty step") -> String:
 	if definition.is_empty(): return fallback
 	return "Code %d · %s" % [int(definition.get("opcode", 0)), str(definition.get("label", fallback))]

@@ -30,6 +30,7 @@ pub struct FlowSummary {
     pub details: Vec<content::FlowDetail>,
     pub candidates: Vec<content::FlowCandidate>,
     pub candidates_total: usize,
+    pub activation: Option<crate::action_point_activation::ActionPointActivation>,
 }
 
 pub fn describe_selection(
@@ -80,6 +81,12 @@ pub fn describe_selection(
         details: content.1,
         candidates: Vec::new(),
         candidates_total: 0,
+        activation: snapshot
+            .world
+            .action_points
+            .iter()
+            .find(|row| row.identity.0 == selection.identity)
+            .map(|row| crate::action_point_activation::project(snapshot, row)),
     })
 }
 

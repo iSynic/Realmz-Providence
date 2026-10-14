@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource path="res://src/dungeon_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/map_canvas.gd" type="Script" id="2"]
@@ -14,6 +14,9 @@
 [ext_resource path="res://src/map_inspector_workspace.tscn" type="PackedScene" id="10"]
 
 [ext_resource path="res://src/map_image_export_dialog.tscn" type="PackedScene" id="11"]
+[ext_resource path="res://src/map_view_overlay.gd" type="Script" id="12"]
+[ext_resource path="res://src/map_view_filters.tscn" type="PackedScene" id="13"]
+[ext_resource path="res://src/map_overlay_controller.gd" type="Script" id="14"]
 
 [node name="DungeonEditor" type="VBoxContainer"]
 layout_mode = 2
@@ -27,6 +30,10 @@ unique_name_in_owner = true
 [node name="DungeonHeader" type="HBoxContainer" parent="."]
 layout_mode = 2
 
+[node name="OverlayController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("14")
+
 [node name="DungeonMapTitle" type="Label" parent="DungeonHeader"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -38,6 +45,10 @@ text = "DUNGEON 00  ·  NO MAP OPEN  ·  90 × 90"
 [node name="ZoomOut" type="Button" parent="DungeonHeader"]
 layout_mode = 2
 text = "−"
+
+[node name="MapViewFilters" parent="DungeonHeader" instance=ExtResource("13")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="ZoomIn" type="Button" parent="DungeonHeader"]
 layout_mode = 2
@@ -186,6 +197,17 @@ script = ExtResource("4")
 [node name="DungeonCellInspector" parent="DungeonWorkbench" instance=ExtResource("10")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="MapViewOverlay" type="Control" parent="DungeonWorkbench/DungeonCanvasRegion/DungeonMapCanvas"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("12")
 
 [node name="DungeonStampOverlay" parent="DungeonWorkbench/DungeonCanvasRegion/DungeonMapCanvas" instance=ExtResource("7")]
 unique_name_in_owner = true

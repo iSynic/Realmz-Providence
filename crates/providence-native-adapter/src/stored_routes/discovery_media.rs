@@ -33,7 +33,7 @@ pub(super) fn flow_target(link: &DiscoveryLink, catalogs: CatalogViews<'_>) -> O
     };
     match catalog.resolve_resource(&key, None) {
         ApplicationMediaResolution::Resolved(asset)
-            if resource_kind_matches(&asset.descriptor, resource_type) =>
+            if resource_kind_matches(&asset.descriptor, resource_type, &link.target_kind) =>
         {
             target.identity = Some(asset.descriptor.identity.0.clone());
             target.resolution = ResolutionState::Resolved;
@@ -106,7 +106,7 @@ fn resolve(link: &mut Value, catalogs: CatalogViews<'_>) {
         return;
     };
     let resource_type = match link["targetKind"].as_str().unwrap_or("") {
-        "monster-appearance" | "icon" => "cicn",
+        "monster-appearance" | "icon" | "special-land-tile" => "cicn",
         "picture" => "PICT",
         "sound" => "snd ",
         "text-resource" => "TEXT",
@@ -124,7 +124,11 @@ fn resolve(link: &mut Value, catalogs: CatalogViews<'_>) {
     };
     match catalog.resolve_resource(&resource, None) {
         ApplicationMediaResolution::Resolved(asset) => {
-            let compatible = resource_kind_matches(&asset.descriptor, resource_type);
+            let compatible = resource_kind_matches(
+                &asset.descriptor,
+                resource_type,
+                link["targetKind"].as_str().unwrap_or(""),
+            );
             if !compatible {
                 link["availabilityReason"] =
                     json!("The exact Stock resource has the wrong content kind.");
@@ -150,7 +154,10 @@ fn resolve(link: &mut Value, catalogs: CatalogViews<'_>) {
     }
 }
 
-fn resource_kind_matches(asset: &AssetDescriptor, resource_type: &str) -> bool {
+fn resource_kind_matches(asset: &AssetDescriptor, resource_type: &str, target_kind: &str) -> bool {
+    if target_kind == "special-land-tile" {
+        return resource_type == "cicn" && asset.kind == "special-land-tile";
+    }
     match resource_type {
         "cicn" => matches!(
             asset.kind.as_str(),

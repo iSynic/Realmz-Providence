@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/editor_tool_window.gd" id="1"]
+[node name="EditorToolWindow" type="Window"]
+script = ExtResource("1")
+title = "Providence editor"
+visible = false
+size = Vector2i(1360, 850)
+min_size = Vector2i(960, 650)
+force_native = true
+transient = false
+exclusive = false
+[node name="Layout" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+[node name="Toolbar" type="HBoxContainer" parent="Layout"]
+[node name="Apply" type="Button" parent="Layout/Toolbar"]
+unique_name_in_owner = true
+text = "Apply · Ctrl+Enter"
+[node name="Undo" type="Button" parent="Layout/Toolbar"]
+unique_name_in_owner = true
+text = "Undo"
+[node name="Redo" type="Button" parent="Layout/Toolbar"]
+unique_name_in_owner = true
+text = "Redo"
+[node name="Spacer" type="Control" parent="Layout/Toolbar"]
+size_flags_horizontal = 3
+[node name="Dock" type="Button" parent="Layout/Toolbar"]
+unique_name_in_owner = true
+text = "Return to main window"
+[node name="EditorScroll" type="ScrollContainer" parent="Layout"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+[node name="EditorHost" type="VBoxContainer" parent="Layout/EditorScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+[node name="Status" type="Label" parent="Layout"]
+unique_name_in_owner = true
+autowrap_mode = 2

@@ -1,9 +1,14 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource path="res://src/action_point_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/action_step_workbench.tscn" type="PackedScene" id="2"]
 
 [ext_resource path="res://src/script_route_navigation.tscn" type="PackedScene" id="3"]
+
+[ext_resource type="Script" path="res://src/action_point_catalog_filters.gd" id="4"]
+[ext_resource type="PackedScene" path="res://src/action_point_status_filters.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://src/action_point_entry_panel.tscn" id="6"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="7"]
 
 [sub_resource type="SystemFont" id="RouteMonoFont"]
 font_names = PackedStringArray("Cascadia Mono", "Consolas", "Liberation Mono", "monospace")
@@ -167,6 +172,8 @@ theme_override_font_sizes/font_size = 11
 text = ""
 autowrap_mode = 2
 [node name="ActionPointFilters" type="GridContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
+unique_name_in_owner = true
+script = ExtResource("4")
 layout_mode = 2
 columns = 2
 [node name="CurrentMap" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
@@ -180,11 +187,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "ALL"
-[node name="Active" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+[node name="StatusFilters" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
 layout_mode = 2
 size_flags_horizontal = 3
-toggle_mode = true
-text = "ACTIVE"
+text = "Status filters…"
 [node name="Reusable" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -195,6 +201,22 @@ layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 text = "WARNINGS"
+[node name="ResetStatus" type="Button" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+layout_mode = 2
+visible = false
+text = "Reset status filters"
+[node name="CatalogStatusPopup" type="PopupPanel" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters"]
+unique_name_in_owner = true
+size = Vector2i(370,300)
+theme = ExtResource("7")
+[node name="Margin" type="MarginContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters/CatalogStatusPopup"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+[node name="CatalogStatusFields" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body/ActionPointFilters/CatalogStatusPopup/Margin" instance=ExtResource("5")]
+unique_name_in_owner = true
+
 [node name="ActionPointCollection" type="ItemList" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointMasterPanel/Body"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -308,9 +330,10 @@ theme_override_colors/font_color = Color(1, 0.827451, 0.478431, 1)
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 8
+size_flags_horizontal = 0
 columns = 2
 [node name="Activation" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(364, 0)
 layout_mode = 2
 [node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Activation"]
 layout_mode = 2
@@ -350,7 +373,7 @@ text = "Normal land cell; Secret Area remains a Map concern."
 autowrap_mode = 2
 
 [node name="Location" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
-custom_minimum_size = Vector2(220, 0)
+custom_minimum_size = Vector2(364, 0)
 layout_mode = 2
 [node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Location"]
 layout_mode = 2
@@ -399,7 +422,7 @@ size_flags_vertical = 8
 text = "Reveal"
 
 [node name="Destination" type="PanelContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid"]
-custom_minimum_size = Vector2(250, 0)
+custom_minimum_size = Vector2(364, 0)
 layout_mode = 2
 [node name="Body" type="VBoxContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid/Destination"]
 layout_mode = 2
@@ -462,6 +485,9 @@ custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
 size_flags_vertical = 8
 text = "Reveal"
+
+[node name="EntryPanel" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail/ActionPointHeaderGrid" instance=ExtResource("6")]
+unique_name_in_owner = true
 
 [node name="ActionPointStepAuthoring" type="HSplitContainer" parent="ActionPointEditorSurface/ActionPointMasterDetail/ActionPointDetail"]
 unique_name_in_owner = true

@@ -6,6 +6,8 @@ var _tabs: TabContainer
 var _response_handler: Callable
 var _dialog_resolver: Callable
 var _custom: Dictionary = {}
+var _detached: Dictionary = {}
+var _guarded: Control
 
 
 func initialize(tabs: TabContainer, response_handler: Callable, dialog_resolver: Callable) -> void:
@@ -21,13 +23,52 @@ func register_editor(editor: Control, has_draft: Callable, discard: Callable, ap
 func has_draft() -> bool:
 	var dialog: Window = _dialog_resolver.call()
 	if dialog != null: return dialog.has_unapplied_changes()
-	var editor := _tabs.get_current_tab_control()
+	return editor_has_draft(current_editor())
+
+
+func editor_has_draft(editor: Control) -> bool:
+	if editor == null: return false
 	if _custom.has(editor): return _custom[editor].hasDraft.call()
 	return editor.has_unapplied_changes() if editor.has_method("has_unapplied_changes") else false
 
 
+func register_detached(editor: Control, focused: Callable) -> void:
+	_detached[editor] = focused
+
+
+func unregister_detached(editor: Control) -> void:
+	_detached.erase(editor)
+
+
+func guard_editor(editor: Control) -> void:
+	_guarded = editor
+
+
+func current_editor() -> Control:
+	if is_instance_valid(_guarded): return _guarded
+	for editor: Control in _detached:
+		if _detached[editor].call(): return editor
+	var active := _tabs.get_current_tab_control()
+	if active.get_meta("detached_editor", false):
+		for editor: Control in _detached:
+			if editor.get_meta("route_identity", "") == active.get_meta("route_identity", ""): return editor
+	return active
+
+
+func first_draft() -> Control:
+	var active := current_editor()
+	if editor_has_draft(active): return active
+	for editor: Control in _tabs.get_children() + _detached.keys():
+		if editor_has_draft(editor): return editor
+	return null
+
+
+func has_any_draft() -> bool:
+	return has_draft() or first_draft() != null
+
+
 func discard() -> void:
-	var editor := _tabs.get_current_tab_control()
+	var editor := current_editor()
 	if _custom.has(editor):
 		_custom[editor].discard.call()
 	elif editor.has_method("discard_draft"):
@@ -35,9 +76,12 @@ func discard() -> void:
 
 
 func commit() -> Dictionary:
+	return await commit_editor(current_editor())
+
+
+func commit_editor(editor: Control) -> Dictionary:
 	if _collecting:
 		return {"ok": false, "busy": true, "error": "Wait for the current change to finish. Your draft is kept."}
-	var editor: Control = _tabs.get_current_tab_control()
 	if not _custom.has(editor) and not editor.has_method("commit_selected"): return {}
 	if editor.has_method("draft_error"):
 		var problem: Dictionary = editor.draft_error()
@@ -52,7 +96,7 @@ func commit() -> Dictionary:
 	_collecting = false
 	if _result.is_empty():
 		return {"ok": false, "error": "The editor did not confirm this change. Check the selected record before trying again."}
-	if bool(_result.get("ok", false)) and has_draft():
+	if bool(_result.get("ok", false)) and editor_has_draft(editor):
 		return {"ok": false, "error": "Some changes still need to be applied. Keep editing before leaving this record.", "partlyApplied": true}
 	return _result
 

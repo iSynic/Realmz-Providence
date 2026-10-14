@@ -132,6 +132,7 @@ pub(super) fn unresolved(
         details: vec![detail("Availability", format!("{resolution:?}"))],
         candidates,
         candidates_total,
+        activation: None,
     })
 }
 

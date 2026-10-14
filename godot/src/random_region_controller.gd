@@ -6,6 +6,7 @@ signal active_changed(active: bool)
 
 var view: Control
 var active := false
+var pinned := false
 var _map: ProvidenceMapDocumentController
 var _operations: ProvidenceEditorOperation
 var _bridge: RefCounted
@@ -35,7 +36,7 @@ func initialize(host: Node, map: ProvidenceMapDocumentController, operations: Pr
 	view.clear_requested.connect(clear_slot)
 	view.slot_requested.connect(func(slot): _guard.call(open.bind(slot), "switching encounter region"))
 	view.leave_requested.connect(func(): _guard.call(close, "leaving encounter regions"))
-	view.draw_requested.connect(func(enabled): if is_instance_valid(_overlay): _overlay.set_drawing(enabled))
+	view.draw_requested.connect(func(enabled): if view.identity == _map.identity and is_instance_valid(_overlay): _overlay.set_drawing(enabled))
 	view.reveal_requested.connect(reveal)
 	view.draft_changed.connect(_draft_changed)
 	view.reference_requested.connect(_choose_reference)
@@ -76,7 +77,7 @@ func open(slot := 19) -> Dictionary:
 	if _bridge == null or _map.identity.is_empty(): return _stale()
 	if active and view.identity == _map.identity and int(view.slot) == slot and has_unapplied_changes(): return {"ok": true}
 	_opening += 1
-	var origin := {"generation": _generation, "identity": _map.identity, "opening": _opening}
+	var origin := {"generation": _generation, "identity": view.identity if pinned else _map.identity, "opening": _opening}
 	var response := await _operations.run_workflow(_bridge, "Open encounter region", _open.bind(slot, origin), null, true)
 	if _matches(origin) and not response.get("ok", false): _read_failure(response, origin); failed.emit(str(response.get("error", "The region could not open.")))
 	return response
@@ -86,9 +87,11 @@ func _open(operation: ProvidenceEditorOperation, slot: int, origin: Dictionary) 
 	var response := await operation.request("random-region.open", {"mapIdentity": origin.identity, "slot": slot})
 	if not _matches(origin): return _stale()
 	if not response.get("ok", false): return response
-	_overlay = _dungeon_overlay if _map.is_dungeon else _land_overlay
-	active = true; view.show(); _overlay.set_display_enabled(true)
+	_overlay = (_dungeon_overlay if _map.is_dungeon else _land_overlay) if origin.identity == _map.identity else null
+	active = true; view.show()
+	if _overlay != null: _overlay.set_display_enabled(true)
 	view.set_projection(response.result)
+	view.set_map_actions_available(origin.identity == _map.identity)
 	active_changed.emit(true)
 	view.get_node("%RegionSlots").grab_focus()
 	return response
@@ -104,7 +107,13 @@ func close() -> void:
 
 
 func _document_opened(map: Dictionary, _reset: bool) -> void:
+	if pinned and view.identity != str(map.identity):
+		if is_instance_valid(_overlay): _overlay.set_drawing(false)
+		_overlay = null; view.set_map_actions_available(false); return
+	view.set_map_actions_available(true)
 	if view.identity != str(map.identity): close(); return
+	_overlay = _dungeon_overlay if _map.is_dungeon else _land_overlay
+	_present_overlay()
 	if active and not _submitting and not has_unapplied_changes() and not _refreshing: _refresh_clean()
 
 
@@ -118,7 +127,7 @@ func _refresh_clean() -> void:
 
 
 func _present_overlay() -> void:
-	if not active or _overlay == null: return
+	if not active or _overlay == null or view.identity != _map.identity: return
 	var map_rows: Array = []
 	# The region-open projection is bounded to the twenty owning slots.
 	var slots: Array = view.get_meta("slots", [])
@@ -277,12 +286,12 @@ func resume_reference(kept: Dictionary) -> bool:
 
 
 func reveal() -> void:
-	if not active or _overlay == null or view.draft.is_empty(): return
+	if not active or _overlay == null or view.draft.is_empty() or view.identity != _map.identity: return
 	_overlay.get_parent().reveal_cell(clampi(int(view.draft.left), 0, 89), clampi(int(view.draft.top), 0, 89))
 
 
 func _matches(origin: Dictionary) -> bool:
-	return is_instance_valid(view) and view.is_inside_tree() and int(origin.generation) == _generation and str(origin.identity) == _map.identity and int(origin.get("opening", _opening)) == _opening
+	return is_instance_valid(view) and view.is_inside_tree() and int(origin.generation) == _generation and str(origin.identity) == (view.identity if pinned else _map.identity) and int(origin.get("opening", _opening)) == _opening
 
 
 func _stale() -> Dictionary:

@@ -401,16 +401,7 @@ func _select_action(identity: String) -> void:
 
 func _render_steps() -> void:
 	if _step_list == null: return
-	for slot in range(8):
-		var draft := _draft_for_slot(slot)
-		var definition := _definition_for_draft(draft)
-		var occupied := not draft.is_empty()
-		var label := StepPresentation.action_label(definition) if occupied else "Empty step"
-		var detail := _step_detail(draft, definition) if occupied else "Choose an action"
-		_step_list.set_item(slot, "%d  %s\n    %s" % [slot + 1, label, detail],
-			{"slot": slot, "category": definition.get("category", "Empty")}, ProvidenceActionStepList.semantic_color(definition))
-	_summary.text = "%d OF 8 USED  ·  ORDERED STEPS" % _draft_steps.size()
-	if _step_list.item_count > _selected_slot: _step_list.select(_selected_slot)
+	StepPresentation.render_list(_step_list, _summary, _draft_steps, _definitions_by_identity, _selected_slot)
 
 
 func _render_action_picker() -> void:

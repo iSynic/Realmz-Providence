@@ -11,6 +11,10 @@ use std::collections::BTreeSet;
 
 #[test]
 fn slimmer_accepts_only_the_exact_supported_schema_and_origin_pairs() {
+    let v6 = providence_core::rebuilt::REBUILT_V6_SCHEMA_SHA256;
+    assert!(supported_schema_contract(6, v6, "imported"));
+    assert!(!supported_schema_contract(6, v6, "authored"));
+    assert!(!supported_schema_contract(6, "wrong-hash", "imported"));
     assert!(supported_schema_contract(
         5,
         providence_core::rebuilt::REBUILT_V5_SCHEMA_SHA256,

@@ -38,7 +38,10 @@ pub(super) fn geometry(request: &MapSelectionRequest) -> Vec<MapCoordinate> {
                 let inside = |px, py| ellipse(px, py, left, right, top, bottom);
                 inside(i32::from(x), i32::from(y))
                     && (request.filled
-                        || [(0, -1), (1, 0), (0, 1), (-1, 0)]
+                        // Include diagonal boundary exposure so an outline stays
+                        // cardinally connected, like the line/freehand geometry.
+                        || [(-1, -1), (0, -1), (1, -1), (1, 0),
+                            (1, 1), (0, 1), (-1, 1), (-1, 0)]
                             .iter()
                             .any(|(dx, dy)| !inside(i32::from(x) + dx, i32::from(y) + dy)))
             };

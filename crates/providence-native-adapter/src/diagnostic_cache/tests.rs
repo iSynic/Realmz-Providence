@@ -1,4 +1,5 @@
 use super::Cache;
+mod stock_defaults;
 use providence_core::model::{
     ClassicSourceBlob, NativeRecordId, ProjectSnapshot, ScenarioMessage, StableId,
 };

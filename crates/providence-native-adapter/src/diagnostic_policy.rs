@@ -7,16 +7,51 @@ use serde_json::{Value, json};
 
 pub(crate) struct Findings(FindingIndex);
 
+pub(crate) fn list(
+    session: &EditorSession,
+    catalogs: crate::catalogs::CatalogViews<'_>,
+    params: &Value,
+) -> Result<Value, String> {
+    Findings::collect_with_standard_catalog(
+        session,
+        catalogs.application_media,
+        providence_core::validation::findings::StandardCatalog {
+            items: catalogs
+                .stock_items
+                .map(|stock| stock.definitions.as_slice())
+                .unwrap_or_default(),
+            spells: catalogs
+                .stock_spells
+                .map(|stock| stock.definitions.as_slice())
+                .unwrap_or_default(),
+        },
+    )
+    .project(
+        session.revision(),
+        params,
+        &uncalled_records(session, params),
+    )
+}
+
 impl Findings {
     pub(crate) fn collect(
         session: &EditorSession,
         media: Option<&ApplicationMediaCatalog>,
     ) -> Self {
-        Self(FindingIndex::derive(
+        Self::collect_with_standard_catalog(session, media, Default::default())
+    }
+
+    pub(crate) fn collect_with_standard_catalog(
+        session: &EditorSession,
+        media: Option<&ApplicationMediaCatalog>,
+        stock: providence_core::validation::findings::StandardCatalog<'_>,
+    ) -> Self {
+        Self(FindingIndex::derive_with_standard_catalog(
             session.snapshot(),
             session.diagnostics(),
             &session.references(),
             media,
+            stock,
         ))
     }
 

@@ -46,3 +46,10 @@ layout_mode = 2
 visible = false
 text = "Check original"
 tooltip_text = "Check the original operation outcome before any further mutation."
+
+[node name="RecordHost" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+visible = false

@@ -151,5 +151,3 @@ static func select_tree_slot(tree: Tree, slot: int) -> bool:
 			return true
 		item = item.get_next()
 	return false
-
-

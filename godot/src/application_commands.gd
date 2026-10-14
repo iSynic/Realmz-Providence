@@ -3,6 +3,7 @@ extends Node
 signal status_changed(message: String)
 signal history_requested(direction: String)
 signal commit_requested
+signal history_state_changed(can_undo: bool, can_redo: bool)
 
 var _bar: ProvidenceCommandBar
 var _menu: ProvidenceApplicationMenu
@@ -30,6 +31,7 @@ var _commit_was_disabled := true
 var _manual
 var _code_helper
 var _discovery
+var project_guard: Callable
 
 
 func initialize(bar: ProvidenceCommandBar, palette: ProvidenceCommandPalette, operations: ProvidenceEditorOperation, tabs: TabContainer, registry) -> void:
@@ -77,6 +79,7 @@ func configure_session(session, drafts, read_bridge: Callable, guard: Callable, 
 	_discovery = preload("res://src/discovery_controller.gd").new()
 	add_child(_discovery)
 	_discovery.initialize(_operations, _session.context, _read_bridge, _navigation, _registry, _tabs)
+	_discovery.editor_provider = drafts.current_editor
 	for route in ["rules.races", "rules.castes", "scripts.global-macros", "scripts.quests", "text.messages", "scripts.action-points", "scripts.macros", "encounters.simple", "encounters.complex", "encounters.rogue", "encounters.timed", "economy.treasure", "economy.shops"]:
 		var view = _registry.view(route)
 		view.discovery_requested.connect(_open_authoring_links.bind(view, route))
@@ -87,10 +90,14 @@ func _open_authoring_links(direction: String, origin: Control, route: String) ->
 	var context: Dictionary = _session.context.call().duplicate(true)
 	while _operations.busy:
 		await get_tree().process_frame
-		if origin != _tabs.get_current_tab_control() or selection != preload("res://src/discovery_selection.gd").record(origin, route): return
-	if not _session.connected or _operations.requires_reopen or origin != _tabs.get_current_tab_control(): return
+		if not is_instance_valid(origin) or selection != preload("res://src/discovery_selection.gd").record(origin, route): return
+	if not _session.connected or _operations.requires_reopen: return
 	if context != _session.context.call(): return
-	await _discovery.open_current_links(direction)
+	await _discovery.open_editor_links(origin, route, direction)
+
+
+func open_record_flow(record: Dictionary) -> void:
+	await _discovery.open_flow_record(record)
 
 
 func configure_help(manual, code_helper) -> void:
@@ -129,7 +136,7 @@ func dispatch(command: StringName) -> void:
 	if command in [&"edit.find-global", &"navigate.go-to-entity", &"navigate.find-uses", &"navigate.view-flow", &"navigate.used-by", &"view.links-uses"] and (not _session.connected or _operations.requires_reopen): return
 	if _project_actions.has(command):
 		if command in [&"file.save", &"file.save-as"]: await _project_actions[command].call()
-		else: await _guard.call(_project_actions[command], "publishing" if command == &"file.compile-targets" else "continuing")
+		else: await (project_guard if project_guard.is_valid() else _guard).call(_project_actions[command], "publishing" if command == &"file.compile-targets" else "continuing")
 	else:
 		await _workspace_command(command)
 	refresh()
@@ -208,6 +215,7 @@ func _palette_command(command: String) -> void:
 func set_history(can_undo: bool, can_redo: bool) -> void:
 	_can_undo = can_undo
 	_can_redo = can_redo
+	history_state_changed.emit(can_undo, can_redo)
 	refresh()
 
 

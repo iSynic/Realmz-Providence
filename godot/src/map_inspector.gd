@@ -1,5 +1,6 @@
 class_name ProvidenceMapInspector
 extends PanelContainer
+var curated_records := false
 
 signal collapse_requested
 signal commit_tile_requested(tile: int)
@@ -99,7 +100,7 @@ func set_cell(
 	_commit.disabled = not editable
 	_commit.tooltip_text = reason
 	_action_point_id = str(action_point.get("identity", ""))
-	_action_point_panel.visible = _inspector_mode == "select" and not _action_point_id.is_empty()
+	_action_point_panel.visible = not curated_records and _inspector_mode == "select" and not _action_point_id.is_empty()
 	_open_action_point.disabled = _action_point_id.is_empty()
 	if not _action_point_id.is_empty():
 		_action_point_identity.text = "AP %03d" % int(action_point.get("recordIndex", 0))
@@ -147,8 +148,8 @@ func set_mode(mode: String) -> void:
 	_selected_cell_panel.visible = _inspector_mode == "select"
 	%SelectionToolOptionsPanel.visible = _inspector_mode == "select"
 	_paint_panel.visible = _inspector_mode == "paint"
-	_action_point_panel.visible = _inspector_mode == "select" and not _action_point_id.is_empty()
-	%MapReferencePanel.visible = _inspector_mode == "select"
+	_action_point_panel.visible = not curated_records and _inspector_mode == "select" and not _action_point_id.is_empty()
+	%MapReferencePanel.visible = not curated_records and _inspector_mode == "select"
 	%ActionPointLegend.visible = _inspector_mode == "select"
 
 

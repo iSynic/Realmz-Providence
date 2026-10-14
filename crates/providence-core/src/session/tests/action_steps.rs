@@ -74,6 +74,7 @@ fn record_draft_rejects_a_combat_only_action_without_partial_mutation() {
             expected_revision: Revision(0),
             command: EditorCommand::ApplyActionPointDraft {
                 draft: ActionPointRecordDraft {
+                    entry_marker: None,
                     source: StableId("action-point:land:0:0".into()),
                     descriptor: String::new(),
                     header: header(),

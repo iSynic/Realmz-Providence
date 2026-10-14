@@ -42,7 +42,7 @@ pub(crate) fn serve_io_with_libraries(
     mut writer: impl Write,
 ) -> Result<(), String> {
     let mut jobs = ConnectionJobs {
-        validation: validation_jobs::Jobs::default(),
+        validation: validation_jobs::Jobs::with_catalogs(catalogs),
         imports: crate::scenario_import::jobs::Jobs::default(),
         integrity: crate::library_integrity::Inspection::begin(catalogs),
     };

@@ -41,5 +41,3 @@ static func rogue(editor: Control, tree: SceneTree) -> bool:
 	for _frame in range(3):
 		await tree.process_frame
 	return true
-
-

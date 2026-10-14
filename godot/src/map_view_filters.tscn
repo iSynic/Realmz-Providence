@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource path="res://src/map_view_filters.gd" type="Script" id="1"]
 [ext_resource path="res://src/world_controls.tres" type="Theme" id="2"]
+
+[ext_resource path="res://src/action_point_status_filters.tscn" type="PackedScene" id="3"]
 
 [node name="MapViewFilters" type="HBoxContainer"]
 layout_mode = 2
@@ -32,142 +34,155 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 12
 
-[node name="Content" type="VBoxContainer" parent="MapOverlayPopup/Margin"]
+[node name="Scroll" type="ScrollContainer" parent="MapOverlayPopup/Margin"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="MapOverlayPopup/Margin/Scroll"]
+size_flags_horizontal = 3
 tooltip_text = "Filters change the display only; editing controls remain available."
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Heading" type="Label" parent="MapOverlayPopup/Margin/Content"]
+[node name="Heading" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
 layout_mode = 2
 theme = ExtResource("2")
 theme_type_variation = &"WorldHeading"
 theme_override_font_sizes/font_size = 13
 text = "MAP OVERLAYS"
 
-[node name="Commands" type="HBoxContainer" parent="MapOverlayPopup/Margin/Content"]
+[node name="Commands" type="HBoxContainer" parent="MapOverlayPopup/Margin/Scroll/Content"]
 layout_mode = 2
 
-[node name="OverlayShowAll" type="Button" parent="MapOverlayPopup/Margin/Content/Commands"]
+[node name="OverlayShowAll" type="Button" parent="MapOverlayPopup/Margin/Scroll/Content/Commands"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Show all"
 
-[node name="OverlayHideAll" type="Button" parent="MapOverlayPopup/Margin/Content/Commands"]
+[node name="OverlayHideAll" type="Button" parent="MapOverlayPopup/Margin/Scroll/Content/Commands"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Hide all"
 
-[node name="OverlayClose" type="Button" parent="MapOverlayPopup/Margin/Content/Commands"]
+[node name="OverlayClose" type="Button" parent="MapOverlayPopup/Margin/Scroll/Content/Commands"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Close"
 
-[node name="RealTilesFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="RealTilesFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Real tiles"
 button_pressed = true
 
-[node name="CoordinatesFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="CoordinatesFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Realmz X/Y"
 
-[node name="SecretsFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="SecretsFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Secrets"
 
-[node name="CombatClearingFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="CombatClearingFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Combat clearing"
 
-[node name="TriggersFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="TriggersFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Action Points"
 button_pressed = true
 
-[node name="RandomGroup" type="HBoxContainer" parent="MapOverlayPopup/Margin/Content"]
+[node name="APStatusFields" parent="MapOverlayPopup/Margin/Scroll/Content" instance=ExtResource("3")]
+unique_name_in_owner = true
+
+[node name="APVisibleCount" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+
+[node name="RandomGroup" type="HBoxContainer" parent="MapOverlayPopup/Margin/Scroll/Content"]
 layout_mode = 2
 
-[node name="RandomAreasFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content/RandomGroup"]
+[node name="RandomAreasFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content/RandomGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Random rectangles"
 tooltip_text = "Show or hide committed rectangles and the active region draft."
 
-[node name="RandomExpand" type="Button" parent="MapOverlayPopup/Margin/Content/RandomGroup"]
+[node name="RandomExpand" type="Button" parent="MapOverlayPopup/Margin/Scroll/Content/RandomGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "▾"
 tooltip_text = "Collapse or expand rectangle entries"
 
-[node name="RandomEntryCount" type="Label" parent="MapOverlayPopup/Margin/Content"]
+[node name="RandomEntryCount" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 
-[node name="RandomEntryScroll" type="ScrollContainer" parent="MapOverlayPopup/Margin/Content"]
+[node name="RandomEntryScroll" type="ScrollContainer" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0,78)
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="RandomEntries" type="VBoxContainer" parent="MapOverlayPopup/Margin/Content/RandomEntryScroll"]
+[node name="RandomEntries" type="VBoxContainer" parent="MapOverlayPopup/Margin/Scroll/Content/RandomEntryScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PlayerMapGroup" type="HBoxContainer" parent="MapOverlayPopup/Margin/Content"]
+[node name="PlayerMapGroup" type="HBoxContainer" parent="MapOverlayPopup/Margin/Scroll/Content"]
 layout_mode = 2
 
-[node name="PlayerMapsFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content/PlayerMapGroup"]
+[node name="PlayerMapsFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content/PlayerMapGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Player Maps"
 
-[node name="PlayerMapsExpand" type="Button" parent="MapOverlayPopup/Margin/Content/PlayerMapGroup"]
+[node name="PlayerMapsExpand" type="Button" parent="MapOverlayPopup/Margin/Scroll/Content/PlayerMapGroup"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "▾"
 tooltip_text = "Collapse or expand Player Map entries"
 
-[node name="PlayerMapEntryCount" type="Label" parent="MapOverlayPopup/Margin/Content"]
+[node name="PlayerMapEntryCount" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 
-[node name="PlayerMapUnavailable" type="Label" parent="MapOverlayPopup/Margin/Content"]
+[node name="PlayerMapUnavailable" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 autowrap_mode = 2
 text = "Picture and text maps do not overlay terrain."
 
-[node name="PlayerMapEntryScroll" type="ScrollContainer" parent="MapOverlayPopup/Margin/Content"]
+[node name="PlayerMapEntryScroll" type="ScrollContainer" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0,52)
 layout_mode = 2
 horizontal_scroll_mode = 0
 
-[node name="PlayerMapEntries" type="VBoxContainer" parent="MapOverlayPopup/Margin/Content/PlayerMapEntryScroll"]
+[node name="PlayerMapEntries" type="VBoxContainer" parent="MapOverlayPopup/Margin/Scroll/Content/PlayerMapEntryScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SmoothFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Content"]
+[node name="SmoothFilter" type="CheckBox" parent="MapOverlayPopup/Margin/Scroll/Content"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Smooth"
 
-[node name="Hint" type="Label" parent="MapOverlayPopup/Margin/Content"]
+[node name="Hint" type="Label" parent="MapOverlayPopup/Margin/Scroll/Content"]
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 11

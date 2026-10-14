@@ -16,6 +16,7 @@ pub struct MapViewOverlays {
     pub hidden_path_cells: Vec<MapCoordinate>,
     pub combat_clearing_cells: Vec<MapCoordinate>,
     pub player_maps: Vec<PlayerMapFootprint>,
+    pub unmatched_entry_markers: Vec<MapCoordinate>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -36,6 +37,7 @@ pub fn project(snapshot: &ProjectSnapshot, map: &MapLevel) -> MapViewOverlays {
         hidden_path_cells: Vec::new(),
         combat_clearing_cells: Vec::new(),
         player_maps: Vec::new(),
+        unmatched_entry_markers: unmatched_entry_markers(snapshot, map),
     };
     if map.level_type == LevelType::Land {
         land_hints(snapshot, map, &mut result);
@@ -58,6 +60,32 @@ pub fn project(snapshot: &ProjectSnapshot, map: &MapLevel) -> MapViewOverlays {
         })
         .collect();
     result
+}
+
+fn unmatched_entry_markers(snapshot: &ProjectSnapshot, map: &MapLevel) -> Vec<MapCoordinate> {
+    let occupied: std::collections::BTreeSet<_> = snapshot
+        .world
+        .action_points
+        .iter()
+        .filter(|row| row.level_type == map.level_type && row.level_index == map.native_index)
+        .filter_map(|row| row.coordinate.map(|cell| (cell.x, cell.y)))
+        .collect();
+    map.tiles
+        .iter()
+        .take(90 * 90)
+        .enumerate()
+        .filter_map(|(index, raw)| {
+            let marked = match map.level_type {
+                LevelType::Land => decode_land_cell(*raw).action_point_marker,
+                LevelType::Dungeon => crate::codecs::decode_dungeon_cell(*raw).action_point_marker,
+            };
+            let cell = MapCoordinate {
+                x: (index % 90) as u8,
+                y: (index / 90) as u8,
+            };
+            (marked && !occupied.contains(&(cell.x, cell.y))).then_some(cell)
+        })
+        .collect()
 }
 
 fn land_hints(snapshot: &ProjectSnapshot, map: &MapLevel, result: &mut MapViewOverlays) {

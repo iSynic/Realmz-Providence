@@ -64,6 +64,9 @@ pub(super) fn supported_schema_contract(version: u8, hash: &str, project_origin:
         (5, providence_core::rebuilt::REBUILT_V5_SCHEMA_SHA256) if project_origin == "imported" => {
             true
         }
+        (6, providence_core::rebuilt::REBUILT_V6_SCHEMA_SHA256) if project_origin == "imported" => {
+            true
+        }
         _ => false,
     }
 }

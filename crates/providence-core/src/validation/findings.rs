@@ -3,7 +3,10 @@
 pub mod callers;
 mod grouping;
 mod monster_tails;
+mod player_map_details;
 mod relevance;
+mod stock_defaults;
+pub use stock_defaults::StandardCatalog;
 
 use super::{
     Diagnostic, Severity,
@@ -26,6 +29,8 @@ pub struct Findings {
     detail_keys: BTreeSet<String>,
     application_fallbacks: usize,
     retained_monster_tails: BTreeSet<StableId>,
+    unused_stock_defaults: BTreeSet<StableId>,
+    unused_player_maps: BTreeSet<StableId>,
 }
 
 #[derive(Serialize)]
@@ -67,6 +72,22 @@ impl Findings {
         references: &[ReferenceDescriptor],
         media: Option<&ApplicationMediaCatalog>,
     ) -> Self {
+        Self::derive_with_standard_catalog(
+            snapshot,
+            diagnostics,
+            references,
+            media,
+            StandardCatalog::default(),
+        )
+    }
+
+    pub fn derive_with_standard_catalog(
+        snapshot: &ProjectSnapshot,
+        diagnostics: Vec<Diagnostic>,
+        references: &[ReferenceDescriptor],
+        media: Option<&ApplicationMediaCatalog>,
+        stock: StandardCatalog<'_>,
+    ) -> Self {
         let fallbacks = application_fallbacks(references, media);
         let all = diagnostics
             .into_iter()
@@ -80,7 +101,11 @@ impl Findings {
                     })
             })
             .collect::<Vec<_>>();
-        let actionable = relevance::actionable(snapshot, &all, references);
+        let unused_stock_defaults = stock_defaults::unused_defaults(snapshot, references, stock);
+        let actionable = relevance::actionable(snapshot, &all, references)
+            .into_iter()
+            .filter(|finding| !stock_defaults::is_dependency(finding, &unused_stock_defaults))
+            .collect::<Vec<_>>();
         let actionable_keys = actionable.iter().map(row_key).collect::<BTreeSet<_>>();
         let detail_keys = all
             .iter()
@@ -102,6 +127,8 @@ impl Findings {
             detail_keys,
             application_fallbacks: fallbacks.len(),
             retained_monster_tails: monster_tails::uncalled(snapshot, references),
+            unused_stock_defaults,
+            unused_player_maps: player_map_details::unused(snapshot, references),
         }
     }
 
@@ -173,8 +200,25 @@ impl<'a> FindingView<'a> {
             target_impact,
             occurrence_count: self.occurrences(diagnostic),
             group_identity,
-            preservation_reason: (unused && diagnostic.entity.as_ref().is_some_and(|id| self.index.retained_monster_tails.contains(id)))
-                .then_some("Retained monster record after the bestiary end marker, with no known callers. Available in Decoded records."),
+            preservation_reason: if unused
+                && stock_defaults::is_dependency(diagnostic, &self.index.unused_stock_defaults)
+            {
+                Some(
+                    "Unchanged Stock definition with no scenario callers. Configure its target if you use it.",
+                )
+            } else if unused
+                && diagnostic
+                    .entity
+                    .as_ref()
+                    .is_some_and(|id| self.index.unused_player_maps.contains(id))
+            {
+                Some(
+                    "Unused imported Player Map slot: no named Classic menu entry and no known callers. Original bytes are retained; an edit or explicit use restores its warnings.",
+                )
+            } else {
+                (unused && diagnostic.entity.as_ref().is_some_and(|id| self.index.retained_monster_tails.contains(id)))
+                    .then_some("Retained monster record after the bestiary end marker, with no known callers. Available in Decoded records.")
+            },
         }
     }
 

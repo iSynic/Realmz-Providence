@@ -76,6 +76,7 @@ pub(super) fn apply_action_draft(
         expected_revision: Revision(0),
         command: EditorCommand::ApplyActionPointDraft {
             draft: ActionPointRecordDraft {
+                entry_marker: None,
                 source: StableId("action-point:land:0:0".into()),
                 descriptor: String::new(),
                 header: header(),

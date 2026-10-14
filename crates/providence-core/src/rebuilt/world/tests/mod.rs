@@ -27,7 +27,7 @@ fn land_world_document_is_exact_canonical_and_reimportable() {
     assert_eq!(value.as_object().unwrap().len(), 9);
     assert_eq!(
         first.sha256,
-        "8a0464dab74223a98239ce666f3ed5ada0d58f0238fc97cb3a5462db48612776"
+        "164799e215d35a714246486cf077ce7f30b56c7f9dc020b7469971c6b191c80c"
     );
     let reopened: RebuiltV3WorldDocument = serde_json::from_slice(&first.canonical_json).unwrap();
     assert_eq!(reopened, first.document);

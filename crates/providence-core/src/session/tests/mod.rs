@@ -76,6 +76,7 @@ use crate::session::{
 use crate::validation::Severity;
 
 mod action_draft_semantics;
+mod action_point_activation;
 mod action_points;
 mod action_record_drafts;
 mod action_step_fixtures;

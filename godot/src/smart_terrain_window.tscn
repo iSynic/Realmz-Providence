@@ -44,7 +44,7 @@ text = "TERRAIN FAMILY"
 [node name="TerrainFamily" type="OptionButton" parent="Margin/Body/Options/Family"]
 unique_name_in_owner = true
 layout_mode = 2
-fit_to_longest_item = false
+fit_to_longest_item = true
 item_count = 3
 selected = 0
 popup/item_0/text = "Water"
@@ -61,7 +61,7 @@ size_flags_horizontal = 3
 [node name="Tolerance" type="OptionButton" parent="Margin/Body/Options"]
 unique_name_in_owner = true
 layout_mode = 2
-fit_to_longest_item = false
+fit_to_longest_item = true
 item_count = 4
 selected = 0
 popup/item_0/text = "Shape: Literal"
@@ -79,7 +79,7 @@ text = "SHAPE"
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-fit_to_longest_item = false
+fit_to_longest_item = true
 item_count = 5
 selected = 0
 popup/item_0/text = "Freehand"

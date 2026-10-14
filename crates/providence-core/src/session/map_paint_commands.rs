@@ -2,12 +2,10 @@ use crate::codecs::paint_land_cell_preserving_markers;
 use crate::map_paint::{
     LandTerrainPaint, invalid, land_map, preview_land_terrain_paint, validate_cells,
 };
-use crate::model::LevelType;
 use crate::model::StableId;
 use crate::session::EditorSession;
 use crate::session::LandMapCellPaint;
 use crate::session::errors::SessionError;
-use std::collections::BTreeSet;
 
 impl EditorSession {
     pub(super) fn apply_magic_brush(
@@ -49,22 +47,7 @@ impl EditorSession {
         cells: Vec<LandMapCellPaint>,
     ) -> Result<Vec<StableId>, SessionError> {
         validate_cells(&identity, &cells)?;
-        let level_index = land_map(&self.snapshot, &identity)?.native_index;
-        let action_points = self
-            .snapshot
-            .world
-            .action_points
-            .iter()
-            .filter(|row| {
-                row.level_type == LevelType::Land
-                    && row.level_index == level_index
-                    && row.chance_percent > 0
-            })
-            .filter_map(|row| {
-                row.coordinate
-                    .map(|coordinate| (coordinate.x, coordinate.y))
-            })
-            .collect::<BTreeSet<_>>();
+        land_map(&self.snapshot, &identity)?;
         let map = self
             .snapshot
             .world
@@ -77,7 +60,7 @@ impl EditorSession {
             map.tiles[index] = paint_land_cell_preserving_markers(
                 map.tiles[index],
                 cell.tile,
-                action_points.contains(&(cell.x, cell.y)),
+                crate::codecs::decode_land_cell(map.tiles[index]).action_point_marker,
             );
         }
         Ok(vec![identity])

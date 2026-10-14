@@ -6,6 +6,7 @@
 //! windows, dialogs, databases, archives, process launch, and durable I/O.
 
 pub mod action_authoring;
+pub mod action_point_activation;
 pub mod action_settings_effects;
 pub mod action_settings_repair;
 mod application_references;

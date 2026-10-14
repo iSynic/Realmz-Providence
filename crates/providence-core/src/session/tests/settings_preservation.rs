@@ -15,6 +15,7 @@ fn mixed_layout_noop_and_descriptor_edit_preserve_all_native_bytes() {
     let before = mixed_snapshot();
     let mut session = EditorSession::new(before.clone());
     let draft = ActionPointRecordDraft {
+        entry_marker: None,
         source: before.world.action_points[0].identity.clone(),
         descriptor: "Signpost".into(),
         header: header(),
@@ -62,6 +63,7 @@ fn move_and_duplicate_keep_unedited_settings_and_isolate_later_edits() {
             .all(|a| a.target_native_id == 12)
     );
     let draft = ActionPointRecordDraft {
+        entry_marker: None,
         source: before.world.action_points[0].identity.clone(),
         descriptor: String::new(),
         header: header(),

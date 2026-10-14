@@ -1,6 +1,7 @@
 extends RefCounted
 
 signal width_changed(width: int)
+signal context_pane_requested(label: String)
 
 var land_inspector: Control
 var dungeon_inspector: Control
@@ -20,6 +21,7 @@ var _current_tool := "select"
 var _current_land := "paint"
 var _land_author
 var _tool_request_generation := 0
+var _record_context: Dictionary = {}
 var stamps := preload("res://src/stamp_inspector_controller.gd").new()
 
 
@@ -57,8 +59,12 @@ func initialize(sidebar: Control, land: Control, dungeon: Control, host: Control
 func present(canvas_active: bool, connected: bool, available: bool) -> void:
 	_sidebar.present_land_paint(not _map.is_dungeon, available)
 	_sidebar.present_world_context(canvas_active)
-	land_inspector.visible = canvas_active and (not _map.is_dungeon or _regions.active)
+	land_inspector.visible = canvas_active and not _map.is_dungeon
 	for pane in [land_inspector, dungeon_inspector]: pane.set_context(_map.is_dungeon, connected and not _map.identity.is_empty())
+	if not _record_context.is_empty() and _current_tool == "select":
+		present_record_context(_record_context.key, _record_context.label, _record_context.panel); return
+	if _map.is_dungeon and _regions.active and not _regions.pinned:
+		dungeon_inspector.mount(_regions.view, "regions"); dungeon_inspector.show_pane("regions", "Random Rectangles"); return
 	if _current_tool == "action-point":
 		(dungeon_inspector if _map.is_dungeon else land_inspector).show_pane("action-point","Action Point Placement")
 		_sidebar.set_tool_mode("action-point"); return
@@ -80,10 +86,11 @@ func request_tool(tool: String) -> void:
 
 
 func _activate(tool: String) -> void:
+	_record_context.clear()
 	if tool != "magic" and _magic.is_open(): _magic.discard_draft()
 	if tool == "smart": await _smart.open(); return
 	if _smart.is_open(): _smart.discard_draft()
-	if _regions.active: _regions.close()
+	if _regions.active and not _regions.pinned: _regions.close()
 	if tool == "magic": await _magic.open(); return
 	if tool == "stamp": await _cell_tool.call("stamp"); return
 	if _map.is_dungeon: _dungeon.request_tool(tool)
@@ -135,9 +142,12 @@ func _pane(label: String) -> void:
 
 
 func _accept_pane(label: String) -> void:
+	if label in ["Action Points", "Player Maps"]:
+		context_pane_requested.emit(label); return
+	_record_context.clear()
 	if _smart.is_open(): _smart.discard_draft()
 	if _magic.is_open(): _magic.discard_draft()
-	if _regions.active and label != "Random Rectangles": _regions.close()
+	if _regions.active and not _regions.pinned and label != "Random Rectangles": _regions.close()
 	match label:
 		"Action Point Placement": await request_tool("action-point")
 		"Map Setup": await _setup.call()
@@ -182,3 +192,17 @@ func mount_ap_placement() -> void:
 	for inspector in [land_inspector,dungeon_inspector]:
 		var panel := preload("res://src/map_ap_placement_inspector.tscn").instantiate()
 		inspector.add_child(panel); inspector.mount(panel,"action-point")
+
+
+func present_record_context(key: String, label: String, panel: Control) -> void:
+	_record_context = {"key": key, "label": label, "panel": panel}
+	_current_tool = "select"
+	var inspector: Control = dungeon_inspector if _map.is_dungeon else land_inspector
+	if panel != null: inspector.mount(panel, key)
+	inspector.show_pane(key, label); inspector.restore()
+
+
+func clear_record_context() -> void:
+	_record_context.clear()
+	if is_instance_valid(land_inspector):
+		(dungeon_inspector if _map.is_dungeon else land_inspector).show_pane("draw" if _map.is_dungeon else "selection", "Dungeon Draw" if _map.is_dungeon else "Selection Inspector")

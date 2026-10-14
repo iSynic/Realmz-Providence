@@ -1,0 +1,142 @@
+[gd_scene load_steps=7 format=3]
+[ext_resource type="Script" path="res://src/map_record_sidebar.gd" id="1"]
+[ext_resource type="Script" path="res://src/action_step_list.gd" id="2"]
+[ext_resource type="Script" path="res://src/player_map_preview.gd" id="3"]
+
+[sub_resource type="SystemFont" id="SidebarFont"]
+font_names = PackedStringArray("JetBrains Mono", "Consolas", "DejaVu Sans Mono")
+
+[sub_resource type="StyleBoxFlat" id="SidebarSurface"]
+bg_color = Color(0.063, 0.09, 0.118, 1)
+
+[sub_resource type="Theme" id="SidebarTheme"]
+default_font = SubResource("SidebarFont")
+Button/font_sizes/font_size = 12
+Label/font_sizes/font_size = 12
+OptionButton/font_sizes/font_size = 12
+SpinBox/font_sizes/font_size = 12
+ItemList/font_sizes/font_size = 11
+LineEdit/font_sizes/font_size = 12
+
+[node name="MapRecordSidebar" type="PanelContainer"]
+script = ExtResource("1")
+theme = SubResource("SidebarTheme")
+size_flags_horizontal = 3
+size_flags_vertical = 3
+metadata/self_scrolling = true
+theme_override_styles/panel = SubResource("SidebarSurface")
+
+[node name="Margin" type="MarginContainer" parent="."]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 2
+text = "Select a record on the map"
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.52, 0.81, 1, 1)
+
+[node name="Summary" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 11
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Margin/Body/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+theme_override_font_sizes/font_size = 12
+
+[node name="PlayerPreview" type="Control" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 320)
+script = ExtResource("3")
+mouse_filter = 2
+
+[node name="RecordDetails" type="Label" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="StepHeading" type="Label" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "0 OF 8 USED · ORDERED STEPS"
+
+[node name="StepList" type="VBoxContainer" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+script = ExtResource("2")
+minimum_row_height = 48
+
+[node name="StepDetails" type="Label" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="OpenTarget" type="Button" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "Open linked target"
+
+[node name="References" type="ItemList" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 78)
+auto_tooltip = true
+
+[node name="LinksToggle" type="Button" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+text = "Links and targets…"
+toggle_mode = true
+visible = false
+
+[node name="Warnings" type="Label" parent="Margin/Body/Scroll/Content"]
+unique_name_in_owner = true
+autowrap_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.7, 0.2, 1)
+
+[node name="Footer" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+theme_override_constants/separation = 6
+
+[node name="DraftStatus" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+visible = false
+text = "Unapplied editor draft · Focus editor"
+
+[node name="RevealFootprint" type="Button" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+text = "Reveal footprint"
+visible = false
+
+[node name="StepActions" type="HBoxContainer" parent="Margin/Body/Footer"]
+unique_name_in_owner = true
+
+[node name="EditStep" type="Button" parent="Margin/Body/Footer/StepActions"]
+unique_name_in_owner = true
+text = "Edit step…"
+custom_minimum_size = Vector2(128, 0)
+
+[node name="ViewFlow" type="Button" parent="Margin/Body/Footer/StepActions"]
+unique_name_in_owner = true
+text = "View Flow"
+
+[node name="EditorActions" type="HBoxContainer" parent="Margin/Body/Footer"]
+
+
+[node name="OpenEditor" type="Button" parent="Margin/Body/Footer/EditorActions"]
+unique_name_in_owner = true
+text = "Open editor"
+
+[node name="OpenWindow" type="Button" parent="Margin/Body/Footer/EditorActions"]
+unique_name_in_owner = true
+text = "Pop out ↗"
+
+[node name="DraftMonitor" type="Timer" parent="."]
+wait_time = 0.25
+autostart = true

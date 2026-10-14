@@ -35,8 +35,10 @@ func request(action: Callable, destination: String = "continuing") -> void:
 		return
 	if not _drafts.has_draft():
 		await action.call()
+		_drafts.guard_editor(null)
 		return
 	_pending = action
+	_drafts.guard_editor(_drafts.current_editor())
 	_dialog.size = Vector2i(640, 180)
 	_dialog.dialog_text = "%s has unapplied changes.\n\nApply or discard them before %s, or keep editing.\nApply updates the open project; use Save to save it to disk." % [_subject(), destination]
 	_dialog.popup_centered(Vector2i(640, 180))
@@ -44,7 +46,7 @@ func request(action: Callable, destination: String = "continuing") -> void:
 
 
 func _subject() -> String:
-	var editor: Control = _current_document.call()
+	var editor: Control = _drafts.current_editor()
 	if editor.has_method("navigation_subject"): return editor.navigation_subject()
 	if str(editor.get_meta("route_identity", "")) != "economy.items": return "This document"
 	var item: Dictionary = editor.selected_definition()
@@ -78,6 +80,7 @@ func discard_and_continue(action: StringName) -> void:
 func cancel() -> void:
 	var had_destination := _pending.is_valid()
 	_pending = Callable()
+	_drafts.guard_editor(null)
 	if had_destination: navigation_canceled.emit()
 
 
@@ -85,4 +88,13 @@ func _continue() -> void:
 	# Clear before awaiting: the destination may itself present another draft.
 	var action := _pending
 	_pending = Callable()
+	_drafts.guard_editor(null)
 	if action.is_valid(): await action.call()
+
+
+func request_all(action: Callable, destination := "continuing") -> void:
+	var editor: Control = _drafts.first_draft()
+	if editor == null:
+		await request(action, destination); return
+	_drafts.guard_editor(editor)
+	await request(request_all.bind(action, destination), destination)

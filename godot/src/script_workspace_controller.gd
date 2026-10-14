@@ -6,6 +6,7 @@ signal message_requested(native_id: int)
 signal sound_requested(native_id: int)
 signal sound_preview_requested(native_id: int, identity: String, status: String)
 signal sound_stop_requested
+signal map_behavior_requested(identity: String, x: int, y: int)
 signal map_reveal_requested(identity: String, x: int, y: int)
 signal route_requested(identity: String)
 signal semantic_target_requested(kind: String, native_id: int, identity: String, context: Dictionary)
@@ -162,6 +163,7 @@ func _bind_action_points() -> void:
 	_action_points.duplicate_requested.connect(_duplicate_action_point)
 	_action_points.clear_requested.connect(_clear_action_point)
 	_action_points.action_point_open_requested.connect(open_action_point_by_record_index)
+	_action_points.map_behavior_requested.connect(func(identity, x, y): map_behavior_requested.emit(identity, x, y))
 	_action_points.map_reveal_requested.connect(func(identity, x, y): map_reveal_requested.emit(identity, x, y))
 	_action_points.selection_changed.connect(func(document, references): inspector_requested.emit("action-point", document, references))
 	for view in [_extra_actions, _action_points]:
@@ -503,6 +505,16 @@ func _map_level_type() -> String:
 
 func open_action_point(identity: String) -> bool:
 	return _accept_response.call(await _records.actionPoint.open_record(identity))
+
+
+func open_action_point_at_step(identity: String, slot: int) -> bool:
+	if str(_action_points.read_state().identity) == identity:
+		_action_points.restore_navigation_state({"step": {"selectedSlot": clampi(slot, 0, 7)}}); return true
+	await _wait_for_form_descriptions(_action_points)
+	var catalog := await _operations.run_workflow(_bridge, "Read action catalog", _load_action_catalog)
+	if not catalog.get("ok", false) or not await open_action_point(identity): return false
+	_action_points.restore_navigation_state({"step": {"selectedSlot": clampi(slot, 0, 7)}})
+	return true
 
 
 func prepare_action_point_creation(map_identity: String, x: int, y: int) -> bool:

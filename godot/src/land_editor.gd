@@ -1,5 +1,6 @@
 class_name ProvidenceLandEditor
 extends VBoxContainer
+@onready var _overlays: Node = %OverlayController
 
 signal cell_selected(x: int, y: int, tile: int, action_point: Dictionary)
 signal action_point_placement_requested(cell: Vector2i, action_point: Dictionary)
@@ -32,9 +33,7 @@ func _ready() -> void:
 	_canvas.placement_canceled.connect(placement_canceled.emit)
 	for section: String in ["LandLayout", "LandTiles", "RandomEncounters"]:
 		get_node("MapSectionTabs/" + section + "Section").pressed.connect(func(): section_requested.emit(section))
-	%MapViewFilters.changed.connect(_view_changed)
-	%RandomRegionOverlay.display_changed.connect(_region_display_changed)
-	%RandomRegionOverlay.regions_changed.connect(_region_entries_changed)
+	_overlays.initialize(_canvas, %MapViewFilters, %RandomRegionOverlay, %MapViewOverlay)
 	_canvas.paint_stroke_started.connect(func(): paint_stroke_started.emit())
 	_canvas.paint_stroke_changed.connect(func(count: int): paint_stroke_changed.emit(count))
 	_canvas.paint_stroke_requested.connect(func(cells: Array): paint_stroke_requested.emit(cells))
@@ -195,41 +194,7 @@ func retain_special_artwork(previews: Array) -> void:
 
 
 func set_view_projection(result: Dictionary) -> void:
-	var hints: Dictionary = result.get("viewOverlays",{})
-	%MapViewOverlay.set_hints(hints)
-	var map: Dictionary = result.get("map",{})
-	var runtime: Dictionary = map.get("runtime") if map.get("runtime") is Dictionary else {}
-	%MapViewFilters.set_context(str(map.get("identity","")),runtime.get("randomRectangles",[]),hints.get("playerMaps",[]))
-	_region_entries_changed()
-
-
-func _view_changed(flags: Dictionary, rectangles: Array, footprints: Array) -> void:
-	_canvas.set_real_tiles_visible(bool(flags.realTiles))
-	_canvas.set_action_points_visible(bool(flags.actionPoints))
-	_canvas.texture_filter=TEXTURE_FILTER_LINEAR if flags.smooth else TEXTURE_FILTER_NEAREST
-	%MapViewOverlay.configure(flags,footprints)
-	var overlay: Control = %RandomRegionOverlay
-	overlay.filter_active=true; overlay.visible_ids.clear()
-	for row: Dictionary in rectangles: overlay.visible_ids[str(row.identity)]=true
-	if overlay.display_enabled!=bool(flags.randomRectangles): overlay.set_display_enabled(bool(flags.randomRectangles))
-	overlay.queue_redraw()
-
-
-func _region_display_changed(enabled: bool) -> void:
-	var state: RefCounted = %MapViewFilters.state
-	if bool(state.flags.randomRectangles)!=enabled and not state.entries.randomRectangles.is_empty(): state.set_flag("randomRectangles",enabled)
-
-
-func _region_entries_changed() -> void:
-	var filters: Control = %MapViewFilters
-	if filters.state.identity!=document_identity: return
-	var overlay: Control = %RandomRegionOverlay
-	if overlay.map_identity!=document_identity: return
-	var rows: Array = overlay.regions.duplicate(true)
-	var displayed: bool = overlay.display_enabled
-	if not overlay.draft.is_empty() and not rows.any(func(row): return row.identity==overlay.draft.identity): rows.append(overlay.draft.duplicate(true))
-	filters.set_context(document_identity,rows,filters.state.entries.playerMaps)
-	if displayed and not filters.state.flags.randomRectangles: filters.state.set_flag("randomRectangles",true)
+	_overlays.set_projection(result)
 
 
 func read_navigation_state() -> Dictionary:

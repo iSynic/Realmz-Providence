@@ -15,6 +15,7 @@ var _code_helper: Window
 var flow
 var _flow_entries: Dictionary = {}
 var _entry_elapsed := 0.0
+var editor_provider: Callable
 
 func initialize(operations: ProvidenceEditorOperation, context: Callable, bridge: Callable, navigation, registry, tabs: TabContainer) -> void:
 	_operations = operations
@@ -41,8 +42,8 @@ func initialize(operations: ProvidenceEditorOperation, context: Callable, bridge
 	_view.flow_requested.connect(open_flow_record)
 
 func open_current_flow() -> void:
-	var editor: Control = _tabs.get_current_tab_control()
-	var route := str(_registry.identity_for_tab(_tabs.current_tab))
+	var editor: Control = _current_editor()
+	var route := str(editor.get_meta("route_identity", ""))
 	await flow.open(preload("res://src/discovery_selection.gd").record(editor, route))
 
 func register_flow_entry(editor: Control, route: String) -> void:
@@ -53,15 +54,15 @@ func register_flow_entry(editor: Control, route: String) -> void:
 
 func can_open_current_flow() -> bool:
 	if not _context.call().get("connected", false): return false
-	var editor: Control = _tabs.get_current_tab_control()
-	var selection := preload("res://src/discovery_selection.gd").record(editor, str(_registry.identity_for_tab(_tabs.current_tab)))
+	var editor: Control = _current_editor()
+	var selection := preload("res://src/discovery_selection.gd").record(editor, str(editor.get_meta("route_identity", "")))
 	return not str(selection.get("identity", "")).is_empty()
 
 func _process(delta: float) -> void:
 	_entry_elapsed += delta
 	if _entry_elapsed < 0.15 or _tabs == null: return
 	_entry_elapsed = 0.0
-	var route := str(_registry.identity_for_tab(_tabs.current_tab))
+	var route := str(_current_editor().get_meta("route_identity", ""))
 	if _flow_entries.has(route):
 		_flow_entries[route].disabled = not can_open_current_flow() or _operations.busy or _operations.requires_reopen
 		_flow_entries[route].tooltip_text = "View applied relationships; unfinished edits stay in the editor."
@@ -78,11 +79,18 @@ func configure_help(code_helper: Window) -> void:
 	_code_helper = code_helper
 
 func open_current_links(direction: String) -> void:
+	var editor := _current_editor()
+	await open_editor_links(editor, str(editor.get_meta("route_identity", "")), direction)
+
+
+func _current_editor() -> Control:
+	return editor_provider.call() if editor_provider.is_valid() else _tabs.get_current_tab_control()
+
+
+func open_editor_links(view: Control, route: String, direction: String) -> void:
 	if direction == "flow":
-		await open_current_flow()
+		await flow.open(preload("res://src/discovery_selection.gd").record(view, route))
 		return
-	var view: Control = _tabs.get_current_tab_control()
-	var route := str(_registry.identity_for_tab(_tabs.current_tab))
 	var selected := preload("res://src/discovery_selection.gd").record(view, route)
 	_generation += 1
 	if selected.kind.is_empty() or selected.identity.is_empty():
@@ -93,7 +101,7 @@ func open_current_links(direction: String) -> void:
 		_view.open_links(selected, direction)
 		return
 	var response := await _read("discovery.preview", {"identity":selected.identity, "scope":selected.scope})
-	if view != _tabs.get_current_tab_control() or selected != preload("res://src/discovery_selection.gd").record(view, route): return
+	if not is_instance_valid(view) or selected != preload("res://src/discovery_selection.gd").record(view, route): return
 	if response.get("ok", false): _view.open_links(response.result.record, direction)
 	elif not response.get("stale", false):
 		_view.open_links({}, direction)

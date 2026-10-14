@@ -20,10 +20,13 @@ mod planning;
 mod refinement_tests;
 mod resolution;
 mod shape_adjustment;
+mod shape_bounds;
 mod shape_planning;
 #[cfg(test)]
 mod shape_tests;
 pub mod staged;
+#[cfg(test)]
+mod stroke_tests;
 #[cfg(test)]
 mod tests;
 mod topology;

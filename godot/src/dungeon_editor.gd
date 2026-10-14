@@ -1,5 +1,6 @@
 class_name ProvidenceDungeonEditor
 extends VBoxContainer
+@onready var _overlays: Node = %OverlayController
 
 signal cell_open_requested(x: int, y: int)
 signal cell_selected(x: int, y: int, tile: int, action_point: Dictionary)
@@ -56,6 +57,7 @@ func request_tool(tool: String) -> void:
 
 
 func _ready() -> void:
+	_overlays.initialize(_canvas, %MapViewFilters, %RandomRegionOverlay, %MapViewOverlay)
 	%ExportMapImage.pressed.connect(func(): %MapImageExport.open(_canvas, _map_identity.replace(":", "-")))
 	_canvas.action_point_placement_requested.connect(action_point_placement_requested.emit)
 	_canvas.placement_canceled.connect(placement_canceled.emit)
@@ -299,6 +301,10 @@ func _set_mode(mode: String) -> void:
 	if mode == "paint": show_feature_status("Draw preset · release to apply one stroke · Esc cancels. Apply uses the current selection.")
 	elif mode == "sample": show_feature_status("Click a cell to sample its writable features into the draw preset.")
 	elif mode == "action-point": show_feature_status("Action Point placement · click an empty cell to review · click an existing AP to open · Esc selects")
+
+
+func set_view_projection(result: Dictionary) -> void:
+	_overlays.set_projection(result)
 
 
 func can_draw() -> bool:

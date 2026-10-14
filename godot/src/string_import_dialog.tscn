@@ -154,4 +154,3 @@ access = 2
 use_native_dialog = true
 current_file = "Scenario Strings.txt"
 filters = PackedStringArray("*.txt ; Text files")
-

@@ -12,7 +12,7 @@ use super::{
     canonical::canonical_json_bytes, compile_rebuilt_v3_content, compile_rebuilt_v3_manifest,
     compile_rebuilt_v3_reachable_content, compile_rebuilt_v3_reachable_world_with_application,
     compile_rebuilt_v3_world, compile_rebuilt_v4_manifest, compile_rebuilt_v5_manifest,
-    imported_extra_code_tail, imported_requires_rebuilt_v4,
+    compile_rebuilt_v6_manifest, imported_extra_code_tail, imported_requires_rebuilt_v4,
     is_missing_imported_presentation_reference, project_rebuilt_v3_asset_index,
     project_rebuilt_v3_reachable_media_with_application, project_rebuilt_v3_reachable_runtime,
     project_rebuilt_v3_scenario,
@@ -248,13 +248,7 @@ fn assemble_rebuilt_v3_document_set(
     mut asset_index: RebuiltV3AssetIndex,
     has_deferred_references: bool,
 ) -> Result<RebuiltV3DocumentSetArtifact, RebuiltV3DocumentSetError> {
-    let schema_version = if scenario.extra_code_tail.is_some() {
-        5
-    } else if imported_requires_rebuilt_v4(snapshot) {
-        4
-    } else {
-        3
-    };
+    let schema_version = document_schema(snapshot, &mut world, &scenario)?;
     align_document_schema(
         schema_version,
         &mut content,
@@ -280,12 +274,11 @@ fn assemble_rebuilt_v3_document_set(
         &asset_index_json,
         media_payloads,
     );
-    let manifest = if schema_version == 5 {
-        compile_rebuilt_v5_manifest(snapshot, compiler_identity, &capabilities, &inputs)
-    } else if schema_version == 4 {
-        compile_rebuilt_v4_manifest(snapshot, compiler_identity, &capabilities, &inputs)
-    } else {
-        compile_rebuilt_v3_manifest(snapshot, compiler_identity, &capabilities, &inputs)
+    let manifest = match schema_version {
+        6 => compile_rebuilt_v6_manifest(snapshot, compiler_identity, &capabilities, &inputs),
+        5 => compile_rebuilt_v5_manifest(snapshot, compiler_identity, &capabilities, &inputs),
+        4 => compile_rebuilt_v4_manifest(snapshot, compiler_identity, &capabilities, &inputs),
+        _ => compile_rebuilt_v3_manifest(snapshot, compiler_identity, &capabilities, &inputs),
     }
     .map_err(RebuiltV3DocumentSetError::Manifest)?;
 
@@ -296,6 +289,44 @@ fn assemble_rebuilt_v3_document_set(
         asset_index_json,
         manifest,
     })
+}
+
+fn document_schema(
+    snapshot: &ProjectSnapshot,
+    world: &mut RebuiltV3WorldArtifact,
+    scenario: &RebuiltV3ScenarioDocument,
+) -> Result<u8, RebuiltV3DocumentSetError> {
+    Ok(
+        if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+            for map in &mut world.document.maps {
+                let native = snapshot
+                    .world
+                    .maps
+                    .iter()
+                    .find(|native| native.identity == map.id)
+                    .ok_or_else(|| {
+                        RebuiltV3DocumentSetError::Serialization(format!(
+                            "missing native map '{}'",
+                            map.id.0
+                        ))
+                    })?;
+                if native.tiles.len() != usize::from(map.width) * usize::from(map.height) {
+                    return Err(RebuiltV3DocumentSetError::Serialization(format!(
+                        "native map '{}' has incomplete tile words",
+                        map.id.0
+                    )));
+                }
+                map.classic_tile_values = Some(native.tiles.clone());
+            }
+            6
+        } else if scenario.extra_code_tail.is_some() {
+            5
+        } else if imported_requires_rebuilt_v4(snapshot) {
+            4
+        } else {
+            3
+        },
+    )
 }
 
 fn content_needs_battle_atlas(content: &RebuiltV3ContentArtifact) -> bool {

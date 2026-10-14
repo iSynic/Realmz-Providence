@@ -56,6 +56,10 @@ pub(super) fn form_identity(opcode: i16) -> Option<&'static str> {
         .and_then(|seed| seed.form)
 }
 
+pub(super) fn is_known_opcode(opcode: i16) -> bool {
+    ACTIONS.iter().any(|seed| seed.opcode == opcode)
+}
+
 const ACTIONS: &[ActionSeed] = &[
     action(
         -23,

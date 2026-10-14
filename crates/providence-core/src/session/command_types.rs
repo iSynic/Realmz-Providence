@@ -112,6 +112,8 @@ pub struct ActionPointRecordDraft {
     #[serde(default)]
     pub descriptor: String,
     pub header: ActionPointHeaderDraft,
+    #[serde(default)]
+    pub entry_marker: Option<bool>,
     pub steps: Vec<ActionStepDraft>,
 }
 

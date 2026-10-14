@@ -183,11 +183,7 @@ fn from_reference(
     let map_relative = kind == "action-point"
         && r.field.0.ends_with(".target")
         && !r.target_id.starts_with("action-point:");
-    let target = if map_relative {
-        direct_ap_target(s, r, lookup)
-    } else {
-        lookup.target(&kind, &r.target_id)
-    };
+    let (target, resolution) = reference_target(s, r, lookup, &kind, map_relative);
     let source = lookup.record(&r.source.0);
     let field = r.field.0.clone();
     DiscoveryLink {
@@ -203,10 +199,10 @@ fn from_reference(
         target_id: target
             .map(|r| r.native_id.clone())
             .unwrap_or_else(|| r.target_id.clone()),
-        target_identity: (r.resolution == ResolutionState::Resolved)
+        target_identity: (resolution == ResolutionState::Resolved)
             .then(|| target.map(|r| r.identity.clone()))
             .flatten(),
-        target_scope: if r.resolution == ResolutionState::StockFallback {
+        target_scope: if resolution == ResolutionState::StockFallback {
             Some("stock".into())
         } else {
             target.map(|r| r.scope.clone())
@@ -221,10 +217,44 @@ fn from_reference(
         meaning: meaning(&kind, &r.field.0).into(),
         code_position: None,
         caller_context: None,
-        resolution: r.resolution.clone(),
+        resolution,
         root_reason: root_reason(source, &r.field.0),
         activity: reference_activity(s, r, map_relative).into(),
     }
+}
+
+fn reference_target<'a>(
+    snapshot: &ProjectSnapshot,
+    reference: &ReferenceDescriptor,
+    lookup: &RecordLookup<'a>,
+    kind: &str,
+    map_relative: bool,
+) -> (Option<&'a DiscoveryRecord>, ResolutionState) {
+    use crate::resource_resolution::{ScenarioResourceResolution, scenario_resource};
+    if reference.target_kind == crate::references::TargetKind::SpecialLandTile
+        && let Ok(resource_id) = reference.target_id.parse::<i32>()
+    {
+        let key = crate::model::ClassicResourceKey {
+            resource_type: "cicn".into(),
+            resource_id,
+        };
+        // Map references remain scenario-only diagnostics. Discovery checks the
+        // effective owner without turning Stock artwork into scenario content.
+        return match scenario_resource(snapshot, &key, "special-land-tile") {
+            ScenarioResourceResolution::Resolved(asset) => {
+                (lookup.record(&asset.identity.0), ResolutionState::Resolved)
+            }
+            ScenarioResourceResolution::Missing => (None, ResolutionState::StockFallback),
+            ScenarioResourceResolution::WrongKind => (None, ResolutionState::Missing),
+            ScenarioResourceResolution::Ambiguous => (None, ResolutionState::Ambiguous),
+        };
+    }
+    let target = if map_relative {
+        direct_ap_target(snapshot, reference, lookup)
+    } else {
+        lookup.target(kind, &reference.target_id)
+    };
+    (target, reference.resolution.clone())
 }
 
 fn relationship(

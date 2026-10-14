@@ -251,7 +251,7 @@ fn adapter_exposes_bounded_action_point_document_commands() {
     assert_eq!(updated["revision"], 1);
     assert_eq!(
         updated["changedEntities"],
-        json!(["action-point:land:0:17", "land:0"])
+        json!(["action-point:land:0:17"])
     );
     assert!(
         updated["affectedDiagnostics"]

@@ -8,7 +8,6 @@ use providence_core::codecs::RANDOM_LEVEL_RECORD_BYTES;
 use providence_core::codecs::decode_dungeon_action_points;
 use providence_core::codecs::decode_dungeon_maps;
 use providence_core::codecs::decode_dungeon_random_levels;
-use providence_core::model::CLASSIC_MAP_SIZE;
 use providence_core::model::ExtraActionPoint;
 use providence_core::model::NativeRecordId;
 use providence_core::model::ProjectSnapshot;
@@ -258,7 +257,7 @@ fn edit_and_repair_dungeon_action(reopened: &mut EditorSession) {
     .expect("edit one fixed Data DDD row");
     assert_eq!(
         action_update["changedEntities"],
-        json!(["action-point:dungeon:0:7", "dungeon:0"])
+        json!(["action-point:dungeon:0:7"])
     );
     assert!(action_update.get("snapshot").is_none());
     let action_repair = dispatch_result(
@@ -545,9 +544,6 @@ fn compile_dungeon_twice(reopened: &mut EditorSession, store: &ProjectStore, out
 fn assert_compiled_bytes(output: &Path, fixtures: [(&str, Vec<u8>); 3]) {
     let mut expected_data_dl = fixtures[0].1.clone();
     expected_data_dl[..2].copy_from_slice(&0x5234_i16.to_be_bytes());
-    let action_map_offset = (7 * CLASSIC_MAP_SIZE + 12) * 2;
-    expected_data_dl[action_map_offset..action_map_offset + 2]
-        .copy_from_slice(&0x1000_i16.to_be_bytes());
     let mut expected_data_ddd = fixtures[1].1.clone();
     expected_data_ddd[(7 * 40) + 7] = 75;
     expected_data_ddd[(7 * 40) + 24..(7 * 40) + 26].copy_from_slice(&1_i16.to_be_bytes());

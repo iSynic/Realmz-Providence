@@ -62,6 +62,7 @@ fn imported_unknown_words_and_unplaced_header_survive_supported_edit_and_history
             expected_revision: Revision(0),
             command: EditorCommand::ApplyActionPointDraft {
                 draft: ActionPointRecordDraft {
+                    entry_marker: None,
                     source: row.identity.clone(),
                     descriptor: String::new(),
                     header: ActionPointHeaderDraft {

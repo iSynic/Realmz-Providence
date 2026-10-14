@@ -15,6 +15,7 @@ fn record_draft_commits_header_and_multiple_steps_as_one_undo_entry() {
             expected_revision: Revision(0),
             command: EditorCommand::ApplyActionPointDraft {
                 draft: ActionPointRecordDraft {
+                    entry_marker: None,
                     source: source.clone(),
                     descriptor: String::new(),
                     header: changed_header,
@@ -202,6 +203,7 @@ fn paired_settings_allocation_exhaustion_rejects_the_whole_record_before_mutatio
             expected_revision: Revision(0),
             command: EditorCommand::ApplyActionPointDraft {
                 draft: ActionPointRecordDraft {
+                    entry_marker: None,
                     source: StableId("action-point:land:0:0".into()),
                     descriptor: String::new(),
                     header: header(),
@@ -254,6 +256,7 @@ fn clear_retains_nonzero_settings_and_recreation_allocates_elsewhere() {
             expected_revision: Revision(1),
             command: EditorCommand::ApplyActionPointDraft {
                 draft: ActionPointRecordDraft {
+                    entry_marker: None,
                     source: StableId("action-point:land:0:0".into()),
                     descriptor: String::new(),
                     header: header(),

@@ -117,4 +117,3 @@ func finish(path: String) -> void:
 	bridge.stop(); operations.queue_free(); await process_frame
 	print("PROVIDENCE_RULE_SLOT_REVIEW_", "FAILED" if failed else "OK")
 	quit(1 if failed else 0)
-

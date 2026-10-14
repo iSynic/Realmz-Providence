@@ -12,7 +12,7 @@ const WORLD := ["land", "dungeon", "land-layout", "landlook", "player-map"]
 
 static func for_route(route: String) -> Array:
 	match route:
-		"maps.land", "maps.dungeon": return WORLD + ["action-point", "asset"]
+		"maps.land", "maps.dungeon": return WORLD + ["action-point", "random-rectangle", "asset"]
 		"maps.layout": return ["land", "land-layout"]
 		"maps.special-land", "assets.special-land": return ["asset", "land", "dungeon"]
 		"player-maps.map-records": return ["player-map", "land", "dungeon", "asset"]

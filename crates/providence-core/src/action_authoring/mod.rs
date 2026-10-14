@@ -479,6 +479,10 @@ pub(crate) fn form_identity_for_opcode(opcode: i16) -> Option<&'static str> {
     actions::form_identity(opcode)
 }
 
+pub(crate) fn is_known_opcode(opcode: i16) -> bool {
+    actions::is_known_opcode(opcode)
+}
+
 pub fn form_definition(identity: &str) -> Option<ActionFormDefinition> {
     forms::definitions()
         .into_iter()

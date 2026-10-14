@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://src/action_point_entry_panel.gd" id="1"]
+[node name="ActionPointEntryPanel" type="PanelContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(364, 0)
+script = ExtResource("1")
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 2
+[node name="Heading" type="Label" parent="Body"]
+theme_override_colors/font_color = Color(0.615686, 0.811765, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "ENTRY MARKER · AUTHORED STATE"
+[node name="EntryMarker" type="CheckBox" parent="Body"]
+unique_name_in_owner = true
+size_flags_horizontal = 0
+text = "Entry marker on this tile"
+[node name="EntryState" type="Label" parent="Body"]
+unique_name_in_owner = true
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 2
+text = "Applied state. Chance and step edits preserve this tile."
+[node name="EarlierAP" type="Button" parent="Body"]
+unique_name_in_owner = true
+visible = false
+text = "Open earlier AP at this coordinate…"
+[node name="SecretControls" type="Button" parent="Body"]
+unique_name_in_owner = true
+visible = false
+text = "Edit map secret…"

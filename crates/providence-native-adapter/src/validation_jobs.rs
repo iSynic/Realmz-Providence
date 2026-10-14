@@ -46,7 +46,13 @@ pub(super) struct Jobs {
 
 impl Default for Jobs {
     fn default() -> Self {
-        let cache = Mutex::new(crate::diagnostic_cache::Cache::default());
+        Self::with_catalogs(Default::default())
+    }
+}
+
+impl Jobs {
+    pub(crate) fn with_catalogs(catalogs: crate::catalogs::CatalogViews<'_>) -> Self {
+        let cache = Mutex::new(crate::diagnostic_cache::Cache::with_catalogs(catalogs));
         Self::with_evaluator(Arc::new(move |work| {
             cache
                 .lock()

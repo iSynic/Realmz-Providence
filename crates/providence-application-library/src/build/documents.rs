@@ -156,6 +156,7 @@ fn application_map() -> RebuiltV3WorldMap {
         },
         topology_format: "realmz2.compact-cell-rows.v2".into(),
         cells: vec![application_cell(); 8100],
+        classic_tile_values: None,
         boat_replacement_profiles: Some(boat_profiles()),
         random_rectangles: Vec::new(),
     }

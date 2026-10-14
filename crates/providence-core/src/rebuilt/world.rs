@@ -30,6 +30,8 @@ pub struct RebuiltV3WorldMap {
     pub metadata: RebuiltV3MapMetadata,
     pub topology_format: String,
     pub cells: Vec<RebuiltV3CompactCell>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub classic_tile_values: Option<Vec<i16>>,
     pub boat_replacement_profiles: Option<RebuiltV3BoatReplacementProfiles>,
     pub random_rectangles: Vec<RebuiltV3RandomRectangle>,
 }

@@ -15,6 +15,7 @@ var _items: Array[Button] = []
 var _metadata: Array = []
 var _colors: Array[Color] = []
 var _selected := -1
+@export var minimum_row_height := 39
 
 var item_count: int:
 	get: return _items.size()
@@ -41,7 +42,7 @@ func add_item(text: String) -> void:
 	item.text = text
 	item.tooltip_text = text
 	item.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	item.custom_minimum_size.y = 39
+	item.custom_minimum_size.y = minimum_row_height
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item.toggle_mode = true
 	item.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

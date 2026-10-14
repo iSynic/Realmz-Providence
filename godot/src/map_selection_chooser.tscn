@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://src/map_selection_chooser.gd" id="1"]
+[ext_resource type="Script" path="res://src/map_selection_candidates.gd" id="2"]
+[sub_resource type="SystemFont" id="ChooserFont"]
+font_names = PackedStringArray("JetBrains Mono", "Consolas", "DejaVu Sans Mono")
+[sub_resource type="Theme" id="ChooserTheme"]
+default_font = SubResource("ChooserFont")
+default_font_size = 12
+[node name="MapSelectionChooser" type="PopupPanel"]
+script = ExtResource("1")
+theme = SubResource("ChooserTheme")
+size = Vector2i(430, 260)
+[node name="Body" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+theme_override_constants/separation = 8
+[node name="Heading" type="Label" parent="Body"]
+unique_name_in_owner = true
+text = "SELECT AT THIS LOCATION"
+[node name="Scroll" type="ScrollContainer" parent="Body"]
+unique_name_in_owner = true
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+custom_minimum_size = Vector2(410, 130)
+[node name="Candidates" type="VBoxContainer" parent="Body/Scroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+script = ExtResource("2")
+[node name="Actions" type="HBoxContainer" parent="Body"]
+[node name="SelectCandidate" type="Button" parent="Body/Actions"]
+unique_name_in_owner = true
+text = "Select"
+size_flags_horizontal = 3
+[node name="CancelSelection" type="Button" parent="Body/Actions"]
+unique_name_in_owner = true
+text = "Cancel"
+
+[node name="KeyboardHint" type="Label" parent="Body"]
+text = "↑↓ Choose · Enter Select · Esc Cancel"
+theme_override_font_sizes/font_size = 11

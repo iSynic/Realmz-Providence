@@ -57,4 +57,3 @@ func _source_step() -> Dictionary:
 	return {"slot": 0, "rawOpcode": 1, "opcode": 1, "targetNativeId": 42,
 		"definition": {"identity": "realmz.action.1", "label": "Show Message", "opcode": 1,
 			"category": "Text", "targetFamily": "message", "formId": null}}
-

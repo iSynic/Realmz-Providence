@@ -277,7 +277,7 @@ func _check_draft_guard() -> void:
 	flow._action("open-record")
 	await _settle()
 	var dialog := shell.get_node("UnappliedChangesDialog") as ConfirmationDialog
-	assert(dialog.visible and not view.visible)
+	assert(dialog.visible and view.visible, "Native Flow remains available while the main window guards a draft")
 	dialog.get_cancel_button().pressed.emit()
 	await _settle()
 	assert(view.visible and quest.has_unapplied_changes(), "Cancel restores flow and preserves draft")
@@ -286,7 +286,7 @@ func _check_draft_guard() -> void:
 	await _settle()
 	await flow._action("open-record")
 	await _settle()
-	assert(not view.visible and view.suspended)
+	assert(view.visible and view.suspended, "Opening an editor leaves the native Flow window available")
 	assert(shell._documents.view("scripts.macros").read_state().identity == "extra-action-point:12")
 	await shell._commands.dispatch(&"navigate.view-flow")
 	await _settle()

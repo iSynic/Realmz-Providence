@@ -10,6 +10,7 @@ mod action_draft_commands;
 mod action_draft_preservation;
 mod action_draft_semantics;
 mod action_point_commands;
+mod action_point_entry;
 mod action_point_records;
 mod action_reference_commands;
 mod action_references;

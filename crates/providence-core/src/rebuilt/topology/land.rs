@@ -176,7 +176,7 @@ impl LandProjection<'_> {
         let cell_id = StableId(format!("{}:cell:{x},{y}", self.map.identity.0));
         let trigger_ids = cell_trigger_ids(self.snapshot, self.map, x, y);
         let random_rectangle_ids = cell_random_rectangle_ids(self.runtime, x, y);
-        let features = land_features(&cell_id, terrain.marker_band, !trigger_ids.is_empty());
+        let features = land_features(&cell_id, terrain.marker_band);
         let edge = RebuiltV3CompactEdge(
             if terrain.passable { "open" } else { "wall" }.into(),
             edge_flags(terrain.passable, terrain.blocks_los, true),
@@ -225,13 +225,9 @@ impl LandProjection<'_> {
     }
 }
 
-fn land_features(
-    cell_id: &StableId,
-    marker_band: u8,
-    has_trigger: bool,
-) -> Vec<RebuiltV3CompactFeature> {
+fn land_features(cell_id: &StableId, marker_band: u8) -> Vec<RebuiltV3CompactFeature> {
     let mut features = Vec::new();
-    if marker_band > 0 || has_trigger {
+    if marker_band > 0 {
         features.push(RebuiltV3CompactFeature(
             StableId(format!("{}:action-point", cell_id.0)),
             "action-point".into(),

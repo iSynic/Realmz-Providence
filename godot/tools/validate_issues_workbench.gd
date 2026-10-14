@@ -15,6 +15,7 @@ func _run() -> void:
 	view.size = Vector2(1500, 752)
 	root.add_child(view)
 	await _settle()
+	_check_bounds(view)
 	var bridge := Fixture.FixtureBridge.new()
 	view.destination_resolver = func(finding: Dictionary): return {"editable": true} if finding.get("entity") is String else {}
 	var opened: Array = []
@@ -46,11 +47,7 @@ func _run() -> void:
 	_check(view.state.category=="links" and view.state.page.total==501,"Group control did not filter the full catalog")
 	view.state.go_to_page(10)
 	view.state.select_row(49)
-	root.size = Vector2i(1920, 1080)
-	view.size = Vector2(1820, 932)
-	await _settle()
-	_check(view.state.limit==50 and view.state.selected_finding().entity == "extra-action-point:499", "Wide resize lost selection or capacity")
-	_check_bounds(view)
+	await _check_wide_viewports(view)
 	root.size = Vector2i(1600, 900)
 	view.size = Vector2(1500, 752)
 	await _settle()
@@ -95,7 +92,7 @@ func _run() -> void:
 	view.free()
 	await process_frame
 	if not _failed:
-		print("PROVIDENCE_ISSUES_WORKBENCH_OK viewports=2 themes=3 densities=2 keyboard=verified source=exact")
+		print("PROVIDENCE_ISSUES_WORKBENCH_OK certified-viewports=2 ultrawide=1 themes=3 densities=2 keyboard=verified source=exact")
 	quit(1 if _failed else 0)
 
 
@@ -105,6 +102,22 @@ func _check_bounds(view: Control) -> void:
 	for row: Button in view._rows:
 		_check(row.size.x <= view.get_node("%Findings").size.x, "A finding row exceeds the scroll area width")
 	_check(view.get_global_rect().encloses(view.get_node("%SelectedProblemInspector").get_global_rect()), "Inspector is clipped")
+	for name in ["HideFinding", "HideType"]:
+		var button: Button = view.get_node("%" + name)
+		var font := button.get_theme_font("font")
+		var label_width := font.get_string_size(button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, button.get_theme_font_size("font_size")).x
+		for state in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+			var box := button.get_theme_stylebox(state)
+			_check(button.size.x + 0.01 >= label_width + box.get_minimum_size().x, name + " truncates its label in " + state)
+
+
+func _check_wide_viewports(view: Control) -> void:
+	for viewport in [Vector2i(1920, 1080), Vector2i(3440, 1392)]:
+		root.size = viewport
+		view.size = Vector2(viewport) - Vector2(100, 148)
+		await _settle()
+		_check(view.state.limit==50 and view.state.selected_finding().entity == "extra-action-point:499", "Wide resize lost selection or capacity")
+		_check_bounds(view)
 
 
 func _check_temporary_filters(view: Control) -> void:

@@ -105,7 +105,7 @@ func _request(operation: ProvidenceEditorOperation, method: String, params: Dict
 
 func _draw_mask(options: Dictionary) -> void:
 	if _busy or not _pending.is_empty(): return
-	options = options.duplicate(true); options.match = "connected-exact"
+	options = options.duplicate(true); options.match = "connected-family"
 	_drawing = true; _authoring.begin_mask(view.mask, options, true)
 	if view.review_is_current(): _authoring.preview_mask(view.mask, view.display_plan())
 

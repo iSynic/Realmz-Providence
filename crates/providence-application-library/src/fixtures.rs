@@ -228,26 +228,8 @@ fn fixture_world() -> RebuiltV3WorldDocument {
             },
             topology_format: "realmz2.compact-cell-rows.v2".into(),
             cells: vec![cell; 8100],
-            boat_replacement_profiles: Some(RebuiltV3BoatReplacementProfiles {
-                removed: RebuiltV3CompactLandTileProfile(
-                    StableId("classic.terrain.60".into()),
-                    0,
-                    77,
-                    Some(0),
-                    60,
-                    2,
-                    0,
-                ),
-                placed: RebuiltV3CompactLandTileProfile(
-                    StableId("classic.terrain.147".into()),
-                    0,
-                    69,
-                    Some(0),
-                    147,
-                    1,
-                    0,
-                ),
-            }),
+            classic_tile_values: None,
+            boat_replacement_profiles: Some(fixture_boat_profiles()),
             random_rectangles: Vec::new(),
         }],
         player_maps: Vec::new(),
@@ -255,6 +237,29 @@ fn fixture_world() -> RebuiltV3WorldDocument {
         transitions: Vec::new(),
         land_layout: None,
         timed_encounters: Vec::new(),
+    }
+}
+
+fn fixture_boat_profiles() -> RebuiltV3BoatReplacementProfiles {
+    RebuiltV3BoatReplacementProfiles {
+        removed: RebuiltV3CompactLandTileProfile(
+            StableId("classic.terrain.60".into()),
+            0,
+            77,
+            Some(0),
+            60,
+            2,
+            0,
+        ),
+        placed: RebuiltV3CompactLandTileProfile(
+            StableId("classic.terrain.147".into()),
+            0,
+            69,
+            Some(0),
+            147,
+            1,
+            0,
+        ),
     }
 }
 

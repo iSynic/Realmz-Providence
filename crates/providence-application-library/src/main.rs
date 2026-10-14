@@ -29,6 +29,9 @@ fn run() -> Result<(), String> {
             Ok(())
         }
         Some("slim-scenarios") => slim::run(&args[1..]),
+        Some("correct-classic-map-markers") => {
+            providence_application_library::map_markers::run(&args[1..])
+        }
         Some("migrate-synthetic-fixture") => synthetic::run(&args[1..]),
         Some("build") => build::run(&args[1..]),
         _ => Err(build::usage()),

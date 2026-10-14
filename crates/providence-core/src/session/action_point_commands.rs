@@ -11,6 +11,7 @@ use crate::session::action_point_records::reusable_action_point_slot;
 use crate::session::action_point_records::upsert_action_point;
 use crate::session::action_point_records::validate_action_point_draft;
 use crate::session::action_point_records::validate_action_point_map_cell;
+use crate::session::action_point_records::write_action_point_marker;
 use crate::session::action_point_records::{
     validate_action_point_replacement, validate_action_point_trigger,
     validate_new_action_point_position,
@@ -37,7 +38,13 @@ impl EditorSession {
         upsert_action_point(&mut self.snapshot, row);
         append_changed_map(
             &mut changed,
-            refresh_action_point_marker(&mut self.snapshot, level_type, level_index, coordinate)?,
+            write_action_point_marker(
+                &mut self.snapshot,
+                level_type,
+                level_index,
+                coordinate,
+                true,
+            )?,
         );
         Ok(changed)
     }
@@ -136,11 +143,12 @@ impl EditorSession {
         let mut changed = vec![identity];
         append_changed_map(
             &mut changed,
-            refresh_action_point_marker(
+            write_action_point_marker(
                 &mut self.snapshot,
                 original.level_type,
                 original.level_index,
                 coordinate,
+                true,
             )?,
         );
         Ok(changed)
@@ -211,8 +219,13 @@ pub(super) fn replace_action_point(
     validate_action_point_replacement(snapshot, &action_point, existing_index)?;
     validate_action_point_trigger(snapshot, &existing)?;
     validate_action_point_trigger(snapshot, &action_point)?;
+    let moved = existing.coordinate != action_point.coordinate;
     snapshot.world.action_points[existing_index] = action_point;
     let mut changed = vec![identity];
+    // Program and chance edits never authorize changing the tile's entry behavior.
+    if !moved {
+        return Ok(changed);
+    }
     if let Some(coordinate) = existing.coordinate {
         append_changed_map(
             &mut changed,
@@ -230,7 +243,7 @@ pub(super) fn replace_action_point(
     if let Some(coordinate) = coordinate {
         append_changed_map(
             &mut changed,
-            refresh_action_point_marker(snapshot, level_type, level_index, coordinate)?,
+            write_action_point_marker(snapshot, level_type, level_index, coordinate, true)?,
         );
     }
     Ok(changed)

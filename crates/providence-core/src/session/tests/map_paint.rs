@@ -23,7 +23,7 @@ fn bounded_land_paint_preserves_marker_ownership_and_is_one_undo_step() {
     assert_eq!(tiles[CLASSIC_MAP_SIZE + 1], 1090);
     assert_eq!(tiles[CLASSIC_MAP_SIZE * 2 + 2], 2090);
     assert_eq!(tiles[CLASSIC_MAP_SIZE * 3 + 3], 3090);
-    assert_eq!(tiles[CLASSIC_MAP_SIZE * 4 + 4] as u16, 0x6000 | 90);
+    assert_eq!(tiles[CLASSIC_MAP_SIZE * 4 + 4] as u16, 0x6000 | 1090);
 
     let undone = session
         .execute(ExpectedRevisionCommand {
