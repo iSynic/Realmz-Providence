@@ -10,7 +10,7 @@ They are not a rating of a scenario's story or a promise of campaign completion.
 | Save | Persist the current project. Applying and saving are separate actions. |
 | Classic export | Reconstruct the native files used by Classic Realmz. Imported source bytes are retained so unrelated edits can preserve them. |
 | Rebuilt package | Compile the scenario and its runtime dependencies for a separate compatible Rebuilt installation. It has a different format from a portable editor project. |
-| Package schema | The contract between a package writer and its reader. Current development writers use v6 for both authored and imported scenarios. Older archives keep their original versions. |
+| Package schema | The contract between a package writer and its reader. Current development writers use v7 for imported scenarios and v6 for authored ones. Older archives keep their original versions. |
 | Application support | The separate stock Realmz rules and media paired with a scenario package. It must match the package's declared identity. |
 | Scenario-owned resource | A resource supplied by the scenario. Its exact key takes precedence over the corresponding stock resource. A malformed override is not treated as absent. |
 | Imported preservation | Retain original data, including unused fields or unavailable optional content. This does not make malformed content executable. |

@@ -29,8 +29,8 @@ resolve before publishing. Confirm the scenario's applicable Classic rule choice
 instead of treating one fallback profile as universally correct.
 
 Classic export and a Rebuilt package serve different consumers. Current
-development writers use v6 for authored scenarios, imported scenarios and the
-stock application package. Existing archives and older schema contracts remain
+development writers use v7 for imported scenarios and v6 for authored scenarios
+and the stock application package. Existing archives and older schema contracts remain
 readable; they are not relabelled. The editable project snapshot has its own
 version. The published beta's split is documented in [package versions](package-versions.md).
 

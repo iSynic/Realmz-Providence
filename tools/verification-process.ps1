@@ -2,7 +2,7 @@ function Invoke-Checked {
     param([string]$Program, [string[]]$Arguments)
     & $Program @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "$Program failed with exit code $LASTEXITCODE"
+        throw "$Program $($Arguments -join ' ') failed with exit code $LASTEXITCODE"
     }
 }
 

@@ -1,11 +1,13 @@
 # Package versions
 
-Current development writers produce schema-v6 Rebuilt packages for both newly
-authored and imported scenarios, and for newly built application libraries.
-Every map carries its complete signed native tile words alongside compiled
-topology. This includes authored maps; their native encoders already existed.
+Current development writers produce two schemas. Imported scenarios publish as
+schema v7, which keeps every complete native record the source supplied,
+including dormant and unplaced ones, alongside the exact original source assets.
+Newly authored scenarios and newly built application libraries publish as
+schema v6. Both carry each map's complete signed native tile words alongside
+compiled topology.
 
-The published beta.4 predates this unification and retains its documented split.
+The published beta.4 predates these changes and retains its documented split.
 Its existing downloads and archives are not relabelled by a development change.
 An older scenario package is upgraded by a new canonical export, not by changing
 its manifest version. Explicit maintenance of an archived package retains its

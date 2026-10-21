@@ -93,8 +93,8 @@ instructions remain preserved. Program checks may prevent later effects even
 when the player can physically enter the tile. These views are authoring context,
 not a live playthrough evaluator or a guarantee of reachability.
 
-Current development exports use schema v6 for both imported and newly authored
-scenarios, retaining exact signed native tile words. Older package contracts
+Current development exports use schema v7 for imported scenarios and schema v6
+for newly authored ones; both retain exact signed native tile words. Older package contracts
 remain readable. The published beta's contract is recorded separately in
 [package versions](package-versions.md). A separate compatible Rebuilt
 installation is needed for playtest.

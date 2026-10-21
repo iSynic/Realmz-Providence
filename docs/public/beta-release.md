@@ -1,8 +1,8 @@
 # Published v0.6.0-beta.4 release notes
 
 These notes describe the published beta.4 assets. The current development tree
-includes later closeout work: all newly generated scenario and application-library
-packages use schema v6. Those changes have not yet replaced the downloadable
+includes later closeout work: imported scenarios publish as schema v7, and newly
+authored scenarios and application libraries as schema v6. Those changes have not yet replaced the downloadable
 beta assets. The [authoring manual](authoring-manual.md) describes the current
 development editor; the historical release changes below remain attributable
 to the published build.
