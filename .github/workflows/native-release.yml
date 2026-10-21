@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Licenses, advisories, bans and sources against deny.toml.
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
@@ -44,8 +44,8 @@ jobs:
     env:
       MACOSX_DEPLOYMENT_TARGET: '11.0'
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.14'
       - uses: dtolnay/rust-toolchain@89b12181fb390509a0842a86cc55eeb8eb928c1d
@@ -110,7 +110,7 @@ jobs:
           runtime="$RUNNER_TEMP/providence-release/bundle"
           if [[ "$RUNNER_OS" == "macOS" ]]; then runtime="$runtime/Providence.app/Contents/MacOS"; fi
           python tools/run-record-browsing-check.py --godot "$PROVIDENCE_GODOT_PATH" --bundle "$runtime" --output-root "$RUNNER_TEMP/catalog-browsing"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Providence-${{ matrix.platform }}
           if-no-files-found: error
@@ -128,7 +128,7 @@ jobs:
       contents: write
       actions: read
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Find successful builds of this exact revision
         id: tested
         env:
@@ -137,7 +137,7 @@ jobs:
           run_id=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/native-release.yml/runs" -f head_sha="$GITHUB_SHA" -f status=success --jq '.workflow_runs | map(select(.event == "push" and .head_branch == "main")) | first | .id')
           [[ "$run_id" =~ ^[0-9]+$ ]] || { echo 'This revision has no successful three-platform build.'; exit 1; }
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ steps.tested.outputs.run_id }}
