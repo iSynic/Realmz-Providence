@@ -25,7 +25,7 @@ publish = false
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10"
+sha2 = "0.11"
 crc32fast = "1.5"
 adler2 = "2.0"
 base64 = "0.22"
