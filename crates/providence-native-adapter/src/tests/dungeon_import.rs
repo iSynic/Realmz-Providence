@@ -47,8 +47,10 @@ fn classic_dungeon_import_reopens_lists_and_recompiles_every_source_byte() {
     reject_note_marker_edit(&mut reopened);
     edit_dungeon_primitive(&mut reopened);
     checkpoint_dungeon_primitive_history(&mut reopened, &store);
+    let project_root = store.root().to_owned();
+    drop(store);
     let (store, mut reopened) =
-        ProjectStore::open_session(store.root()).expect("reopen edited dungeon project");
+        ProjectStore::open_session(project_root).expect("reopen edited dungeon project");
     assert_reopened_dungeon_edits(&reopened);
     assert_rebuilt_world_and_validation(&mut reopened);
     compile_dungeon_twice(&mut reopened, &store, temporary.path());

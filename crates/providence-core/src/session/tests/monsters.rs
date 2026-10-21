@@ -261,7 +261,7 @@ fn monster_reference_snapshot() -> ProjectSnapshot {
     set.monsters[0].death_macro = 99;
     set.monsters[0].items[0] = 5;
     set.monsters[0].items[1] = -6;
-    set.monsters[0].spells[0] = 10;
+    set.monsters[0].spells[0] = 1101;
     set.monsters[0].icon_id = 400;
     set.monsters[0].weapon = -1;
     snapshot.monster_sets.push(set);

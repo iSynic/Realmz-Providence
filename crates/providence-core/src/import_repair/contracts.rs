@@ -8,6 +8,13 @@ use serde::{Deserialize, Serialize};
     rename_all_fields = "camelCase"
 )]
 pub enum RepairChange {
+    NativeText {
+        native_path: String,
+        native_id: u32,
+        slot: usize,
+        expected: String,
+        recovered: String,
+    },
     Spell {
         record: Box<SourcedSpellDefinition>,
     },
@@ -47,6 +54,8 @@ pub struct RepairAssessment {
     pub version: u32,
     pub entries: Vec<RepairEntry>,
     pub source_requirements: Vec<String>,
+    #[serde(default)]
+    pub preservation_diagnostics: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -34,7 +34,7 @@ func initialize(owner: Node, maps, registry, operations: ProvidenceEditorOperati
 	_scripts = scripts; _players = players; _drafts = drafts; _commands = commands; _context = context; _guard = guard
 	windows.initialize(owner, registry, drafts, operations, commands.dispatch, context)
 	windows.register("ap", registry.view("scripts.action-points"), "Action Points", Callable(), "scripts.action-points")
-	windows.register("player", registry.view("player-maps.map-records"), "Player Maps", Callable(), "player-maps.map-records")
+	registry.on_realize("player-maps.map-records", _register_player_window)
 	windows.register("region", maps.regions.view, "Random Rectangles", Callable())
 	drafts.register_editor(maps.regions.view, maps.regions.has_unapplied_changes, maps.regions.discard_draft, maps.regions.commit_selected)
 	windows.changed.connect(_window_changed)
@@ -51,6 +51,11 @@ func initialize(owner: Node, maps, registry, operations: ProvidenceEditorOperati
 	commands.project_guard = guard.request_all
 	owner.get_tree().auto_accept_quit = false
 	owner.get_tree().root.close_requested.connect(func(): commands.dispatch(&"file.exit"))
+
+
+
+func _register_player_window(page: Control) -> void:
+	windows.register("player", page, "Player Maps", Callable(), "player-maps.map-records")
 
 
 func _create_views() -> void:
@@ -97,7 +102,8 @@ func _select_at(cell: Vector2i, point: Vector2, canvas: ProvidenceMapCanvas) -> 
 	if hits.is_empty(): _choose(plain)
 	elif hits.size() == 1: _choose(hits[0])
 	else:
-		var popup_point := Vector2i(canvas.global_position + point) if _owner.get_viewport().gui_embed_subwindows else Vector2i(canvas.get_screen_transform() * point)
+		var viewport_point := canvas.get_global_transform_with_canvas() * point
+		var popup_point := Vector2i(viewport_point) if _owner.get_viewport().gui_embed_subwindows else Vector2i(canvas.get_viewport().get_screen_transform() * viewport_point)
 		_chooser.present(hits, plain, popup_point)
 
 

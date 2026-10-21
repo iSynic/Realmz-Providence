@@ -1,11 +1,62 @@
 use super::*;
+use crate::rebuilt::project_rebuilt_v3_reachable_runtime;
+#[path = "tests/extra_code_tail.rs"]
+mod extra_code_tail;
 mod fixtures;
 #[path = "tests/native_tile_values.rs"]
 mod native_tile_values;
+#[path = "tests/option_captions.rs"]
+mod option_captions;
+#[path = "tests/rule_selection.rs"]
+mod rule_selection;
 use crate::model::{BlobId, LevelType, StableId};
 use fixtures::*;
 
 const MEDIA: &[u8] = b"controlled tileset payload";
+
+#[test]
+fn v7_finalization_retains_raw_slots_signed_bounds_and_safe_native_labels() {
+    let (mut snapshot, raw) = v7_slots_fixture();
+    let media_path = add_media(&mut snapshot);
+    let inputs = [RebuiltV3FileInput {
+        path: &media_path,
+        bytes: MEDIA,
+    }];
+    let application = application_media_for(&snapshot);
+    let mut artifact = compile_rebuilt_v3_document_set_with_application(
+        &snapshot,
+        &application,
+        &compiler(),
+        &inputs,
+    )
+    .unwrap();
+    let originals = BTreeMap::from([("Data ED".into(), raw.clone())]);
+    finalize_rebuilt_v7_document_set(&mut artifact, &snapshot, &compiler(), &originals, &inputs)
+        .unwrap();
+    assert_eq!(artifact.manifest.manifest.schema_version, 7);
+    let responses = &artifact.content.document.simple_encounters[0].responses;
+    assert_eq!(responses.len(), 4);
+    assert_eq!(responses[0].label, "AÄ\nB");
+    assert_eq!(responses[1].label, "Charge ahead");
+    let facts = artifact.content.document.classic_records.as_ref().unwrap();
+    assert_eq!(facts.sources[0].sha256, sha256_hex(&raw));
+    assert_eq!(facts.sources[0].layouts[0].trailing_bytes, 3);
+    assert_eq!(facts.simple[0].text_slots[1][0], 80);
+    let rectangles = &artifact.world.document.maps[0].random_rectangles;
+    assert_eq!(rectangles.len(), 20);
+    for (slot, row) in rectangles.iter().enumerate() {
+        assert_eq!(row.id.0, format!("land:0:random:{slot}"));
+        assert_eq!(
+            (row.top, row.left, row.bottom, row.right),
+            (-10, -20, -30, 120)
+        );
+        assert_eq!(row.chance_ten_thousand, slot as i16);
+    }
+    let first = artifact.manifest.canonical_json.clone();
+    finalize_rebuilt_v7_document_set(&mut artifact, &snapshot, &compiler(), &originals, &inputs)
+        .unwrap();
+    assert_eq!(artifact.manifest.canonical_json, first);
+}
 
 #[test]
 fn imported_native_monster_values_select_schema_v6_for_every_package_document() {
@@ -22,7 +73,7 @@ fn imported_native_monster_values_select_schema_v6_for_every_package_document() 
     set.monsters[0].weapon = i16::MIN;
     snapshot.monster_sets.push(set);
 
-    let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[])
+    let artifact = compile_rebuilt_document_set(&snapshot, &compiler(), &[])
         .expect("representable imported monster values use schema v6");
     assert_eq!(artifact.manifest.manifest.schema_version, 6);
     assert_eq!(
@@ -65,7 +116,7 @@ fn incomplete_extra_code_tail_uses_v6_without_fabricating_an_executable_row() {
             byte_length: 16,
         });
     add_tail_requests(&mut snapshot);
-    let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[])
+    let artifact = compile_rebuilt_document_set(&snapshot, &compiler(), &[])
         .expect("tail is guarded metadata");
     assert_eq!(artifact.manifest.manifest.schema_version, 6);
     assert_eq!(
@@ -105,8 +156,8 @@ fn incomplete_extra_code_tail_uses_v6_without_fabricating_an_executable_row() {
 
 #[test]
 fn document_set_is_deterministic_and_feeds_the_exact_manifest_inputs() {
-    let first = compile_rebuilt_v3_document_set(&snapshot(), &compiler(), &[]).unwrap();
-    let second = compile_rebuilt_v3_document_set(&snapshot(), &compiler(), &[]).unwrap();
+    let first = compile_rebuilt_document_set(&snapshot(), &compiler(), &[]).unwrap();
+    let second = compile_rebuilt_document_set(&snapshot(), &compiler(), &[]).unwrap();
     assert_eq!(first, second);
     assert_eq!(first.manifest.manifest.files.len(), 4);
     assert_eq!(first.manifest.manifest.capabilities.len(), 3);
@@ -122,7 +173,7 @@ fn document_set_is_deterministic_and_feeds_the_exact_manifest_inputs() {
     );
     assert_eq!(
         first.manifest.manifest.content_id,
-        "14d49c9819a491daefa70b18f765fc6242346a4d7c45c487798185fbc9ebe99f"
+        "794158913ed65b25098e4c8e7b1192c0728b96ec76c50bfe1e3ff2bcbd63eef1"
     );
 }
 
@@ -162,7 +213,7 @@ fn imported_invalid_start_is_preserved_and_declares_deferred_validation() {
         coordinate: crate::model::MapCoordinate { x: 90, y: 23 },
     });
 
-    let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[]).unwrap();
+    let artifact = compile_rebuilt_document_set(&snapshot, &compiler(), &[]).unwrap();
 
     assert!(
         artifact
@@ -253,14 +304,14 @@ fn layered_document_set_emits_only_scenario_owned_media() {
         path: &path,
         bytes: MEDIA,
     }];
-    let first = compile_rebuilt_v3_document_set_with_application(
+    let first = compile_rebuilt_document_set_with_application(
         &snapshot,
         &application,
         &compiler(),
         &payload,
     )
     .unwrap();
-    let second = compile_rebuilt_v3_document_set_with_application(
+    let second = compile_rebuilt_document_set_with_application(
         &snapshot,
         &application,
         &compiler(),
@@ -344,7 +395,7 @@ fn layered_document_set_ignores_invalid_encounters_outside_the_runtime_closure()
         path: &media_path,
         bytes: MEDIA,
     }];
-    let artifact = compile_rebuilt_v3_document_set_with_application(
+    let artifact = compile_rebuilt_document_set_with_application(
         &snapshot,
         &application,
         &compiler(),
@@ -364,14 +415,14 @@ fn media_payloads_must_exactly_match_the_asset_index() {
         bytes: MEDIA,
     }];
     assert!(matches!(
-        compile_rebuilt_v3_document_set(&snapshot(), &compiler(), &unexpected),
+        compile_rebuilt_document_set(&snapshot(), &compiler(), &unexpected),
         Err(RebuiltV3DocumentSetError::UnexpectedMediaPayload(_))
     ));
 
     let mut snapshot = snapshot();
     let path = add_media(&mut snapshot);
     assert_eq!(
-        compile_rebuilt_v3_document_set(&snapshot, &compiler(), &[]),
+        compile_rebuilt_document_set(&snapshot, &compiler(), &[]),
         Err(RebuiltV3DocumentSetError::MissingMediaPayload(path.clone()))
     );
 
@@ -379,7 +430,7 @@ fn media_payloads_must_exactly_match_the_asset_index() {
         path: &path,
         bytes: MEDIA,
     }];
-    let artifact = compile_rebuilt_v3_document_set(&snapshot, &compiler(), &valid).unwrap();
+    let artifact = compile_rebuilt_document_set(&snapshot, &compiler(), &valid).unwrap();
     assert_eq!(artifact.manifest.manifest.files.len(), 5);
     assert_eq!(
         artifact.manifest.manifest.capabilities,
@@ -394,7 +445,7 @@ fn media_payloads_must_exactly_match_the_asset_index() {
 
     let duplicate = [valid[0].clone(), valid[0].clone()];
     assert_eq!(
-        compile_rebuilt_v3_document_set(&snapshot, &compiler(), &duplicate),
+        compile_rebuilt_document_set(&snapshot, &compiler(), &duplicate),
         Err(RebuiltV3DocumentSetError::DuplicateMediaPayload(
             path.clone()
         ))
@@ -405,7 +456,7 @@ fn media_payloads_must_exactly_match_the_asset_index() {
         bytes: &MEDIA[..MEDIA.len() - 1],
     }];
     assert!(matches!(
-        compile_rebuilt_v3_document_set(&snapshot, &compiler(), &too_short),
+        compile_rebuilt_document_set(&snapshot, &compiler(), &too_short),
         Err(RebuiltV3DocumentSetError::MediaLengthMismatch { .. })
     ));
 
@@ -416,7 +467,7 @@ fn media_payloads_must_exactly_match_the_asset_index() {
         bytes: &mismatched_bytes,
     }];
     assert!(matches!(
-        compile_rebuilt_v3_document_set(&snapshot, &compiler(), &mismatched),
+        compile_rebuilt_document_set(&snapshot, &compiler(), &mismatched),
         Err(RebuiltV3DocumentSetError::MediaHashMismatch { .. })
     ));
 
@@ -426,7 +477,7 @@ fn media_payloads_must_exactly_match_the_asset_index() {
     alias.byte_length += 1;
     conflicting.assets.push(alias);
     assert_eq!(
-        compile_rebuilt_v3_document_set(&conflicting, &compiler(), &valid),
+        compile_rebuilt_document_set(&conflicting, &compiler(), &valid),
         Err(RebuiltV3DocumentSetError::ConflictingMediaDeclaration(path))
     );
 }
@@ -445,4 +496,117 @@ fn add_tail_requests(snapshot: &mut ProjectSnapshot) {
         .unwrap()
         .hooks
         .start_game = Some(StableId("extra-action-point:0".into()));
+}
+
+fn v7_slots_fixture() -> (ProjectSnapshot, Vec<u8>) {
+    let mut snapshot = snapshot();
+    snapshot.origin = ProjectOrigin::Imported {
+        compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
+    };
+    let mut raw = vec![0; crate::codecs::SIMPLE_ENCOUNTER_RECORD_BYTES + 3];
+    raw[96] = 1;
+    raw[106..113].copy_from_slice(&[6, b'A', 0x80, 13, b'B', 0, b'X']);
+    raw[186] = 80;
+    raw[187..199].copy_from_slice(b"Charge ahead");
+    snapshot.simple_encounters = crate::codecs::decode_simple_encounters(&raw).records;
+    snapshot.classic_sources = vec![crate::model::ClassicSourceBlob {
+        native_path: "Data ED".into(),
+        blob: BlobId(format!("sha256:{}", sha256_hex(&raw))),
+        byte_length: raw.len() as u64,
+    }];
+    let runtime = snapshot.world.maps[0].runtime.as_mut().unwrap();
+    runtime.random_rectangles = (0..20)
+        .map(|slot| crate::model::RandomRectangle {
+            identity: StableId(format!("land:0:random:{slot}")),
+            top: -10,
+            left: -20,
+            bottom: -30,
+            right: 120,
+            chance_ten_thousand: slot,
+            battle_range: [-1, -2],
+            random_doors: [0; 3],
+            random_door_percent: [0; 3],
+            only: false,
+            option: 0,
+            sound_id: 0,
+            text_id: 0,
+        })
+        .collect();
+    runtime
+        .random_rectangles
+        .sort_by_key(|row| row.identity.clone());
+    (snapshot, raw)
+}
+
+#[test]
+fn v7_missing_supplied_shop_row_fails_before_artifact_mutation() {
+    let (mut snapshot, raw) = v7_slots_fixture();
+    let media_path = add_media(&mut snapshot);
+    let inputs = [RebuiltV3FileInput {
+        path: &media_path,
+        bytes: MEDIA,
+    }];
+    let application = application_media_for(&snapshot);
+    let mut artifact = compile_rebuilt_v3_document_set_with_application(
+        &snapshot,
+        &application,
+        &compiler(),
+        &inputs,
+    )
+    .unwrap();
+    let before = artifact.clone();
+    let originals = BTreeMap::from([
+        ("Data ED".into(), raw),
+        (
+            "Data SD".into(),
+            vec![0; crate::codecs::SHOP_RECORD_BYTES + 3],
+        ),
+    ]);
+    let error = finalize_rebuilt_v7_document_set(
+        &mut artifact,
+        &snapshot,
+        &compiler(),
+        &originals,
+        &inputs,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("Data SD supplied native row 0"), "{error}");
+    assert!(error.contains("model/import preservation defect"));
+    assert!(error.contains("separate project"));
+    assert_eq!(artifact, before);
+}
+
+#[test]
+fn v7_first_native_family_fails_before_mutating_the_compiled_artifact() {
+    let (mut snapshot, raw) = v7_slots_fixture();
+    let media_path = add_media(&mut snapshot);
+    let inputs = [RebuiltV3FileInput {
+        path: &media_path,
+        bytes: MEDIA,
+    }];
+    let application = application_media_for(&snapshot);
+    let mut artifact = compile_rebuilt_v3_document_set_with_application(
+        &snapshot,
+        &application,
+        &compiler(),
+        &inputs,
+    )
+    .unwrap();
+    let before = artifact.clone();
+    snapshot.extra_action_points = crate::codecs::decode_extra_action_points(&[0; 40]).records;
+    let originals = BTreeMap::from([("Data ED".into(), raw)]);
+    let error = finalize_rebuilt_v7_document_set(
+        &mut artifact,
+        &snapshot,
+        &compiler(),
+        &originals,
+        &inputs,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(error.contains("Data ED3"), "{error}");
+    assert!(error.contains("First-family native authoring is not implemented"));
+    assert!(error.contains("Save this project"));
+    assert_eq!(artifact, before);
 }

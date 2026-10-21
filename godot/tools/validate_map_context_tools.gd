@@ -238,6 +238,7 @@ func _check_regions_and_player() -> void:
 	var page: Dictionary = await _shell._operations.run_workflow(_shell._bridge, "Read Player Maps", func(operation): return await operation.request("player-map.list", {}))
 	_expect(page.get("ok", false), "Player Map catalog must remain available")
 	if page.result.records.is_empty():
+		_shell._documents.view("player-maps.map-records")  # Its commands bind with the page.
 		await _shell._workbenches.player_map_commands.reload()
 		await _shell._workbenches.player_map_commands.create_record(); await _settle()
 		page = await _shell._operations.run_workflow(_shell._bridge, "Read created Player Map", func(operation): return await operation.request("player-map.list", {}))

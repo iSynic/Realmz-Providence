@@ -1,15 +1,12 @@
 use super::actions::{decode_action_words, encode_action_words};
 use super::bytes::{append_trailing_bytes, read_i32};
-use super::record_extents::certified_extra_action_point_extent;
 use super::types::{ClassicWorldCodecError, DecodedRecordFile, EXTRA_ACTION_POINT_RECORD_BYTES};
 use crate::model::{ExtraActionPoint, NativeRecordId, StableId};
 
 pub fn decode_extra_action_points(bytes: &[u8]) -> DecodedRecordFile<ExtraActionPoint> {
     let physical_bytes =
         bytes.len() / EXTRA_ACTION_POINT_RECORD_BYTES * EXTRA_ACTION_POINT_RECORD_BYTES;
-    let authored_bytes = certified_extra_action_point_extent(bytes)
-        .map(|extent| extent.authored_records * EXTRA_ACTION_POINT_RECORD_BYTES)
-        .unwrap_or(physical_bytes);
+    let authored_bytes = physical_bytes;
     let records = bytes[..authored_bytes]
         .chunks_exact(EXTRA_ACTION_POINT_RECORD_BYTES)
         .enumerate()
@@ -42,18 +39,6 @@ pub fn encode_extra_action_points(
                 pair[0].native_id,
             ));
         }
-    }
-    if let Some(extent) = compatibility_source.and_then(certified_extra_action_point_extent)
-        && let Some(row) = selected
-            .iter()
-            .find(|row| row.native_id.0 as usize >= extent.authored_records)
-    {
-        return Err(
-            ClassicWorldCodecError::ExtraActionPointOverlapsCertifiedTail {
-                native_id: row.native_id,
-                authored_records: extent.authored_records,
-            },
-        );
     }
     let source_body = compatibility_source
         .map(|source| {

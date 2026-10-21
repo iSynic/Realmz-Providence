@@ -22,6 +22,14 @@ pub(super) fn dispatch(
     params: Value,
 ) -> Result<Value, String> {
     match method {
+        "monster.allocate" => {
+            let allocation = session
+                .allocate_monster(required_i16(&params, "setId")?)
+                .map_err(|error| error.to_string())?;
+            Ok(
+                json!({"revision":session.revision(),"allocation":allocation,"localUntilCommit":true}),
+            )
+        }
         "monster.catalog" => monster_catalog(session, params),
         "monster.list" => monster_list(session, params),
         "monster.open" => monster_open(session, params),

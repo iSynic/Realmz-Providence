@@ -41,11 +41,6 @@ fn validate_maps(
     data_rdd: &ClassicSourceBlob,
     maps: &[MapLevel],
 ) -> Result<(), SessionError> {
-    if maps.is_empty() {
-        return Err(SessionError::InvalidClassicImport(
-            "Data DL must contain at least one dungeon level".into(),
-        ));
-    }
     if data_dl.byte_length as usize != maps.len() * MAP_LEVEL_BYTES
         || encode_dungeon_maps(maps, None)
             .map_err(|error| SessionError::InvalidClassicImport(error.to_string()))?
@@ -136,4 +131,31 @@ fn validate_action_points(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::BlobId;
+    #[test]
+    fn no_dungeon_levels_requires_three_exactly_empty_native_tables() {
+        let sources: Vec<_> = ["Data DL", "Data DDD", "Data RDD"]
+            .into_iter()
+            .map(|path| ClassicSourceBlob {
+                native_path: path.into(),
+                blob: BlobId(format!("sha256:{}", "a".repeat(64))),
+                byte_length: 0,
+            })
+            .collect();
+        validate(&sources, &[], &[]).unwrap();
+        for index in 0..3 {
+            let mut malformed = sources.clone();
+            malformed[index].byte_length = 1;
+            assert!(
+                validate(&malformed, &[], &[]).is_err(),
+                "{} must match its zero decoded rows",
+                malformed[index].native_path
+            );
+        }
+    }
 }

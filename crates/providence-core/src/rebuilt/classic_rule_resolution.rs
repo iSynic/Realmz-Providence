@@ -75,9 +75,13 @@ pub fn resolve_classic_rules(
     }
     seed_names(&mut effective, application);
     apply_names(&mut effective, snapshot, names)?;
-    crate::codecs::derive_caste_eligibility(&effective.race_rules, &mut effective.caste_rules)
-        .map_err(|error| format!("effective rule eligibility: {error}"))?;
-    let catalog = project_rebuilt_v3_rule_catalog(&effective).map_err(|error| error.to_string())?;
+    crate::codecs::derive_available_caste_eligibility(
+        &effective.race_rules,
+        &mut effective.caste_rules,
+    )
+    .map_err(|error| format!("effective rule eligibility: {error}"))?;
+    let catalog =
+        super::project_rebuilt_rule_catalog(&effective).map_err(|error| error.to_string())?;
     let races = catalog
         .races
         .into_iter()
@@ -88,13 +92,7 @@ pub fn resolve_classic_rules(
     let castes = catalog
         .castes
         .into_iter()
-        .filter(|rule| {
-            local_caste
-                || !application
-                    .castes
-                    .iter()
-                    .any(|stock| same_caste(stock, rule))
-        })
+        .filter(|rule| local_caste || !application.castes.iter().any(|stock| stock == rule))
         .collect();
     Ok(ResolvedClassicRules {
         effective_snapshot: effective,
@@ -140,46 +138,30 @@ fn validate_present_families(
     local_race: bool,
     local_caste: bool,
 ) -> Result<(), String> {
-    if local_race
-        && let Some(source) = snapshot
-            .classic_sources
-            .iter()
-            .find(|source| source.native_path == "Data Race")
-        && source.byte_length < (30 * crate::codecs::RACE_RECORD_BYTES) as u64
-    {
-        return Err(format!(
-            "Selected scenario Data Race is quarantined: {} bytes cannot supply Castle's 30 complete 408-byte records. Choose application rules or replace the malformed table.",
-            source.byte_length
-        ));
-    }
-    for (path, selected, rows) in [
-        ("Data Race", local_race, snapshot.race_rules.len()),
-        ("Data Caste", local_caste, snapshot.caste_rules.len()),
-    ] {
-        if selected
-            && snapshot
-                .classic_sources
+    use super::native_records::rules::validate_family;
+    if local_race {
+        validate_family(
+            snapshot,
+            "Data Race",
+            crate::codecs::RACE_RECORD_BYTES,
+            snapshot
+                .race_rules
                 .iter()
-                .any(|source| source.native_path == path)
-            && rows != 30
-        {
-            return Err(format!(
-                "selected scenario {path} must contain 30 usable records; found {rows}"
-            ));
-        }
+                .map(|row| (row.definition.classic_id, row.source_blob.as_ref())),
+        )?;
+    }
+    if local_caste {
+        validate_family(
+            snapshot,
+            "Data Caste",
+            crate::codecs::CASTE_RECORD_BYTES,
+            snapshot
+                .caste_rules
+                .iter()
+                .map(|row| (row.definition.classic_id, row.source_blob.as_ref())),
+        )?;
     }
     Ok(())
-}
-
-fn same_caste(
-    left: &crate::model::CasteRuleDefinition,
-    right: &crate::model::CasteRuleDefinition,
-) -> bool {
-    let mut left = left.clone();
-    let mut right = right.clone();
-    left.eligible_race_ids.sort();
-    right.eligible_race_ids.sort();
-    left == right
 }
 
 fn scenario_family_present(snapshot: &ProjectSnapshot, path: &str, race: bool) -> bool {

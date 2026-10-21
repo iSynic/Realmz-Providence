@@ -14,6 +14,7 @@ pub(super) fn compile(
     payloads: &BTreeMap<String, Vec<u8>>,
     manifest: &mut NativeManifest,
 ) -> Result<(), ClassicSliceCompileError> {
+    validate_fresh_music(snapshot, payloads)?;
     for (path, blob, bytes) in compile_scenario_music_files(&snapshot.assets, payloads)
         .map_err(ClassicSliceCompileError::ScenarioMusic)?
     {
@@ -42,6 +43,24 @@ pub(super) fn compile(
         // optional imports have no runtime asset and must still round-trip exactly.
         if scenario_music_asset((index + 1) as u8, source.bytes, retained.blob.clone()).is_err() {
             manifest.insert_preserved(*path, retained.blob.clone(), source.bytes.to_vec());
+        }
+    }
+    Ok(())
+}
+
+fn validate_fresh_music(
+    snapshot: &ProjectSnapshot,
+    payloads: &BTreeMap<String, Vec<u8>>,
+) -> Result<(), ClassicSliceCompileError> {
+    if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+        return Ok(());
+    }
+    for asset in snapshot.assets.iter().filter(|asset| asset.kind == "music") {
+        // Missing payload/slot diagnostics remain owned by the shared export path.
+        if let (Some(slot), Some(bytes)) = (asset.scenario_music_slot, payloads.get(&asset.blob.0))
+        {
+            scenario_music_asset(slot, bytes, asset.blob.clone())
+                .map_err(ClassicSliceCompileError::ScenarioMusic)?;
         }
     }
     Ok(())

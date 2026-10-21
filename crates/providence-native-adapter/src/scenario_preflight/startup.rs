@@ -26,7 +26,7 @@ pub(crate) fn resolve_startup_file_selected(
     let preferred = directory.join(scenario_name);
     if preferred.is_file() {
         validate_startup_candidate(&preferred, scenario_name)?;
-        return Ok(preferred);
+        return actual_startup_path(&preferred);
     }
 
     let candidates = startup_candidates(directory, scenario_name)?;
@@ -74,7 +74,13 @@ fn selected_startup(
         .to_string());
     }
     validate_startup_candidate(&selected_path, scenario_name)?;
-    Ok(selected_path)
+    actual_startup_path(&selected_path)
+}
+
+fn actual_startup_path(path: &Path) -> Result<PathBuf, String> {
+    let canonical = fs::canonicalize(path).map_err(|error| error.to_string())?;
+    let name = canonical.file_name().ok_or("Startup filename is missing")?;
+    Ok(path.with_file_name(name))
 }
 
 fn startup_candidates(directory: &Path, scenario_name: &str) -> Result<Vec<PathBuf>, String> {

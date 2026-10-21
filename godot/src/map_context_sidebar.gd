@@ -32,7 +32,7 @@ var _tool_mode := "select"
 var _canvas_active := false
 var _paint_available := false
 var _brush_controls := false
-const AUTHORING_TOOLS := {"ActionPointsTool":"action-point", "BucketTool":"fill", "WandTool":"wand", "StampTool":"stamp", "PanTool":"pan", "SampleTool":"sample", "EraseTool":"erase", "PaintOptions":"shapes", "SmartTool":"smart", "MagicTool":"magic"}
+const AUTHORING_TOOLS := {"ActionPointsTool":"action-point", "BucketTool":"fill", "WandTool":"wand", "StampTool":"stamp", "PanTool":"pan", "SampleTool":"sample", "EraseTool":"erase", "PaintOptions":"shapes", "SmartTool":"smart", "MagicTool":"magic", "GenerateTool":"generate"}
 
 
 func _ready() -> void:
@@ -157,7 +157,7 @@ func _refresh_controls() -> void:
 	for node: String in AUTHORING_TOOLS:
 		var tool: String = AUTHORING_TOOLS[node]
 		var button: Button = get_node("%" + node)
-		button.disabled = not ready or dungeon and tool in ["fill", "erase", "shapes", "smart", "magic"] or not dungeon and not _paint_available and tool in ["fill", "erase", "sample", "stamp", "shapes", "magic"]
+		button.disabled = not ready or dungeon and tool in ["fill", "erase", "shapes", "smart", "magic", "generate"] or not dungeon and not _paint_available and tool in ["fill", "erase", "sample", "stamp", "shapes", "magic", "generate"]
 		button.tooltip_text = "This tool requires an open editable map." if not ready else "Use Dungeon Draw to edit cell flags." if dungeon and button.disabled else "Tile artwork is unavailable. Open Assets to inspect it." if button.disabled else str(button.get_meta("available_help", ""))
 	%ActionPointsTool.disabled = not ready
 	if selected.is_empty():

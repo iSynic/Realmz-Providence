@@ -119,6 +119,38 @@ impl std::error::Error for RebuiltV3SpellCatalogError {}
 pub fn project_rebuilt_v3_spell_catalog(
     snapshot: &ProjectSnapshot,
 ) -> Result<Vec<RebuiltV3SpellDefinition>, RebuiltV3SpellCatalogError> {
+    if matches!(
+        snapshot.origin,
+        crate::model::ProjectOrigin::Imported { .. }
+    ) {
+        let expected = snapshot
+            .classic_sources
+            .iter()
+            .find(|source| source.native_path == "Data Spell")
+            .map(|source| {
+                (source.byte_length / crate::codecs::SPELL_RECORD_BYTES as u64)
+                    .min(crate::codecs::MAX_TYPED_SCENARIO_SPELL_RECORDS as u64)
+                    as usize
+            })
+            .unwrap_or(snapshot.scenario_spells.len());
+        // misc.c loads exactly 7*15 custom rows. Physical overflow stays in the
+        // model and retained source; it cannot create additional runtime banks.
+        let mut projected = project_spell_rows(&snapshot.scenario_spells, expected, |index| {
+            crate::codecs::scenario_spell_physical_classic_id(usize::from(index))
+        })?;
+        if snapshot
+            .scenario_spells
+            .iter()
+            .enumerate()
+            .any(|(index, row)| usize::from(row.definition.record_index) != index)
+        {
+            return Err(RebuiltV3SpellCatalogError::RecordIndexOutOfRange(
+                expected as u16,
+            ));
+        }
+        projected.truncate(SCENARIO_SPELL_RECORDS);
+        return Ok(projected);
+    }
     project_spell_rows(
         &snapshot.scenario_spells,
         SCENARIO_SPELL_RECORDS,

@@ -114,6 +114,7 @@ fn measured_open_preserves_snapshot_revision_and_undo_without_persisting_timing(
         })
         .unwrap();
     assert_eq!(measured.snapshot().messages[0].text, "Before");
+    drop(reopened);
     let (_, ordinary) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(ordinary.snapshot(), session.snapshot());
     assert_eq!(ordinary.revision(), session.revision());

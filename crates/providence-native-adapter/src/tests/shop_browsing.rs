@@ -59,7 +59,7 @@ fn read(session: &mut EditorSession, store: &ProjectStore, method: &str, params:
 fn shop_browsing_filters_before_paging_without_hiding_valid_extensions() {
     let (_temporary, store, mut session, _) = fixture();
     let all = read(&mut session, &store, "shop.list", json!({"offset": 128}));
-    assert_eq!(all["total"], 132);
+    assert_eq!(all["total"], 262);
     assert_eq!(all["items"][2]["nativeId"], 130);
     let filtered = read(
         &mut session,
@@ -67,15 +67,31 @@ fn shop_browsing_filters_before_paging_without_hiding_valid_extensions() {
         "shop.list",
         json!({"problemsOnly": true, "limit": 1}),
     );
-    assert_eq!(filtered["total"], 1);
-    assert_eq!(filtered["allTotal"], 132);
+    assert_eq!(filtered["total"], 2);
+    assert_eq!(filtered["allTotal"], 262);
     assert_eq!(filtered["items"][0]["nativeId"], 130);
-    assert_eq!(filtered["truncated"], false);
+    assert_eq!(filtered["truncated"], true);
+    let next = read(
+        &mut session,
+        &store,
+        "shop.list",
+        json!({"problemsOnly":true,"offset":1,"limit":1}),
+    );
+    assert_eq!(next["items"][0]["nativeId"], 132);
+    let unverified = read(&mut session, &store, "shop.unverified.list", json!({}));
+    assert_eq!(unverified["total"], 0);
+    assert_eq!(
+        read(&mut session, &store, "shop.open", json!({"nativeId":132}))["shop"]["nativeId"],
+        132
+    );
 }
 
 #[test]
-fn shop_browsing_exposes_bounded_read_only_source_reasons_and_exact_callers() {
+fn older_model_omissions_have_bounded_source_reasons_and_exact_callers() {
     let (_temporary, store, mut session, bytes) = fixture();
+    let mut older_model = session.snapshot().clone();
+    older_model.shops.retain(|row| row.native_id.0 < 132);
+    session = EditorSession::new(older_model);
     let before = session.snapshot().clone();
     let page = read(
         &mut session,
@@ -130,6 +146,7 @@ fn shop_browsing_exposes_bounded_read_only_source_reasons_and_exact_callers() {
 fn shop_browsing_retained_authored_conflicts_are_not_relabelled_as_quarantined() {
     let (_temporary, store, mut session, _) = fixture();
     let mut snapshot = session.snapshot().clone();
+    snapshot.shops.retain(|row| row.native_id.0 < 132);
     let mut shop = snapshot.shops[0].clone();
     shop.identity = StableId("shop:132".into());
     shop.native_id = NativeRecordId(132);

@@ -247,15 +247,15 @@ func _exercise_apply_failures(shell) -> void:
 	await shell._navigation.select_tab(2)
 	await _settle()
 	var response: TextEdit = (shell._documents.view("encounters.simple")._response_controls[2] as Dictionary).text
-	response.text = "A non-ASCII café"
+	response.text = "é".repeat(80)
 	controller.request_show()
 	var requests: int = shell._bridge.methods.size()
 	controller.guard.get_ok_button().pressed.emit()
 	await _settle()
-	_check(controller.guard.dialog_text.contains("Option 3 contains unsupported characters") and shell._bridge.methods.size() == requests, "Invalid Response 3 lost its cause or sent a mutation")
+	_check(controller.guard.dialog_text.contains("Option 3 exceeds the 79-byte Classic limit") and shell._bridge.methods.size() == requests, "Invalid Response 3 lost its cause or sent a mutation")
 	controller.guard.get_cancel_button().pressed.emit()
 	await _settle()
-	_check(root.gui_get_focus_owner() == response and response.text == "A non-ASCII café", "Keep Editing lost the invalid third response")
+	_check(root.gui_get_focus_owner() == response and response.text == "é".repeat(80), "Keep Editing lost the invalid third response")
 	controller.request_show()
 	controller.guard.custom_action.emit(&"discard")
 	await shell._navigation.select_tab(5)
@@ -316,7 +316,7 @@ func _exercise_invalid_xap_target(shell, controller, xap: Control) -> void:
 	await xap._semantic_steps.focus_source_target(5)
 	var xap_target := _semantic_target(xap)
 	var xap_mutations := _method_count(shell._bridge.methods, "extra-action-point.apply-draft")
-	await _set_semantic_target(xap, 40000)
+	await _prepare_invalid_target(xap, 40000)
 	_target_focus(_semantic_target(xap)).grab_focus()
 	controller.request_show()
 	controller.guard.get_ok_button().pressed.emit()
@@ -359,6 +359,19 @@ func _set_semantic_target(editor: Control, value: int) -> void:
 	if editor is ProvidenceSimpleEncounterEditor:
 		editor._step_dialog.accept()
 		await _settle()
+
+
+func _prepare_invalid_target(editor: Control, value: int) -> void:
+	var workbench = editor._semantic_steps
+	var control: Control = workbench._field_controls.targetNativeId.control
+	var previous := ProvidenceActionFieldRenderer.value_of(control)
+	_check(not workbench._field_renderer.accept_target("targetNativeId", value), "The picker accepted an out-of-range target")
+	_check(ProvidenceActionFieldRenderer.value_of(control) == previous, "The rejected picker choice changed the draft")
+	# Prepare an invalid local draft below the bounded catalog-selection handler.
+	_check(control is Button, "Expected the Extra AP target picker")
+	control.set_meta("value", value)
+	workbench._on_field_changed("targetNativeId", value, "action")
+	await _settle()
 
 
 func _method_count(methods: Array[String], method: String) -> int:

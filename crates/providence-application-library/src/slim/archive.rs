@@ -11,7 +11,10 @@ pub(super) fn read_archive_files(bytes: &[u8]) -> Result<BTreeMap<String, Vec<u8
     let mut files = BTreeMap::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
-        let path = entry.name().to_string();
+        let path = entry
+            .name()
+            .map_err(|error| error.to_string())?
+            .into_owned();
         let mut payload = Vec::with_capacity(entry.size() as usize);
         entry
             .read_to_end(&mut payload)
@@ -64,7 +67,12 @@ pub(super) fn supported_schema_contract(version: u8, hash: &str, project_origin:
         (5, providence_core::rebuilt::REBUILT_V5_SCHEMA_SHA256) if project_origin == "imported" => {
             true
         }
-        (6, providence_core::rebuilt::REBUILT_V6_SCHEMA_SHA256) if project_origin == "imported" => {
+        (6, providence_core::rebuilt::REBUILT_V6_SCHEMA_SHA256)
+            if matches!(project_origin, "imported" | "authored") =>
+        {
+            true
+        }
+        (7, providence_core::rebuilt::REBUILT_V7_SCHEMA_SHA256) if project_origin == "imported" => {
             true
         }
         _ => false,

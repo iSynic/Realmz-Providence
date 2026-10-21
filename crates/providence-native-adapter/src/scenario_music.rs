@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use providence_core::{
-    codecs::{SCENARIO_MUSIC_FILES, scenario_music_asset},
+    codecs::{SCENARIO_MUSIC_FILES, imported_scenario_music_asset},
     session::{EditorCommand, EditorSession, ExpectedRevisionCommand},
 };
 use providence_storage::ProjectStore;
@@ -29,7 +29,7 @@ pub(super) fn import_into(
         let bytes = crate::import_inputs::read(&path)
             .map_err(|error| format!("could not read {name}: {error}"))?;
         let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
-        match scenario_music_asset(index as u8 + 1, &bytes, blob) {
+        match imported_scenario_music_asset(index as u8 + 1, &bytes, blob) {
             Ok(asset) => assets.push(asset),
             Err(error) => omissions.push(ScenarioMusicOmission {
                 native_path: name.to_string(),
@@ -111,5 +111,26 @@ mod tests {
         assert_eq!(omissions[0].native_path, "Custom 3 Music");
         assert!(!omissions[0].reason.is_empty());
         assert_eq!(session.snapshot(), &prior);
+    }
+    #[test]
+    fn native_import_retains_opaque_madg_slot_and_payload_without_mod_identity() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("scenario");
+        fs::create_dir(&directory).unwrap();
+        let bytes = b"MADGopaque supplied source";
+        fs::write(directory.join("Custom 2 Music"), bytes).unwrap();
+        let snapshot = ProjectSnapshot::new_authored(StableId("music-import".into()));
+        let store = ProjectStore::create(temp.path().join("project"), &snapshot).unwrap();
+        let mut session = EditorSession::new(snapshot);
+        assert!(
+            import_into(&mut session, &store, &directory)
+                .unwrap()
+                .is_empty()
+        );
+        let asset = &session.snapshot().assets[0];
+        assert_eq!(asset.scenario_music_slot, Some(2));
+        assert_eq!(asset.mime_type.as_deref(), Some("audio/x-mad"));
+        assert!(asset.classic_resource.is_none());
+        assert_eq!(store.read_blob(&asset.blob).unwrap(), bytes);
     }
 }

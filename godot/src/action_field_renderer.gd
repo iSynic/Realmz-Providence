@@ -2,18 +2,24 @@ class_name ProvidenceActionFieldRenderer
 extends RefCounted
 
 const Presentation = preload("res://src/action_step_presentation.gd")
+const ReferenceBehavior = preload("res://src/action_reference_behavior.gd")
 
 signal changed(key: String, value: int, binding: String)
 signal search_requested(key: String, kind: String)
 signal open_requested(kind: String, value: int, identity: String, context: Dictionary)
 signal preview_requested(kind: String, value: int, identity: String, status: String)
+signal selection_rejected(message: String)
 
 var controls := {}
+var pending_behavior_focus := ""
 var _missing_settings := false
+var _description_pending := false
 
 
 func render(form: GridContainer, description: Dictionary, missing_settings := false) -> void:
 	controls.clear()
+	_description_pending = false
+	pending_behavior_focus = ""
 	_missing_settings = missing_settings
 	var groups := (description.get("authoring", {}) as Dictionary).get("controls", []) as Array
 	var members := {}
@@ -115,6 +121,10 @@ func _add_field(form: GridContainer, field: Dictionary, binding: String) -> void
 	if multiple: decorated["preview"] = null
 	Presentation.decorate_field(group, caption, control, decorated, true)
 	if multiple: _add_uses(group, field)
+	controls[key]["behaviorControl"] = ReferenceBehavior.add(group, control, rendered,
+		func(value):
+			pending_behavior_focus = key
+			changed.emit(key, value, binding))
 	form.add_child(group)
 
 
@@ -233,13 +243,31 @@ func _add_value_picker_source_command(row: HBoxContainer, control: Control, fiel
 	row.add_child(open)
 
 
-func accept_target(key: String, value: int) -> void:
-	if not controls.has(key): return
+func mark_description_pending() -> void:
+	_description_pending = true
+	for descriptor in controls.values():
+		var checkbox = descriptor.get("behaviorControl")
+		if checkbox is CheckBox: checkbox.disabled = true
+
+
+func accept_target(key: String, value: int, kind := "") -> bool:
+	if not controls.has(key): return false
 	var descriptor := controls[key] as Dictionary
 	var control := descriptor.control as Control
-	control.set_meta("value", value)
-	if control is SpinBox: control.set_value_no_signal(value)
+	if _description_pending or ReferenceBehavior.value_of(control) != int(descriptor.field.value):
+		selection_rejected.emit("Wait for the updated action settings before choosing another resource.")
+		return false
+	var selected := ReferenceBehavior.selection(descriptor.field, value,
+		kind if not kind.is_empty() else str(descriptor.field.get("targetKind", "")))
+	if not bool(selected.ok):
+		selection_rejected.emit(str(selected.error))
+		return false
+	value = int(selected.value)
+	ReferenceBehavior.set_value(control, value)
+	var behavior_control = descriptor.get("behaviorControl")
+	if behavior_control is CheckBox: behavior_control.disabled = true
 	changed.emit(key, value, str(descriptor.row))
+	return true
 
 
 static func preview_identity(field: Dictionary) -> String:
@@ -253,6 +281,4 @@ static func preview_status(field: Dictionary) -> String:
 
 
 static func value_of(control: Control) -> int:
-	if control is OptionButton: return int(control.get_item_metadata(control.selected))
-	if control is SpinBox: return int(control.value)
-	return int(control.get_meta("value", 0))
+	return ReferenceBehavior.value_of(control)

@@ -63,6 +63,7 @@ fn previous_permissions(
             .unwrap_or_default(),
         RuleKind::Caste => races
             .iter()
+            .take(crate::codecs::CLASSIC_RACE_RECORDS)
             .filter(|r| {
                 r.definition
                     .eligible_caste_ids

@@ -3,11 +3,11 @@ use providence_core::rebuilt::RebuiltV3CompilerIdentity;
 use providence_core::rebuilt::RebuiltV3DocumentSetArtifact;
 use providence_core::rebuilt::RebuiltV3FileInput;
 use providence_core::rebuilt::RebuiltV3ManifestArtifact;
-use providence_core::rebuilt::compile_rebuilt_v3_document_set;
-use providence_core::rebuilt::compile_rebuilt_v3_document_set_with_application;
+use providence_core::rebuilt::compile_rebuilt_document_set;
+use providence_core::rebuilt::compile_rebuilt_document_set_with_application;
 use providence_core::rebuilt::project_rebuilt_v3_asset_index;
 use providence_core::rebuilt::project_rebuilt_v3_reachable_media_with_application;
-use providence_core::rebuilt::project_rebuilt_v3_reachable_runtime;
+use providence_core::rebuilt::project_rebuilt_v3_runtime;
 use providence_core::session::EditorSession;
 use providence_rebuilt_package::write_rebuilt_v3_archive;
 use providence_storage::ProjectStore;
@@ -27,8 +27,7 @@ pub(crate) fn compile_stored_rebuilt_package(
         &selection.effective_snapshot
     });
     let selected_assets = if let Some(application_media) = application_media {
-        let runtime =
-            project_rebuilt_v3_reachable_runtime(snapshot).map_err(|error| error.to_string())?;
+        let runtime = project_rebuilt_v3_runtime(snapshot).map_err(|error| error.to_string())?;
         project_rebuilt_v3_reachable_media_with_application(
             snapshot,
             application_media,
@@ -44,12 +43,12 @@ pub(crate) fn compile_stored_rebuilt_package(
     } else {
         project_rebuilt_v3_asset_index(snapshot).map_err(|error| error.to_string())?
     };
-    let media = read_rebuilt_media_index(store, &selected_assets)?;
+    let mut media = read_rebuilt_media_index(store, &selected_assets)?;
     let media_inputs = media
         .iter()
         .map(|(path, bytes)| RebuiltV3FileInput { path, bytes })
         .collect::<Vec<_>>();
-    let artifact = if let Some(selection) = selection {
+    let mut artifact = if let Some(selection) = selection {
         providence_core::rebuilt::compile_rebuilt_document_set_with_selected_rules(
             selection,
             application_media.ok_or("selected Classic rules require application media")?,
@@ -57,16 +56,24 @@ pub(crate) fn compile_stored_rebuilt_package(
             &media_inputs,
         )
     } else if let Some(application_media) = application_media {
-        compile_rebuilt_v3_document_set_with_application(
+        compile_rebuilt_document_set_with_application(
             snapshot,
             application_media,
             identity,
             &media_inputs,
         )
     } else {
-        compile_rebuilt_v3_document_set(snapshot, identity, &media_inputs)
+        compile_rebuilt_document_set(snapshot, identity, &media_inputs)
     }
     .map_err(|error| error.to_string())?;
+    crate::rebuilt_source_publication::finalize_sources(
+        session.snapshot(),
+        store,
+        identity,
+        &mut artifact,
+        &mut media,
+        selection,
+    )?;
     Ok(StoredRebuiltPackage { artifact, media })
 }
 

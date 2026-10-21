@@ -26,7 +26,13 @@ impl ProjectStore {
     pub fn open_session_measured(
         root: impl Into<PathBuf>,
     ) -> Result<(Self, EditorSession, ProjectOpenTiming), StoreError> {
-        let store = Self::at_root(root.into());
+        let mut store = Self::at_root(root.into());
+        if !store.snapshot_path().is_file() {
+            return Err(crate::StoreError::MissingSnapshot(store.snapshot_path()));
+        }
+        store.writer = Some(std::sync::Arc::new(crate::ProjectWriterLock::acquire(
+            &store.root,
+        )?));
         let started = Instant::now();
         let snapshot = store.load_snapshot()?;
         let snapshot_load_ms = started.elapsed().as_secs_f64() * 1000.0;

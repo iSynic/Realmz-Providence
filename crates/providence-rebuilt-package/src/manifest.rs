@@ -5,7 +5,8 @@ use crate::{
 use providence_core::rebuilt::{
     REBUILT_V3_REQUIRED_DOCUMENTS, REBUILT_V3_SCHEMA_SHA256, REBUILT_V3_SUPPORTED_CAPABILITIES,
     REBUILT_V4_SCHEMA_SHA256, REBUILT_V5_SCHEMA_SHA256, REBUILT_V6_SCHEMA_SHA256,
-    RebuiltV3Manifest, is_rebuilt_v3_package_path, rebuilt_v3_media_digest,
+    REBUILT_V7_SCHEMA_SHA256, RebuiltV3Manifest, is_rebuilt_v3_package_path,
+    rebuilt_v3_media_digest,
 };
 use std::collections::BTreeSet;
 
@@ -28,8 +29,10 @@ fn validate_schema(manifest: &RebuiltV3Manifest) -> Result<(), RebuiltV3ArchiveE
                 | (4, REBUILT_V4_SCHEMA_SHA256)
                 | (5, REBUILT_V5_SCHEMA_SHA256)
                 | (6, REBUILT_V6_SCHEMA_SHA256)
+                | (7, REBUILT_V7_SCHEMA_SHA256)
         )
-        || manifest.schema_version >= 4 && manifest.compiler.project_origin != "imported"
+        || matches!(manifest.schema_version, 4 | 5 | 7)
+            && manifest.compiler.project_origin != "imported"
     {
         return Err(RebuiltV3ArchiveError::InvalidManifest(
             "kind, format, version, schema hash, or imported-schema origin is invalid".into(),

@@ -31,6 +31,9 @@ var _commit_was_disabled := true
 var _manual
 var _code_helper
 var _discovery
+var _offline_help
+var _connections
+var _display
 var project_guard: Callable
 
 
@@ -53,6 +56,9 @@ func initialize(bar: ProvidenceCommandBar, palette: ProvidenceCommandPalette, op
 	bar.commit_requested.connect(commit_requested.emit)
 	operations.busy_changed.connect(_busy_changed)
 	operations.completed.connect(_operation_completed)
+	_display = get_node("/root/DisplaySettings")
+	_display.changed.connect(refresh)
+	_display.status_changed.connect(status_changed.emit)
 
 
 func configure_workspace(navigation, presentation, maps, issues, preview, layout, explorer: Control, inspector: Control, dock: ProvidenceProblemsDock) -> void:
@@ -81,9 +87,9 @@ func configure_session(session, drafts, read_bridge: Callable, guard: Callable, 
 	_discovery.initialize(_operations, _session.context, _read_bridge, _navigation, _registry, _tabs)
 	_discovery.editor_provider = drafts.current_editor
 	for route in ["rules.races", "rules.castes", "scripts.global-macros", "scripts.quests", "text.messages", "scripts.action-points", "scripts.macros", "encounters.simple", "encounters.complex", "encounters.rogue", "encounters.timed", "economy.treasure", "economy.shops"]:
-		var view = _registry.view(route)
-		view.discovery_requested.connect(_open_authoring_links.bind(view, route))
-		_discovery.register_flow_entry(view, route)
+		_registry.on_realize(route, func(view: Control):
+			view.discovery_requested.connect(_open_authoring_links.bind(view, route))
+			_discovery.register_flow_entry(view, route))
 
 func _open_authoring_links(direction: String, origin: Control, route: String) -> void:
 	var selection := preload("res://src/discovery_selection.gd").record(origin, route)
@@ -104,6 +110,60 @@ func configure_help(manual, code_helper) -> void:
 	_manual = manual
 	_code_helper = code_helper
 	if _discovery != null: _discovery.configure_help(code_helper)
+	_offline_help = preload("res://src/offline_help_controller.tscn").instantiate()
+	add_child(_offline_help)
+	_offline_help.initialize(_help_commands, _help_availability, _request_help_route)
+	_navigation.navigation_canceled.connect(_offline_help.navigation_canceled)
+
+
+func configure_collaboration(session, drafts, read_bridge: Callable, read_context: Callable, status_button: Button) -> void:
+	_connections = preload("res://src/mcp_connections_controller.tscn").instantiate()
+	add_child(_connections)
+	_connections.initialize(session, drafts, read_bridge, read_context, _go_to_shared_draft)
+	_connections.bind_status(status_button)
+	_connections.status_changed.connect(status_changed.emit)
+
+
+func _go_to_shared_draft(editor: Control) -> void:
+	if editor == null: return
+	var tab := _tabs.get_children().find(editor)
+	if tab >= 0: await _navigation.select_tab(tab)
+	elif editor.get_window() != get_window(): editor.get_window().grab_focus()
+	if editor.is_visible_in_tree(): editor.grab_focus()
+
+
+func _help_availability() -> Dictionary:
+	var reason := "Open a project to use this editor."
+	if _operations.busy: reason = "Wait for the current operation before opening an editor."
+	elif _operations.requires_reopen: reason = "Reopen the project before opening an editor."
+	elif _issues.active_authoring_dialog() != null: reason = "Finish the open authoring dialog before opening another editor."
+	else: return {"allowed": _session.connected and _read_bridge.call().is_project_backed(), "reason": reason}
+	return {"allowed": false, "reason": reason}
+
+
+func _help_commands() -> Array:
+	refresh()
+	return _menu.command_catalog()
+
+
+func _request_help_route(route: String, title: String, finished: Callable) -> void:
+	if not _help_availability().allowed:
+		_offline_help.navigation_canceled()
+		return
+	await _guard.call(_open_help_route.bind(route, title, finished), "opening " + title)
+
+
+func _open_help_route(route: String, title: String, finished: Callable) -> void:
+	if not _help_availability().allowed:
+		_offline_help.navigation_canceled()
+		return
+	await _navigation.route_requested(route, "asset-scenario" if route == "assets.project-assets" else "", "    " + title)
+	finished.call()
+
+
+func _focused_control() -> Control:
+	var help_focus: Control = _offline_help.focused_control() if _offline_help != null else null
+	return help_focus if help_focus != null else get_viewport().gui_get_focus_owner()
 
 
 func refresh() -> void:
@@ -124,14 +184,24 @@ func refresh() -> void:
 		"documentTab": _tabs.current_tab, "selectedMap": _maps.document.identity,
 		"explorerVisible": _explorer.visible, "inspectorVisible": _inspector_visible(),
 		"centeredWorkspace": _layout.centered_workspace(),
+		"uiScale": _display.describe(),
 		"tabCount": _tabs.get_tab_count(), "previewTargetAvailable": available.targetAvailable,
 		"previewAvailable": available.available, "previewUnavailableReason": available.reason,
 		"hasUnappliedDraft": _drafts.has_draft(), "canNavigateBack": _navigation.can_go_back(),
+		"textCommands": preload("res://src/text_edit_commands.gd").availability(_focused_control()),
 		"canNavigateForward": _navigation.can_go_forward()})
 	_menu.set_flow_available(_session.connected and not _operations.requires_reopen and _discovery.can_open_current_flow())
 
 
 func dispatch(command: StringName) -> void:
+	if _display != null and _display.handles(command):
+		_display.execute(command)
+		refresh()
+		return
+	if _offline_help != null and _offline_help.handles(command):
+		refresh()
+		_offline_help.open_command(command)
+		return
 	if _operations.busy or _issues.guard_repair_command(command): return
 	if command in [&"edit.find-global", &"navigate.go-to-entity", &"navigate.find-uses", &"navigate.view-flow", &"navigate.used-by", &"view.links-uses"] and (not _session.connected or _operations.requires_reopen): return
 	if _project_actions.has(command):
@@ -144,6 +214,8 @@ func dispatch(command: StringName) -> void:
 
 func _workspace_command(command: StringName) -> void:
 	match command:
+		&"tools.mcp-connections": _connections.open()
+		&"edit.cut", &"edit.copy", &"edit.paste", &"edit.delete": preload("res://src/text_edit_commands.gd").execute(command, _focused_control())
 		&"file.preview-rebuilt": await _preview.start()
 		&"edit.undo": await _request_history("undo")
 		&"edit.redo": await _request_history("redo")
@@ -200,6 +272,9 @@ func show_palette() -> void:
 
 
 func _palette_command(command: String) -> void:
+	if _offline_help != null and _offline_help.handles(command):
+		dispatch(command)
+		return
 	var land: ProvidenceLandEditor = _registry.view("maps.land")
 	match command:
 		"navigate.view-flow": await _discovery.open_current_flow()

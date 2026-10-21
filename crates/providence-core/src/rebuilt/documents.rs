@@ -3,19 +3,25 @@ use std::collections::{BTreeMap, BTreeSet};
 use sha2::{Digest, Sha256};
 
 use crate::model::{ProjectOrigin, ProjectSnapshot};
+mod native_presence;
+mod native_records;
+pub use native_records::{
+    finalize_rebuilt_v7_document_set, finalize_rebuilt_v7_document_set_with_rule_sources,
+    finalize_rebuilt_v7_document_set_with_selected_rules,
+};
 
 use super::{
     ApplicationMediaCatalog, RebuiltV3AssetError, RebuiltV3AssetIndex, RebuiltV3CompilerIdentity,
     RebuiltV3ContentArtifact, RebuiltV3ContentError, RebuiltV3FileInput, RebuiltV3ManifestArtifact,
     RebuiltV3ManifestError, RebuiltV3ReachableMediaError, RebuiltV3ReachableRuntimeError,
     RebuiltV3ScenarioDocument, RebuiltV3ScenarioError, RebuiltV3WorldArtifact, RebuiltV3WorldError,
-    canonical::canonical_json_bytes, compile_rebuilt_v3_content, compile_rebuilt_v3_manifest,
+    canonical::canonical_json_bytes, compile_rebuilt_content, compile_rebuilt_v3_manifest,
     compile_rebuilt_v3_reachable_content, compile_rebuilt_v3_reachable_world_with_application,
     compile_rebuilt_v3_world, compile_rebuilt_v4_manifest, compile_rebuilt_v5_manifest,
-    compile_rebuilt_v6_manifest, imported_extra_code_tail, imported_requires_rebuilt_v4,
-    is_missing_imported_presentation_reference, project_rebuilt_v3_asset_index,
-    project_rebuilt_v3_reachable_media_with_application, project_rebuilt_v3_reachable_runtime,
-    project_rebuilt_v3_scenario,
+    compile_rebuilt_v6_manifest, compile_rebuilt_v7_manifest, imported_extra_code_tail,
+    imported_requires_rebuilt_v4, is_missing_imported_presentation_reference,
+    project_rebuilt_v3_asset_index, project_rebuilt_v3_reachable_media_with_application,
+    project_rebuilt_v3_runtime, project_rebuilt_v3_scenario,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,6 +32,12 @@ pub struct RebuiltV3DocumentSetArtifact {
     pub asset_index_json: Vec<u8>,
     pub manifest: RebuiltV3ManifestArtifact,
 }
+
+mod export_contract;
+use export_contract::ExportContract;
+pub use export_contract::{
+    compile_rebuilt_v3_document_set, compile_rebuilt_v3_document_set_with_application,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RebuiltV3DocumentSetError {
@@ -103,17 +115,33 @@ impl std::fmt::Display for RebuiltV3DocumentSetError {
 
 impl std::error::Error for RebuiltV3DocumentSetError {}
 
-pub fn compile_rebuilt_v3_document_set(
+/// Current scenario export, including complete signed native map words.
+pub fn compile_rebuilt_document_set(
     snapshot: &ProjectSnapshot,
     compiler_identity: &RebuiltV3CompilerIdentity,
     media_payloads: &[RebuiltV3FileInput<'_>],
 ) -> Result<RebuiltV3DocumentSetArtifact, RebuiltV3DocumentSetError> {
+    compile_document_set(
+        snapshot,
+        compiler_identity,
+        media_payloads,
+        ExportContract::Current,
+    )
+}
+
+fn compile_document_set(
+    snapshot: &ProjectSnapshot,
+    compiler_identity: &RebuiltV3CompilerIdentity,
+    media_payloads: &[RebuiltV3FileInput<'_>],
+    contract: ExportContract,
+) -> Result<RebuiltV3DocumentSetArtifact, RebuiltV3DocumentSetError> {
     if imported_requires_rebuilt_v4(snapshot) || imported_extra_code_tail(snapshot).is_some() {
-        let runtime = project_rebuilt_v3_reachable_runtime(snapshot)
-            .map_err(RebuiltV3DocumentSetError::Runtime)?;
+        let runtime =
+            project_rebuilt_v3_runtime(snapshot).map_err(RebuiltV3DocumentSetError::Runtime)?;
         let content = compile_rebuilt_v3_reachable_content(snapshot, &runtime)
             .map_err(RebuiltV3DocumentSetError::Content)?;
-        let world = super::compile_rebuilt_v3_reachable_world(snapshot, &runtime)
+        let world = contract
+            .reachable_world_without_application(snapshot, &runtime)
             .map_err(RebuiltV3DocumentSetError::World)?;
         let scenario = runtime.scenario;
         let asset_index =
@@ -127,11 +155,15 @@ pub fn compile_rebuilt_v3_document_set(
             scenario,
             asset_index,
             true,
+            contract,
         );
     }
-    let content =
-        compile_rebuilt_v3_content(snapshot).map_err(RebuiltV3DocumentSetError::Content)?;
-    let world = compile_rebuilt_v3_world(snapshot).map_err(RebuiltV3DocumentSetError::World)?;
+    let content = contract
+        .content(snapshot)
+        .map_err(RebuiltV3DocumentSetError::Content)?;
+    let world = contract
+        .world(snapshot)
+        .map_err(RebuiltV3DocumentSetError::World)?;
     let scenario =
         project_rebuilt_v3_scenario(snapshot).map_err(RebuiltV3DocumentSetError::Scenario)?;
     let asset_index =
@@ -145,10 +177,11 @@ pub fn compile_rebuilt_v3_document_set(
         scenario,
         asset_index,
         crate::compatibility::imported_start_location_requires_deferred_capability(snapshot),
+        contract,
     )
 }
 
-pub fn compile_rebuilt_v3_document_set_with_application(
+pub fn compile_rebuilt_document_set_with_application(
     snapshot: &ProjectSnapshot,
     application_media: &ApplicationMediaCatalog,
     compiler_identity: &RebuiltV3CompilerIdentity,
@@ -160,6 +193,7 @@ pub fn compile_rebuilt_v3_document_set_with_application(
         compiler_identity,
         media_payloads,
         None,
+        ExportContract::Current,
     )
 }
 
@@ -175,6 +209,7 @@ pub fn compile_rebuilt_document_set_with_selected_rules(
         compiler_identity,
         media_payloads,
         Some(&selection.runtime_overrides),
+        ExportContract::Current,
     )
 }
 
@@ -184,9 +219,11 @@ fn compile_document_set_with_rules(
     compiler_identity: &RebuiltV3CompilerIdentity,
     media_payloads: &[RebuiltV3FileInput<'_>],
     rules: Option<&super::RebuiltV3RuleCatalog>,
+    contract: ExportContract,
 ) -> Result<RebuiltV3DocumentSetArtifact, RebuiltV3DocumentSetError> {
-    let runtime = project_rebuilt_v3_reachable_runtime(snapshot)
-        .map_err(RebuiltV3DocumentSetError::Runtime)?;
+    let runtime =
+        project_rebuilt_v3_runtime(snapshot).map_err(RebuiltV3DocumentSetError::Runtime)?;
+    contract.validate_monster_contract(snapshot)?;
     let media = project_rebuilt_v3_reachable_media_with_application(
         snapshot,
         application_media,
@@ -198,21 +235,13 @@ fn compile_document_set_with_rules(
         !runtime.combat.battles.is_empty(),
     )
     .map_err(RebuiltV3DocumentSetError::Media)?;
-    let missing_monster_media = media
-        .references
-        .iter()
-        .filter(|reference| is_missing_imported_presentation_reference(reference))
-        .cloned()
-        .collect::<Vec<_>>();
-    if !missing_monster_media.is_empty()
-        && !matches!(snapshot.origin, ProjectOrigin::Imported { .. })
-    {
-        return Err(RebuiltV3DocumentSetError::Media(
-            RebuiltV3ReachableMediaError::UnresolvedRequired(missing_monster_media),
-        ));
+    let deferred_media = imported_presentation_deferred(snapshot, &media.references)?;
+    let mut content = if matches!(contract, ExportContract::Current) {
+        super::compile_rebuilt_reachable_content(snapshot, &runtime)
+    } else {
+        compile_rebuilt_v3_reachable_content(snapshot, &runtime)
     }
-    let mut content = compile_rebuilt_v3_reachable_content(snapshot, &runtime)
-        .map_err(RebuiltV3DocumentSetError::Content)?;
+    .map_err(RebuiltV3DocumentSetError::Content)?;
     if let Some(rules) = rules {
         content.document.races = rules.races.clone();
         content.document.castes = rules.castes.clone();
@@ -220,9 +249,9 @@ fn compile_document_set_with_rules(
             super::content::compile_content_artifact(content.document, content.monster_omissions)
                 .map_err(RebuiltV3DocumentSetError::Content)?;
     }
-    let world =
-        compile_rebuilt_v3_reachable_world_with_application(snapshot, application_media, &runtime)
-            .map_err(RebuiltV3DocumentSetError::World)?;
+    let world = contract
+        .reachable_world(snapshot, application_media, &runtime)
+        .map_err(RebuiltV3DocumentSetError::World)?;
     assemble_rebuilt_v3_document_set(
         snapshot,
         compiler_identity,
@@ -232,9 +261,27 @@ fn compile_document_set_with_rules(
         runtime.scenario,
         media.assets,
         !runtime.deferred_references.is_empty()
-            || !missing_monster_media.is_empty()
+            || deferred_media
             || crate::compatibility::imported_start_location_requires_deferred_capability(snapshot),
+        contract,
     )
+}
+
+fn imported_presentation_deferred(
+    snapshot: &ProjectSnapshot,
+    references: &[super::RebuiltV3RuntimeMediaReference],
+) -> Result<bool, RebuiltV3DocumentSetError> {
+    let missing = references
+        .iter()
+        .filter(|reference| is_missing_imported_presentation_reference(reference))
+        .cloned()
+        .collect::<Vec<_>>();
+    if !missing.is_empty() && !matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+        return Err(RebuiltV3DocumentSetError::Media(
+            RebuiltV3ReachableMediaError::UnresolvedRequired(missing),
+        ));
+    }
+    Ok(!missing.is_empty())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -247,8 +294,9 @@ fn assemble_rebuilt_v3_document_set(
     mut scenario: RebuiltV3ScenarioDocument,
     mut asset_index: RebuiltV3AssetIndex,
     has_deferred_references: bool,
+    contract: ExportContract,
 ) -> Result<RebuiltV3DocumentSetArtifact, RebuiltV3DocumentSetError> {
-    let schema_version = document_schema(snapshot, &mut world, &scenario)?;
+    let schema_version = document_schema(snapshot, &mut world, contract)?;
     align_document_schema(
         schema_version,
         &mut content,
@@ -275,6 +323,7 @@ fn assemble_rebuilt_v3_document_set(
         media_payloads,
     );
     let manifest = match schema_version {
+        7 => compile_rebuilt_v7_manifest(snapshot, compiler_identity, &capabilities, &inputs),
         6 => compile_rebuilt_v6_manifest(snapshot, compiler_identity, &capabilities, &inputs),
         5 => compile_rebuilt_v5_manifest(snapshot, compiler_identity, &capabilities, &inputs),
         4 => compile_rebuilt_v4_manifest(snapshot, compiler_identity, &capabilities, &inputs),
@@ -294,39 +343,34 @@ fn assemble_rebuilt_v3_document_set(
 fn document_schema(
     snapshot: &ProjectSnapshot,
     world: &mut RebuiltV3WorldArtifact,
-    scenario: &RebuiltV3ScenarioDocument,
+    contract: ExportContract,
 ) -> Result<u8, RebuiltV3DocumentSetError> {
-    Ok(
-        if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
-            for map in &mut world.document.maps {
-                let native = snapshot
-                    .world
-                    .maps
-                    .iter()
-                    .find(|native| native.identity == map.id)
-                    .ok_or_else(|| {
-                        RebuiltV3DocumentSetError::Serialization(format!(
-                            "missing native map '{}'",
-                            map.id.0
-                        ))
-                    })?;
-                if native.tiles.len() != usize::from(map.width) * usize::from(map.height) {
-                    return Err(RebuiltV3DocumentSetError::Serialization(format!(
-                        "native map '{}' has incomplete tile words",
-                        map.id.0
-                    )));
-                }
-                map.classic_tile_values = Some(native.tiles.clone());
-            }
-            6
-        } else if scenario.extra_code_tail.is_some() {
-            5
-        } else if imported_requires_rebuilt_v4(snapshot) {
-            4
-        } else {
-            3
-        },
-    )
+    if contract == ExportContract::Legacy
+        && !matches!(snapshot.origin, ProjectOrigin::Imported { .. })
+    {
+        return Ok(3);
+    }
+    for map in &mut world.document.maps {
+        let native = snapshot
+            .world
+            .maps
+            .iter()
+            .find(|native| native.identity == map.id)
+            .ok_or_else(|| {
+                RebuiltV3DocumentSetError::Serialization(format!(
+                    "missing native map '{}'",
+                    map.id.0
+                ))
+            })?;
+        if native.tiles.len() != usize::from(map.width) * usize::from(map.height) {
+            return Err(RebuiltV3DocumentSetError::Serialization(format!(
+                "native map '{}' has incomplete tile words",
+                map.id.0
+            )));
+        }
+        map.classic_tile_values = Some(native.tiles.clone());
+    }
+    Ok(6)
 }
 
 fn content_needs_battle_atlas(content: &RebuiltV3ContentArtifact) -> bool {

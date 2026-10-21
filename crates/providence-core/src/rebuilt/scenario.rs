@@ -26,7 +26,7 @@ pub use error::RebuiltV3ScenarioError;
 pub(crate) use instructions::{
     extra_code_index, instructions_projection, instructions_projection_with_policy,
 };
-pub(crate) use opcodes::source_resolved_runtime_noop_opcode;
+pub(crate) use opcodes::{classic_opcode_reads_extra_code, source_resolved_runtime_noop_opcode};
 pub use opcodes::{supported_classic_opcode, unsupported_classic_instructions};
 pub(crate) use random_rectangles::projectable_opcode_92_random_rectangle_targets;
 pub use random_rectangles::{

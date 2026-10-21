@@ -45,8 +45,18 @@ fn project_rebuilt_v3_simple_encounters_filtered(
     let mut excluded_native_ids = Vec::new();
     for encounter in records {
         validate_identity(encounter, &mut ids)?;
-        if !simple_encounter_is_runtime_representable(encounter) {
+        if !matches!(snapshot.origin, ProjectOrigin::Imported { .. })
+            && !simple_encounter_is_runtime_representable(encounter)
+        {
             excluded_native_ids.push(encounter.native_id.0);
+            if selection.is_some() {
+                results.append(
+                    &mut programs,
+                    ResultFamily::Simple,
+                    encounter.native_id.0,
+                    &encounter.actions,
+                )?;
+            }
             continue;
         }
         validate_record(encounter, &message_ids, imported)?;
@@ -139,7 +149,7 @@ fn responses(
 ) -> Result<Vec<RebuiltV3SimpleEncounterResponse>, RebuiltV3ScenarioError> {
     let mut responses = Vec::new();
     for (choice, label) in encounter.texts.iter().enumerate() {
-        if label.trim().is_empty() {
+        if label.trim().is_empty() && !imported {
             continue;
         }
         let result = encounter.choice_results[choice];
@@ -160,7 +170,7 @@ fn responses(
             )),
         });
     }
-    if responses.is_empty() {
+    if responses.is_empty() && !imported {
         return Err(RebuiltV3ScenarioError::MissingSimpleEncounterResponse(
             encounter.identity.clone(),
         ));

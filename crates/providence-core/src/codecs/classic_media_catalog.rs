@@ -114,11 +114,12 @@ pub fn derive_classic_media_catalog_with_progress(
         };
         if entries.len() != 1 {
             ambiguous_resources.push(ClassicMediaAmbiguity {
-                resource,
+                resource: resource.clone(),
                 occurrences: entries.len(),
             });
-            continue;
         }
+        // Castle's native reader selects the first reference-map occurrence.
+        // Retain every source entry; decode failure must not select a later duplicate.
         let entry = &entries[0];
         let label = if entry.name.trim().is_empty() {
             format!(
@@ -129,7 +130,7 @@ pub fn derive_classic_media_catalog_with_progress(
         } else {
             entry.name.clone()
         };
-        match decoded.expect("unique resources have a decode result") {
+        match decoded.expect("every native media group has a decode result") {
             Ok(asset) => assets.push(asset),
             Err(reason) => failures.push(ClassicMediaFailure {
                 resource,
@@ -203,9 +204,6 @@ fn decode_groups(
 }
 
 fn decode_group(((resource_type, resource_id), entries): &MediaGroup<'_>) -> MediaDecode {
-    if entries.len() != 1 {
-        return None;
-    }
     let entry = entries[0];
     let resource = ClassicResourceKey {
         resource_type: String::from_utf8_lossy(resource_type).into_owned(),

@@ -7,6 +7,11 @@ inventory in `third-party/godot-notices.json`. The locked Rust dependency
 licenses and source locations are retained under `third-party/rust` and
 `third-party/rust-dependencies.json`. Their original licenses remain in force.
 
+The official Rust MCP SDK (`rmcp` 3.5.1) is Apache-2.0 licensed. Its published
+crate omits the workspace license file; `support/mcp/sdk` retains that file from
+the crate's exact packaged VCS revision and records its source and checksum.
+Both packaging paths include it in the dependency notice inventory.
+
 ## Divinity Manual and Red Dragon artwork
 
 The bundled Divinity Manual chapter artwork preserves the manual HTML, CSS and

@@ -12,6 +12,7 @@ pub(super) struct RecordProjection<'a> {
     pub descriptions: &'a BTreeMap<u32, RebuiltV3MonsterDescription>,
     pub macro_ids: &'a BTreeSet<u32>,
     pub allow_deferred: bool,
+    pub fresh: bool,
     pub allow_v4_values: bool,
 }
 
@@ -46,7 +47,7 @@ impl RecordProjection<'_> {
         } else {
             0
         };
-        if random_weapon_table > 10 && !self.allow_v4_values {
+        if random_weapon_table > 10 && (!self.allow_v4_values || self.fresh) {
             return invalid_record(monster, "random weapon table must be between 0 and 10");
         }
         for item_id in monster.items.iter().copied().filter(|id| *id != 0) {

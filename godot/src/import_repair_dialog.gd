@@ -69,6 +69,9 @@ func _render() -> void:
 	%Status.text = "%d corrections · %d authored conflicts" % [int(_assessment.safeCount), int(_assessment.conflictCount)]
 	if int(_assessment.total) == 0:
 		%Status.text = "No imported content needs correction."
+	var preservation: Array = assessment.get("preservationDiagnostics", [])
+	if not preservation.is_empty():
+		%Status.text = str(preservation[0])
 	if not assessment.sourceRequirements.is_empty():
 		%Status.text = "\n".join(assessment.sourceRequirements)
 	for entry: Dictionary in assessment.entries:

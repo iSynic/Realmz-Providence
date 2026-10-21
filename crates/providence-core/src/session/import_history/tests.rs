@@ -125,11 +125,13 @@ fn legacy_painted_state() -> PersistedSessionState {
         revision: Revision(2),
         undo: vec![
             SessionHistoryEntry {
+                attribution: None,
                 snapshot: authored(),
                 changed_entities: vec![baseline.project_id.clone()],
                 references_unchanged: false,
             },
             SessionHistoryEntry {
+                attribution: None,
                 snapshot: baseline,
                 changed_entities: vec![StableId("land:0".into())],
                 references_unchanged: false,
@@ -163,11 +165,13 @@ fn legacy_redo_recovers_an_undone_import_without_making_it_undoable_again() {
         undo: vec![],
         redo: vec![
             SessionHistoryEntry {
+                attribution: None,
                 snapshot: old.snapshot.clone(),
                 changed_entities: vec![StableId("land:0".into())],
                 references_unchanged: false,
             },
             SessionHistoryEntry {
+                attribution: None,
                 snapshot: imported(),
                 changed_entities: vec![StableId("import-history".into())],
                 references_unchanged: false,

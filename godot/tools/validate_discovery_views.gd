@@ -153,6 +153,13 @@ func _check_setter_authoring() -> void:
 	targets.select(selected)
 	targets.item_activated.emit(selected)
 	await _settle()
+	assert(ProvidenceActionFieldRenderer.value_of(workbench._field_controls.targetNativeId.control) == -9)
+	assert(not setter.has_unapplied_changes(), "Choosing the current quest must retain Clear without creating an edit")
+	var clear := workbench._field_controls.targetNativeId.behaviorControl as CheckBox
+	assert(clear.button_pressed and not clear.disabled)
+	clear.button_pressed = false
+	await _settle()
+	assert(ProvidenceActionFieldRenderer.value_of(workbench._field_controls.targetNativeId.control) == 9)
 	assert(setter.has_unapplied_changes())
 	await setter.commit_selected()
 	await _settle()

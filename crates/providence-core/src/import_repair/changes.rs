@@ -5,6 +5,13 @@ pub fn apply(
     snapshot: &mut ProjectSnapshot,
     command: RepairCommand,
 ) -> Result<Vec<StableId>, String> {
+    if command
+        .changes
+        .iter()
+        .any(|entry| matches!(entry.change, RepairChange::ShopQuarantine { .. }))
+    {
+        return Err(shops::PRESERVATION_GUIDANCE.into());
+    }
     if !matches!(snapshot.origin, ProjectOrigin::Imported { .. })
         || command.expected_previous_version >= INTERPRETATION_VERSION
         || classic_source_set_sha256(snapshot)? != command.expected_source_identity
@@ -30,6 +37,22 @@ pub fn apply(
 }
 fn apply_change(candidate: &mut ProjectSnapshot, change: RepairChange) -> Result<(), String> {
     match change {
+        RepairChange::NativeText {
+            native_path,
+            native_id,
+            slot,
+            expected,
+            recovered,
+        } => {
+            super::native_text::apply(
+                candidate,
+                &native_path,
+                native_id,
+                slot,
+                &expected,
+                recovered,
+            )?;
+        }
         RepairChange::ShopQuarantine { expected, .. } => {
             shops::apply(candidate, &expected)?;
         }
@@ -40,20 +63,7 @@ fn apply_change(candidate: &mut ProjectSnapshot, change: RepairChange) -> Result
             expected,
             recovered,
         } => {
-            let record = candidate
-                .scenario_item_rules
-                .iter_mut()
-                .find(|r| r.record_index == record_index)
-                .ok_or("Item destination is unavailable.")?;
-            if items::text(&record.definition, &field)? != expected {
-                return Err("Item text changed; review the repair again.".into());
-            }
-            match field.as_str() {
-                "name" => record.definition.name = recovered,
-                "unidentifiedName" => record.definition.unidentified_name = recovered,
-                "description" => record.definition.description = recovered,
-                _ => return Err("Unknown item text field.".into()),
-            }
+            items::apply_text(candidate, record_index, &field, &expected, recovered)?;
         }
         RepairChange::ItemTextSource {
             record_index,

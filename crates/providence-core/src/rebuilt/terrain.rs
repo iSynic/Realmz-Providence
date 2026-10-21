@@ -109,7 +109,7 @@ impl std::error::Error for RebuiltV3BattleTerrainError {}
 pub fn project_rebuilt_v3_battle_terrain_sets(
     snapshot: &ProjectSnapshot,
 ) -> Result<Vec<RebuiltV3BattleTerrainSet>, RebuiltV3BattleTerrainError> {
-    if snapshot.battles.is_empty() {
+    if snapshot.battles.is_empty() && snapshot.landlook_catalogs.is_empty() {
         return Ok(Vec::new());
     }
     let combat_profiles = exact_battle_terrain_profiles(snapshot, -1, 200, 400)?;
@@ -157,6 +157,18 @@ fn landlook_base_tiles(
     snapshot: &ProjectSnapshot,
 ) -> Result<BTreeMap<i8, BTreeSet<i16>>, RebuiltV3BattleTerrainError> {
     let mut landlook_base_tiles = BTreeMap::<i8, BTreeSet<i16>>::new();
+    // Opcode 57 can select any supplied table after startup. Its catalog owns
+    // the base tile even when no initial map or battle names this look.
+    for catalog in snapshot
+        .landlook_catalogs
+        .iter()
+        .filter(|catalog| catalog.landlook >= 0)
+    {
+        landlook_base_tiles
+            .entry(catalog.landlook)
+            .or_default()
+            .insert(catalog.base_tile);
+    }
     for map in snapshot
         .world
         .maps

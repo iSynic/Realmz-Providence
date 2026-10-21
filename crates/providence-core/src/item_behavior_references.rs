@@ -81,7 +81,9 @@ fn append_effect_references(
         let matches = snapshot
             .standard_spells
             .iter()
-            .chain(snapshot.scenario_spells.iter())
+            .chain(snapshot.scenario_spells.iter().filter(|row| {
+                crate::codecs::scenario_spell_is_runtime_addressable(&row.definition)
+            }))
             .filter(|row| i32::from(row.definition.classic_id) == id)
             .collect::<Vec<_>>();
         let target = matches.first().map_or_else(

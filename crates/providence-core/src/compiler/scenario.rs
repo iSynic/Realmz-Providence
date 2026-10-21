@@ -128,13 +128,10 @@ pub(super) fn reimport_bootstrap(
         )
     });
     startup.and_then(|(scenario_name, startup)| {
-        manifest.get("Data RI").and_then(|restrictions| {
-            crate::codecs::decode_scenario_startup(
-                scenario_name,
-                &startup.bytes,
-                &restrictions.bytes,
-            )
-            .ok()
-        })
+        let neutral = [0; crate::codecs::SCENARIO_RESTRICTIONS_BYTES];
+        let restrictions = manifest
+            .get("Data RI")
+            .map_or(neutral.as_slice(), |entry| entry.bytes.as_slice());
+        crate::codecs::decode_scenario_startup(scenario_name, &startup.bytes, restrictions).ok()
     })
 }

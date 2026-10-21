@@ -22,7 +22,14 @@ pub(super) fn classic_caste_blockers(snapshot: &ProjectSnapshot) -> Vec<Compatib
     if snapshot.caste_rules.is_empty() {
         return Vec::new();
     }
-    if snapshot.caste_rules.len() != 30 {
+    let native = matches!(
+        snapshot.origin,
+        crate::model::ProjectOrigin::Imported { .. }
+    ) && snapshot
+        .classic_sources
+        .iter()
+        .any(|source| source.native_path == "Data Caste");
+    if snapshot.caste_rules.len() != 30 && !native {
         return vec![blocker(
             "classic.caste.record-count",
             format!(

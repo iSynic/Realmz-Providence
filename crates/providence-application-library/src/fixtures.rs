@@ -12,7 +12,7 @@ use providence_core::{
         RebuiltV3CompilerIdentity, RebuiltV3ContentDocument, RebuiltV3FileInput,
         RebuiltV3ItemDefinition, RebuiltV3Manifest, RebuiltV3MapMetadata,
         RebuiltV3ScenarioDocument, RebuiltV3SpellDefinition, RebuiltV3WorldDocument,
-        RebuiltV3WorldMap, compile_rebuilt_v3_manifest,
+        RebuiltV3WorldMap, compile_rebuilt_v6_manifest,
     },
 };
 use providence_rebuilt_package::{inspect_rebuilt_v3_archive, write_rebuilt_v3_archive};
@@ -68,31 +68,10 @@ fn write_scenario_fixture(
 ) -> Result<(RebuiltV3Manifest, String), String> {
     let project_id = StableId(format!("providence-alignment-{id}"));
     let snapshot = scenario_snapshot(project_id.clone());
-    let content = RebuiltV3ContentDocument {
-        kind: "realmz2.content".into(),
-        schema_version: 3,
-        campaign: scenario_campaign(project_id),
-        messages: Vec::new(),
-        option_labels: Vec::new(),
-        battles: Vec::new(),
-        monsters: Vec::new(),
-        monster_sets: Vec::new(),
-        monster_descriptions: Vec::new(),
-        items: vec![item],
-        item_texts: Vec::new(),
-        treasures: Vec::new(),
-        shops: Vec::new(),
-        simple_encounters: Vec::new(),
-        complex_encounters: Vec::new(),
-        thief_encounters: Vec::new(),
-        timed_encounters: Vec::new(),
-        spells: vec![spell],
-        races: Vec::new(),
-        castes: Vec::new(),
-    };
+    let content = alignment_content(project_id, item, spell);
     let asset_index = RebuiltV3AssetIndex {
         kind: "realmz2.assets".into(),
-        schema_version: 3,
+        schema_version: 6,
         assets: media
             .as_ref()
             .map(|(asset, _)| vec![asset.clone()])
@@ -117,7 +96,7 @@ fn write_scenario_fixture(
     if !asset_index.assets.is_empty() {
         capabilities.push("realmz.presentation.content-addressed-media-v1".into());
     }
-    let manifest = compile_rebuilt_v3_manifest(
+    let manifest = compile_rebuilt_v6_manifest(
         &snapshot,
         &RebuiltV3CompilerIdentity {
             version: env!("CARGO_PKG_VERSION").into(),
@@ -210,7 +189,7 @@ fn fixture_world() -> RebuiltV3WorldDocument {
     );
     RebuiltV3WorldDocument {
         kind: "realmz2.world".into(),
-        schema_version: 3,
+        schema_version: 6,
         battle_terrain_sets: Vec::new(),
         maps: vec![RebuiltV3WorldMap {
             id: StableId("fixture-map".into()),
@@ -228,7 +207,7 @@ fn fixture_world() -> RebuiltV3WorldDocument {
             },
             topology_format: "realmz2.compact-cell-rows.v2".into(),
             cells: vec![cell; 8100],
-            classic_tile_values: None,
+            classic_tile_values: Some(vec![0; 8100]),
             boat_replacement_profiles: Some(fixture_boat_profiles()),
             random_rectangles: Vec::new(),
         }],
@@ -266,7 +245,7 @@ fn fixture_boat_profiles() -> RebuiltV3BoatReplacementProfiles {
 fn empty_scenario() -> RebuiltV3ScenarioDocument {
     RebuiltV3ScenarioDocument {
         kind: "realmz2.scenario".into(),
-        schema_version: 3,
+        schema_version: 6,
         application_hooks: RebuiltV3ApplicationHooks {
             start_game: None,
             party_death: None,
@@ -301,4 +280,34 @@ fn sha256(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     format!("{:x}", hasher.finalize())
+}
+
+fn alignment_content(
+    project_id: StableId,
+    item: RebuiltV3ItemDefinition,
+    spell: RebuiltV3SpellDefinition,
+) -> RebuiltV3ContentDocument {
+    RebuiltV3ContentDocument {
+        classic_records: None,
+        kind: "realmz2.content".into(),
+        schema_version: 6,
+        campaign: scenario_campaign(project_id),
+        messages: Vec::new(),
+        option_labels: Vec::new(),
+        battles: Vec::new(),
+        monsters: Vec::new(),
+        monster_sets: Vec::new(),
+        monster_descriptions: Vec::new(),
+        items: vec![item],
+        item_texts: Vec::new(),
+        treasures: Vec::new(),
+        shops: Vec::new(),
+        simple_encounters: Vec::new(),
+        complex_encounters: Vec::new(),
+        thief_encounters: Vec::new(),
+        timed_encounters: Vec::new(),
+        spells: vec![spell],
+        races: Vec::new(),
+        castes: Vec::new(),
+    }
 }

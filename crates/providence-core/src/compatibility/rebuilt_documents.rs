@@ -1,21 +1,20 @@
 use super::{CompatibilityBlocker, blocker};
 use crate::model::ProjectSnapshot;
 use crate::rebuilt::{
-    RebuiltV3ContentError, imported_requires_rebuilt_v4, project_rebuilt_v3_battle_terrain_sets,
-    project_rebuilt_v3_battles, project_rebuilt_v3_complex_encounters, project_rebuilt_v3_content,
-    project_rebuilt_v3_item_catalog, project_rebuilt_v3_monster_catalog,
-    project_rebuilt_v3_rogue_encounters, project_rebuilt_v3_rule_catalog,
-    project_rebuilt_v3_scenario, project_rebuilt_v3_scenario_item_catalog,
-    project_rebuilt_v3_shops, project_rebuilt_v3_simple_encounters,
-    project_rebuilt_v3_spell_catalog, project_rebuilt_v3_standard_spell_catalog,
-    project_rebuilt_v3_timed_encounters, project_rebuilt_v3_treasures,
-    project_rebuilt_v3_trigger_programs, project_rebuilt_v4_imported_monster_catalog,
+    RebuiltV3ContentError, project_rebuilt_content, project_rebuilt_monster_catalog,
+    project_rebuilt_v3_battle_terrain_sets, project_rebuilt_v3_battles,
+    project_rebuilt_v3_complex_encounters, project_rebuilt_v3_item_catalog,
+    project_rebuilt_v3_rogue_encounters, project_rebuilt_v3_scenario,
+    project_rebuilt_v3_scenario_item_catalog, project_rebuilt_v3_shops,
+    project_rebuilt_v3_simple_encounters, project_rebuilt_v3_spell_catalog,
+    project_rebuilt_v3_standard_spell_catalog, project_rebuilt_v3_timed_encounters,
+    project_rebuilt_v3_treasures, project_rebuilt_v3_trigger_programs,
 };
 
 pub(super) fn rebuilt_content_document_blockers(
     snapshot: &ProjectSnapshot,
 ) -> Vec<CompatibilityBlocker> {
-    match project_rebuilt_v3_content(snapshot) {
+    match project_rebuilt_content(snapshot) {
         Err(
             error @ RebuiltV3ContentError::InvalidSection {
                 section: "shops" | "treasures",
@@ -137,14 +136,10 @@ pub(super) fn rebuilt_monster_blockers(snapshot: &ProjectSnapshot) -> Vec<Compat
     if snapshot.monster_sets.is_empty() && snapshot.monster_descriptions.is_empty() {
         return Vec::new();
     }
-    (if imported_requires_rebuilt_v4(snapshot) {
-        project_rebuilt_v4_imported_monster_catalog(snapshot)
-    } else {
-        project_rebuilt_v3_monster_catalog(snapshot)
-    })
-    .err()
-    .map(|error| vec![blocker("rebuilt.monsters.invalid", error.to_string(), None)])
-    .unwrap_or_default()
+    project_rebuilt_monster_catalog(snapshot)
+        .err()
+        .map(|error| vec![blocker("rebuilt.monsters.invalid", error.to_string(), None)])
+        .unwrap_or_default()
 }
 
 pub(super) fn rebuilt_battle_blockers(snapshot: &ProjectSnapshot) -> Vec<CompatibilityBlocker> {
@@ -282,14 +277,20 @@ pub(super) fn trigger_program_blockers(snapshot: &ProjectSnapshot) -> Vec<Compat
 }
 
 pub(super) fn rule_catalog_blockers(snapshot: &ProjectSnapshot) -> Vec<CompatibilityBlocker> {
-    if snapshot.race_rules.is_empty() && snapshot.caste_rules.is_empty() {
+    if snapshot.race_rules.is_empty()
+        && snapshot.caste_rules.is_empty()
+        && !matches!(
+            snapshot.origin,
+            crate::model::ProjectOrigin::Imported { .. }
+        )
+    {
         return vec![blocker(
             "rebuilt.rules-catalog.unavailable",
             "Schema v3 requires sourced definitions for all 30 Classic races and 30 Classic castes.",
             None,
         )];
     }
-    project_rebuilt_v3_rule_catalog(snapshot)
+    crate::rebuilt::project_rebuilt_rule_catalog(snapshot)
         .err()
         .map(|error| {
             vec![blocker(

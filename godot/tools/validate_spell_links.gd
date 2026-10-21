@@ -15,7 +15,10 @@ func _run() -> void:
 	root.size = Vector2i(1600, 900); root.gui_embed_subwindows = true
 	var project := args[0].path_join("project")
 	var bridge := ProvidenceNativeBridge.new(args[0].path_join("settings.cfg"))
-	if not _check(bridge.create_project("spell-linked-navigation", project).get("ok", false), "Create connected fixture"): return
+	var created := bridge.create_project("spell-linked-navigation", project)
+	if not _check(created.get("ok", false), "Create connected fixture: " + str(created)):
+		quit(1)
+		return
 	var reviewed := bridge.request("spell.allocation.review", {"expectedRevision": 0})
 	var draft: Dictionary = reviewed.result.allocation.draft
 	draft.definition.merge({"name": "Linked Moon Gate", "lookEnd": 0, "soundStart": 1, "queueIcon": 10}, true)
@@ -104,7 +107,7 @@ func _picker_inputs() -> void:
 	_controller._references.open_picker("lookEnd"); await _idle()
 	var input: LineEdit = picker.get_node("%Search")
 	input.text = "12032"; input.text_changed.emit(input.text)
-	await create_timer(0.3).timeout; await _idle()
+	await _picker_settled(picker)
 	picker.get_node("%Choices").item_activated.emit(1); await _idle()
 	_check(not picker.visible and _view.selected_definition().lookEnd == 5, "Double-click waits for the exact preview before accepting alias identity five")
 	_view.discard_draft(); await _idle()
@@ -114,7 +117,7 @@ func _picker_inputs() -> void:
 	picker.get_node("%Ownership").select(0); picker.get_node("%Ownership").item_selected.emit(0)
 	picker.get_node("%ShowUnavailable").button_pressed = true
 	input.text = "32"; input.text_changed.emit(input.text)
-	await create_timer(0.3).timeout; await _idle()
+	await _picker_settled(picker)
 	var unavailable: int = picker._rows.find_custom(func(row): return not row.available)
 	_check(unavailable >= 0, "The real catalog exposes an unavailable exact resource")
 	if unavailable >= 0: picker.get_node("%Choices").item_selected.emit(unavailable)
@@ -126,6 +129,16 @@ func _picker_inputs() -> void:
 	_check(_view.form._animation_field == "lookEnd", "Inline animation preview starts the exact resource sequence")
 	_view.form.find_child("StoplookEnd", true, false).pressed.emit()
 	_check(_view.form._animation_field.is_empty() and _view.form.find_child("lookEndFrame3", true, false).modulate == Color.WHITE, "Stop resets exact preview frames")
+
+
+# A busy search retries after the picker's 0.2 s SearchDelay with its rows cleared;
+# wait for that delayed search to finish rather than for a fixed time.
+func _picker_settled(picker) -> void:
+	var deadline := Time.get_ticks_msec() + 10000
+	while Time.get_ticks_msec() < deadline:
+		await _idle()
+		if picker.get_node("SearchDelay").is_stopped() and picker.get_node("%Count").text != "Loading…": return
+	_check(false, "Reference search did not finish")
 
 
 func _idle() -> void:

@@ -18,6 +18,12 @@ use super::{
 use crate::model::{LevelType, ProjectSnapshot, StableId};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PlayerMapPolicy {
+    Reachable,
+    NativeRecords,
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RebuiltV3WorldMap {
@@ -168,7 +174,13 @@ pub enum RebuiltV3WorldError {
 pub fn project_rebuilt_v3_world(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3WorldDocument, RebuiltV3WorldError> {
-    assembly::project(snapshot, &special_land_asset_lookup(snapshot), None, None)
+    assembly::project(
+        snapshot,
+        &special_land_asset_lookup(snapshot),
+        None,
+        None,
+        PlayerMapPolicy::Reachable,
+    )
 }
 
 pub fn project_rebuilt_v3_world_with_application(
@@ -180,6 +192,7 @@ pub fn project_rebuilt_v3_world_with_application(
         &special_land_asset_lookup_with_application(snapshot, application_media),
         Some(application_media),
         None,
+        PlayerMapPolicy::Reachable,
     )
 }
 
@@ -193,6 +206,7 @@ pub fn project_rebuilt_v3_reachable_world_with_application(
         &special_land_asset_lookup_with_application(snapshot, application_media),
         Some(application_media),
         Some(runtime),
+        PlayerMapPolicy::Reachable,
     )
 }
 
@@ -212,6 +226,7 @@ pub fn compile_rebuilt_v3_reachable_world(
         &special_land_asset_lookup(snapshot),
         None,
         Some(runtime),
+        PlayerMapPolicy::Reachable,
     )?;
     compile_rebuilt_v3_world_document(document)
 }
@@ -231,6 +246,33 @@ pub fn compile_rebuilt_v3_reachable_world_with_application(
 ) -> Result<RebuiltV3WorldArtifact, RebuiltV3WorldError> {
     let document =
         project_rebuilt_v3_reachable_world_with_application(snapshot, application_media, runtime)?;
+    compile_rebuilt_v3_world_document(document)
+}
+
+pub(in crate::rebuilt) fn compile_imported_world(
+    snapshot: &ProjectSnapshot,
+    application_media: Option<&ApplicationMediaCatalog>,
+    runtime: Option<&RebuiltV3ReachableRuntimeSelection>,
+) -> Result<RebuiltV3WorldArtifact, RebuiltV3WorldError> {
+    if !matches!(
+        snapshot.origin,
+        crate::model::ProjectOrigin::Imported { .. }
+    ) {
+        return Err(RebuiltV3WorldError::Serialization(
+            "native Player Map publication requires an imported project".into(),
+        ));
+    }
+    let assets = application_media.map_or_else(
+        || special_land_asset_lookup(snapshot),
+        |media| special_land_asset_lookup_with_application(snapshot, media),
+    );
+    let document = assembly::project(
+        snapshot,
+        &assets,
+        application_media,
+        runtime,
+        PlayerMapPolicy::NativeRecords,
+    )?;
     compile_rebuilt_v3_world_document(document)
 }
 

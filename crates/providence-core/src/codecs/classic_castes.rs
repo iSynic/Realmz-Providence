@@ -8,7 +8,14 @@ pub const CLASSIC_CASTE_RECORDS: usize = 30;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodedCasteRuleFile {
     pub rules: Vec<SourcedCasteRule>,
+    pub unprojected_spans: Vec<UnprojectedCasteRecordSpan>,
     pub trailing_bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnprojectedCasteRecordSpan {
+    pub physical_record_index: usize,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,11 +47,30 @@ pub fn derive_caste_eligibility(
     races: &[crate::model::SourcedRaceRule],
     castes: &mut [SourcedCasteRule],
 ) -> Result<(), CasteCodecError> {
+    derive_eligibility(races, castes, false)
+}
+
+/// Derives only available reciprocal rows; native race flags remain untouched.
+pub fn derive_available_caste_eligibility(
+    races: &[crate::model::SourcedRaceRule],
+    castes: &mut [SourcedCasteRule],
+) -> Result<(), CasteCodecError> {
+    derive_eligibility(races, castes, true)
+}
+
+fn derive_eligibility(
+    races: &[crate::model::SourcedRaceRule],
+    castes: &mut [SourcedCasteRule],
+    allow_missing: bool,
+) -> Result<(), CasteCodecError> {
     for caste in castes.iter_mut() {
         caste.definition.eligible_race_ids.clear();
     }
     for race in races {
         for caste_id in &race.definition.eligible_caste_ids {
+            if allow_missing && !castes.iter().any(|caste| caste.definition.id == *caste_id) {
+                continue;
+            }
             let caste = castes
                 .iter_mut()
                 .find(|caste| caste.definition.id == *caste_id)
@@ -71,19 +97,30 @@ pub fn derive_caste_eligibility(
 }
 
 pub fn decode_caste_rules(bytes: &[u8], source_blob: Option<BlobId>) -> DecodedCasteRuleFile {
-    let count = (bytes.len() / CASTE_RECORD_BYTES).min(CLASSIC_CASTE_RECORDS);
+    let count = bytes.len() / CASTE_RECORD_BYTES;
     let body_bytes = count * CASTE_RECORD_BYTES;
     let rules = bytes[..body_bytes]
         .chunks_exact(CASTE_RECORD_BYTES)
         .enumerate()
+        .take(usize::from(u8::MAX))
         .map(|(index, row)| SourcedCasteRule {
             source: format!("Data Caste record {index}"),
             source_blob: source_blob.clone(),
-            definition: decode_definition(index as u8 + 1, row),
+            definition: decode_definition(u8::try_from(index + 1).expect("bounded caste ID"), row),
+        })
+        .collect();
+    let typed_body_bytes = (usize::from(u8::MAX) * CASTE_RECORD_BYTES).min(body_bytes);
+    let unprojected_spans = bytes[typed_body_bytes..body_bytes]
+        .chunks_exact(CASTE_RECORD_BYTES)
+        .enumerate()
+        .map(|(index, row)| UnprojectedCasteRecordSpan {
+            physical_record_index: typed_body_bytes / CASTE_RECORD_BYTES + index,
+            bytes: row.to_vec(),
         })
         .collect();
     DecodedCasteRuleFile {
         rules,
+        unprojected_spans,
         trailing_bytes: bytes[body_bytes..].to_vec(),
     }
 }
@@ -96,7 +133,7 @@ pub fn encode_caste_rules(
     selected.sort_by_key(|rule| rule.definition.classic_id);
     let mut seen = BTreeSet::new();
     for rule in &selected {
-        validate_definition(&rule.definition)?;
+        validate_source_rule_for_encode(rule, compatibility_source)?;
         if !seen.insert(rule.definition.classic_id) {
             return Err(CasteCodecError::DuplicateClassicId(
                 rule.definition.classic_id,
@@ -105,7 +142,7 @@ pub fn encode_caste_rules(
     }
 
     let source_rows = compatibility_source
-        .map(|source| (source.len() / CASTE_RECORD_BYTES).min(CLASSIC_CASTE_RECORDS))
+        .map(|source| source.len() / CASTE_RECORD_BYTES)
         .unwrap_or(0);
     let source_body_bytes = source_rows * CASTE_RECORD_BYTES;
     let required_rows = selected
@@ -350,7 +387,9 @@ fn validate_definition(definition: &CasteRuleDefinition) -> Result<(), CasteCode
 }
 
 fn same_native_semantics(left: &CasteRuleDefinition, right: &CasteRuleDefinition) -> bool {
-    left.initial_ability_values == right.initial_ability_values
+    left.id == right.id
+        && left.classic_id == right.classic_id
+        && left.initial_ability_values == right.initial_ability_values
         && left.level_ability_dice == right.level_ability_dice
         && left.victory_thresholds == right.victory_thresholds
         && left.save_bonuses == right.save_bonuses
@@ -452,6 +491,34 @@ fn write_i32(row: &mut [u8], offset: usize, value: i32) {
     row[offset..offset + 4].copy_from_slice(&value.to_be_bytes());
 }
 
+fn validate_source_rule_for_encode(
+    rule: &SourcedCasteRule,
+    compatibility_source: Option<&[u8]>,
+) -> Result<(), CasteCodecError> {
+    if rule.definition.classic_id > CLASSIC_CASTE_RECORDS as u8 {
+        let row_index = usize::from(rule.definition.classic_id - 1);
+        let unchanged_source_row = compatibility_source
+            .filter(|source| row_index < source.len() / CASTE_RECORD_BYTES)
+            .map(|source| {
+                let start = row_index * CASTE_RECORD_BYTES;
+                decode_definition(
+                    rule.definition.classic_id,
+                    &source[start..start + CASTE_RECORD_BYTES],
+                )
+            })
+            .is_some_and(|decoded| same_native_semantics(&decoded, &rule.definition));
+        if !unchanged_source_row {
+            return Err(invalid(
+                rule.definition.classic_id,
+                "Classic ID is outside 1..=30 or differs from its source row",
+            ));
+        }
+    } else {
+        validate_definition(&rule.definition)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -489,6 +556,47 @@ mod tests {
             encode_caste_rules(&decoded.rules, Some(&input)).unwrap(),
             input
         );
+    }
+
+    #[test]
+    fn decoder_retains_rows_beyond_typed_ids_and_encoder_preserves_source_rows() {
+        let mut input = vec![0; CASTE_RECORD_BYTES * 258 + 3];
+        input[CASTE_RECORD_BYTES * CLASSIC_CASTE_RECORDS + 252
+            ..CASTE_RECORD_BYTES * CLASSIC_CASTE_RECORDS + 254]
+            .copy_from_slice(&123i16.to_be_bytes());
+        input[CASTE_RECORD_BYTES * 255 + 252..CASTE_RECORD_BYTES * 255 + 254]
+            .copy_from_slice(&456i16.to_be_bytes());
+
+        let decoded = decode_caste_rules(&input, None);
+        assert_eq!(decoded.rules.len(), usize::from(u8::MAX));
+        assert_eq!(
+            decoded.rules[CLASSIC_CASTE_RECORDS].definition.classic_id,
+            31
+        );
+        assert_eq!(
+            decoded.rules[CLASSIC_CASTE_RECORDS]
+                .definition
+                .movement_bonus,
+            123
+        );
+        assert_eq!(decoded.unprojected_spans.len(), 3);
+        assert_eq!(decoded.unprojected_spans[0].physical_record_index, 255);
+        assert_eq!(
+            &decoded.unprojected_spans[0].bytes[252..254],
+            &456i16.to_be_bytes()
+        );
+        assert_eq!(decoded.trailing_bytes, vec![0; 3]);
+        assert_eq!(
+            encode_caste_rules(&decoded.rules, Some(&input)).unwrap(),
+            input
+        );
+
+        let mut edited = decoded.rules.clone();
+        edited[CLASSIC_CASTE_RECORDS].definition.movement_bonus = 124;
+        assert!(matches!(
+            encode_caste_rules(&edited, Some(&input)),
+            Err(CasteCodecError::InvalidDefinition { classic_id: 31, .. })
+        ));
     }
 
     #[test]

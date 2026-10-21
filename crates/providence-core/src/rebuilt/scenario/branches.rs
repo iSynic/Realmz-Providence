@@ -93,6 +93,7 @@ fn validate_branch_destination(
                 encounter_id: target_id,
             },
         ),
+        _ if references.allow_deferred => Ok(()),
         _ => Err(RebuiltV3ScenarioError::InvalidBranchDestinationMode {
             program: program.clone(),
             opcode,
@@ -110,6 +111,9 @@ fn validate_destination_range(
     let low_id = extra_code[1];
     let high_id = extra_code[2];
     if !(0..=2).contains(&mode) || low_id < 0 || high_id < low_id {
+        if references.allow_deferred {
+            return Ok(());
+        }
         return Err(RebuiltV3ScenarioError::InvalidBranchDestinationRange {
             program: program.id.clone(),
             mode,

@@ -106,10 +106,10 @@ fn package_clipping_preserves_classic_region_membership_on_playable_cells() {
             for x in 0..CLASSIC_MAP_SIZE as i16 {
                 let classic =
                     source.left <= x && x <= source.right && source.top <= y && y <= source.bottom;
-                let rebuilt = i16::from(projected.left) <= x
-                    && x <= i16::from(projected.right)
-                    && i16::from(projected.top) <= y
-                    && y <= i16::from(projected.bottom);
+                let rebuilt = projected.left <= x
+                    && x <= projected.right
+                    && projected.top <= y
+                    && y <= projected.bottom;
                 assert_eq!(classic, rebuilt, "bounds {bounds:?} at ({x},{y})");
             }
         }

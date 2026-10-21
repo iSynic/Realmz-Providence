@@ -20,7 +20,7 @@ fn decode_action_points(
     level_type: LevelType,
     identity_segment: &str,
 ) -> DecodedRecordFile<ActionPoint> {
-    let complete_bytes = bytes.len() / ACTION_POINT_LEVEL_BYTES * ACTION_POINT_LEVEL_BYTES;
+    let complete_bytes = bytes.len() / ACTION_POINT_RECORD_BYTES * ACTION_POINT_RECORD_BYTES;
     let mut records = Vec::with_capacity(complete_bytes / ACTION_POINT_RECORD_BYTES);
     for (absolute_index, record) in bytes[..complete_bytes]
         .chunks_exact(ACTION_POINT_RECORD_BYTES)
@@ -88,19 +88,26 @@ fn encode_action_points(
         .iter()
         .filter(|action_point| action_point.level_type == level_type)
         .collect::<Vec<_>>();
-    let level_count = selected
-        .iter()
-        .map(|action_point| action_point.level_index as usize + 1)
-        .max()
-        .unwrap_or(0)
-        .max(minimum_level_count);
     let source_body = compatibility_source
-        .map(|source| source.len() / ACTION_POINT_LEVEL_BYTES * ACTION_POINT_LEVEL_BYTES)
+        .map(|source| source.len() / ACTION_POINT_RECORD_BYTES * ACTION_POINT_RECORD_BYTES)
         .unwrap_or(0);
     let mut output = compatibility_source
-        .map(|source| source[..source_body.min(level_count * ACTION_POINT_LEVEL_BYTES)].to_vec())
+        .map(|source| source[..source_body].to_vec())
         .unwrap_or_default();
-    output.resize(level_count * ACTION_POINT_LEVEL_BYTES, 0);
+    let minimum_bytes = if compatibility_source.is_none() {
+        minimum_level_count * ACTION_POINT_LEVEL_BYTES
+    } else {
+        0
+    };
+    let required_bytes = selected
+        .iter()
+        .map(|action_point| {
+            action_point.level_index as usize * ACTION_POINT_LEVEL_BYTES
+                + (action_point.record_index as usize + 1) * ACTION_POINT_RECORD_BYTES
+        })
+        .max()
+        .unwrap_or(0);
+    output.resize(output.len().max(minimum_bytes).max(required_bytes), 0);
     let mut keys = BTreeSet::new();
     for action_point in selected {
         if action_point.record_index as usize >= ACTION_POINTS_PER_LEVEL {
@@ -122,7 +129,7 @@ fn encode_action_points(
             action_point,
         )?;
     }
-    append_trailing_bytes(&mut output, compatibility_source, ACTION_POINT_LEVEL_BYTES);
+    append_trailing_bytes(&mut output, compatibility_source, ACTION_POINT_RECORD_BYTES);
     Ok(output)
 }
 
@@ -150,4 +157,31 @@ fn decode_coordinate(classic_door_id: i32, expected_level: u32) -> Option<MapCoo
         x: x as u8,
         y: y as u8,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_final_level_retains_complete_records_and_exact_fragment() {
+        let mut bytes = vec![0; ACTION_POINT_LEVEL_BYTES + ACTION_POINT_RECORD_BYTES * 2 + 3];
+        let offset = ACTION_POINT_LEVEL_BYTES + ACTION_POINT_RECORD_BYTES;
+        bytes[offset + 8..offset + 10].copy_from_slice(&(-9i16).to_be_bytes());
+        bytes[offset + 24..offset + 26].copy_from_slice(&(-123i16).to_be_bytes());
+        let end = bytes.len();
+        bytes[end - 3..].copy_from_slice(&[0xde, 0xad, 0xbe]);
+        for kind in [LevelType::Land, LevelType::Dungeon] {
+            let decoded = decode_action_points(&bytes, kind, "test");
+            assert_eq!(decoded.records.len(), 102);
+            assert_eq!(decoded.records[101].level_index, 1);
+            assert_eq!(decoded.records[101].record_index, 1);
+            assert_eq!(decoded.records[101].actions[0].raw_opcode, -9);
+            assert_eq!(decoded.trailing_bytes, [0xde, 0xad, 0xbe]);
+            assert_eq!(
+                encode_action_points(&decoded.records, kind, 2, Some(&bytes)).unwrap(),
+                bytes
+            );
+        }
+    }
 }

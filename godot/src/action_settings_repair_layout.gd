@@ -50,6 +50,7 @@ const CONTROL_NAMES := {
 	"recovery": "Recovery",
 	"recovery_title": "RecoveryTitle",
 	"recovery_body": "RecoveryBody",
+	"recovery_scroll": "RecoveryScroll",
 	"recovery_buttons": "RecoveryButtons",
 	"footer": "Footer",
 	"status": "Status",
@@ -71,17 +72,48 @@ func build(window: Window) -> Dictionary:
 		ui[key] = content.get_node("%" + CONTROL_NAMES[key])
 	for key in INPUT_FIELDS:
 		fields.append(ui[key])
+	ui.message_form = content.get_node("%MessageForm")
+	ui.message_shade = content.get_node("%MessageShade")
+	ui.recovery_body.resized.connect(func(): fit_recovery(ui.message_form.visible))
+	for field in ["firstMessage", "lastMessage"]:
+		ui[field] = ui.message_form.endpoint(field)
+		fields.append(ui[field])
+	ui.firstMessage_label = ui.message_form.get_node("Endpoints/First/Label")
+	ui.lastMessage_label = ui.message_form.get_node("Endpoints/Last/Label")
+	ui.messageRange = ui.message_form.get_node("OpenMessages")
 	return ui
 
 
-func summary_variant(shared: bool) -> void:
+func show_family(message: bool) -> void:
+	var form: Control = ui.target_heading.get_parent()
+	for child: Control in form.get_children():
+		if child.name != "ErrorsScroll": child.visible = (child == ui.message_form) == message
+	ui.summary.custom_minimum_size.x = 312 if message else 262
+	ui.notice.custom_minimum_size.y = 64 if message else 61
+	ui.recovery.add_theme_constant_override("separation", 14 if message else 4)
+	ui.recovery_title.add_theme_font_size_override("font_size", 16 if message else 18)
+	ui.recovery_title.custom_minimum_size.y = 25 if message else 0
+	ui.recovery_body.add_theme_font_size_override("font_size", 13 if message else 14)
+	ui.recovery_body.add_theme_constant_override("line_spacing", 0 if message else 3)
+	if message: ui.recovery_body.add_theme_font_override("font", ui.source.get_theme_font("font"))
+	else: ui.recovery_body.remove_theme_font_override("font")
+	ui.recovery_scroll.size_flags_vertical = Control.SIZE_FILL if message else Control.SIZE_EXPAND_FILL
+
+
+func fit_recovery(message: bool) -> void:
+	if not ui.recovery.visible: return
+	var height: float = ui.recovery_body.get_line_count() * ui.recovery_body.get_line_height()
+	ui.recovery_scroll.custom_minimum_size.y = minf(330, height) if message else 0
+
+
+func summary_variant(shared: bool, message := false) -> void:
 	var order := ["summary_heading", "scope", "outcome", "affects_heading", "uses", "all_uses", "summary_spacer", "scope_help", "after_heading", "after_help"] if shared else ["summary_heading", "outcome", "scope", "affects_heading", "uses", "all_uses", "scope_help", "summary_spacer", "after_heading", "after_help"]
 	for index in order.size(): ui.summary.move_child(ui[order[index]], index)
 	ui.summary_heading.text = "Repair scope" if shared else "This repair"
 	ui.summary.add_theme_constant_override("separation", 12 if shared else 14)
 	ui.scope.add_theme_constant_override("separation", 12)
 	for key in ["only", "shared"]:
-		ui[key].custom_minimum_size.y = 42
+		ui[key].custom_minimum_size.y = 34 if shared and message else 42
 		ui[key].alignment = HORIZONTAL_ALIGNMENT_LEFT
 		ui[key].add_theme_font_size_override("font_size", 12)
 	ui.outcome.custom_minimum_size.y = 40 if shared else 0
@@ -102,6 +134,7 @@ func apply_theme(window: Window, mode: String, density: String) -> void:
 	controls.density = density
 	for type in ["Button", "LineEdit", "OptionButton"]: controls.set_font_size("font_size", type, 13)
 	window.theme = controls
+	ui.message_form.apply_theme(controls)
 	var colors: Array = controls.PALETTES[mode].map(func(hex: String): return Color(hex))
 	ui.background.add_theme_stylebox_override("panel", controls.make_panel_style(colors[0], colors[2], 1, 0, 0, 0))
 	var notice_box: StyleBoxFlat = controls.make_panel_style(colors[1], controls.get_color("gold", "Issues"), 0, 10, 12, 0)
@@ -118,4 +151,5 @@ func apply_theme(window: Window, mode: String, density: String) -> void:
 	ui.footer.add_theme_stylebox_override("panel", footer_box)
 	for control in fields:
 		control.custom_minimum_size.y = 28 if density == "compact" else 34
-		control.get_parent().custom_minimum_size.y = 54 if density == "compact" else 60
+		if not ui.message_form.is_ancestor_of(control):
+			control.get_parent().custom_minimum_size.y = 54 if density == "compact" else 60

@@ -4,7 +4,7 @@ signal pane_requested(pane: String)
 signal width_changed(width: int)
 signal recovery_requested
 
-const PANES := ["Map Setup", "Paint Inspector", "Dungeon Draw", "Selection Inspector", "Action Points", "Player Maps", "Land Layout", "Land Tiles", "Random Rectangles", "Action Point Placement"]
+const PANES := ["Map Setup", "Paint Inspector", "Dungeon Draw", "Selection Inspector", "Action Points", "Player Maps", "Land Layout", "Land Tiles", "Random Rectangles", "Action Point Placement", "Generate Terrain"]
 var _panels: Dictionary = {}
 var _current := ""
 var _collapsed := false

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "providence": {
+      "command": "/absolute/path/to/providence-mcp",
+      "args": [
+        "--project-root", "/absolute/path/to/scenario-projects",
+        "--output-root", "/absolute/path/to/scenario-exports"
+      ]
+    }
+  }
+}

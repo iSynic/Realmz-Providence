@@ -437,6 +437,9 @@ func _run_read(label: String, workflow: Callable) -> Dictionary:
 
 
 func has_unapplied_changes() -> bool:
+	# The tab is discoverable while its expensive child scenes enter over several
+	# frames. Hold external writes until draft inspection can see every child.
+	if _staging: return true
 	return %MediaDialog.has_draft() or %NewTextDialog.visible or %Gallery.has_unapplied_changes() or %Supplied.has_unapplied_changes()
 
 
@@ -478,6 +481,7 @@ func read_navigation_state() -> Dictionary:
 	return {"scope": _scope, "browser": %Gallery.read_navigation_state()}
 
 func discovery_selection() -> Dictionary:
+	if _staging: return {"kind":"Assets", "identity":"", "nativeId":"", "scope":_scope}
 	return {"kind":selected_asset_kind(), "identity":selected_asset_identity(), "nativeId":"", "scope":current_scope()}
 
 

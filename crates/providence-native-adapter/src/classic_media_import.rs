@@ -1,3 +1,4 @@
+use crate::classic_source_retention::store_source_annex;
 use crate::execute;
 use crate::request_params::required_string;
 use crate::request_params::required_u64;
@@ -218,13 +219,7 @@ fn store_media_annex(
         .collect::<Vec<_>>();
     sources.push(source.clone());
     sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
-    let annex_bytes = serde_json::to_vec(
-        &json!({"format": "providence-classic-source-annex-v1", "files": sources}),
-    )
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
 
     Ok(annex_blob)
 }

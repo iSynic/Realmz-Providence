@@ -40,7 +40,7 @@ static func run(host) -> bool:
 	for filename in ["Data TD2", "Data TD3"]:
 		if FileAccess.get_file_as_bytes(first.path_join(filename)) != FileAccess.get_file_as_bytes(second.path_join(filename)): return _fail(host, bridge, "Reimport changed deterministic " + filename + " bytes.")
 	bridge.stop()
-	host.checks.append("Fresh authored fixture compiles and reimports Rogue/Timed semantics, then recompiles byte-identical Data TD2/TD3; full imported corpus certification remains blocked by its existing unresolved references")
+	host.checks.append("Fresh authored fixture compiles and reimports Rogue/Timed semantics, then recompiles byte-identical Data TD2/TD3; imported corpus semantics and campaign play are outside this fixture's scope")
 	return true
 
 

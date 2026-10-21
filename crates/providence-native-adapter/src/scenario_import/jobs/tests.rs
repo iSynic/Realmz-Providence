@@ -114,6 +114,20 @@ fn commit_is_single_use_and_requests_a_complete_refresh() {
 }
 
 #[test]
+fn cancellation_after_commit_reports_the_committed_baseline() {
+    let (mut jobs, mut session, store, _root) = ready_job();
+    let params = json!({"jobId":1});
+    jobs.continue_job(&mut session, Some(&store), "commit", &params)
+        .unwrap();
+    let result = jobs
+        .continue_job(&mut session, Some(&store), "cancel", &params)
+        .unwrap();
+    assert_eq!(result["status"], "committed");
+    assert_eq!(result["committed"], true);
+    assert_eq!(session.revision(), Revision(1));
+}
+
+#[test]
 fn connection_shutdown_waits_for_private_worker_cleanup() {
     let (mut jobs, session, store, _root) = ready_job();
     let mut job = jobs.current.take().unwrap();

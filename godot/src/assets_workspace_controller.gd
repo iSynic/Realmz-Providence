@@ -17,13 +17,15 @@ var chooser: Control
 var return_workspace: Control
 var _parent: Control
 var _tabs: TabContainer
-var _items: ProvidenceItemEditor
+var _items: ProvidenceItemEditor:
+	get: return _documents.view("economy.items")
 var _guard: Callable
 var _select_tab: Callable
 var _read_context: Callable
 var _bridge: RefCounted
-var _resource_editors: Dictionary = {}
-var _resource_openers: Dictionary = {}
+var _documents: RefCounted
+var _resource_routes: Dictionary = {}
+var _open_media: Callable
 var _special_land_route: Callable
 var _source_opener: Callable
 var _text_preview: Callable
@@ -34,18 +36,19 @@ var _initializing := false
 var initialization_metrics: Dictionary = {}
 
 
-func initialize(parent: Control, tabs: TabContainer, items: ProvidenceItemEditor, guard: Callable, select_tab: Callable, operations: ProvidenceEditorOperation) -> void:
+func initialize(parent: Control, tabs: TabContainer, guard: Callable, select_tab: Callable, operations: ProvidenceEditorOperation) -> void:
 	_parent = parent
 	_tabs = tabs
-	_items = items
 	_guard = guard
 	_select_tab = select_tab
 	_operations = operations
 
 
-func configure_resources(editors: Dictionary, openers: Dictionary, special_land_route: Callable, source_opener: Callable, text_preview: Callable = Callable()) -> void:
-	_resource_editors = editors
-	_resource_openers = openers
+# Resource pages are resolved by route when needed, so they can stay unrealized until then.
+func configure_resources(documents: RefCounted, routes: Dictionary, open_media: Callable, special_land_route: Callable, source_opener: Callable, text_preview: Callable = Callable()) -> void:
+	_documents = documents
+	_resource_routes = routes
+	_open_media = open_media
 	_special_land_route = special_land_route
 	_source_opener = source_opener
 	_text_preview = text_preview
@@ -77,7 +80,8 @@ func teardown() -> void:
 		chooser.end_item_selection()
 		chooser.reload(null)
 	if is_instance_valid(library_workbench): library_workbench.reload(null)
-	_items.set_return_to_assets_visible(false)
+	var items: Control = _documents.peek("economy.items")
+	if items != null: items.set_return_to_assets_visible(false)
 	_bridge = null
 
 
@@ -116,13 +120,13 @@ func open_import(kind: String = "all") -> void:
 
 
 func import_editor(kind: String) -> Control:
-	return _resource_editors.get(kind)
+	return _documents.view(_resource_routes[kind]) if _resource_routes.has(kind) else null
 
 
 func open_resource(row: Dictionary) -> void:
 	var kind := str(row.get("kind", ""))
-	if not _resource_openers.has(kind): return
-	var response: Dictionary = await _resource_openers[kind].call(str(row.get("identity", "")))
+	if not _resource_routes.has(kind): return
+	var response: Dictionary = await _open_media.call(kind, str(row.get("identity", "")))
 	if not response.get("ok", false): return
 	if kind == "special-land-tile":
 		_special_land_route.call()
@@ -133,13 +137,13 @@ func open_resource(row: Dictionary) -> void:
 
 func restore_location(route: String, state: Dictionary) -> bool:
 	var kind := str({"assets.pictures": "picture", "assets.sounds": "sound", "assets.icons": "icon"}.get(route, ""))
-	if kind.is_empty() or not _resource_openers.has(kind): return false
+	if kind.is_empty(): return false
 	var draft := state.get("draft", {}) as Dictionary
 	var identity := str(state.get("identity", draft.get("identity", "")))
 	if identity.is_empty(): return false
-	var response: Dictionary = await _resource_openers[kind].call(identity)
-	if response.get("ok", false) and _resource_editors.has(kind):
-		var view: Control = _resource_editors[kind]
+	var response: Dictionary = await _open_media.call(kind, identity)
+	if response.get("ok", false):
+		var view: Control = import_editor(kind)
 		if view.has_method("restore_navigation_state"): view.restore_navigation_state(state)
 	return bool(response.get("ok", false))
 
@@ -150,7 +154,7 @@ func confirm_removal(identity: String) -> void:
 	var opened := await _operations.run_workflow(_bridge, "Check artwork removal", _check_removal.bind(identity, revision))
 	if generation != _generation: return
 	if not _accept(opened): return
-	var icons: Control = _resource_editors.icon
+	var icons: Control = import_editor("icon")
 	icons.set_document(opened.result)
 	icons.request_checked_removal()
 

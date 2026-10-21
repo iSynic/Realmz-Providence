@@ -1,0 +1,171 @@
+{
+  "chapters": [
+    [
+      "getting-started",
+      "Getting Started",
+      "Create, edit, apply, save and test.",
+      "getting-started.md",
+      "maps.land"
+    ],
+    [
+      "projects",
+      "Scenario Setup",
+      "Creation, imports and recovery.",
+      "scenario-setup.md",
+      "scenario.startup"
+    ],
+    [
+      "scenario",
+      "Scenario Shell",
+      "Startup, restrictions and hooks.",
+      "scenario-shell.md",
+      "scenario.startup"
+    ],
+    [
+      "maps",
+      "Land/Dungeon Maps",
+      "Terrain, placement and transitions.",
+      "maps.md",
+      "maps.land"
+    ],
+    [
+      "player-maps",
+      "Player Maps",
+      "Names, notes, areas and markers.",
+      "player-maps.md",
+      "player-maps.map-records"
+    ],
+    [
+      "scripts",
+      "Action Points",
+      "Placement, programs and context.",
+      "action-points.md",
+      "scripts.action-points"
+    ],
+    [
+      "text",
+      "Strings & Text",
+      "Messages, labels and scrolling text.",
+      "text-and-messages.md",
+      "text.messages"
+    ],
+    [
+      "encounters-targets",
+      "Encounters",
+      "Choices, conditions and results.",
+      "encounters.md",
+      "encounters.simple"
+    ],
+    [
+      "combat",
+      "Combat",
+      "Monsters, variants and placements.",
+      "combat.md",
+      "combat.monsters"
+    ],
+    [
+      "economy",
+      "Economy",
+      "Items, treasure and shops.",
+      "economy.md",
+      "economy.items"
+    ],
+    [
+      "rules",
+      "Characters & Magic",
+      "Spells, races and castes.",
+      "characters-and-magic.md",
+      "rules.spells"
+    ],
+    [
+      "assets",
+      "Assets",
+      "Artwork, sound, music and text.",
+      "assets.md",
+      "assets.project-assets"
+    ],
+    [
+      "linter-release",
+      "Validate & Publish",
+      "Findings, export and verification.",
+      "validate-and-publish.md",
+      "linter.issues"
+    ]
+  ],
+  "references": [
+    [
+      "shortcuts",
+      "Keyboard Shortcuts",
+      "Commands, keys and availability.",
+      ""
+    ],
+    [
+      "glossary",
+      "Compatibility Glossary",
+      "Package and preservation terms.",
+      "compatibility-glossary.md"
+    ],
+    [
+      "evidence",
+      "Source Evidence Guide",
+      "Read the limits of each claim.",
+      "source-evidence-guide.md"
+    ],
+    [
+      "licenses",
+      "Licenses and Attribution",
+      "Source, resources and notices.",
+      ""
+    ],
+    [
+      "about",
+      "About Providence",
+      "Version and local support.",
+      ""
+    ]
+  ],
+  "workflows": [
+    [
+      "random-message",
+      "Random Message Repair",
+      "Review endpoints and shared settings.",
+      "random-message-repair.md"
+    ],
+    [
+      "flow",
+      "View Flow",
+      "Follow applied relationships.",
+      "view-flow.md"
+    ],
+    [
+      "formats",
+      "Supported Formats",
+      "Media limits and preparation.",
+      "supported-formats.md"
+    ],
+    [
+      "packages",
+      "Package Versions",
+      "Package and project contracts.",
+      "package-versions.md"
+    ],
+    [
+      "building",
+      "Build from Source",
+      "Set up the native development tools.",
+      "building.md"
+    ],
+    [
+      "architecture",
+      "Architecture",
+      "Native editor and compiler ownership.",
+      "architecture.md"
+    ],
+    [
+      "release",
+      "Published Beta",
+      "Contract of the published assets.",
+      "beta-release.md"
+    ]
+  ]
+}

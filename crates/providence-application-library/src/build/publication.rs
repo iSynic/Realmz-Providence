@@ -6,7 +6,7 @@ use super::{
     sources::{SourceManifestFile, VerifiedSources},
 };
 use crate::{corrections::CertifiedApplicationCorrection, fixtures};
-use providence_core::rebuilt::{REALMZ_CLASSIC_APPLICATION_LIBRARY_ID, REBUILT_V3_SCHEMA_SHA256};
+use providence_core::rebuilt::{REALMZ_CLASSIC_APPLICATION_LIBRARY_ID, REBUILT_V6_SCHEMA_SHA256};
 use serde::Serialize;
 use std::{collections::BTreeMap, fs, path::Path};
 
@@ -81,8 +81,8 @@ pub(super) fn publish(
         kind: "realmz2.application-library-lock",
         format_version: 1,
         package_id: REALMZ_CLASSIC_APPLICATION_LIBRARY_ID,
-        schema_version: 3,
-        schema_sha256: REBUILT_V3_SCHEMA_SHA256,
+        schema_version: 6,
+        schema_sha256: REBUILT_V6_SCHEMA_SHA256,
         rules_version: "realmz-classic-1",
         compiler_commit: options.commit.clone(),
         source_manifest_sha256: encoding::sha256(&sources.manifest_bytes),

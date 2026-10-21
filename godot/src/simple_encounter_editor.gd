@@ -398,8 +398,7 @@ func _baseline_draft() -> Dictionary:
 func draft_error() -> Dictionary:
 	for slot in range(RESULT_COUNT):
 		var text := ((_response_controls[slot] as Dictionary).text as TextEdit).text
-		if not _is_ascii(text): return preload("res://src/editor_draft_apply.gd").failure("Option %d contains unsupported characters." % (slot + 1), (_response_controls[slot] as Dictionary).text)
-		if text.to_ascii_buffer().size() > RESPONSE_BYTES: return preload("res://src/editor_draft_apply.gd").failure("Option %d exceeds the 79-byte Classic limit." % (slot + 1), (_response_controls[slot] as Dictionary).text)
+		if text.length() > RESPONSE_BYTES: return preload("res://src/editor_draft_apply.gd").failure("Option %d exceeds the 79-byte Classic limit." % (slot + 1), (_response_controls[slot] as Dictionary).text)
 	return {}
 
 
@@ -413,7 +412,7 @@ func _update_validation() -> void:
 
 
 func _update_response_count(slot: int) -> void:
-	var controls := _response_controls[slot] as Dictionary; var count := (controls.text as TextEdit).text.to_ascii_buffer().size()
+	var controls := _response_controls[slot] as Dictionary; var count := (controls.text as TextEdit).text.length()
 	(controls.count as Label).text = "%d/%d" % [count, RESPONSE_BYTES]; (controls.count as Label).add_theme_color_override("font_color", Color("f09a82") if count > RESPONSE_BYTES else Color("8fa5b9"))
 
 
@@ -493,10 +492,6 @@ func _on_search_changed(_text: String) -> void:
 func _category_color(category: String) -> Color:
 	return ProvidenceActionStepPresentation.encounter_category_color(category)
 
-func _is_ascii(value: String) -> bool:
-	for index in range(value.length()):
-		if value.unicode_at(index) > 127: return false
-	return true
 func _clear_document() -> void:
 	%Callers.disabled = true
 	_step_dialog.invalidate_document()

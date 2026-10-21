@@ -33,9 +33,10 @@ pub enum ComplexEncounterCodecError {
         native_id: NativeRecordId,
         raw_opcode: i16,
     },
-    TextNotAscii {
+    TextUnrepresentable {
         native_id: NativeRecordId,
         slot: usize,
+        reason: String,
     },
     TextTooLong {
         native_id: NativeRecordId,
@@ -81,9 +82,13 @@ impl std::fmt::Display for ComplexEncounterCodecError {
                 "complex encounter {} opcode {raw_opcode} is outside signed-byte storage",
                 native_id.0
             ),
-            Self::TextNotAscii { native_id, slot } => write!(
+            Self::TextUnrepresentable {
+                native_id,
+                slot,
+                reason,
+            } => write!(
                 formatter,
-                "complex encounter {} text {slot} is outside the certified ASCII subset",
+                "complex encounter {} text {slot}: {reason}",
                 native_id.0
             ),
             Self::TextTooLong {
@@ -202,17 +207,18 @@ pub fn validate_complex_encounter_shape(
         if !encounter.authored {
             continue;
         }
-        if !text.is_ascii() {
-            return Err(ComplexEncounterCodecError::TextNotAscii {
+        let bytes = crate::codecs::encode_classic_text_payload(text).map_err(|error| {
+            ComplexEncounterCodecError::TextUnrepresentable {
                 native_id: encounter.native_id,
                 slot,
-            });
-        }
-        if text.len() > COMPLEX_ENCOUNTER_TEXT_BYTES - 1 {
+                reason: error.to_string(),
+            }
+        })?;
+        if bytes.len() > COMPLEX_ENCOUNTER_TEXT_BYTES - 1 {
             return Err(ComplexEncounterCodecError::TextTooLong {
                 native_id: encounter.native_id,
                 slot,
-                bytes: text.len(),
+                bytes: bytes.len(),
             });
         }
     }
@@ -291,8 +297,9 @@ fn encode_row(encounter: &ComplexEncounter, row: &mut [u8]) {
     write_i16(row, 158, encounter.prompt_message_native_id);
     for (slot, text) in encounter.texts.iter().enumerate() {
         let start = 160 + slot * COMPLEX_ENCOUNTER_TEXT_BYTES;
-        row[start] = text.len() as u8;
-        row[start + 1..start + 1 + text.len()].copy_from_slice(text.as_bytes());
+        let bytes = crate::codecs::encode_classic_text_payload(text).expect("validated text");
+        row[start] = bytes.len() as u8;
+        row[start + 1..start + 1 + bytes.len()].copy_from_slice(&bytes);
     }
 }
 
@@ -396,9 +403,10 @@ fn encode_texts_preserving_source(
             let start = 160 + slot * COMPLEX_ENCOUNTER_TEXT_BYTES;
             let field = &mut row[start..start + COMPLEX_ENCOUNTER_TEXT_BYTES];
             field.fill(0);
-            let text = encounter.texts[slot].as_bytes();
+            let text = crate::codecs::encode_classic_text_payload(&encounter.texts[slot])
+                .expect("validated text");
             field[0] = text.len() as u8;
-            field[1..1 + text.len()].copy_from_slice(text);
+            field[1..1 + text.len()].copy_from_slice(&text);
         }
     }
 }
@@ -417,7 +425,7 @@ fn write_i16_if_changed(row: &mut [u8], offset: usize, before: i16, after: i16) 
 
 fn decode_pascal(field: &[u8]) -> String {
     let length = usize::from(field[0]).min(field.len().saturating_sub(1));
-    String::from_utf8_lossy(&field[1..1 + length]).into_owned()
+    super::classic_text_resources::decode_mac_roman_text(&field[1..1 + length])
 }
 
 fn read_i16(row: &[u8], offset: usize) -> i16 {
@@ -427,6 +435,9 @@ fn read_i16(row: &[u8], offset: usize) -> i16 {
 fn write_i16(row: &mut [u8], offset: usize, value: i16) {
     row[offset..offset + 2].copy_from_slice(&value.to_be_bytes());
 }
+
+#[cfg(test)]
+mod text_tests;
 
 #[cfg(test)]
 mod tests {

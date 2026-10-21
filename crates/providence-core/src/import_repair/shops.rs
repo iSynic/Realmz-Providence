@@ -1,9 +1,11 @@
-use super::{RepairAssessment, RepairChange, RepairEntry};
+use super::RepairAssessment;
 use crate::{
-    codecs::{decode_shops, source_shop_record},
+    codecs::decode_shops,
     model::{ProjectSnapshot, ShopRecord},
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub(super) const PRESERVATION_GUIDANCE: &str = "Native Shop records cannot be removed by an import repair. Keep this project and its authored edits; explicitly reimport the source into a separate project for comparison.";
 
 pub(super) fn assess(
     snapshot: &ProjectSnapshot,
@@ -13,39 +15,37 @@ pub(super) fn assess(
     let Some(bytes) = files.get("Data SD") else {
         return;
     };
-    for excluded in decode_shops(bytes).quarantined_records {
-        let Some(current) = snapshot
+    let decoded = decode_shops(bytes);
+    let classified = decoded
+        .quarantined_records
+        .iter()
+        .map(|row| row.native_id)
+        .collect::<BTreeSet<_>>();
+    for original in decoded.records {
+        let current = snapshot
             .shops
             .iter()
-            .find(|shop| shop.native_id == excluded.native_id)
-        else {
-            continue;
+            .find(|row| row.native_id == original.native_id);
+        let diagnostic = if current.is_none() {
+            Some(
+                "the supplied native row is absent from this model; this is an import preservation defect",
+            )
+        } else if classified.contains(&original.native_id) {
+            Some(
+                "the native row and any authored edits are retained despite its legacy inventory classification",
+            )
+        } else {
+            None
         };
-        let original = source_shop_record(bytes, excluded.native_id);
-        assessment.entries.push(RepairEntry {
-            key: format!("shop:{}:quarantine", excluded.native_id.0),
-            family: "Shops".into(),
-            entity: current.identity.clone(),
-            field: "inventory interpretation".into(),
-            conflict: current.authored || original.as_ref() != Some(current),
-            change: RepairChange::ShopQuarantine {
-                expected: Box::new(current.clone()),
-                reason: excluded.reason.into(),
-            },
-        });
+        if let Some(reason) = diagnostic {
+            assessment.preservation_diagnostics.push(format!(
+                "Data SD Shop {}: {}. {}",
+                original.native_id.0, reason, PRESERVATION_GUIDANCE
+            ));
+        }
     }
 }
 
-pub(super) fn apply(snapshot: &mut ProjectSnapshot, expected: &ShopRecord) -> Result<(), String> {
-    let index = snapshot
-        .shops
-        .iter()
-        .position(|shop| shop.native_id == expected.native_id)
-        .ok_or("Shop destination is unavailable; review the correction again.")?;
-    if snapshot.shops[index] != *expected {
-        return Err("Shop inventory changed; review the correction again.".into());
-    }
-    // Removing the decoded interpretation never removes its captured native bytes.
-    snapshot.shops.remove(index);
-    Ok(())
+pub(super) fn apply(_snapshot: &mut ProjectSnapshot, _expected: &ShopRecord) -> Result<(), String> {
+    Err(PRESERVATION_GUIDANCE.into())
 }

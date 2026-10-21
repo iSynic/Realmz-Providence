@@ -39,21 +39,10 @@ pub(super) fn resolve(
         if !matches!(scope, 0 | 1) {
             return Err("Character scope must be Whole party or Picked characters.".into());
         }
-        let selection = input
-            .selections
-            .get(VALUE_KEY)
-            .copied()
-            .unwrap_or_else(|| imported.saturating_abs());
-        let resolved = if scope == 1 {
-            -selection.saturating_abs()
-        } else {
-            selection.saturating_abs()
-        };
+        let (resolved, invalid_selection) = selected_value(query, imported, scope);
         result.resolved_values.insert(VALUE_KEY.into(), resolved);
         result.controls.push(scope_control(scope));
-        if (input.modes.contains_key(SCOPE_KEY) || input.selections.contains_key(VALUE_KEY))
-            && selection == 0
-        {
+        if invalid_selection {
             result
                 .errors
                 .push("Select a nonzero value for this character test before applying.".into());
@@ -61,6 +50,23 @@ pub(super) fn resolve(
     }
     super::optional_branch_control::augment(query, &mut result)?;
     Ok(result)
+}
+
+fn selected_value(query: &ActionFormDescribeQuery, imported: i16, scope: i16) -> (i16, bool) {
+    let input = &query.context.authoring;
+    if !input.modes.contains_key(SCOPE_KEY) && !input.selections.contains_key(VALUE_KEY) {
+        return (imported, false);
+    }
+    let selected = input
+        .selections
+        .get(VALUE_KEY)
+        .copied()
+        .unwrap_or(imported)
+        .checked_abs();
+    match selected {
+        Some(value) if value > 0 => (if scope == 1 { -value } else { value }, false),
+        _ => (imported, true),
+    }
 }
 
 fn scope_control(scope: i16) -> AuthoringModeControl {
@@ -90,7 +96,7 @@ pub(super) fn decorate(
     };
     field.visible = !matches!(test, 3 | 4);
     field.special_values.clear();
-    field.value = field.value.saturating_abs();
+    field.value = field.value.checked_abs().unwrap_or(field.value);
     match test {
         0 => target_field(snapshot, query, field, ActionTargetKind::Caste, "Caste"),
         1 => target_field(snapshot, query, field, ActionTargetKind::Race, "Race"),

@@ -18,9 +18,7 @@ pub(super) fn compile_rules(
     manifest: &mut NativeManifest,
 ) -> Result<(), ClassicSliceCompileError> {
     if !snapshot.race_rules.is_empty() {
-        let scenario_source = sources
-            .data_race
-            .filter(|bytes| bytes.len() >= 30 * crate::codecs::RACE_RECORD_BYTES);
+        let scenario_source = sources.data_race;
         let source = sources
             .current_data_race
             .or(scenario_source)

@@ -93,16 +93,22 @@ pub(super) fn spell_reference(
     byte_provenance: ByteProvenance,
 ) -> ReferenceDescriptor {
     let normalized_id = i32::from(classic_id).unsigned_abs();
-    let resolved = snapshot
-        .standard_spells
-        .iter()
-        .chain(snapshot.scenario_spells.iter())
-        .find(|spell| u32::from(spell.definition.classic_id.unsigned_abs()) == normalized_id);
+    let resolved =
+        snapshot
+            .standard_spells
+            .iter()
+            .chain(snapshot.scenario_spells.iter().filter(|row| {
+                crate::codecs::scenario_spell_is_runtime_addressable(&row.definition)
+            }))
+            .find(|spell| u32::from(spell.definition.classic_id.unsigned_abs()) == normalized_id);
     let is_custom_scenario_id = (0..crate::codecs::SCENARIO_SPELL_RECORDS)
         .filter_map(|record_index| scenario_spell_classic_id(record_index as u16))
         .any(|candidate| u32::from(candidate.unsigned_abs()) == normalized_id);
-    let stock_fallback =
-        (resolved.is_none() && !is_custom_scenario_id).then(|| fallback_label.to_string());
+    let is_stock_id = (0..crate::codecs::STANDARD_SPELL_RECORDS)
+        .filter_map(|index| crate::codecs::standard_spell_classic_id(index as u16))
+        .any(|id| u32::from(id.unsigned_abs()) == normalized_id);
+    let stock_fallback = (resolved.is_none() && !is_custom_scenario_id && is_stock_id)
+        .then(|| fallback_label.to_string());
     let mut repair_actions = vec![RepairAction::Retarget, RepairAction::ImportTarget];
     if !required {
         repair_actions.push(RepairAction::ClearOptional);

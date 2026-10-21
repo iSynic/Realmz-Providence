@@ -6,25 +6,35 @@ const WHITE_DRAGON_DATA_ED3_SHA256: &str =
     "ff82bb8ad3f1585b9cc70fd869ec0f89932e922c28bdfd826620af77c4d5a608";
 
 #[test]
-fn certified_foreign_tail_accepts_only_the_authored_xap_projection() {
-    let records =
-        decode_extra_action_points(&vec![0; 394 * EXTRA_ACTION_POINT_RECORD_BYTES]).records;
+fn xap_import_requires_every_complete_physical_row_independent_of_source_hash() {
+    let records = decode_extra_action_points(&vec![0; 86_040]).records;
+    assert_eq!(records.len(), 2151);
+    let paths = BTreeSet::from(["Data ED3"]);
+    for digest in [WHITE_DRAGON_DATA_ED3_SHA256.to_owned(), "0".repeat(64)] {
+        let source = ClassicSourceBlob {
+            native_path: "Data ED3".into(),
+            blob: BlobId(format!("sha256:{digest}")),
+            byte_length: 86_040,
+        };
+        validate_extra_action_points(view(&source, &records), &paths).unwrap();
+        assert!(validate_extra_action_points(view(&source, &records[..394]), &paths).is_err());
+    }
+}
+
+#[test]
+fn xap_import_retains_complete_prefix_of_a_fragment_without_inventing_a_row() {
+    let records = decode_extra_action_points(&[0; 43]).records;
     let source = ClassicSourceBlob {
         native_path: "Data ED3".into(),
-        blob: BlobId(format!("sha256:{WHITE_DRAGON_DATA_ED3_SHA256}")),
-        byte_length: 86_040,
+        blob: BlobId("sha256:fixture".into()),
+        byte_length: 43,
     };
     let paths = BTreeSet::from(["Data ED3"]);
-    let input = view(&source, &records);
-    validate_extra_action_points(input, &paths).expect("certified extent");
-
-    let wrong_source = ClassicSourceBlob {
-        blob: BlobId(format!("sha256:{}", "0".repeat(64))),
-        ..source
-    };
-    let error = validate_extra_action_points(view(&wrong_source, &records), &paths)
-        .expect_err("unknown aligned payload must not be reclassified");
-    assert!(error.to_string().contains("does not match"));
+    validate_extra_action_points(view(&source, &records), &paths).unwrap();
+    assert!(validate_extra_action_points(view(&source, &[]), &paths).is_err());
+    let mut wrong_id = records;
+    wrong_id[0].native_id.0 = 1;
+    assert!(validate_extra_action_points(view(&source, &wrong_id), &paths).is_err());
 }
 
 fn view<'a>(

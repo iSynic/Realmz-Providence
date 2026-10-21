@@ -1,6 +1,9 @@
 use super::*;
 use crate::model::ScenarioMessage;
 
+mod selection;
+mod shared;
+
 fn message(id: u32) -> ScenarioMessage {
     ScenarioMessage {
         identity: StableId(format!("message:{id}")),
@@ -166,6 +169,14 @@ fn every_reachable_message_is_checked_even_beyond_the_requested_page() {
     let past_end = message_range(&snapshot, &draft.input, usize::MAX, 128).unwrap();
     assert!(past_end.entries.is_empty());
     assert_eq!(past_end.unresolved_messages, 1);
+    assert_eq!(
+        past_end.first_unresolved.as_ref().unwrap().native_id,
+        Some(NativeRecordId(200))
+    );
+    assert_eq!(
+        past_end.first_unresolved.as_ref().unwrap().status,
+        MessageRangeStatus::Missing
+    );
     snapshot.messages.push(message(200));
     assert!(plan(&snapshot, Revision(0), &draft).is_ok());
 }
@@ -178,6 +189,14 @@ fn duplicate_message_numbers_and_wrong_or_reused_identities_are_not_resolved() {
     let duplicate = message_range(&snapshot, &draft.input, 1, 1).unwrap();
     assert_eq!(duplicate.entries[0].status, MessageRangeStatus::Ambiguous);
     assert_eq!(duplicate.entries[0].identity, None);
+    assert_eq!(
+        message_range(&snapshot, &draft.input, 0, 1)
+            .unwrap()
+            .first_unresolved
+            .unwrap()
+            .status,
+        MessageRangeStatus::Ambiguous
+    );
     assert!(plan(&snapshot, Revision(0), &draft).is_err());
     snapshot.messages.pop();
     snapshot

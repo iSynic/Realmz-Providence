@@ -178,6 +178,24 @@ mod tests {
     }
 
     #[test]
+    fn c_string_caption_keeps_post_nul_bytes_and_fragment_in_the_source() {
+        let mut source = vec![0; OPTION_LABEL_RECORD_BYTES];
+        source[0] = OPTION_LABEL_TEXT_BYTES as u8;
+        source[1..7].copy_from_slice(b"Go   \0");
+        source[7..13].copy_from_slice(b"hidden");
+        source.extend_from_slice(&[0xde, 0xad]);
+        let decoded = decode_option_labels(&source);
+        assert_eq!(
+            decoded.records[0].text,
+            format!("Go    hidden{}", " ".repeat(12))
+        );
+        assert_eq!(
+            encode_option_labels(&decoded.records, Some(&source)).unwrap(),
+            source
+        );
+    }
+
+    #[test]
     fn text_longer_than_twenty_four_bytes_is_rejected() {
         assert!(matches!(
             encode_option_labels(&[authored(0, &"x".repeat(25))], None),

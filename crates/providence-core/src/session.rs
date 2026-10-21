@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 mod action_draft_commands;
+mod authoring_stage;
+pub use authoring_stage::AuthoringStage;
 mod action_draft_preservation;
 mod action_draft_semantics;
 mod action_point_commands;
@@ -21,6 +23,9 @@ pub mod battle_authoring;
 mod battle_commands;
 mod change_projection;
 mod classic_rule_selection_commands;
+mod clone_state;
+mod history_attribution;
+pub use history_attribution::HistoryAttribution;
 mod combat_references;
 mod command_dispatch;
 mod command_effects;
@@ -51,7 +56,9 @@ mod map_paint_commands;
 mod map_stamp_commands;
 mod media_commands;
 mod message_commands;
+mod monster_allocation;
 mod monster_commands;
+pub use monster_allocation::MonsterAllocation;
 pub(crate) mod monster_draft;
 pub(crate) mod monster_draft_fields;
 mod monster_library_transfers;
@@ -164,6 +171,8 @@ impl ChangeProjection {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionHistoryEntry {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<HistoryAttribution>,
     pub snapshot: ProjectSnapshot,
     pub changed_entities: Vec<StableId>,
     #[serde(default)]
@@ -186,27 +195,14 @@ pub struct EditorSession {
     undo: Vec<SessionHistoryEntry>,
     redo: Vec<SessionHistoryEntry>,
     projections: projections::SessionProjections,
-    staging_import: bool,
+    private_staging: bool,
+    staged_changes: Option<BTreeSet<StableId>>,
     instance_id: u64,
 }
 
 fn next_session_id() -> u64 {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
     NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-}
-
-impl Clone for EditorSession {
-    fn clone(&self) -> Self {
-        Self {
-            snapshot: self.snapshot.clone(),
-            revision: self.revision,
-            undo: self.undo.clone(),
-            redo: self.redo.clone(),
-            projections: self.projections.clone(),
-            staging_import: self.staging_import,
-            instance_id: next_session_id(),
-        }
-    }
 }
 
 impl EditorSession {
@@ -221,7 +217,8 @@ impl EditorSession {
             undo: Vec::new(),
             redo: Vec::new(),
             projections: projections::SessionProjections::default(),
-            staging_import: false,
+            private_staging: false,
+            staged_changes: None,
             instance_id: next_session_id(),
         }
     }
@@ -258,7 +255,8 @@ impl EditorSession {
             undo: state.undo,
             redo: state.redo,
             projections: projections::SessionProjections::default(),
-            staging_import: false,
+            private_staging: false,
+            staged_changes: None,
             instance_id: next_session_id(),
         }
     }
@@ -377,7 +375,7 @@ impl EditorSession {
     }
 
     fn apply(&mut self, command: EditorCommand) -> Result<ChangeProjection, SessionError> {
-        if self.staging_import {
+        if self.private_staging {
             return self.apply_staged_import(command);
         }
         let allows_noop = matches!(
@@ -386,7 +384,19 @@ impl EditorSession {
         );
         let references_unchanged = self.leaves_references_unchanged(&command);
         let before = self.snapshot.clone();
-        let changed_entities = self.apply_domain_command(command)?;
+        let result = self.apply_domain_command(command);
+        #[cfg(test)]
+        let result = result.and_then(tests::fail_after_domain_write);
+        let changed_entities = match result {
+            Ok(changed) => changed,
+            Err(error) => {
+                // Handlers may write before a later fallible step. A rejected command keeps the
+                // revision, so it must also keep the truth and drop views derived mid-command.
+                self.snapshot = before;
+                self.projections = projections::SessionProjections::default();
+                return Err(error);
+            }
+        };
         if allows_noop && changed_entities.is_empty() {
             return Ok(change_projection::build(
                 self,
@@ -405,6 +415,7 @@ impl EditorSession {
         push_history(
             &mut self.undo,
             SessionHistoryEntry {
+                attribution: None,
                 snapshot: before,
                 changed_entities: changed_entities.clone(),
                 references_unchanged,
@@ -429,6 +440,7 @@ impl EditorSession {
         push_history(
             &mut self.redo,
             SessionHistoryEntry {
+                attribution: entry.attribution,
                 snapshot: current,
                 changed_entities: entry.changed_entities.clone(),
                 references_unchanged: entry.references_unchanged,
@@ -464,6 +476,7 @@ impl EditorSession {
             push_history(
                 &mut self.undo,
                 SessionHistoryEntry {
+                    attribution: entry.attribution,
                     snapshot: current,
                     changed_entities: entry.changed_entities.clone(),
                     references_unchanged: entry.references_unchanged,

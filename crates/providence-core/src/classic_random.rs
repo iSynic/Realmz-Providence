@@ -16,6 +16,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn signed_outputs_narrow_after_the_classic_range_calculation() {
+        assert_eq!(
+            signed_range_values(i16::MAX, i16::MIN),
+            [i16::MAX, i16::MIN]
+        );
+        assert_eq!(signed_range_values(i16::MIN, i16::MAX), [i16::MIN]);
+    }
+
+    #[test]
     fn range_values_match_every_random_sample_at_signed_boundaries() {
         let bounds = [
             i16::MIN,

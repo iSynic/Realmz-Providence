@@ -1,0 +1,268 @@
+[gd_scene load_steps=4 format=3]
+[ext_resource type="Script" path="res://src/mcp_connections_controller.gd" id="1"]
+[ext_resource type="Texture2D" path="res://theme/policy_checked.svg" id="2"]
+[ext_resource type="Texture2D" path="res://theme/policy_unchecked.svg" id="3"]
+[node name="MCPConnections" type="Node"]
+script = ExtResource("1")
+
+[node name="Connections" type="Window" parent="."]
+unique_name_in_owner = true
+title = "MCP connections"
+size = Vector2i(980, 650)
+min_size = Vector2i(980, 650)
+visible = false
+transient = true
+exclusive = true
+wrap_controls = false
+borderless = true
+unresizable = true
+
+[node name="Margin" type="MarginContainer" parent="Connections"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="Content" type="VBoxContainer" parent="Connections/Margin"]
+theme_override_constants/separation = 12
+
+[node name="SetupWindow" type="Window" parent="Connections"]
+unique_name_in_owner = true
+title = "MCP connections"
+size = Vector2i(980, 650)
+min_size = Vector2i(980, 650)
+visible = false
+transient = true
+exclusive = true
+wrap_controls = false
+borderless = true
+unresizable = true
+
+[node name="Margin" type="MarginContainer" parent="Connections/SetupWindow"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="Content" type="VBoxContainer" parent="Connections/SetupWindow/Margin"]
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="Connections/Margin/Content"]
+text = "MCP connections"
+theme_override_font_sizes/font_size = 22
+
+[node name="Context" type="Label" parent="Connections/Margin/Content"]
+text = "Open a project with shared sessions enabled."
+unique_name_in_owner = true
+
+[node name="AllowEdits" type="CheckBox" parent="Connections/Margin/Content"]
+unique_name_in_owner = true
+text = "Allow MCP edits for this project"
+theme_override_icons/checked = ExtResource("2")
+theme_override_icons/unchecked = ExtResource("3")
+theme_override_icons/checked_disabled = ExtResource("2")
+theme_override_icons/unchecked_disabled = ExtResource("3")
+
+[node name="DraftStatus" type="Label" parent="Connections/Margin/Content"]
+text = "Edits use the same revision checks, validation and Undo / Redo as native controls."
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="Clients" type="Tree" parent="Connections/Margin/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 220)
+size_flags_vertical = 3
+columns = 3
+column_titles_visible = true
+hide_root = true
+select_mode = 1
+
+[node name="Latest" type="Label" parent="Connections/Margin/Content"]
+unique_name_in_owner = true
+text = "Changes share one project history. Apply or discard drafts before allowing assistant edits."
+autowrap_mode = 2
+
+[node name="History" type="Label" parent="Connections/Margin/Content"]
+text = "Undo reverses the latest shared change, including edits from another client."
+autowrap_mode = 2
+
+[node name="DraftActions" type="HBoxContainer" parent="Connections/Margin/Content"]
+
+[node name="Draft" type="Button" parent="Connections/Margin/Content/DraftActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Go to this window's draft"
+
+[node name="ReviewHold" type="Button" parent="Connections/Margin/Content/DraftActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Review disconnected hold…"
+
+[node name="Actions" type="HBoxContainer" parent="Connections/Margin/Content"]
+
+[node name="Setup" type="Button" parent="Connections/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Client Setup…"
+
+[node name="Spacer" type="Control" parent="Connections/Margin/Content/Actions"]
+size_flags_horizontal = 3
+
+[node name="Disconnect" type="Button" parent="Connections/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Disconnect selected"
+
+[node name="Pause" type="Button" parent="Connections/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Pause edits"
+
+[node name="Close" type="Button" parent="Connections/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Close"
+
+[node name="Heading" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Client setup"
+theme_override_font_sizes/font_size = 22
+
+[node name="Purpose" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Connect your assistant to the same project and Undo history."
+
+[node name="ExecutableLabel" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Server executable"
+
+[node name="ExecutableRow" type="HBoxContainer" parent="Connections/SetupWindow/Margin/Content"]
+
+[node name="Executable" type="LineEdit" parent="Connections/SetupWindow/Margin/Content/ExecutableRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+editable = false
+
+[node name="ProjectRootLabel" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Project root — projects this assistant may open"
+
+[node name="ProjectRootRow" type="HBoxContainer" parent="Connections/SetupWindow/Margin/Content"]
+
+[node name="ProjectRoot" type="LineEdit" parent="Connections/SetupWindow/Margin/Content/ProjectRootRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+editable = true
+
+[node name="ProjectChoose" type="Button" parent="Connections/SetupWindow/Margin/Content/ProjectRootRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Choose folder…"
+
+[node name="ExportRootLabel" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Export root — new output files only"
+
+[node name="ExportRootRow" type="HBoxContainer" parent="Connections/SetupWindow/Margin/Content"]
+
+[node name="ExportRoot" type="LineEdit" parent="Connections/SetupWindow/Margin/Content/ExportRootRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+editable = true
+
+[node name="ExportChoose" type="Button" parent="Connections/SetupWindow/Margin/Content/ExportRootRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Choose folder…"
+
+[node name="Consequence" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Copy this configuration into your MCP client. It does not change project data."
+autowrap_mode = 2
+
+[node name="SetupStatus" type="Label" parent="Connections/SetupWindow/Margin/Content"]
+text = "Choose folders before copying configuration."
+unique_name_in_owner = true
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="Connections/SetupWindow/Margin/Content"]
+size_flags_vertical = 3
+
+[node name="Actions" type="HBoxContainer" parent="Connections/SetupWindow/Margin/Content"]
+
+[node name="Spacer" type="Control" parent="Connections/SetupWindow/Margin/Content/Actions"]
+size_flags_horizontal = 3
+
+[node name="Copy" type="Button" parent="Connections/SetupWindow/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Copy Configuration"
+
+[node name="SetupClose" type="Button" parent="Connections/SetupWindow/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Close"
+
+[node name="Folders" type="FileDialog" parent="Connections/SetupWindow"]
+unique_name_in_owner = true
+title = "Choose folder"
+file_mode = 2
+access = 2
+use_native_dialog = true
+
+[node name="ReleaseHold" type="Window" parent="Connections"]
+unique_name_in_owner = true
+title = "Release a disconnected editing hold?"
+size = Vector2i(980, 650)
+min_size = Vector2i(980, 650)
+visible = false
+transient = true
+exclusive = true
+borderless = true
+unresizable = true
+
+[node name="Margin" type="MarginContainer" parent="Connections/ReleaseHold"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 22
+
+[node name="Content" type="VBoxContainer" parent="Connections/ReleaseHold/Margin"]
+theme_override_constants/separation = 18
+
+[node name="Heading" type="Label" parent="Connections/ReleaseHold/Margin/Content"]
+text = "Release a disconnected editing hold?"
+theme_override_font_sizes/font_size = 22
+
+[node name="Context" type="Label" parent="Connections/ReleaseHold/Margin/Content"]
+text = "Previous Providence window · Disconnected"
+
+[node name="Reopen" type="Label" parent="Connections/ReleaseHold/Margin/Content"]
+text = "Try reopening the previous window before releasing its hold."
+
+[node name="Consequence" type="Label" parent="Connections/ReleaseHold/Margin/Content"]
+text = "Releasing this hold lets the assistant edit once no other draft or manual pause blocks it. It does not apply, discard or recover that window’s text. If that window returns, its draft must be reconciled with the current revision."
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="Connections/ReleaseHold/Margin/Content"]
+size_flags_vertical = 3
+
+[node name="Actions" type="HBoxContainer" parent="Connections/ReleaseHold/Margin/Content"]
+alignment = 2
+
+[node name="CancelHold" type="Button" parent="Connections/ReleaseHold/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+text = "Cancel"
+
+[node name="ConfirmHold" type="Button" parent="Connections/ReleaseHold/Margin/Content/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 36)
+text = "Release hold"

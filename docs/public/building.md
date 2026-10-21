@@ -11,6 +11,7 @@ cargo build --workspace --locked
 cargo test --workspace --all-targets --locked
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
+python tools/build-offline-help.py
 godot --editor --path godot
 ```
 
@@ -56,7 +57,9 @@ compiler, make and pkg-config. It renders bounded PCM for Godot playback;
 stored MOD data remains unchanged. The matching decoder source is included.
 
 GitHub Actions runs formatting, Clippy and workspace tests on Windows, Linux
-and macOS before creating bundles. A version tag publishes only after every
+and macOS, plus the Godot UI smoke tier on Windows, before creating bundles.
+`cargo deny check` enforces the dependency licenses, advisories and sources in
+`deny.toml`. A version tag publishes only after every
 platform succeeds. macOS builds are not notarized; signed/notarized distribution
 requires the maintainer's Apple developer credentials.
 

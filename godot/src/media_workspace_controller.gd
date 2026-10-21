@@ -10,24 +10,65 @@ signal compile_requested
 signal status_changed(message: String)
 
 const MediaController = preload("res://src/scenario_media_controller.gd")
-var pictures := MediaController.new()
-var sounds := MediaController.new()
-var icons := MediaController.new()
-var special_land := MediaController.new()
+const PAGES := {"assets.pictures": "picture", "assets.sounds": "sound", "assets.icons": "icon", "maps.special-land": "special-land"}
+const MEDIA_ROUTES := {"picture": "assets.pictures", "sound": "assets.sounds", "icon": "assets.icons", "special-land-tile": "maps.special-land"}
+# Each controller binds with its page; reading one realizes its page (see lazy-workbench-pages.md).
+var pictures: MediaController:
+	get: return _controller("assets.pictures")
+var sounds: MediaController:
+	get: return _controller("assets.sounds")
+var icons: MediaController:
+	get: return _controller("assets.icons")
+var special_land: MediaController:
+	get: return _controller("maps.special-land")
+var _controllers: Dictionary = {}
+var _documents: RefCounted
+var _operations: ProvidenceEditorOperation
+var _read_context: Callable
+var _accept_read: Callable
+var _accept_draft: Callable
+var _refresh_affected: Callable
+var _bridge: RefCounted
 
 
 func initialize(documents: RefCounted, operations: ProvidenceEditorOperation, read_context: Callable, accept_read: Callable, accept_draft: Callable, refresh_affected: Callable) -> void:
-	for entry in [["assets.pictures", "picture", pictures], ["assets.sounds", "sound", sounds], ["assets.icons", "icon", icons], ["maps.special-land", "special-land", special_land]]:
-		var view: Control = documents.view(entry[0])
-		var controller = entry[2]
-		controller.initialize(entry[1], view, operations, read_context, accept_read, accept_draft)
-		controller.refresh_affected = refresh_affected
-		controller.projection_applied.connect(func(projection): projection_applied.emit(projection))
-		controller.status_changed.connect(func(message): status_changed.emit(message))
-		_bind_commands(view, entry[1], controller)
-		documents.register_controller(entry[0], preload("res://src/workbench_controller.gd").new(
-			entry[0], view, controller.refresh_workbench, controller.teardown))
-	_bind_navigation(documents)
+	_documents = documents
+	_operations = operations
+	_read_context = read_context
+	_accept_read = accept_read
+	_accept_draft = accept_draft
+	_refresh_affected = refresh_affected
+	for route in PAGES: documents.on_realize(route, _bind_page.bind(route))
+
+
+func _bind_page(view: Control, route: String) -> void:
+	var prefix: String = PAGES[route]
+	var controller := MediaController.new()
+	controller.initialize(prefix, view, _operations, _read_context, _accept_read, _accept_draft)
+	controller.refresh_affected = _refresh_affected
+	controller.projection_applied.connect(func(projection): projection_applied.emit(projection))
+	controller.status_changed.connect(func(message): status_changed.emit(message))
+	# A page realized during a session joins it, as if it had been attached at open.
+	if _bridge != null: controller.attach_session(_bridge)
+	_controllers[route] = controller
+	_bind_commands(view, prefix, controller)
+	_bind_navigation(view, prefix)
+	_documents.register_controller(route, preload("res://src/workbench_controller.gd").new(
+		route, view, controller.refresh_workbench, controller.teardown))
+
+
+func _controller(route: String) -> MediaController:
+	_documents.view(route)
+	return _controllers[route]
+
+
+func open_media(kind: String, identity: String) -> Dictionary:
+	return await _controller(MEDIA_ROUTES[kind]).open_media(identity)
+
+
+# Nothing plays from a Sounds page that was never realized.
+func stop_sound_preview() -> void:
+	if _controllers.has("assets.sounds"): _controllers["assets.sounds"].stop_preview()
 
 
 func _bind_commands(view: Control, prefix: String, controller: RefCounted) -> void:
@@ -51,23 +92,23 @@ func _present_selection(view: Control, prefix: String, document: Dictionary) -> 
 	if view.is_visible_in_tree(): inspector_requested.emit(prefix, document)
 
 
-func _bind_navigation(documents: RefCounted) -> void:
-	var picture_view: Control = documents.view("assets.pictures")
-	var sound_view: Control = documents.view("assets.sounds")
-	var icon_view: Control = documents.view("assets.icons")
-	picture_view.sound_route_requested.connect(func(): route_requested.emit("assets.sounds"))
-	picture_view.icon_route_requested.connect(func(): route_requested.emit("assets.icons"))
-	picture_view.special_land_route_requested.connect(func(): special_land_requested.emit())
-	sound_view.picture_route_requested.connect(func(): route_requested.emit("assets.pictures"))
-	sound_view.icon_route_requested.connect(func(): route_requested.emit("assets.icons"))
-	icon_view.picture_route_requested.connect(func(): route_requested.emit("assets.pictures"))
-	icon_view.sound_route_requested.connect(func(): route_requested.emit("assets.sounds"))
-	icon_view.special_land_route_requested.connect(func(): special_land_requested.emit())
+# Gallery pages link to each other, never to themselves (Icons inherits the Pictures signals).
+func _bind_navigation(view: Control, prefix: String) -> void:
+	for kind in ["picture", "sound", "icon"]:
+		if kind != prefix and view.has_signal(kind + "_route_requested"):
+			view.connect(kind + "_route_requested", func(): route_requested.emit(MEDIA_ROUTES[kind]))
+	if view.has_signal("special_land_route_requested"):
+		view.special_land_route_requested.connect(func(): special_land_requested.emit())
 
 
 func attach_session(bridge: RefCounted) -> void:
-	for controller in [pictures, sounds, icons, special_land]: controller.attach_session(bridge)
+	_bridge = bridge
+	for controller in _controllers.values(): controller.attach_session(bridge)
+
+
+func teardown() -> void:
+	_bridge = null
 
 
 func dispose() -> void:
-	for controller in [pictures, sounds, icons, special_land]: controller.dispose()
+	for controller in _controllers.values(): controller.dispose()

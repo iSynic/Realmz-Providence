@@ -6,7 +6,7 @@ use super::{
     RebuiltV3BattleDefinition, RebuiltV3BattleError, RebuiltV3MonsterDefinition,
     RebuiltV3MonsterDescription, RebuiltV3MonsterError, RebuiltV3MonsterSetDefinition,
     RebuiltV3ReachabilityError, RebuiltV3ReachabilityReference, derive_rebuilt_v3_reachability,
-    project_rebuilt_v3_battles_by_classic_ids, project_rebuilt_v3_monsters_by_classic_ids,
+    project_rebuilt_v3_battles_by_classic_ids,
 };
 use crate::model::{ProjectOrigin, ProjectSnapshot, StableId};
 
@@ -96,8 +96,9 @@ pub(crate) fn project_rebuilt_v3_reachable_combat_from_report(
         .collect::<BTreeSet<_>>();
     let battles = project_rebuilt_v3_battles_by_classic_ids(snapshot, &battle_ids)
         .map_err(RebuiltV3ReachableCombatError::Battles)?;
-    let monster_selection = project_rebuilt_v3_monsters_by_classic_ids(snapshot, &monster_ids)
-        .map_err(RebuiltV3ReachableCombatError::Monsters)?;
+    let monster_selection =
+        super::monsters::project_current_monsters_by_classic_ids(snapshot, &monster_ids)
+            .map_err(RebuiltV3ReachableCombatError::Monsters)?;
     let selected_monsters = monster_selection
         .monsters
         .iter()

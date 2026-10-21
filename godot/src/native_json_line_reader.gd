@@ -11,11 +11,10 @@ func read(stream: FileAccess, connection_alive: Callable = Callable()) -> String
 			var line := _pending.slice(0, end).get_string_from_utf8()
 			_pending = _pending.slice(end + 1)
 			return line.trim_suffix("\r")
-		# Pipe length is the available byte count. Reading one byte blocks until
-		# a response begins; available chunks avoid one system call per character.
+		# Byte-pipe reads return available data up to this bound. Avoid peeking:
+		# the producer can exit between the liveness check and a length query.
 		if connection_alive.is_valid() and not connection_alive.call(): return ""
-		var count := clampi(int(stream.get_length()), 1, 16 * 1024)
-		var bytes := stream.get_buffer(count)
+		var bytes := stream.get_buffer(16 * 1024)
 		if bytes.is_empty() or _pending.size() + bytes.size() > MAX_LINE_BYTES:
 			_pending.clear()
 			return ""

@@ -3,7 +3,7 @@ name: Native builds
 on:
   push:
     branches: [main]
-    tags: ['v0.6.*']
+    tags: ['v*']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -16,6 +16,17 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
+  dependencies:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      # Licenses, advisories, bans and sources against deny.toml.
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          rust-version: '1.98.0'
+
   build:
     if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     strategy:
@@ -42,10 +53,20 @@ jobs:
           toolchain: '1.98.0'
           components: rustfmt, clippy
       - name: External Cargo build directory
+        id: target
         shell: bash
-        run: echo "CARGO_TARGET_DIR=$RUNNER_TEMP/providence-target" >> "$GITHUB_ENV"
+        run: |
+          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/providence-target" >> "$GITHUB_ENV"
+          # rust-cache joins its target onto the workspace path, so it needs a relative one.
+          echo "relative=$(python -c 'import os, sys; print(os.path.relpath(sys.argv[1]).replace(os.sep, "/"))' "$RUNNER_TEMP/providence-target")" >> "$GITHUB_OUTPUT"
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ". -> ${{ steps.target.outputs.relative }}"
+          key: ${{ matrix.platform }}
       - name: Public source boundary
-        run: python tools/release/check_public_source.py
+        run: |
+          python tools/release/check_public_source.py
+          python tools/release/verify_source_inputs.py
       - name: Format and lint
         run: |
           cargo fmt --all --check
@@ -57,6 +78,19 @@ jobs:
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - name: Pinned Godot editor and export templates
         run: python tools/release/bootstrap.py --cache "${{ runner.temp }}/providence-cache"
+      # The smoke tier's checks call Windows PowerShell scripts, so it runs on Windows. Its preview
+      # checks need the application library, derived here from the bundled reference sources.
+      - name: UI smoke tier
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build --locked -p providence-native-adapter -p providence-cli -p providence-mcp
+          & $env:PROVIDENCE_GODOT_PATH --headless --path godot --editor --import
+          $env:PROVIDENCE_APPLICATION_LIBRARY_ROOT = "$env:RUNNER_TEMP/smoke-library/realmz-classic"
+          python tools/prepare-mcp-application-library.py --adapter "$env:CARGO_TARGET_DIR/debug/providence-native-adapter.exe" --source godot/bundled/realmz-reference --output $env:PROVIDENCE_APPLICATION_LIBRARY_ROOT
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/run-ui-checks.py --tier smoke --godot "$env:PROVIDENCE_GODOT_PATH" --adapter "$env:CARGO_TARGET_DIR/debug/providence-native-adapter.exe" --cli "$env:CARGO_TARGET_DIR/debug/providence-cli.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build complete native bundle
         run: python tools/release/package.py --godot "${{ env.PROVIDENCE_GODOT_PATH }}" --target "${{ runner.temp }}/providence-target" --cache "${{ runner.temp }}/providence-cache" --output "${{ runner.temp }}/providence-release"
       - name: Native startup and music boundaries

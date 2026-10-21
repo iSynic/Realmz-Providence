@@ -34,6 +34,25 @@ pub(crate) struct OpenLibraries {
     pub(crate) reference_catalog: Option<OpenReferenceCatalog>,
 }
 
+impl OpenLibraries {
+    pub(crate) fn split(&mut self) -> (CatalogViews<'_>, Option<&mut OpenMonsterLibrary>) {
+        (
+            CatalogViews {
+                stock_items: self.stock_items.as_ref(),
+                stock_spells: self.stock_spells.as_ref(),
+                stock_rules: self.stock_rules.as_ref(),
+                application_terrain: self.application_terrain.as_ref(),
+                personal_library: self.personal_library.as_ref(),
+                application_media: self.application_media.as_ref().map(|r| &r.catalog),
+                application_media_store: self.application_media.as_ref().map(|r| &r.store),
+                reference_catalog: self.reference_catalog.as_ref().map(|r| &r.catalog),
+                reference_catalog_store: self.reference_catalog.as_ref().map(|r| &r.store),
+            },
+            self.monster_library.as_mut(),
+        )
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 // Borrowed external resources for one request; the project session remains the authoring authority.
 pub(crate) struct CatalogViews<'a> {

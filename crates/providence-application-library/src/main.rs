@@ -29,6 +29,9 @@ fn run() -> Result<(), String> {
             Ok(())
         }
         Some("slim-scenarios") => slim::run(&args[1..]),
+        Some("retain-reviewed-projections") => {
+            providence_application_library::record_projections::run(&args[1..])
+        }
         Some("correct-classic-map-markers") => {
             providence_application_library::map_markers::run(&args[1..])
         }

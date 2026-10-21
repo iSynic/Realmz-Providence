@@ -1,4 +1,4 @@
-use crate::classic_source_retention::replace_sources;
+use crate::classic_source_retention::{replace_sources, store_source_annex};
 use crate::execute;
 use crate::request_params::required_string;
 use providence_core::codecs::COMPLEX_ENCOUNTER_RECORD_BYTES;
@@ -34,14 +34,7 @@ pub(crate) fn import_classic_complex_encounters(
         .map(|(path, bytes)| (path.as_str(), bytes.as_slice()))
         .collect::<Vec<_>>();
     let sources = replace_sources(&session.snapshot().classic_sources, store, &replacements)?;
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let has_rogue_source = sources
@@ -80,7 +73,7 @@ pub(crate) fn import_classic_rogue_encounters(
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < ROGUE_ENCOUNTER_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < ROGUE_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data TD2 must contain at least one complete {ROGUE_ENCOUNTER_RECORD_BYTES}-byte record"
         ));
@@ -97,14 +90,7 @@ pub(crate) fn import_classic_rogue_encounters(
         store,
         &[("Data TD2", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -136,7 +122,7 @@ pub(crate) fn import_classic_timed_encounters(
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < TIMED_ENCOUNTER_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < TIMED_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data TD3 must contain at least one complete {TIMED_ENCOUNTER_RECORD_BYTES}-byte record"
         ));
@@ -152,13 +138,7 @@ pub(crate) fn import_classic_timed_encounters(
         store,
         &[("Data TD3", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(
-        &json!({ "format": "providence-classic-source-annex-v1", "files": sources }),
-    )
-    .map_err(|error| error.to_string())?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -208,7 +188,7 @@ fn read_complex_encounters(
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < COMPLEX_ENCOUNTER_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < COMPLEX_ENCOUNTER_RECORD_BYTES {
         return Err(format!(
             "Data ED2 must contain at least one complete {COMPLEX_ENCOUNTER_RECORD_BYTES}-byte record"
         ));

@@ -3,8 +3,10 @@ use crate::model::{BlobId, SourcedSpellDefinition, SpellDefinition, StableId};
 use std::collections::BTreeSet;
 
 pub fn decode_scenario_spells(bytes: &[u8], source_blob: Option<BlobId>) -> DecodedSpellFile {
-    let rows = (bytes.len() / SPELL_RECORD_BYTES).min(SCENARIO_SPELL_RECORDS);
+    let physical_rows = bytes.len() / SPELL_RECORD_BYTES;
+    let rows = physical_rows.min(MAX_TYPED_SCENARIO_SPELL_RECORDS);
     let body_bytes = rows * SPELL_RECORD_BYTES;
+    let complete_bytes = physical_rows * SPELL_RECORD_BYTES;
     let spells = bytes[..body_bytes]
         .chunks_exact(SPELL_RECORD_BYTES)
         .enumerate()
@@ -15,7 +17,7 @@ pub fn decode_scenario_spells(bytes: &[u8], source_blob: Option<BlobId>) -> Deco
             name_authored: false,
             definition: decode_spell(
                 index as u16,
-                scenario_spell_classic_id(index as u16).expect("decoded row is bounded"),
+                scenario_spell_physical_classic_id(index).expect("bounded native spell ID"),
                 default_scenario_spell_name(index as u16),
                 row,
             ),
@@ -23,20 +25,30 @@ pub fn decode_scenario_spells(bytes: &[u8], source_blob: Option<BlobId>) -> Deco
         .collect();
     DecodedSpellFile {
         spells,
-        trailing_bytes: bytes[body_bytes..].to_vec(),
+        unprojected_spans: bytes[body_bytes..complete_bytes]
+            .chunks_exact(SPELL_RECORD_BYTES)
+            .enumerate()
+            .map(|(index, row)| UnprojectedSpellRecordSpan {
+                physical_record_index: rows + index,
+                bytes: row.to_vec(),
+            })
+            .collect(),
+        trailing_bytes: bytes[complete_bytes..].to_vec(),
     }
 }
 
 pub fn decode_standard_spells(bytes: &[u8], source_blob: Option<BlobId>) -> DecodedSpellFile {
-    let rows = (bytes.len() / SPELL_RECORD_BYTES).min(STANDARD_SPELL_RECORDS);
+    let physical_rows = bytes.len() / SPELL_RECORD_BYTES;
+    let rows = physical_rows.min(MAX_TYPED_STANDARD_SPELL_RECORDS);
     let body_bytes = rows * SPELL_RECORD_BYTES;
+    let complete_bytes = physical_rows * SPELL_RECORD_BYTES;
     let spells = bytes[..body_bytes]
         .chunks_exact(SPELL_RECORD_BYTES)
         .enumerate()
         .map(|(index, row)| {
             let record_index = index as u16;
             let classic_id =
-                standard_spell_classic_id(record_index).expect("decoded row is bounded");
+                standard_spell_physical_classic_id(index).expect("bounded native spell ID");
             SourcedSpellDefinition {
                 source: format!("Data S record {index}"),
                 source_blob: source_blob.clone(),
@@ -53,7 +65,15 @@ pub fn decode_standard_spells(bytes: &[u8], source_blob: Option<BlobId>) -> Deco
         .collect();
     DecodedSpellFile {
         spells,
-        trailing_bytes: bytes[body_bytes..].to_vec(),
+        unprojected_spans: bytes[body_bytes..complete_bytes]
+            .chunks_exact(SPELL_RECORD_BYTES)
+            .enumerate()
+            .map(|(index, row)| UnprojectedSpellRecordSpan {
+                physical_record_index: rows + index,
+                bytes: row.to_vec(),
+            })
+            .collect(),
+        trailing_bytes: bytes[complete_bytes..].to_vec(),
     }
 }
 
@@ -67,6 +87,7 @@ pub fn encode_scenario_spells(
         SCENARIO_SPELL_RECORDS,
         SCENARIO_SPELL_BYTES,
         scenario_spell_classic_id,
+        scenario_spell_physical_classic_id,
     )
 }
 
@@ -80,6 +101,7 @@ pub fn encode_standard_spells(
         STANDARD_SPELL_RECORDS,
         STANDARD_SPELL_BYTES,
         standard_spell_classic_id,
+        standard_spell_physical_classic_id,
     )
 }
 
@@ -89,12 +111,23 @@ fn encode_spell_rows(
     maximum_records: usize,
     fresh_bytes: usize,
     classic_id_for_record: fn(u16) -> Option<i16>,
+    physical_classic_id_for_record: fn(usize) -> Option<i16>,
 ) -> Result<Vec<u8>, SpellCodecError> {
     let mut selected = spells.iter().collect::<Vec<_>>();
     selected.sort_by_key(|spell| spell.definition.record_index);
+    let source_rows = compatibility_source
+        .map(|source| source.len() / SPELL_RECORD_BYTES)
+        .unwrap_or(0);
     let mut seen = BTreeSet::new();
     for spell in &selected {
-        validate_spell(&spell.definition, classic_id_for_record)?;
+        validate_source_spell_for_encode(
+            spell,
+            maximum_records,
+            source_rows,
+            compatibility_source,
+            classic_id_for_record,
+            physical_classic_id_for_record,
+        )?;
         if !seen.insert(spell.definition.record_index) {
             return Err(SpellCodecError::DuplicateRecordIndex(
                 spell.definition.record_index,
@@ -102,9 +135,6 @@ fn encode_spell_rows(
         }
     }
 
-    let source_rows = compatibility_source
-        .map(|source| (source.len() / SPELL_RECORD_BYTES).min(maximum_records))
-        .unwrap_or(0);
     let source_body_bytes = source_rows * SPELL_RECORD_BYTES;
     let mut output = compatibility_source
         .map(|source| source[..source_body_bytes].to_vec())
@@ -258,4 +288,53 @@ fn encode_spell(spell: &SpellDefinition, row: &mut [u8]) {
         u8::from(spell.in_combat),
         u8::from(spell.in_camp),
     ]);
+}
+
+fn validate_source_spell_for_encode(
+    spell: &SourcedSpellDefinition,
+    maximum_records: usize,
+    source_rows: usize,
+    compatibility_source: Option<&[u8]>,
+    classic_id_for_record: fn(u16) -> Option<i16>,
+    physical_classic_id_for_record: fn(usize) -> Option<i16>,
+) -> Result<(), SpellCodecError> {
+    let record_index = usize::from(spell.definition.record_index);
+    if record_index < maximum_records {
+        validate_spell(&spell.definition, classic_id_for_record)?;
+    } else if record_index < source_rows {
+        let expected = physical_classic_id_for_record(record_index).ok_or(
+            SpellCodecError::RecordIndexOutOfRange(spell.definition.record_index),
+        )?;
+        if spell.definition.classic_id != expected {
+            return Err(SpellCodecError::InvalidClassicId {
+                record_index: spell.definition.record_index,
+                expected,
+                actual: spell.definition.classic_id,
+            });
+        }
+        if spell.definition.id.0 != format!("classic.spell.{expected}") {
+            return Err(SpellCodecError::InvalidStableId {
+                classic_id: expected,
+                actual: spell.definition.id.clone(),
+            });
+        }
+        let start = record_index * SPELL_RECORD_BYTES;
+        let decoded = decode_spell(
+            spell.definition.record_index,
+            expected,
+            spell.definition.name.clone(),
+            &compatibility_source.expect("source row is bounded")
+                [start..start + SPELL_RECORD_BYTES],
+        );
+        if !same_native_semantics(&decoded, &spell.definition) {
+            return Err(SpellCodecError::RecordIndexOutOfRange(
+                spell.definition.record_index,
+            ));
+        }
+    } else {
+        return Err(SpellCodecError::RecordIndexOutOfRange(
+            spell.definition.record_index,
+        ));
+    }
+    Ok(())
 }

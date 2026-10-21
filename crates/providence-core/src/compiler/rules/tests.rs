@@ -5,6 +5,29 @@ use crate::{
 };
 
 #[test]
+fn short_scenario_race_source_keeps_its_geometry_and_residue_ahead_of_application_bytes() {
+    let mut native = vec![0; 408 * 2 + 56];
+    native[96..112].fill(17);
+    native[346..408].fill(27);
+    native[408 * 2..].fill(99);
+    let application = vec![0; 408 * 30];
+    let mut snapshot = ProjectSnapshot::new_authored(StableId("short-native-races".into()));
+    snapshot.race_rules = decode_race_rules(&native, None).rules;
+    let mut manifest = NativeManifest::default();
+    compile_rules(
+        &snapshot,
+        ClassicCompatibilitySources {
+            data_race: Some(&native),
+            application_data_race: Some(&application),
+            ..Default::default()
+        },
+        &mut manifest,
+    )
+    .unwrap();
+    assert_eq!(manifest.get("Data Race").unwrap().bytes, native);
+}
+
+#[test]
 fn rule_authoring_export_prefers_current_native_slots_and_spell_limit() {
     let mut original = vec![0; 576 * 30 + 3];
     original[30 * 576..].copy_from_slice(&[9, 8, 7]);

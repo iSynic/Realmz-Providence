@@ -24,7 +24,7 @@ fn support() -> PathBuf {
 #[test]
 fn explicit_stock_initialization_is_authored_persisted_and_media_free() {
     let temporary = Temporary::new();
-    let baseline = Baseline::read("new-baseline", &support()).unwrap();
+    let baseline = AuthoredProjectBaseline::read("new-baseline", &support()).unwrap();
     assert!(matches!(baseline.snapshot.origin, ProjectOrigin::Authored));
     assert!(baseline.snapshot.assets.is_empty() && baseline.snapshot.classic_sources.is_empty());
     assert_eq!(baseline.snapshot.race_rules.len(), 30);
@@ -65,7 +65,7 @@ fn explicit_stock_initialization_is_authored_persisted_and_media_free() {
 fn missing_support_fails_before_any_destination_is_created() {
     let temporary = Temporary::new();
     assert!(
-        Baseline::read("new-baseline", &temporary.0)
+        AuthoredProjectBaseline::read("new-baseline", &temporary.0)
             .err()
             .unwrap()
             .contains("Data Race")
@@ -78,7 +78,7 @@ fn initialization_never_overwrites_an_occupied_destination() {
     let temporary = Temporary::new();
     fs::write(temporary.0.join("owner-data"), b"preserve").unwrap();
     assert!(
-        Baseline::read("new-baseline", &support())
+        AuthoredProjectBaseline::read("new-baseline", &support())
             .unwrap()
             .create(temporary.0.to_str().unwrap())
             .is_err()

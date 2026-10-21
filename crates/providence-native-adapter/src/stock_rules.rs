@@ -24,8 +24,8 @@ impl StockRules {
         let race = read("Data Race")?;
         let caste = read("Data Caste")?;
         let text = read("Custom Names.rsrc")?;
-        if decode_race_rules(&race, None).rules.len() != 30
-            || decode_caste_rules(&caste, None).rules.len() != 30
+        if decode_race_rules(&race, None).rules.len() < 30
+            || decode_caste_rules(&caste, None).rules.len() < 30
         {
             return Err("Stock rules must include all thirty native Race and Caste rows.".into());
         }

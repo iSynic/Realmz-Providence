@@ -12,20 +12,23 @@ pub fn assess(
         version: INTERPRETATION_VERSION,
         entries: Vec::new(),
         source_requirements: Vec::new(),
+        preservation_diagnostics: Vec::new(),
     };
-    if !matches!(snapshot.origin, ProjectOrigin::Imported { .. })
-        || snapshot.import_interpretation_version >= INTERPRETATION_VERSION
-    {
+    if !matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
         return Ok(assessment);
     }
     retained_sources::verify(snapshot, files, &mut assessment)?;
     if !assessment.source_requirements.is_empty() {
         return Ok(assessment);
     }
+    shops::assess(snapshot, files, &mut assessment);
+    if snapshot.import_interpretation_version >= INTERPRETATION_VERSION {
+        return Ok(assessment);
+    }
     if snapshot.import_interpretation_version < 1 {
         spells::assess(snapshot, files, &mut assessment)?;
         items::assess(snapshot, files, &mut assessment)?;
     }
-    shops::assess(snapshot, files, &mut assessment);
+    super::native_text::assess(snapshot, files, &mut assessment);
     Ok(assessment)
 }

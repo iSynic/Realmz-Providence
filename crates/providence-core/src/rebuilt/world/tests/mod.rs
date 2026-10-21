@@ -1,6 +1,7 @@
 mod fixtures;
 mod guards;
 mod layout;
+mod native_player_maps;
 mod player_maps;
 use super::*;
 use crate::model::{

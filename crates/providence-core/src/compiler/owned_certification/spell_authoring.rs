@@ -99,7 +99,11 @@ fn validate_name_source(
     let path = "Data Spell.rsrc";
     let rows = &snapshot.scenario_spells;
     let blob = rows.first().and_then(|row| row.text_source_blob.as_ref());
-    if rows.iter().any(|row| row.text_source_blob.as_ref() != blob) {
+    if rows
+        .iter()
+        .take(SCENARIO_SPELL_RECORDS)
+        .any(|row| row.text_source_blob.as_ref() != blob)
+    {
         return Err(outside(path));
     }
     if let Some(blob) = blob {

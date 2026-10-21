@@ -79,6 +79,29 @@ fn known_rejection_keeps_the_transport_open_without_claiming_uncertainty() {
     assert_eq!(session.revision(), Revision(1));
 }
 
+#[test]
+fn a_failure_that_advanced_a_session_requires_reopen_instead_of_a_later_checkpoint() {
+    let failure = |id| crate::Response {
+        id,
+        ok: false,
+        result: None,
+        error: Some("late step failed".into()),
+        outcome_unknown: None,
+    };
+    let mut advanced = failure(1);
+    crate::transport::reject_unacknowledged_mutation(&mut advanced, true);
+    assert_eq!(advanced.id, 1);
+    assert_eq!(advanced.outcome_unknown, Some(true));
+    let error = advanced.error.unwrap();
+    assert!(error.starts_with("command could not be durably acknowledged"));
+    assert!(error.ends_with("late step failed"));
+
+    let mut rejected = failure(2);
+    crate::transport::reject_unacknowledged_mutation(&mut rejected, false);
+    assert_eq!(rejected.outcome_unknown, None);
+    assert_eq!(rejected.error.as_deref(), Some("late step failed"));
+}
+
 struct DisconnectedWriter;
 
 impl std::io::Write for DisconnectedWriter {

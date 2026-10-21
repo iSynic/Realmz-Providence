@@ -1,15 +1,15 @@
 //! Explicit application inputs initialize a new authored project, never an imported annex.
+use crate::ProjectStore;
 use providence_core::{codecs::*, model::*};
-use providence_storage::ProjectStore;
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, fs, path::Path};
 
-pub(crate) struct Baseline {
+pub struct AuthoredProjectBaseline {
     pub snapshot: ProjectSnapshot,
     blobs: BTreeMap<BlobId, Vec<u8>>,
 }
 
-impl Baseline {
+impl AuthoredProjectBaseline {
     pub fn read(project_id: &str, root: &Path) -> Result<Self, String> {
         let mut baseline = Self {
             snapshot: ProjectSnapshot::new_authored(StableId(project_id.into())),
@@ -37,9 +37,11 @@ impl Baseline {
         let (caste, caste_id) = self.source(root, "Data Caste")?;
         let mut races = decode_race_rules(&race, Some(race_id));
         let mut castes = decode_caste_rules(&caste, Some(caste_id));
-        if races.rules.len() != 30 || castes.rules.len() != 30 {
+        if races.rules.len() < 30 || castes.rules.len() < 30 {
             return Err("New-project support requires all thirty Race and Caste records.".into());
         }
+        races.rules.truncate(30);
+        castes.rules.truncate(30);
         derive_caste_eligibility(&races.rules, &mut castes.rules)
             .map_err(|error| error.to_string())?;
         let (names, names_id) = self.source(root, "Custom Names.rsrc")?;
@@ -70,6 +72,7 @@ impl Baseline {
         }
         let (names, names_id) = self.source(root, "Custom Names.rsrc")?;
         let mut spells = decode_standard_spells(&spells, Some(spells_id));
+        spells.spells.truncate(STANDARD_SPELL_RECORDS);
         hydrate_standard_spell_names(&mut spells.spells, &names, names_id)
             .map_err(|error| error.to_string())?;
         self.snapshot.standard_spells = spells.spells;
@@ -113,26 +116,11 @@ impl Baseline {
     }
 
     pub fn create(self, directory: &str) -> Result<ProjectStore, String> {
-        // Source validation requires blobs before the initialized snapshot can be committed.
-        let empty = ProjectSnapshot::new_authored(self.snapshot.project_id.clone());
-        let store =
-            ProjectStore::create_new(directory, &empty).map_err(|error| error.to_string())?;
-        for (expected, bytes) in self.blobs {
-            let actual = store.put_blob(&bytes).map_err(|error| format!("New project was created at {directory}, but its support could not be stored: {error}"))?;
-            if actual != expected {
-                return Err("Stored new-project support identity changed.".into());
-            }
-        }
-        store.save_snapshot(&self.snapshot).map_err(|error| {
-            format!("New project was created at {directory}, but initialization failed: {error}")
-        })?;
-        store
-            .rebuild_index(&self.snapshot)
-            .map_err(|error| error.to_string())?;
-        Ok(store)
+        ProjectStore::create_seeded(directory, &self.snapshot, self.blobs)
+            .map_err(|error| format!("Could not initialize new project at {directory}: {error}"))
     }
 }
 
 #[cfg(test)]
-#[path = "new_project_baseline_tests.rs"]
+#[path = "authored_project_tests.rs"]
 mod tests;

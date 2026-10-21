@@ -1,4 +1,8 @@
 mod contracts;
+pub(crate) use contracts::MAX_TYPED_SCENARIO_SPELL_RECORDS;
+#[cfg(test)]
+use contracts::MAX_TYPED_STANDARD_SPELL_RECORDS;
+pub(crate) use identity::scenario_spell_physical_classic_id;
 mod identity;
 mod name_overlay;
 mod names;
@@ -13,7 +17,7 @@ pub use contracts::{
 };
 pub use identity::{
     default_scenario_spell_name, default_standard_spell_name, scenario_spell_classic_id,
-    standard_spell_classic_id,
+    scenario_spell_is_runtime_addressable, standard_spell_classic_id,
 };
 pub use names::{
     encode_scenario_spell_name_resources, hydrate_scenario_spell_names,
@@ -28,3 +32,6 @@ pub use numeric::{
 mod authoring_tests;
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod physical_boundary_tests;

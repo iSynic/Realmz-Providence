@@ -1,6 +1,5 @@
 use crate::codecs::BATTLE_GRID_SLOTS;
 use crate::codecs::BATTLE_RECORD_BYTES;
-use crate::codecs::certified_battle_source;
 use crate::codecs::validate_battle_record_shape;
 use crate::model::BattleRecord;
 use crate::model::BlobId;
@@ -213,9 +212,7 @@ pub(super) fn validate_classic_battle_import(
             "decoded battles require Data BD provenance".into(),
         ));
     };
-    let complete_rows = certified_battle_source(&source.blob.0, source.byte_length as usize)
-        .map(|extent| extent.authored_records)
-        .unwrap_or(source.byte_length as usize / BATTLE_RECORD_BYTES);
+    let complete_rows = source.byte_length as usize / BATTLE_RECORD_BYTES;
     if complete_rows != battles.len() {
         return Err(SessionError::InvalidClassicImport(
             "Data BD complete-row count does not match the decoded battle count".into(),

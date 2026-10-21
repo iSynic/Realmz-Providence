@@ -27,6 +27,7 @@ struct State {
     latest: Option<(u64, Revision)>,
     pending: Option<Work>,
     result: Option<Result<Value, String>>,
+    retain_captured: bool,
     stop: bool,
 }
 
@@ -164,6 +165,7 @@ impl Jobs {
         })?;
         work.id = state.next_id;
         state.latest = Some((work.id, work.revision));
+        state.retain_captured = params["_retainCapturedRevision"].as_bool().unwrap_or(false);
         let response = json!({"jobId":work.id, "revision":work.revision, "status":"pending"});
         state.pending = Some(work);
         state.result = None;
@@ -193,21 +195,26 @@ impl Jobs {
         if id != current {
             return json!({"jobId":id, "status":"superseded"});
         }
-        if checked_revision != revision {
+        if checked_revision != revision && !state.retain_captured {
             state.latest = None;
             state.pending = None;
             state.result = None;
             return json!({"jobId":id, "revision":revision, "status":"outdated"});
         }
-        match state.result.as_ref() {
-            None => json!({"jobId":id, "revision":revision, "status":"pending"}),
+        let mut result = match state.result.as_ref() {
+            None => json!({"jobId":id, "revision":checked_revision, "status":"pending"}),
             Some(Ok(page)) => {
-                json!({"jobId":id, "revision":revision, "status":"ready", "page":page})
+                json!({"jobId":id, "revision":checked_revision, "status":"ready", "page":page})
             }
             Some(Err(error)) => {
-                json!({"jobId":id, "revision":revision, "status":"failed", "error":error})
+                json!({"jobId":id, "revision":checked_revision, "status":"failed", "error":error})
             }
+        };
+        if state.retain_captured {
+            result["currentRevision"] = json!(revision);
+            result["outdated"] = json!(checked_revision != revision);
         }
+        result
     }
 
     fn cancel(&self, id: u64) -> Value {

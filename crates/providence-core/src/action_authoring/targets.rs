@@ -431,7 +431,11 @@ fn spells(snapshot: &ProjectSnapshot) -> Vec<ActionTarget> {
     snapshot
         .standard_spells
         .iter()
-        .chain(&snapshot.scenario_spells)
+        .chain(
+            snapshot.scenario_spells.iter().filter(|row| {
+                crate::codecs::scenario_spell_is_runtime_addressable(&row.definition)
+            }),
+        )
         .map(|row| {
             let definition = &row.definition;
             let label = if definition.name.trim().is_empty() {

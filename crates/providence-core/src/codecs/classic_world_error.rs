@@ -11,6 +11,15 @@ fn format_classic_world_error(
     formatter: &mut std::fmt::Formatter<'_>,
 ) -> std::fmt::Result {
     match error {
+        ClassicWorldCodecError::EncounterTextUnrepresentable {
+            native_id,
+            slot,
+            reason,
+        } => write!(
+            formatter,
+            "simple encounter {} response {slot}: {reason}",
+            native_id.0
+        ),
         ClassicWorldCodecError::DuplicateMapIndex(_)
         | ClassicWorldCodecError::SparseMapIndex { .. }
         | ClassicWorldCodecError::InvalidMapCellCount { .. }

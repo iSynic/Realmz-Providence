@@ -18,6 +18,15 @@ use providence_core::session::Revision;
 use serde_json::Value;
 use serde_json::json;
 
+mod message;
+
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+enum FamilyDraft {
+    Area(Box<RepairDraft>),
+    Message(Box<RepairDraft<repair::RandomMessageInput>>),
+}
+
 fn session_token() -> &'static str {
     static TOKEN: OnceLock<String> = OnceLock::new();
     TOKEN.get_or_init(|| {
@@ -65,6 +74,7 @@ fn view(session: &EditorSession, draft: RepairDraft) -> Result<Value, String> {
     ))
     .map_err(|error| error.to_string())?;
     value["sessionToken"] = session_token().into();
+    value["family"] = "random-area".into();
     Ok(value)
 }
 
@@ -82,7 +92,17 @@ pub(super) fn dispatch(
                 StableId(required_string(params, "source")?),
                 required_u8(params, "slot")?,
             )?;
-            view(session, draft)
+            if draft.original_action.opcode() == 19 {
+                let draft = repair::prepare_random_message(
+                    session.snapshot(),
+                    session.revision(),
+                    draft.source,
+                    draft.slot,
+                )?;
+                message::view(session, draft, 0)
+            } else {
+                view(session, draft)
+            }
         }
         "action-settings.reconcile-repair" => {
             let intent: RepairIntent = payload(params, "intent")?;
@@ -102,7 +122,10 @@ fn dispatch_draft(
     method: &str,
     params: &Value,
 ) -> Result<Value, String> {
-    let mut draft: RepairDraft = payload(params, "draft")?;
+    let mut draft = match payload(params, "draft")? {
+        FamilyDraft::Area(draft) => *draft,
+        FamilyDraft::Message(draft) => return message::dispatch(session, method, params, *draft),
+    };
     match method {
         "action-settings.change-repair" => {
             repair::change(
@@ -141,17 +164,23 @@ fn dispatch_draft(
             )
         }
         "action-settings.repair-choices" => choices(session, params, &draft),
-        "action-settings.commit-repair" => {
-            let expected_revision = Revision(required_u64(params, "expectedRevision")?);
-            current_revision(session, expected_revision)?;
-            if draft.revision != expected_revision {
-                return Err("The repair draft must be reviewed at the current revision.".into());
-            }
-            let (edit, _) = repair::plan(session.snapshot(), session.revision(), &draft)?;
-            execute(session, params, EditorCommand::ApplyActionSettings { edit })
-        }
+        "action-settings.commit-repair" => commit(session, params, &draft),
         _ => Err(format!("unsupported action settings command: {method}")),
     }
+}
+
+fn commit<Input: repair::RepairInput>(
+    session: &mut EditorSession,
+    params: &Value,
+    draft: &RepairDraft<Input>,
+) -> Result<Value, String> {
+    let expected_revision = Revision(required_u64(params, "expectedRevision")?);
+    current_revision(session, expected_revision)?;
+    if draft.revision != expected_revision {
+        return Err("The repair draft must be reviewed at the current revision.".into());
+    }
+    let (edit, _) = repair::plan(session.snapshot(), session.revision(), draft)?;
+    execute(session, params, EditorCommand::ApplyActionSettings { edit })
 }
 
 fn paging(params: &Value) -> (usize, usize) {

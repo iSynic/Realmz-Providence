@@ -13,6 +13,8 @@ pub const REBUILT_V5_SCHEMA_SHA256: &str =
     "ab3aca6322599dc348e48ddf82cffc99568bbbf598927ccba9377b24b396943c";
 pub const REBUILT_V6_SCHEMA_SHA256: &str =
     "5f7cbc80444bca4630f2989cfef4339a7c5ea6fe4c3af687f41c43280c33e439";
+pub const REBUILT_V7_SCHEMA_SHA256: &str =
+    "b6af98b0541dd1bb34e06ca6644c6eb4e898d6da93ceffd4b182ef65339c6750";
 
 pub const REBUILT_V3_REQUIRED_DOCUMENTS: [&str; 4] = [
     "content.json",

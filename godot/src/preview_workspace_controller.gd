@@ -35,21 +35,28 @@ func initialize(registry, tabs: TabContainer, map: ProvidenceMapDocumentControll
 
 func current_target() -> Dictionary:
 	if _registry == null: return {}
-	var encounter: Dictionary = _registry.view("encounters.simple").current_encounter()
+	var simple: Control = _registry.peek("encounters.simple")
+	var encounter: Dictionary = simple.current_encounter() if simple != null else {}
 	var action_point = _registry.view("scripts.action-points")
 	var draft: bool = _drafts.has_draft()
 	return selection.current_target(
 		_registry.identity_for_tab(_tabs.current_tab), _map.identity, _map.selected_cell,
 		encounter, action_point.current_action_point(), action_point.current_map_identity(),
-		_registry.view("combat.battles").current_applied_native_id(),
+		_applied_id("combat.battles", "current_applied_native_id", []),
 		_trusted("economy.treasure", draft), _trusted("economy.shops", draft),
 		_trusted("encounters.complex", draft), _trusted("encounters.rogue", draft),
-		_registry.view("encounters.rogue").trusted_applied_owner_native_id(draft),
+		_applied_id("encounters.rogue", "trusted_applied_owner_native_id", [draft]),
 		_trusted("scripts.macros", draft))
 
 
 func _trusted(route: String, draft: bool) -> int:
-	return _registry.view(route).trusted_applied_native_id(draft)
+	return _applied_id(route, "trusted_applied_native_id", [draft])
+
+
+# A page that was never opened has no applied record; asking must not create it.
+func _applied_id(route: String, method: StringName, arguments: Array) -> int:
+	var page: Control = _registry.peek(route)
+	return page.callv(method, arguments) if page != null else -1
 
 
 func availability() -> Dictionary:

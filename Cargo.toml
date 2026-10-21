@@ -7,6 +7,9 @@ members = [
     "crates/providence-rebuilt-package",
     "crates/providence-rebuilt-preview",
     "crates/providence-storage",
+    "crates/providence-session-client",
+    "crates/providence-mcp",
+    "crates/providence-publication",
 ]
 resolver = "2"
 exclude = ["vendor/stuffit"]
@@ -16,6 +19,8 @@ version = "0.6.0-beta.4"
 edition = "2024"
 rust-version = "1.98"
 license = "GPL-3.0-or-later"
+# Providence ships as an application; no crate is published to crates.io.
+publish = false
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -26,7 +31,7 @@ adler2 = "2.0"
 base64 = "0.22"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 tempfile = "3.27"
-zip = { version = "4", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 
 [workspace.lints.clippy]

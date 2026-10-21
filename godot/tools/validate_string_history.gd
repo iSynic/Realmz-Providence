@@ -2,12 +2,20 @@ extends SceneTree
 
 class CheckedBridge extends "res://src/native_bridge.gd":
 	var calls: Array[String] = []
-	var slow_history := false
+	var hold_method := ""
+	var held := false
+	var held_method := ""
+	func begin_request(method: String, params: Dictionary, owner: int = 0) -> Dictionary:
+		var started: Dictionary = super.begin_request(method, params, owner)
+		if started.get("ok", false) and method == hold_method: held = true; held_method = method
+		return started
+	func poll_request() -> Dictionary:
+		if held: return {"pending":true}
+		return super.poll_request()
 	func configured_application_library_root(_explicit_root: String = "") -> String: return ""
 	func configured_reference_catalog_root(_explicit_root: String = "") -> String: return ""
 	func configured_monster_library_root(_explicit_root: String = "") -> String: return ""
 	func _request(method: String, params: Dictionary) -> Dictionary:
-		if slow_history and method == "history.undo": OS.delay_msec(180)
 		calls.append(method)
 		return super._request(method, params)
 
@@ -81,7 +89,7 @@ func _check_live_input() -> void:
 	edit.grab_focus()
 	edit.set_caret_column(edit.text.length())
 	await process_frame
-	_shell._bridge.slow_history = true
+	_shell._bridge.hold_method = "history.undo"
 	_shell._bridge.calls.clear()
 	_shell._undo()
 	_check(_shell._operations.busy, "Undo did not show busy synchronously.")
@@ -93,16 +101,43 @@ func _check_live_input() -> void:
 	await _shell._commit_edit()
 	_shell._commands.dispatch(&"file.close-project")
 	_check(_shell._document_tabs.get_current_tab_control() == _shell._strings, "Busy navigation switched documents.")
+	_shell._bridge.held = false
+	_shell._bridge.hold_method = ""
 	await _settle()
 	_check(edit.text == "Edited native stringx" and _shell._strings.has_unapplied_changes(), "History completion erased late typing.")
 	_check(_shell._bridge.calls.filter(func(method): return method != "text.inspect-draft") == ["history.undo"], "Busy shortcuts or Apply entered the transport: " + str(_shell._bridge.calls))
 	_check(_shell._document_changes.needs_refresh("text.messages"), "The protected late draft lost its pending refresh.")
-	_shell._bridge.slow_history = false
 	_shell._strings.discard_draft()
-	await _shell._presentation.refresh_current()
-	_check(edit.text == "Original native string", "Discard followed by refresh did not reconcile the acknowledged Undo.")
+	# A completed foreground operation can be followed by another read before
+	# feedback acquires the lease. Observe that boundary instead of assuming idle.
+	if _shell._operations.busy: print("STRING_FEEDBACK_PRIOR_LEASE ", _shell._operations.label)
+	var idle_deadline := Time.get_ticks_msec() + 10000
+	while _shell._operations.busy and Time.get_ticks_msec() < idle_deadline: await process_frame
+	_shell._bridge.hold_method = "session.describe"
+	_hold_session_read()
+	_check(_shell._bridge.held and _shell._operations.label == "Controlled session read", "Competing read was not accepted.")
+	_shell._bridge.held = false
+	_shell._bridge.hold_method = "text.inspect-draft"
+	_shell._strings._feedback_timer.stop()
+	_shell._strings._feedback_timer.timeout.emit()
+	_check(not _shell._bridge.held and _shell._operations.busy, "Feedback must await the competing read.")
+	print("STRING_FEEDBACK_INTERLEAVING_REPRODUCED immediate-held=false busy=Controlled-session-read observable-boundary-required")
+	var deadline := Time.get_ticks_msec() + 10000
+	while not (_shell._bridge.held and _shell._bridge.held_method == "text.inspect-draft") and Time.get_ticks_msec() < deadline:
+		await process_frame
+	_check(_shell._bridge.held and _shell._bridge.held_method == "text.inspect-draft" and _shell._operations.label == "Browse Strings", "Feedback did not acquire the transport after the competing read.")
+	process_frame.connect(func(): _shell._bridge.held = false, CONNECT_ONE_SHOT)
+	var refreshed: Dictionary = await _shell._presentation.refresh_current()
+	_shell._bridge.hold_method = ""
+	_check(refreshed.get("ok", false) and edit.text == "Original native string", "Discard followed by refresh did not reconcile the acknowledged Undo: " + str(refreshed) + " visible=" + edit.text)
 	await _shell._redo()
 	_check(edit.text == "Edited native string", "Redo after late-draft reconciliation lost authored text.")
+
+
+func _hold_session_read() -> void:
+	if not _check(_shell._operations.begin(_shell._bridge, "Controlled session read"), "Could not claim the controlled read lease."): return
+	var response: Dictionary = await _shell._operations.request("session.describe")
+	_shell._operations.finish(response)
 
 
 func _key(code: Key, unicode: int, control: bool = false) -> void:

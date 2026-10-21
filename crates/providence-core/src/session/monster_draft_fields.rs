@@ -120,8 +120,8 @@ pub(crate) fn issue_message(field: &str, diagnostic: &str) -> String {
         }
     }
     if matches!(field, "description" | "displayName") {
-        if diagnostic.contains("ASCII") {
-            return "Use ASCII characters so the text can be exported without substitution.".into();
+        if diagnostic.contains("MacRoman") {
+            return "Use Classic MacRoman characters; unsupported text cannot be exported without substitution.".into();
         }
         if let Some(start) = diagnostic.find("text uses ") {
             return diagnostic[start..].to_string();

@@ -30,18 +30,20 @@ impl ReachabilityBuilder<'_> {
     }
 
     pub(super) fn visit_monster(&mut self, id: u32) {
-        let Some(monster) = self.catalog.monsters.get(&id).copied() else {
+        let Some(variants) = self.catalog.monsters.get(&id).cloned() else {
             return;
         };
-        if monster.death_macro != 0 {
-            self.reference(
-                monster.identity.clone(),
-                "deathMacro",
-                RebuiltV3ReachabilityRelation::MonsterDeathMacro,
-                RebuiltV3ReachabilityTarget::Program(xap_program(i64::from(
-                    i32::from(monster.death_macro).unsigned_abs(),
-                ))),
-            );
+        for monster in variants {
+            if monster.death_macro != 0 {
+                self.reference(
+                    monster.identity.clone(),
+                    "deathMacro",
+                    RebuiltV3ReachabilityRelation::MonsterDeathMacro,
+                    RebuiltV3ReachabilityTarget::Program(xap_program(i64::from(
+                        i32::from(monster.death_macro).unsigned_abs(),
+                    ))),
+                );
+            }
         }
     }
 

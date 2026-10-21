@@ -106,6 +106,9 @@ impl ReachabilityBuilder<'_> {
         mode: i16,
         result: i16,
     ) {
+        if self.add_retained_inline_result(source, field, mode, result) {
+            return;
+        }
         let program = match (
             mode,
             self.current_context.simple,
@@ -134,6 +137,66 @@ impl ReachabilityBuilder<'_> {
                 )),
             );
         }
+    }
+
+    fn add_retained_inline_result(
+        &mut self,
+        source: &StableId,
+        field: &str,
+        mode: i16,
+        result: i16,
+    ) -> bool {
+        // Castle retains global encounter records across separate AP calls.
+        // When the current call chain has no owner, preserve the finite native
+        // domain rather than declaring a potentially valid retained call invalid.
+        let retained_ids = match mode {
+            1 if self.current_context.simple.is_none() => Some(
+                self.snapshot
+                    .simple_encounters
+                    .iter()
+                    .map(|row| row.native_id.0)
+                    .collect(),
+            ),
+            2 if self.current_context.complex.is_none() => Some(self.catalog.complex.ids.clone()),
+            _ => None,
+        };
+        if let Some(ids) = retained_ids.filter(|_| (0..=3).contains(&result)) {
+            let original = self.current_context;
+            for id in ids {
+                let (target, owner) = if mode == 1 {
+                    self.current_context = original.with_simple(id);
+                    (
+                        simple_program(id, result as u8),
+                        RebuiltV3ReachabilityTarget::SimpleEncounter(id),
+                    )
+                } else {
+                    self.current_context = original.with_complex(id);
+                    (
+                        complex_program(id, result as u8),
+                        RebuiltV3ReachabilityTarget::ComplexEncounter(id),
+                    )
+                };
+                if mode != 1 || self.catalog.simple.ids.contains(&id) {
+                    self.reference(
+                        source.clone(),
+                        format!("{field}.retainedEncounter"),
+                        RebuiltV3ReachabilityRelation::CallsProgram,
+                        owner,
+                    );
+                } else {
+                    self.reachable_simple.insert(id);
+                }
+                self.reference(
+                    source.clone(),
+                    format!("{field}.retainedResult"),
+                    RebuiltV3ReachabilityRelation::CallsProgram,
+                    RebuiltV3ReachabilityTarget::Program(target),
+                );
+            }
+            self.current_context = original;
+            return true;
+        }
+        false
     }
 
     pub(super) fn add_zero_based_range(

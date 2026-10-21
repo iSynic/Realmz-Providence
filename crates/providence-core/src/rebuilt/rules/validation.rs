@@ -45,6 +45,7 @@ pub(super) fn validate_counts(snapshot: &ProjectSnapshot) -> Result<(), RebuiltV
 
 pub(super) fn validate_races(
     snapshot: &ProjectSnapshot,
+    native: bool,
 ) -> Result<BTreeSet<StableId>, RebuiltV3RuleCatalogError> {
     let mut ids = BTreeSet::new();
     let mut classic_ids = BTreeSet::new();
@@ -59,7 +60,7 @@ pub(super) fn validate_races(
                 rule.classic_id,
             ));
         }
-        validate_race(sourced, snapshot)?;
+        validate_race(sourced, snapshot, native)?;
         functional |= rule.maximum_age != 0
             || rule.base_movement != 0
             || rule.base_attacks != 0
@@ -67,7 +68,7 @@ pub(super) fn validate_races(
             || !rule.eligible_caste_ids.is_empty()
             || any_nonzero(&rule.attribute_limits);
     }
-    if !functional {
+    if !native && !functional {
         return Err(RebuiltV3RuleCatalogError::SemanticallyEmptyRaces);
     }
     Ok(ids)
@@ -75,6 +76,7 @@ pub(super) fn validate_races(
 
 pub(super) fn validate_castes(
     snapshot: &ProjectSnapshot,
+    native: bool,
 ) -> Result<BTreeSet<StableId>, RebuiltV3RuleCatalogError> {
     let mut ids = BTreeSet::new();
     let mut classic_ids = BTreeSet::new();
@@ -89,7 +91,7 @@ pub(super) fn validate_castes(
                 rule.classic_id,
             ));
         }
-        validate_caste(sourced, snapshot)?;
+        validate_caste(sourced, snapshot, native)?;
         functional |= rule.caste_class != 0
             || rule.movement_bonus != 0
             || rule.maximum_attacks != 0
@@ -100,7 +102,7 @@ pub(super) fn validate_castes(
             || any_nonzero(&rule.stamina_dice)
             || any_nonzero(&rule.attack_levels);
     }
-    if !functional {
+    if !native && !functional {
         return Err(RebuiltV3RuleCatalogError::SemanticallyEmptyCastes);
     }
     Ok(ids)
@@ -109,6 +111,7 @@ pub(super) fn validate_castes(
 fn validate_race(
     rule: &SourcedRaceRule,
     snapshot: &ProjectSnapshot,
+    native: bool,
 ) -> Result<(), RebuiltV3RuleCatalogError> {
     let definition = &rule.definition;
     let reason = if rule.source.trim().is_empty() || !valid_blob(rule.source_blob.as_ref()) {
@@ -119,12 +122,13 @@ fn validate_race(
         Some("Classic ID is outside 1..=30")
     } else if definition.id.0 != format!("classic.race.{}", definition.classic_id) {
         Some("stable ID does not match the Classic race identity")
-    } else if effective_race_name(
-        snapshot.rule_names.as_ref(),
-        definition.classic_id,
-        &definition.name,
-    )
-    .is_none()
+    } else if !native
+        && effective_race_name(
+            snapshot.rule_names.as_ref(),
+            definition.classic_id,
+            &definition.name,
+        )
+        .is_none()
     {
         Some("authoritative or authored name source is missing")
     } else if !unique_nonempty_ids(&definition.eligible_caste_ids) {
@@ -154,6 +158,7 @@ fn validate_race(
 fn validate_caste(
     rule: &SourcedCasteRule,
     snapshot: &ProjectSnapshot,
+    native: bool,
 ) -> Result<(), RebuiltV3RuleCatalogError> {
     let definition = &rule.definition;
     let reason = if rule.source.trim().is_empty() || !valid_blob(rule.source_blob.as_ref()) {
@@ -164,12 +169,13 @@ fn validate_caste(
         Some("Classic ID is outside 1..=30")
     } else if definition.id.0 != format!("classic.caste.{}", definition.classic_id) {
         Some("stable ID does not match the Classic caste identity")
-    } else if effective_caste_name(
-        snapshot.rule_names.as_ref(),
-        definition.classic_id,
-        &definition.name,
-    )
-    .is_none()
+    } else if !native
+        && effective_caste_name(
+            snapshot.rule_names.as_ref(),
+            definition.classic_id,
+            &definition.name,
+        )
+        .is_none()
     {
         Some("authoritative or authored name source is missing")
     } else if !unique_nonempty_ids(&definition.eligible_race_ids)

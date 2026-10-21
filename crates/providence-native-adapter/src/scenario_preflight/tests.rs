@@ -96,3 +96,33 @@ fn invalid_preferred_startup_does_not_silently_choose_a_fallback() {
         root.join("Alternate")
     );
 }
+
+#[test]
+fn startup_resolution_preserves_the_actual_directory_entry_name() {
+    let temporary = tempdir().unwrap();
+    let actual = temporary.path().join("Prince of Darkness");
+    fs::write(&actual, vec![0; SCENARIO_STARTUP_BYTES]).unwrap();
+    assert_eq!(
+        resolve_startup_file(temporary.path(), "Prince Of Darkness").unwrap(),
+        actual
+    );
+    assert_eq!(
+        resolve_startup_file_selected(
+            temporary.path(),
+            "Prince Of Darkness",
+            Some("Prince of Darkness")
+        )
+        .unwrap(),
+        actual
+    );
+    #[cfg(windows)]
+    assert_eq!(
+        resolve_startup_file_selected(
+            temporary.path(),
+            "Prince Of Darkness",
+            Some("Prince Of Darkness")
+        )
+        .unwrap(),
+        actual
+    );
+}

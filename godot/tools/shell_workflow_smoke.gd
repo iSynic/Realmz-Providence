@@ -43,16 +43,20 @@ static func _verify_commands(shell: Control) -> bool:
 		or shell._application_menu.is_command_enabled(&"edit.cut")
 		or not shell._application_menu.is_command_enabled(&"view.problems")
 		or shell._application_menu.is_command_enabled(&"navigate.open-to-side")
-		or shell._application_menu.is_command_enabled(&"help.about")
 	):
 		Fixture._smoke_fail(shell, "approved native menus exposed an unowned command or disabled a working command")
 		return false
+	for command in [&"help.documents", &"help.shortcuts", &"help.compatibility", &"help.source-evidence", &"help.about"]:
+		if not shell._application_menu.is_command_enabled(command):
+			Fixture._smoke_fail(shell, "working Help command was disabled: " + str(command))
+			return false
 	shell._palette.popup_palette({"hasMap": true, "landEditable": true})
 	if (
 		not shell._palette.command_enabled("map.fit")
 		or not shell._palette.command_enabled("map.paint-selected-tile")
 		or shell._palette.command_enabled("map.stamp-selection")
 		or shell._palette.command_enabled("map.reveal-explorer")
+		or not shell._palette.command_enabled("help.about")
 	):
 		Fixture._smoke_fail(shell, "command palette lost bounded command-state truth")
 		return false

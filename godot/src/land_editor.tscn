@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource path="res://src/land_editor.gd" type="Script" id="1"]
 [ext_resource path="res://src/map_canvas.gd" type="Script" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource path="res://src/map_view_overlay.gd" type="Script" id="8"]
 [ext_resource path="res://src/map_image_export_dialog.tscn" type="PackedScene" id="9"]
 [ext_resource path="res://src/map_overlay_controller.gd" type="Script" id="10"]
+[ext_resource path="res://src/terrain_generation_route_overlay.gd" type="Script" id="11"]
 
 [node name="LandEditor" type="VBoxContainer"]
 layout_mode = 2
@@ -186,6 +187,17 @@ unique_name_in_owner = true
 
 [node name="MagicOverlay" parent="LandMapCanvas" instance=ExtResource("5")]
 unique_name_in_owner = true
+
+[node name="GenerationRouteOverlay" type="Control" parent="LandMapCanvas"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("11")
 
 [node name="EmptyLandHint" type="Label" parent="."]
 visible = false

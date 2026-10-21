@@ -9,13 +9,16 @@ use serde_json::Value;
 use serde_json::json;
 use std::io::Cursor;
 
+mod message;
+
 #[test]
-fn random_message_core_support_does_not_enable_an_unapproved_native_form() {
+fn message_wire_is_family_typed_and_never_accepts_area_fields_for_apply() {
     let mut snapshot = session(false).snapshot().clone();
     snapshot.extra_action_points[0].actions[0].raw_opcode = 19;
     let mut session = EditorSession::new(snapshot);
     let view = prepared(&mut session);
-    assert_eq!(view["phase"], "unsupported");
+    assert_eq!(view["phase"], "editing");
+    assert_eq!(view["family"], "random-message");
     assert_eq!(view["canApply"], false);
     let draft = repair::prepare_random_message(
         session.snapshot(),
@@ -29,6 +32,16 @@ fn random_message_core_support_does_not_enable_an_unapproved_native_form() {
         None,
         "action-settings.preview-repair",
         json!({"draft": draft}),
+    );
+    assert_eq!(result["ok"], true, "{result}");
+    let area_input = prepared(&mut self::session(false))["draft"]["input"].clone();
+    let mut substituted = result["result"]["draft"].clone();
+    substituted["input"] = area_input;
+    let result = wire(
+        &mut session,
+        None,
+        "action-settings.commit-repair",
+        json!({"expectedRevision":0,"draft":substituted}),
     );
     assert_eq!(result["ok"], false, "{result}");
     assert_eq!(session.revision(), Revision(0));

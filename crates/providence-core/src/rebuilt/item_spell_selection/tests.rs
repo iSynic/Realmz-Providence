@@ -14,6 +14,32 @@ mod fixtures;
 use fixtures::*;
 
 #[test]
+fn imported_missing_item_spell_extra_code_preserves_programs_without_inventing_dependencies() {
+    for opcode in [17, 18, 21, 22, 38, 51, 52, 65, 67] {
+        for payload in [None, Some(vec![800, 1])] {
+            let mut snapshot = snapshot();
+            let mut document = scenario(800);
+            let instruction = &mut document.programs[0].instructions[0];
+            instruction.opcode = opcode;
+            instruction.raw_opcode = opcode;
+            instruction.id = 32766;
+            instruction.extra_code = payload;
+            let original = document.clone();
+            assert!(matches!(
+                select_programs(&snapshot, &document),
+                Err(RebuiltV3ReachableItemSpellError::MissingExtraCode { .. })
+            ));
+            snapshot.origin = crate::model::ProjectOrigin::Imported {
+                compatibility_annex: crate::model::BlobId(format!("sha256:{}", "a".repeat(64))),
+            };
+            let selected = select_programs(&snapshot, &document).unwrap();
+            assert!(selected.references.is_empty());
+            assert_eq!(document, original);
+        }
+    }
+}
+
+#[test]
 fn selected_custom_item_closure_follows_curse_and_spell_dependencies_only() {
     let mut snapshot = snapshot();
     snapshot.scenario_item_rules[0].definition.cursed_item_id =

@@ -256,3 +256,29 @@ fn imported_origin_never_leaks_compatibility_annex_identity() {
             .contains(annex)
     );
 }
+
+#[test]
+fn v7_schema_bytes_are_pinned_and_only_imported_manifest_recompilation_preserves_it() {
+    let schema = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../contracts/realmz2/realmz2-package-v7.schema.json");
+    assert_eq!(
+        sha256_hex(&std::fs::read(&schema).unwrap()),
+        REBUILT_V7_SCHEMA_SHA256
+    );
+    assert_eq!(
+        std::fs::read_to_string(schema.with_extension("sha256"))
+            .unwrap()
+            .trim(),
+        REBUILT_V7_SCHEMA_SHA256
+    );
+    assert!(compile_rebuilt_v7_manifest(&snapshot(), &compiler(), &[], &documents()).is_err());
+    let mut imported = snapshot();
+    imported.origin = ProjectOrigin::Imported {
+        compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
+    };
+    let manifest = compile_rebuilt_v7_manifest(&imported, &compiler(), &[], &documents()).unwrap();
+    let rebuilt =
+        recompile_rebuilt_manifest(&manifest.manifest, &compiler(), &documents()).unwrap();
+    assert_eq!(rebuilt.manifest.schema_version, 7);
+    assert_eq!(rebuilt.manifest.schema_hash, REBUILT_V7_SCHEMA_SHA256);
+}

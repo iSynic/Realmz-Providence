@@ -24,7 +24,7 @@ pub(super) struct ReachabilityCatalog<'a> {
     pub(super) simple: EncounterCatalog,
     pub(super) complex: EncounterCatalog,
     pub(super) battles: BTreeMap<u32, &'a crate::model::BattleRecord>,
-    pub(super) monsters: BTreeMap<u32, &'a crate::model::MonsterRecord>,
+    pub(super) monsters: BTreeMap<u32, Vec<&'a crate::model::MonsterRecord>>,
     pub(super) extra_codes: BTreeMap<u32, [i16; 5]>,
 }
 
@@ -109,18 +109,39 @@ fn simple_catalog<'a>(
     for encounter in snapshot
         .simple_encounters
         .iter()
+        .filter(|row| !simple_encounter_is_runtime_representable(row))
+    {
+        for result in 0..4 {
+            insert_program(
+                programs,
+                simple_program(encounter.native_id.0, result),
+                ProgramSource {
+                    actions: &encounter.actions,
+                    slot_group: Some(result),
+                },
+            )?;
+        }
+    }
+    for encounter in snapshot
+        .simple_encounters
+        .iter()
         .filter(|encounter| simple_encounter_is_runtime_representable(encounter))
     {
         catalog.ids.insert(encounter.native_id.0);
         catalog.results.insert(
             encounter.native_id.0,
-            encounter
-                .texts
-                .iter()
-                .zip(encounter.choice_results)
-                .filter(|(label, result)| !label.trim().is_empty() && (1..=4).contains(result))
-                .map(|(_, result)| (result - 1) as u8)
-                .collect(),
+            if encounter.choice_results[0] == -4 {
+                // Castle enters result four without showing choices.
+                BTreeSet::from([3])
+            } else {
+                encounter
+                    .texts
+                    .iter()
+                    .zip(encounter.choice_results)
+                    .filter(|(label, result)| !label.trim().is_empty() && (1..=4).contains(result))
+                    .map(|(_, result)| (result - 1) as u8)
+                    .collect()
+            },
         );
         for result in 0..4 {
             insert_program(
@@ -206,6 +227,9 @@ fn complex_result_set(snapshot: &ProjectSnapshot, encounter: &ComplexEncounter) 
             }
         }
     }
+    if encounter.max_times > 1 && results.contains(&3) {
+        results.insert(2);
+    }
     results
 }
 
@@ -225,19 +249,21 @@ fn battle_catalog(
 
 fn monster_catalog(
     snapshot: &ProjectSnapshot,
-) -> Result<BTreeMap<u32, &crate::model::MonsterRecord>, RebuiltV3ReachabilityError> {
-    let mut monsters = BTreeMap::new();
-    if let Some(set) = snapshot
-        .monster_sets
-        .iter()
-        .find(|set| set.set_id == 0 && set.native_path == "Data MD")
-    {
+) -> Result<BTreeMap<u32, Vec<&crate::model::MonsterRecord>>, RebuiltV3ReachabilityError> {
+    let mut monsters: BTreeMap<u32, Vec<&crate::model::MonsterRecord>> = BTreeMap::new();
+    // Every difficulty variant retains its own death hook.
+    for set in &snapshot.monster_sets {
+        let mut seen = BTreeSet::new();
         for monster in &set.monsters {
-            if monsters.insert(monster.native_id.0, monster).is_some() {
+            if !seen.insert(monster.native_id.0) {
                 return Err(RebuiltV3ReachabilityError::DuplicateMonsterId(
                     monster.native_id.0,
                 ));
             }
+            monsters
+                .entry(monster.native_id.0)
+                .or_default()
+                .push(monster);
         }
     }
     Ok(monsters)

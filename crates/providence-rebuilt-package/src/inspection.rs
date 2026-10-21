@@ -1,3 +1,4 @@
+use crate::source_compression::classic_source_only_paths;
 use crate::{
     RebuiltV3ArchiveError, RebuiltV3ArchiveInspection,
     documents::Documents,
@@ -8,6 +9,7 @@ use crate::{
     limits::{MAX_ARCHIVE_ENTRIES, MAX_ENTRY_BYTES, MAX_MANIFEST_BYTES},
     manifest::validate_manifest_contract,
 };
+use providence_core::rebuilt::RebuiltV3AssetIndex;
 use providence_core::rebuilt::{
     REBUILT_V3_REQUIRED_DOCUMENTS, RebuiltV3Manifest, rebuilt_v3_media_digest,
 };
@@ -57,7 +59,7 @@ fn entry_names<R: Read + Seek>(
     let mut seen = BTreeSet::new();
     for index in 0..archive.len() {
         let entry = archive.by_index(index)?;
-        let path = entry.name().to_string();
+        let path = entry.name()?.into_owned();
         if !seen.insert(path.clone()) {
             return Err(RebuiltV3ArchiveError::DuplicateArchiveEntry(path));
         }
@@ -78,8 +80,13 @@ fn read_manifest<R: Read + Seek>(
         .iter()
         .position(|path| path == "manifest.json")
         .ok_or(RebuiltV3ArchiveError::MissingManifest)?;
-    let manifest_bytes =
-        read_certified_entry(archive, manifest_index, "manifest.json", MAX_MANIFEST_BYTES)?;
+    let manifest_bytes = read_certified_entry(
+        archive,
+        manifest_index,
+        "manifest.json",
+        MAX_MANIFEST_BYTES,
+        &BTreeSet::new(),
+    )?;
     let (manifest_value, manifest): (Value, RebuiltV3Manifest) =
         parse_canonical_json("manifest.json", &manifest_bytes)?;
 
@@ -118,13 +125,28 @@ fn read_documents<R: Read + Seek>(
     manifest: &RebuiltV3Manifest,
     names: &[String],
 ) -> Result<BTreeMap<String, Vec<u8>>, RebuiltV3ArchiveError> {
+    let position = names
+        .iter()
+        .position(|path| path == "assets/index.json")
+        .expect("manifest requires asset index");
+    let asset_bytes = read_certified_entry(
+        archive,
+        position,
+        "assets/index.json",
+        MAX_ENTRY_BYTES,
+        &BTreeSet::new(),
+    )?;
+    let (_, assets): (Value, RebuiltV3AssetIndex) =
+        parse_canonical_json("assets/index.json", &asset_bytes)?;
+    let source_only_paths = classic_source_only_paths(&assets, manifest);
     let mut documents = BTreeMap::new();
     for (index, path) in names.iter().enumerate() {
         if path == "manifest.json" {
             continue;
         }
         let integrity = &manifest.files[path];
-        let bytes = read_certified_entry(archive, index, path, MAX_ENTRY_BYTES)?;
+        let bytes =
+            read_certified_entry(archive, index, path, MAX_ENTRY_BYTES, &source_only_paths)?;
         if bytes.len() as u64 != integrity.bytes || sha256_hex(&bytes) != integrity.sha256 {
             return Err(RebuiltV3ArchiveError::FileIntegrityMismatch(path.clone()));
         }
@@ -164,6 +186,7 @@ fn read_certified_entry<R: Read + Seek>(
     index: usize,
     path: &str,
     maximum_bytes: u64,
+    source_only_paths: &BTreeSet<String>,
 ) -> Result<Vec<u8>, RebuiltV3ArchiveError> {
     let mut entry = archive.by_index(index)?;
     let bytes = entry.size();
@@ -173,12 +196,17 @@ fn read_certified_entry<R: Read + Seek>(
             bytes,
         });
     }
-    let expected_compression = if path.ends_with(".json") {
-        CompressionMethod::Deflated
+    let compression_is_valid = if path.ends_with(".json") {
+        entry.compression() == CompressionMethod::Deflated
+    } else if source_only_paths.contains(path) {
+        matches!(
+            entry.compression(),
+            CompressionMethod::Stored | CompressionMethod::Deflated
+        )
     } else {
-        CompressionMethod::Stored
+        entry.compression() == CompressionMethod::Stored
     };
-    if entry.compression() != expected_compression
+    if !compression_is_valid
         || entry.last_modified() != Some(zip::DateTime::default())
         || entry.unix_mode() != Some(0o100644)
     {

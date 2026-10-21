@@ -22,11 +22,14 @@ func apply_theme(window: Window, mode: String, density: String) -> void:
 
 func render(view: Dictionary, state: Dictionary) -> void:
 	if view.is_empty(): return
-	_layout.summary_variant(false)
-	ui.source.text = str(view.sourceLabel) + (" — Change random area" if state.phase != "unsupported" else "")
+	var message: bool = view.get("family", "") == "random-message"
+	_layout.show_family(message)
+	_layout.summary_variant(message and int(view.sharedCount) > 1, message)
+	ui.source.text = str(view.sourceLabel) + ((" — Display Random Message" if message else " — Change random area") if state.phase != "unsupported" else "")
 	ui.notice_title.text = str(view.noticeTitle)
 	ui.notice_body.text = str(view.noticeBody)
-	_render_input(view, state)
+	if message: ui.message_form.render(view, state)
+	else: _render_input(view, state)
 	_render_scope(view, state)
 	_render_errors(view)
 	_render_action_state(view, state)
@@ -63,17 +66,17 @@ func _render_input(view: Dictionary, state: Dictionary) -> void:
 
 func _render_scope(view: Dictionary, state: Dictionary) -> void:
 	var retained_stale_form: bool = state.phase == "stale-draft"
-	ui.scope.visible = int(view.sharedCount) > 1 and bool(view.shareAllowed)
+	ui.scope.visible = int(view.sharedCount) > 1 and (bool(view.shareAllowed) or view.get("family") == "random-message")
 	var scope: String = view.draft.scope
 	for edit: Array in state.pending_edits:
 		if edit[0] == "scope": scope = str(edit[1])
 	ui.only.set_pressed_no_signal(scope == "only-this-action")
-	ui.shared.set_pressed_no_signal(scope == "shared-actions")
+	ui.shared.set_pressed_no_signal(scope in ["shared-actions", "confirmed-actions"])
 	ui.only.text = ("● " if ui.only.button_pressed else "○ ") + "Only this action"
 	ui.shared.text = ("● " if ui.shared.button_pressed else "○ ") + "Update %d shared actions" % int(view.sharedCount)
 	ui.shared.disabled = state.busy or retained_stale_form or not bool(view.shareAllowed)
-	ui.outcome.text = str(view.outcomeHelp)
-	ui.bounds_help.text = str(view.boundsHelp)
+	ui.outcome.text = str(view.get("outcomeHelp", "Updates settings for this action. Other actions remain unchanged." if scope == "only-this-action" else "Updates all confirmed affected actions."))
+	ui.bounds_help.text = str(view.get("boundsHelp", ""))
 	ui.scope_help.text = str(view.scopeHelp)
 	ui.affects_heading.text = "Currently shared by %d actions" % int(view.sharedCount) if int(view.sharedCount) > 1 else "Affects"
 	ui.uses.text = "\n".join(view.sharedUses.map(func(usage): return str(usage.label)))
@@ -86,6 +89,7 @@ func _render_errors(view: Dictionary) -> void:
 	for field: Control in _layout.fields:
 		field.remove_theme_color_override("font_color")
 	for error: Dictionary in view.errors:
+		if view.get("family") == "random-message" and str(error.field) == "messageRange": continue
 		var control: Variant = ui.get(str(error.field))
 		if control is Control and not str(control.text).is_empty() and str(control.text) != "Required":
 			messages.append(str(error.message))
@@ -115,7 +119,7 @@ func _render_action_state(view: Dictionary, state: Dictionary) -> void:
 	ui.apply.visible = ui.body.visible
 	ui.cancel.text = "Cancel" if ui.body.visible else "Back to Issues"
 	if view.get("allocationUnavailable", false): ui.cancel.text = "Back to Issues"
-	if ui.recovery.visible: recovery(state)
+	if ui.recovery.visible: recovery(state, view)
 	focus_loop()
 
 
@@ -123,7 +127,7 @@ func set_text(control: LineEdit, value: String) -> void:
 	if control.text != value: control.text = value
 
 
-func recovery(state: Dictionary) -> void:
+func recovery(state: Dictionary, view: Dictionary) -> void:
 	var ui: Dictionary = ui
 	for child in ui.recovery_buttons.get_children():
 		ui.recovery_buttons.remove_child(child)
@@ -145,7 +149,7 @@ func recovery(state: Dictionary) -> void:
 				actions.append(["Review My Draft", _actions.review_draft])
 		"unknown":
 			title = "The repair outcome is not confirmed"
-			body = "Do not apply the repair again yet. Check the current action, both settings records, and all affected actions. Checking never applies changes. Your draft is kept."
+			body = "Do not apply the repair again yet. Check the current action, complete settings, and all affected actions. Checking never applies changes. Your draft is kept."
 			actions = [["Check Repair Status", _actions.check_status]]
 		"matches-repair":
 			title = "The current settings match this repair"
@@ -163,10 +167,12 @@ func recovery(state: Dictionary) -> void:
 			title = "Guided repair is unavailable for this action"
 			body = "This action does not yet have a repair form. Its problem remains in Issues. Nothing has been changed."
 			actions = []
-	ui.recovery_title.text = title
-	ui.recovery_body.text = body
+	var copy := _recovery_copy(view, state, title, body)
+	ui.recovery_title.text = copy[0]
+	ui.recovery_body.text = copy[1]
 	for edit: Array in state.pending_edits:
 		ui.recovery_body.text += "\nKept draft — %s: %s" % [ui[str(edit[0]) + "_label"].text if ui.has(str(edit[0]) + "_label") else str(edit[0]), str(edit[1])]
+	_layout.fit_recovery.call_deferred(view.get("family") == "random-message")
 	ui.status.text = "Outcome unconfirmed · draft kept" if state.submitted else "Draft kept · nothing applied"
 	if state.phase in ["unknown", "matches-repair", "not-applied"]:
 		ui.notice_title.text = title
@@ -180,10 +186,32 @@ func recovery(state: Dictionary) -> void:
 		ui.recovery_buttons.add_child(button)
 
 
+func _recovery_copy(view: Dictionary, state: Dictionary, title: String, body: String) -> Array[String]:
+	if view.get("family") != "random-message": return [title, body]
+	if state.phase == "stale":
+		title = "Review current settings and your draft"
+		body = "The caller, settings or sharing scope has changed. Review the complete comparison before an explicit retry."
+	if state.phase == "unknown":
+		title = "Checking the outcome never applies a repair"
+		body = "Check the same caller, complete settings and sharing scope. A confirmed matching repair returns without applying again. Unknown outcomes stay non-mutating."
+	return [title, _recovery_summary(view, state) + body]
+
+
+func _recovery_summary(view: Dictionary, state: Dictionary) -> String:
+	if view.get("family") != "random-message": return ""
+	var input: Dictionary = view.draft.input.duplicate()
+	var scope := str(view.draft.scope)
+	for edit: Array in state.pending_edits:
+		if edit[0] == "scope": scope = str(edit[1])
+		else: input[edit[0]] = edit[1]
+	var scope_label := "Only this action" if scope == "only-this-action" else "Update %d confirmed shared actions" % int(view.sharedCount)
+	return "Your draft: First message %s · Last message %s\n%s · draft retained\n\n" % [input.firstMessage, input.lastMessage, scope_label]
+
+
 func focus_loop() -> void:
 	var controls: Array[Control] = []
-	for control: Control in _layout.fields + [ui.only, ui.shared, ui.all_uses] + ui.recovery_buttons.get_children() + [ui.copy, ui.compare, ui.cancel, ui.apply]:
-		if control.is_visible_in_tree() and (not control is BaseButton or not control.disabled): controls.append(control)
+	for control: Control in _layout.fields + ui.message_form.controls() + [ui.only, ui.shared, ui.all_uses] + ui.recovery_buttons.get_children() + [ui.copy, ui.compare, ui.cancel, ui.apply]:
+		if control.is_visible_in_tree() and not controls.has(control) and (not control is BaseButton or not control.disabled): controls.append(control)
 	for index in controls.size():
 		controls[index].focus_next = controls[(index + 1) % controls.size()].get_path()
 		controls[index].focus_previous = controls[(index - 1 + controls.size()) % controls.size()].get_path()

@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[node name="Section" type="PanelContainer"]
+size_flags_horizontal = 3
+theme_type_variation = "HelpCard"
+
+[node name="Body" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Heading" type="Label" parent="Body"]
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+autowrap_mode = 2
+
+[node name="Text" type="RichTextLabel" parent="Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+selection_enabled = true
+
+[node name="Content" type="VBoxContainer" parent="Body"]
+layout_mode = 2
+theme_override_constants/separation = 12

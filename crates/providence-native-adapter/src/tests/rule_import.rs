@@ -1,6 +1,72 @@
 use super::*;
 
 #[test]
+fn full_native_import_retains_short_and_zero_families_while_standalone_import_stays_strict() {
+    use crate::rule_import::*;
+    for count in [0, 1, 2] {
+        let temporary = tempfile::tempdir().unwrap();
+        let store =
+            ProjectStore::create(temporary.path().join("project"), &demo_snapshot()).unwrap();
+        let race = temporary.path().join("Data Race");
+        let caste = temporary.path().join("Data Caste");
+        let race_bytes = vec![0; count * 408 + 56];
+        let caste_bytes = vec![0; count * 576 + 13];
+        fs::write(&race, &race_bytes).unwrap();
+        fs::write(&caste, &caste_bytes).unwrap();
+        let mut session = EditorSession::new(demo_snapshot());
+        let strict = import_race_rules(
+            &mut session,
+            Some(&store),
+            json!({"path":race,"expectedRevision":0}),
+        );
+        assert!(strict.is_err());
+        assert_eq!(session.revision().0, 0);
+        let result = import_native_race_rules(
+            &mut session,
+            Some(&store),
+            json!({"path":race,"expectedRevision":0}),
+        )
+        .unwrap();
+        assert_eq!(result["consumerRecords"], count);
+        assert_eq!(session.snapshot().race_rules.len(), count);
+        let revision = session.revision().0;
+        import_native_caste_rules(
+            &mut session,
+            Some(&store),
+            json!({"path":caste,"expectedRevision":revision}),
+            true,
+        )
+        .unwrap();
+        assert_eq!(session.snapshot().caste_rules.len(), count);
+        assert_native_rule_bytes(session.snapshot(), &race_bytes, &caste_bytes);
+        let revision = session.revision().0;
+        assert!(
+            import_caste_rules(
+                &mut session,
+                Some(&store),
+                json!({"path":caste,"expectedRevision":revision})
+            )
+            .is_err()
+        );
+    }
+}
+
+fn assert_native_rule_bytes(
+    snapshot: &providence_core::model::ProjectSnapshot,
+    races: &[u8],
+    castes: &[u8],
+) {
+    assert_eq!(
+        providence_core::codecs::encode_race_rules(&snapshot.race_rules, Some(races)).unwrap(),
+        races
+    );
+    assert_eq!(
+        providence_core::codecs::encode_caste_rules(&snapshot.caste_rules, Some(castes)).unwrap(),
+        castes
+    );
+}
+
+#[test]
 fn data_race_import_is_atomic_exact_and_source_blob_backed() {
     let temporary = tempfile::tempdir().expect("temporary project");
     let source = temporary.path().join("Data Race");
@@ -54,10 +120,10 @@ fn data_race_import_is_atomic_exact_and_source_blob_backed() {
 }
 
 #[test]
-fn data_race_import_preserves_and_reports_bytes_after_the_complete_table() {
+fn data_race_import_preserves_source_only_rows_and_partial_bytes() {
     let temporary = tempfile::tempdir().expect("temporary project");
     let source = temporary.path().join("Data Race");
-    let mut bytes = vec![0u8; providence_core::codecs::RACE_RECORD_BYTES * 30];
+    let mut bytes = vec![0u8; providence_core::codecs::RACE_RECORD_BYTES * 31];
     bytes.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
     fs::write(&source, &bytes).expect("write controlled Data Race");
     let store = ProjectStore::create(temporary.path().join("project"), &demo_snapshot())
@@ -81,6 +147,8 @@ fn data_race_import_preserves_and_reports_bytes_after_the_complete_table() {
     let response: Value = serde_json::from_slice(&output).expect("response JSON");
     assert_eq!(response["ok"], true);
     assert_eq!(response["result"]["trailingBytes"], 4);
+    assert_eq!(response["result"]["consumerRecords"], 30);
+    assert_eq!(response["result"]["sourceOnlyCompleteRecords"], 1);
     assert_eq!(
         response["result"]["trailingDisposition"],
         "preserved-source-bytes"
@@ -117,7 +185,7 @@ fn assert_imported_race_catalog(reopened: &mut EditorSession) {
 fn data_caste_import_derives_reciprocal_eligibility_and_preserves_duplicate_items() {
     let temporary = tempfile::tempdir().expect("temporary project");
     let source = temporary.path().join("Data Caste");
-    let mut bytes = vec![0u8; providence_core::codecs::CASTE_RECORD_BYTES * 30];
+    let mut bytes = vec![0u8; providence_core::codecs::CASTE_RECORD_BYTES * 31 + 2];
     bytes[386..388].copy_from_slice(&37i16.to_be_bytes());
     bytes[388..390].copy_from_slice(&37i16.to_be_bytes());
     fs::write(&source, &bytes).expect("write controlled Data Caste");

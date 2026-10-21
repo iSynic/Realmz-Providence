@@ -2,6 +2,8 @@
 
 mod application_library;
 mod atomic_file;
+mod authored_project;
+pub use authored_project::AuthoredProjectBaseline;
 mod blob_retention;
 mod blob_store;
 mod database;
@@ -10,8 +12,11 @@ mod index_cache;
 mod monster_library;
 mod monster_operations;
 mod portable_snapshot;
+mod project_creation;
 mod project_index;
 mod project_open;
+mod writer_lock;
+pub use writer_lock::ProjectWriterLock;
 mod reference_catalog;
 mod save_as;
 mod session_history;
@@ -29,10 +34,9 @@ use providence_core::{
 pub use reference_catalog::ReferenceCatalogStore;
 use serde::{Deserialize, Serialize};
 use snapshot_segments::SNAPSHOT_SEGMENTS;
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+#[cfg(test)]
+use std::fs;
+use std::path::{Path, PathBuf};
 
 mod checkpoint_reuse;
 mod history_checkpoint;
@@ -78,6 +82,8 @@ pub struct CheckpointOutcome {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StoredSessionHistoryEntry {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    attribution: Option<providence_core::session::HistoryAttribution>,
     snapshot: BlobId,
     changed_entities: Vec<providence_core::model::StableId>,
     #[serde(default)]
@@ -122,6 +128,7 @@ pub struct SearchHit {
 pub struct ProjectStore {
     root: PathBuf,
     checkpoint: std::sync::Arc<std::sync::Mutex<Option<checkpoint_reuse::VerifiedCheckpoint>>>,
+    writer: Option<std::sync::Arc<ProjectWriterLock>>,
 }
 
 impl ProjectStore {
@@ -129,32 +136,15 @@ impl ProjectStore {
         Self {
             root,
             checkpoint: Default::default(),
+            writer: None,
         }
     }
-    pub fn create_new(
-        root: impl Into<PathBuf>,
-        snapshot: &ProjectSnapshot,
-    ) -> Result<Self, StoreError> {
-        let root = root.into();
-        if root.try_exists()? && (!root.is_dir() || fs::read_dir(&root)?.next().is_some()) {
-            return Err(StoreError::ProjectDirectoryNotEmpty(root));
-        }
-        Self::create(root, snapshot)
-    }
-
-    pub fn create(
-        root: impl Into<PathBuf>,
-        snapshot: &ProjectSnapshot,
-    ) -> Result<Self, StoreError> {
-        let store = Self::at_root(root.into());
-        fs::create_dir_all(&store.root)?;
-        store.save_snapshot(snapshot)?;
-        store.rebuild_index(snapshot)?;
-        Ok(store)
-    }
-
     pub fn open(root: impl Into<PathBuf>) -> Result<(Self, ProjectSnapshot), StoreError> {
         let store = Self::at_root(root.into());
+        if !store.snapshot_path().is_file() {
+            return Err(StoreError::MissingSnapshot(store.snapshot_path()));
+        }
+        let _writer = store.writer_lease()?;
         let snapshot = store.load_snapshot()?;
         store.index_matches_snapshot()?;
         Ok((store, snapshot))

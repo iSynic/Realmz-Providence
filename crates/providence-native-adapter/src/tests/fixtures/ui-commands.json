@@ -53,6 +53,13 @@
         "land-cell.open",
         "land-cell.preview",
         "land-cell.apply",
+        "terrain-generation.open",
+        "terrain-generation.preview",
+        "terrain-generation.begin",
+        "terrain-generation.poll",
+        "terrain-generation.cancel",
+        "terrain-generation.apply",
+        "map-connectivity.preview",
         "smart-terrain.open",
         "smart-terrain.reshape",
         "smart-terrain.preview",
@@ -949,6 +956,8 @@
         "action-settings.rebase-repair",
         "action-settings.repair-uses",
         "action-settings.repair-choices",
+        "action-settings.choose-repair-message",
+        "action-settings.peek-repair-message",
         "action-settings.commit-repair",
         "action-settings.reconcile-repair"
       ]

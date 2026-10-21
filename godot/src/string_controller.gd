@@ -46,6 +46,13 @@ func _draft_guard() -> Dictionary:
 
 func reload(identity := "", offset := -1, focus_editor := false, borrowed: ProvidenceEditorOperation = null) -> Dictionary:
 	if _bridge == null: return {"ok":false,"error":"Open a project before loading Strings."}
+	# Debounced encoding feedback is a read, but owns the same transport lease.
+	# A foreground reconciliation must not lose its refresh to that background read.
+	var generation := _generation
+	while borrowed == null and _operations.busy and _operations.label == "Browse Strings":
+		await _operations.completed
+		if generation != _generation or _bridge == null:
+			return {"ok":false,"connectionChanged":true,"error":"The Strings session changed before loading."}
 	var response := _draft_guard()
 	if not response.ok: return response
 	var guard := _guard()

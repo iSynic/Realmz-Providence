@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod native_tiles;
+mod source_compression;
 
 use providence_core::rebuilt::{
     RebuiltV3AssetIndex, RebuiltV3ContentDocument, RebuiltV3Manifest, RebuiltV3WorldDocument,

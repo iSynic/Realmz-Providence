@@ -35,7 +35,6 @@ var _assets
 var _media
 var _issues
 var _workbenches: WeakRef
-var _strings: WeakRef
 var _has_draft: Callable
 var _guard: Callable
 var _back: Array[Dictionary] = []
@@ -55,7 +54,7 @@ func initialize(tabs: TabContainer, registry, operations: ProvidenceEditorOperat
 	_explorer.special_land_requested.connect(open_special_land.bind(true))
 
 
-func configure_authoring(map: ProvidenceMapDocumentController, scripts, map_lifecycle, assets, media, issues, workbenches, strings, has_draft: Callable, guard: Callable) -> void:
+func configure_authoring(map: ProvidenceMapDocumentController, scripts, map_lifecycle, assets, media, issues, workbenches, has_draft: Callable, guard: Callable) -> void:
 	_map = map
 	_scripts = scripts
 	_map_lifecycle = map_lifecycle
@@ -63,7 +62,6 @@ func configure_authoring(map: ProvidenceMapDocumentController, scripts, map_life
 	_media = media
 	_issues = issues
 	_workbenches = weakref(workbenches)
-	_strings = weakref(strings)
 	_has_draft = has_draft
 	_guard = guard
 	var guard_owner = guard.get_object()
@@ -558,8 +556,7 @@ func _open_complex_result(view: Control, identity: String, context: Dictionary) 
 
 
 func _open_string_target(kind: String, native_id: int) -> Dictionary:
-	var strings = _strings.get_ref()
-	if strings == null: return {"ok": false, "error": "The string editor is unavailable."}
+	var strings: Control = _registry.view("text.messages")
 	if kind == "option-label": return await strings.open_option_label(absi(native_id))
 	await strings.open_native(absi(native_id))
 	return {"ok": strings.selected_identity() == "message:%d" % absi(native_id)}

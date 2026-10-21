@@ -109,10 +109,13 @@ fn imported_simple_choices_preserve_zero_and_invalid_native_results() {
     let projection = project_rebuilt_v3_simple_encounters(&snapshot)
         .expect("preserve imported result identities");
     let responses = &projection.simple_encounters[0].responses;
-    assert_eq!(responses.len(), 3);
+    assert_eq!(responses.len(), 4);
     assert_eq!(responses[1].label, "Eliminated");
     assert_eq!(responses[1].result_program_id.0, "simple:0:result:-1");
     assert_eq!(responses[2].result_program_id.0, "simple:0:result:-1");
+    assert_eq!(responses[3].id.0, "simple:0:choice:3");
+    assert_eq!(responses[3].label, "");
+    assert_eq!(responses[3].result_program_id.0, "simple:0:result:-1");
 
     snapshot.simple_encounters[0].authored = true;
     snapshot.simple_encounters[0].choice_results[2] = 127;

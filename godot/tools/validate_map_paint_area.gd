@@ -6,6 +6,14 @@ class AreaBridge extends PaintBridge:
 	var drop_intent := false
 	var drop_before_intent := false
 	var drop_preview := false
+	func _prepare_repair_reconnect() -> Dictionary:
+		var captured: PackedStringArray = mcp_setup_context().supportOptions.duplicate()
+		var prepared: Dictionary = super._prepare_repair_reconnect()
+		if prepared.get("ok", false):
+			var resumed: PackedStringArray = prepared.arguments.slice(2)
+			if resumed[0] == "--native-client-id": resumed = resumed.slice(2)
+			assert(resumed == captured, "Recovery changed the captured personal-library/Scrapbook support profile")
+		return prepared
 	func _request(method: String, params: Dictionary) -> Dictionary:
 		if method == "map.apply-intent" and drop_before_intent:
 			drop_before_intent = false
@@ -79,6 +87,7 @@ func _exercise_area(shell) -> void:
 
 func _shape_selection(shell, author, workspace) -> void:
 	workspace.set_tool("select")
+	await _settle_area(shell, author)
 	var before := _tiles(shell); var revision: int = shell._session_view.revision
 	_start(author, Vector2i(2, 3)); author._overlay.gesture_changed.emit(Vector2i(2, 3), Vector2i(4, 4), [Vector2i(2, 3), Vector2i(4, 4)])
 	await _settle_area(shell, author)
@@ -211,6 +220,6 @@ func _drag(author, start: Vector2i, end: Vector2i) -> void:
 
 func _settle_area(shell, author) -> void:
 	for index in 600:
-		if not shell._operations.busy and not author._reading and author._queue.is_empty(): await process_frame; return
+		if not shell._operations.busy and not shell._bridge.operation_busy() and not shell._collaboration._checking and not author._reading and author._queue.is_empty(): return
 		await process_frame
 	_check(false, "Area preview did not settle")

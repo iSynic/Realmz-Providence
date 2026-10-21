@@ -1,4 +1,7 @@
+use crate::integrity::parse_canonical_json;
+use crate::source_compression::classic_source_only_paths;
 use crate::{RebuiltV3ArchiveError, integrity::sha256_hex};
+use providence_core::rebuilt::RebuiltV3AssetIndex;
 use providence_core::rebuilt::{
     RebuiltV3FileInput, RebuiltV3FileIntegrity, RebuiltV3ManifestArtifact,
 };
@@ -6,7 +9,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     io::{Seek, Write},
 };
-use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
+use zip::{CompressionMethod, System, ZipWriter, write::SimpleFileOptions};
 
 pub fn write_rebuilt_v3_archive<W: Write + Seek>(
     destination: W,
@@ -14,12 +17,19 @@ pub fn write_rebuilt_v3_archive<W: Write + Seek>(
     files: &[RebuiltV3FileInput<'_>],
 ) -> Result<W, RebuiltV3ArchiveError> {
     let files = validate_inputs(&manifest.manifest.files, files)?;
+    let source_only_paths = files
+        .get("assets/index.json")
+        .and_then(|bytes| {
+            parse_canonical_json::<RebuiltV3AssetIndex>("assets/index.json", bytes).ok()
+        })
+        .map(|(_, assets)| classic_source_only_paths(&assets, &manifest.manifest))
+        .unwrap_or_default();
     let mut entries = BTreeMap::from([("manifest.json", manifest.canonical_json.as_slice())]);
     entries.extend(files);
 
     let mut writer = ZipWriter::new(destination);
     for (path, bytes) in entries {
-        let compression = if path.ends_with(".json") {
+        let compression = if path.ends_with(".json") || source_only_paths.contains(path) {
             CompressionMethod::Deflated
         } else {
             CompressionMethod::Stored
@@ -28,6 +38,8 @@ pub fn write_rebuilt_v3_archive<W: Write + Seek>(
             .compression_method(compression)
             .compression_level((compression == CompressionMethod::Deflated).then_some(9))
             .last_modified_time(zip::DateTime::default())
+            // zip otherwise records the build host's OS, so packages would differ by platform.
+            .system(System::Unix)
             .unix_permissions(0o644);
         writer.start_file(path, options)?;
         writer.write_all(bytes)?;

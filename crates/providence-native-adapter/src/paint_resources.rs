@@ -7,6 +7,7 @@ use providence_core::{
 };
 use providence_storage::ProjectStore;
 use serde_json::{Value, json};
+mod allocation;
 
 pub(crate) fn dispatch(
     session: &mut EditorSession,
@@ -23,6 +24,7 @@ pub(crate) fn dispatch(
         .read_paint_resources()
         .map_err(|error| error.to_string())?;
     match method {
+        "paint-resources.allocate" => allocation::read(session, &resources, params),
         "paint-resources.list" | "paint-resources.open" => {
             read_catalog(session, store, &resources, catalogs, method, params)
         }

@@ -57,24 +57,15 @@ impl std::fmt::Display for ShopCodecError {
 impl std::error::Error for ShopCodecError {}
 
 pub fn shop_prefix_record_count(bytes: &[u8]) -> usize {
-    classification::classify(bytes)
-        .first()
-        .map_or(bytes.len() / SHOP_RECORD_BYTES, |row| {
-            row.native_id.0 as usize
-        })
+    bytes.len() / SHOP_RECORD_BYTES
 }
 
 pub fn decode_shops(bytes: &[u8]) -> DecodedShopFile {
     let complete_bytes = bytes.len() / SHOP_RECORD_BYTES * SHOP_RECORD_BYTES;
     let quarantined_records = classification::classify(bytes);
-    let excluded = quarantined_records
-        .iter()
-        .map(|row| row.native_id.0)
-        .collect::<std::collections::BTreeSet<_>>();
     let records = bytes[..complete_bytes]
         .chunks_exact(SHOP_RECORD_BYTES)
         .enumerate()
-        .filter(|(index, _)| !excluded.contains(&(*index as u32)))
         .map(|(index, row)| decode_row(row, index as u32))
         .collect();
     DecodedShopFile {
@@ -84,6 +75,7 @@ pub fn decode_shops(bytes: &[u8]) -> DecodedShopFile {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn source_shop_record(bytes: &[u8], native_id: NativeRecordId) -> Option<ShopRecord> {
     let start = native_id.0 as usize * SHOP_RECORD_BYTES;
     bytes
@@ -217,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn dense_foreign_suffix_is_preserved_but_not_authored() {
+    fn dense_foreign_suffix_is_decoded_and_annotated() {
         let mut source = encode_shops(&[authored(0)], None).unwrap();
         let mut foreign = vec![0xff; SHOP_RECORD_BYTES];
         for slot in 0..SHOP_ITEM_SLOTS {
@@ -225,7 +217,7 @@ mod tests {
         }
         source.extend_from_slice(&foreign);
         let decoded = decode_shops(&source);
-        assert_eq!(decoded.records.len(), 1);
+        assert_eq!(decoded.records.len(), 2);
         assert!(decoded.trailing_bytes.is_empty());
         assert_eq!(decoded.quarantined_records.len(), 1);
         assert_eq!(
@@ -235,7 +227,7 @@ mod tests {
     }
 
     #[test]
-    fn foreign_suffix_before_zero_terminal_row_is_preserved_but_not_imported() {
+    fn suspected_foreign_rows_and_following_rows_are_decoded() {
         let mut source = encode_shops(&[authored(0), authored(1)], None).unwrap();
         source.extend_from_slice(&[0; SHOP_RECORD_BYTES]);
         let mut foreign = vec![0xff; SHOP_RECORD_BYTES];
@@ -249,7 +241,7 @@ mod tests {
         source.extend_from_slice(&[0; SHOP_RECORD_BYTES]);
 
         let decoded = decode_shops(&source);
-        assert_eq!(decoded.records.len(), 3);
+        assert_eq!(decoded.records.len(), 5);
         assert!(decoded.trailing_bytes.is_empty());
         assert_eq!(decoded.quarantined_records.len(), 2);
         assert_eq!(

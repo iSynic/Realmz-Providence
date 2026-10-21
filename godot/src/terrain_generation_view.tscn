@@ -1,0 +1,291 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/terrain_generation_view.gd" id="1"]
+[ext_resource type="Theme" path="res://src/world_controls.tres" id="2"]
+
+[node name="TerrainGeneration" type="PanelContainer"]
+script = ExtResource("1")
+theme = ExtResource("2")
+visible = false
+metadata/self_scrolling = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="GenerationHeading" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"WorldTitle"
+text = "GENERATE TERRAIN"
+
+[node name="GenerationDestination" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Land map"
+
+[node name="SettingsScroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="Form" type="VBoxContainer" parent="Margin/Body/SettingsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="GenerationFamily" type="OptionButton" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 3
+selected = 0
+size_flags_horizontal = 3
+popup/item_0/text = "Water"
+popup/item_1/text = "Trees / Forest"
+popup/item_2/text = "Mountains"
+
+[node name="GenerationDensity" type="OptionButton" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 3
+selected = 1
+size_flags_horizontal = 3
+tooltip_text = "Distribution preferences; coverage varies with joins, locks and routes."
+popup/item_0/text = "Density: Sparse"
+popup/item_1/text = "Density: Balanced"
+popup/item_2/text = "Density: Dense"
+
+[node name="SeedRow" type="HBoxContainer" parent="Margin/Body/SettingsScroll/Form"]
+layout_mode = 2
+
+[node name="SeedLabel" type="Label" parent="Margin/Body/SettingsScroll/Form/SeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Seed"
+
+[node name="GenerationSeed" type="SpinBox" parent="Margin/Body/SettingsScroll/Form/SeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 4294967295.0
+value = 47.0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(68, 0)
+
+[node name="GenerationNewSeed" type="Button" parent="Margin/Body/SettingsScroll/Form/SeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "New seed"
+
+[node name="DrawRow" type="HBoxContainer" parent="Margin/Body/SettingsScroll/Form"]
+layout_mode = 2
+
+[node name="GenerationTarget" type="OptionButton" parent="Margin/Body/SettingsScroll/Form/DrawRow"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 2
+selected = 0
+size_flags_horizontal = 3
+popup/item_0/text = "Area"
+popup/item_1/text = "Locks"
+
+[node name="DrawGenerationArea" type="Button" parent="Margin/Body/SettingsScroll/Form/DrawRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Draw…"
+
+[node name="ShapeRow" type="HBoxContainer" parent="Margin/Body/SettingsScroll/Form"]
+layout_mode = 2
+
+[node name="GenerationShape" type="OptionButton" parent="Margin/Body/SettingsScroll/Form/ShapeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 3
+selected = 0
+size_flags_horizontal = 3
+popup/item_0/text = "Rectangle"
+popup/item_1/text = "Ellipse"
+popup/item_2/text = "Freehand"
+
+[node name="GenerationCombine" type="OptionButton" parent="Margin/Body/SettingsScroll/Form/ShapeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+item_count = 3
+selected = 0
+size_flags_horizontal = 3
+popup/item_0/text = "Replace"
+popup/item_1/text = "Add"
+popup/item_2/text = "Subtract"
+
+[node name="GenerationSelectionCount" type="Label" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 selected · 0 protected"
+
+[node name="ClearGenerationLocks" type="Button" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Automatic protection for APs, secrets and unrelated artwork remains in effect."
+text = "Clear drawn locks"
+
+[node name="RouteHeading" type="Label" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "REQUIRED WALKING CONNECTIONS"
+
+[node name="Endpoints" type="GridContainer" parent="Margin/Body/SettingsScroll/Form"]
+layout_mode = 2
+columns = 3
+
+[node name="FromLabel" type="Label" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "A:"
+
+[node name="RouteFromX" type="SpinBox" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 89.0
+value = 10.0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(68, 0)
+
+[node name="RouteFromY" type="SpinBox" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 89.0
+value = 10.0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(68, 0)
+
+[node name="ToLabel" type="Label" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "B:"
+
+[node name="RouteToX" type="SpinBox" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 89.0
+value = 37.0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(68, 0)
+
+[node name="RouteToY" type="SpinBox" parent="Margin/Body/SettingsScroll/Form/Endpoints"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 89.0
+value = 37.0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(68, 0)
+
+[node name="AddGenerationRoute" type="Button" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Coordinates are X, Y. At most 32 required connections per map."
+text = "Add connection"
+
+[node name="GenerationRoutes" type="ItemList" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 64)
+size_flags_horizontal = 3
+allow_reselect = true
+
+[node name="RouteActions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="RemoveGenerationRoute" type="Button" parent="Margin/Body/RouteActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Remove"
+
+[node name="CheckGenerationRoutes" type="Button" parent="Margin/Body/RouteActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Check routes"
+
+[node name="RouteScope" type="Label" parent="Margin/Body/SettingsScroll/Form"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Ordinary walking only. Scripts and special travel require playtesting."
+
+[node name="GenerationStatus" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+size_flags_horizontal = 3
+text = "Draw an area, then Generate."
+
+[node name="GenerationRouteSummary" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+autowrap_mode = 2
+size_flags_horizontal = 3
+
+[node name="GenerationLegend" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Purple: area · Cyan: changed
+Gold: locked · A / B: route endpoints"
+
+[node name="GenerationBefore" type="CheckBox" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Show before"
+
+[node name="PreviewActions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="GeneratePreview" type="Button" parent="Margin/Body/PreviewActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Generate"
+
+[node name="CancelGeneration" type="Button" parent="Margin/Body/PreviewActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cancel"
+
+[node name="CommitActions" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="ApplyGeneration" type="Button" parent="Margin/Body/CommitActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Apply · one Undo"
+
+[node name="CloseGeneration" type="Button" parent="Margin/Body/CommitActions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Close"
+
+[node name="RecoverGeneration" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+visible = false
+text = "Check original operation"

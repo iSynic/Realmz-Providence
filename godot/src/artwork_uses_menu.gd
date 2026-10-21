@@ -33,7 +33,9 @@ func show_uses(bridge, identity: String, anchor: Control) -> void:
 	_asset_identity = identity
 	add_item("Checking artwork uses…")
 	set_item_disabled(0, true)
-	position = Vector2i(anchor.get_screen_position() + Vector2(0, anchor.size.y))
+	var bottom := Vector2(0, anchor.size.y)
+	var viewport_point := anchor.get_global_transform_with_canvas() * bottom
+	position = Vector2i(viewport_point if is_embedded() else anchor.get_viewport().get_screen_transform() * viewport_point)
 	popup()
 	var state := await _run("Read artwork uses", _read_first_page)
 	if state.get("discarded", false): return

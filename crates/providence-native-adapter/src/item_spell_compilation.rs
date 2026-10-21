@@ -137,6 +137,7 @@ fn compile_spell_names(session: &EditorSession, store: &ProjectStore) -> Result<
         .snapshot()
         .scenario_spells
         .iter()
+        .take(providence_core::codecs::SCENARIO_SPELL_RECORDS)
         .any(|spell| spell.text_source_blob.as_ref() != text_source_blob)
     {
         return Err("Data Spell catalog has inconsistent name-source identities".into());

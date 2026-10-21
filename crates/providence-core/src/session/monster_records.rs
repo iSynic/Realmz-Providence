@@ -1,3 +1,5 @@
+use crate::codecs::MONSTER_DESCRIPTION_RECORD_BYTES;
+use crate::codecs::MONSTER_RECORD_BYTES;
 use crate::codecs::validate_monster_record_shape;
 use crate::model::ClassicSourceBlob;
 use crate::model::MonsterDescription;
@@ -287,35 +289,64 @@ pub(super) fn validate_classic_monster_import(
                 set.set_id, set.native_path
             )));
         }
-        for monster in &set.monsters {
-            validate_monster_record_shape(monster)
-                .map_err(|error| SessionError::InvalidClassicImport(error.to_string()))?;
-            let expected_identity = format!("monster:{}:{}", set.set_id, monster.native_id.0);
-            if monster.identity.0 != expected_identity {
-                return Err(SessionError::InvalidClassicImport(format!(
-                    "monster record {} in set {} must use identity {expected_identity}",
-                    monster.native_id.0, set.set_id
-                )));
-            }
+        let source = sources
+            .iter()
+            .find(|source| source.native_path == set.native_path)
+            .expect("source path was checked above");
+        let complete_rows = source.byte_length as usize / MONSTER_RECORD_BYTES;
+        if complete_rows != set.monsters.len() {
+            return Err(SessionError::InvalidClassicImport(format!(
+                "{} complete-row count does not match the decoded monster count",
+                set.native_path
+            )));
         }
+        validate_imported_monster_identity(set)?;
     }
-    validate_imported_monster_descriptions(monster_descriptions, &source_paths)
+    validate_imported_monster_descriptions(monster_descriptions, &source_paths, sources)
 }
 
 fn validate_imported_monster_descriptions(
     monster_descriptions: &[MonsterDescription],
     source_paths: &BTreeSet<&str>,
+    sources: &[ClassicSourceBlob],
 ) -> Result<(), SessionError> {
     if !monster_descriptions.is_empty() && !source_paths.contains("Data DES") {
         return Err(SessionError::InvalidClassicImport(
             "decoded monster descriptions require Data DES provenance".into(),
         ));
     }
+    if let Some(source) = sources
+        .iter()
+        .find(|source| source.native_path == "Data DES")
+    {
+        let complete_rows = source.byte_length as usize / MONSTER_DESCRIPTION_RECORD_BYTES;
+        if complete_rows != monster_descriptions.len() {
+            return Err(SessionError::InvalidClassicImport(
+                "Data DES complete-row count does not match the decoded monster-description count"
+                    .into(),
+            ));
+        }
+    }
     for description in monster_descriptions {
         if description.identity.0 != format!("monster-description:{}", description.native_id.0) {
             return Err(SessionError::InvalidClassicImport(format!(
                 "monster description {} has an invalid stable identity",
                 description.native_id.0
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn validate_imported_monster_identity(set: &MonsterSet) -> Result<(), SessionError> {
+    for monster in &set.monsters {
+        validate_monster_record_shape(monster)
+            .map_err(|error| SessionError::InvalidClassicImport(error.to_string()))?;
+        let expected_identity = format!("monster:{}:{}", set.set_id, monster.native_id.0);
+        if monster.identity.0 != expected_identity {
+            return Err(SessionError::InvalidClassicImport(format!(
+                "monster record {} in set {} must use identity {expected_identity}",
+                monster.native_id.0, set.set_id
             )));
         }
     }

@@ -244,7 +244,11 @@ fn catalog_labels(
     match kind {
         RuleKind::Race => {
             let rows = if snapshot.race_rules.is_empty() {
-                decode_race_rules(&sources.race, None).rules
+                decode_race_rules(&sources.race, None)
+                    .rules
+                    .into_iter()
+                    .take(30)
+                    .collect()
             } else {
                 snapshot.race_rules.clone()
             };
@@ -265,7 +269,11 @@ fn catalog_labels(
         }
         RuleKind::Caste => {
             let rows = if snapshot.caste_rules.is_empty() {
-                decode_caste_rules(&sources.caste, None).rules
+                decode_caste_rules(&sources.caste, None)
+                    .rules
+                    .into_iter()
+                    .take(30)
+                    .collect()
             } else {
                 snapshot.caste_rules.clone()
             };
@@ -297,17 +305,7 @@ pub(crate) fn edit(
     if !(1..=30).contains(&id) {
         return Err("Choose a fixed rule ID from 1 through 30.".into());
     }
-    let mut races = if snapshot.race_rules.is_empty() {
-        decode_race_rules(&sources.race, None).rules
-    } else {
-        snapshot.race_rules.clone()
-    };
-    let mut castes = if snapshot.caste_rules.is_empty() {
-        decode_caste_rules(&sources.caste, None).rules
-    } else {
-        snapshot.caste_rules.clone()
-    };
-    derive_caste_eligibility(&races, &mut castes).map_err(|e| e.to_string())?;
+    let (mut races, castes) = editing_rule_tables(snapshot, sources)?;
     let names = snapshot.rule_names.as_ref().unwrap_or(&stock.names);
     match kind {
         RuleKind::Race => {
@@ -464,4 +462,36 @@ pub(crate) fn selected_items(
             .any(|identity| choice.target_identity.as_ref() == Some(&identity.0))
     })
     .collect()
+}
+
+fn editing_rule_tables(
+    snapshot: &ProjectSnapshot,
+    sources: &RuleSources,
+) -> Result<
+    (
+        Vec<providence_core::model::SourcedRaceRule>,
+        Vec<providence_core::model::SourcedCasteRule>,
+    ),
+    String,
+> {
+    let races = if snapshot.race_rules.is_empty() {
+        decode_race_rules(&sources.race, None)
+            .rules
+            .into_iter()
+            .take(30)
+            .collect()
+    } else {
+        snapshot.race_rules.clone()
+    };
+    let mut castes = if snapshot.caste_rules.is_empty() {
+        decode_caste_rules(&sources.caste, None)
+            .rules
+            .into_iter()
+            .take(30)
+            .collect()
+    } else {
+        snapshot.caste_rules.clone()
+    };
+    derive_caste_eligibility(&races, &mut castes).map_err(|e| e.to_string())?;
+    Ok((races, castes))
 }

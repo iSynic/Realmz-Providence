@@ -54,11 +54,24 @@ func _import_library(path: String) -> bool:
 
 func _configure_and_inspect(path: String, settings_path: String) -> void:
 	var original := _session.bridge
+	if original.shared_session_enabled():
+		# This standalone controller has no document/draft observer. Verify the
+		# initial hold, then explicitly register its empty set of native documents.
+		var held: Dictionary = await _session.configure_application_library(path)
+		_check(not held.get("ok", false) and str(held.get("error", "")).contains("draft-active:"), "Uninitialized native state did not block support replacement")
+		_check(_session.bridge == original and original.connection_alive(), "Initial synchronization hold replaced the live connection")
+		if not _check(_operations.begin(original, "Register empty native documents"), "Could not register the standalone fixture's draft state"): return
+		var registered: Dictionary = await _operations.request("session.draft", {"active": false, "locations": []})
+		_operations.finish(registered)
+		if not _check(registered.get("ok", false), "Could not register clean native documents"): return
 	var frames_before := _frames
 	var response: Dictionary = await _session.configure_application_library(path)
 	_check(response.get("ok", false), "Native library configuration failed: " + str(response.get("error", "")))
 	_check(_frames > frames_before + 1, "Library validation/reconnect stopped frame processing")
-	_check(_session.bridge != original and not original.connection_alive(), "Confirmed replacement did not retire the original connection")
+	if original.shared_session_enabled():
+		_check(_session.bridge == original and original.connection_alive() and response.get("supportChanged", false), "Shared support replacement reopened the canonical project session")
+	else:
+		_check(_session.bridge != original and not original.connection_alive(), "Confirmed replacement did not retire the original connection")
 	_check(_session.bridge.current_application_library_root() == path.simplify_path(), "Replacement opened with the wrong library")
 	var settings := ConfigFile.new()
 	_check(settings.load(settings_path) == OK, "Library preference was not saved")

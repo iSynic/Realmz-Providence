@@ -80,7 +80,7 @@ fn project_rebuilt_v3_scenario_filtered(
         selection.is_some(),
     );
     references.validate(&programs)?;
-    validate_timed_programs(&programs, timed.timed_encounters)?;
+    validate_timed_programs(&programs, timed.timed_encounters, references.allow_deferred)?;
     if !references.allow_deferred {
         validate_random_rectangle_references(snapshot, &references.program_ids)?;
     }
@@ -166,13 +166,14 @@ fn unique_program_ids(
 fn validate_timed_programs(
     programs: &[RebuiltV3ScenarioProgram],
     encounters: Vec<crate::rebuilt::RebuiltV3TimedEncounter>,
+    allow_deferred: bool,
 ) -> Result<(), RebuiltV3ScenarioError> {
     for encounter in encounters {
         let valid_owner = programs.iter().any(|program| {
             program.id == encounter.program_id
                 && program.owner_kind == RebuiltV3ProgramOwnerKind::ExtraActionPoint
         });
-        if !valid_owner {
+        if !valid_owner && !allow_deferred {
             return Err(RebuiltV3ScenarioError::InvalidTimedEncounterProgram {
                 encounter_id: encounter.id,
                 program: encounter.program_id,

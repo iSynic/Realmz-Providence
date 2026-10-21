@@ -96,6 +96,7 @@ fn raw_archive(entries: &[(&str, &[u8])], certified: bool) -> Vec<u8> {
                 CompressionMethod::Stored
             })
             .last_modified_time(zip::DateTime::default())
+            .system(zip::System::Unix)
             .unix_permissions(0o644);
         writer.start_file(*path, options).expect("entry");
         std::io::Write::write_all(&mut writer, bytes).expect("payload");

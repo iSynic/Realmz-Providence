@@ -483,8 +483,8 @@ pub(crate) struct RebuiltPackageCompilation {
     pub(crate) package_finalization: Option<PackageFinalizationOptions>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct PackageFinalizationOptions {
     pub(crate) application_package: PathBuf,
     pub(crate) application_campaign_id: String,

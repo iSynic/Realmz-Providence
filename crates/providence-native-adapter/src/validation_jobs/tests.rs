@@ -144,6 +144,38 @@ fn blocked_first_job() -> (Jobs, mpsc::Receiver<u64>, mpsc::Sender<()>) {
 }
 
 #[test]
+fn captured_validation_remains_available_after_another_client_edits() {
+    let (mut jobs, observed, release) = blocked_first_job();
+    let mut session = session();
+    let id = begin(
+        &mut jobs,
+        &mut session,
+        json!({"limit":8,"_retainCapturedRevision":true}),
+    );
+    observed.recv_timeout(Duration::from_secs(5)).unwrap();
+    let changed = response(
+        &mut jobs,
+        &mut session,
+        "message.update",
+        json!({
+            "expectedRevision":0,"identity":"message:0","text":"Later edit"
+        }),
+    );
+    assert!(changed.ok);
+    let pending = jobs.poll(id, session.revision());
+    assert_eq!(pending["status"], "pending");
+    assert_eq!(pending["revision"], 0);
+    assert_eq!(pending["currentRevision"], 1);
+    assert_eq!(pending["outdated"], true);
+    release.send(()).unwrap();
+    let captured = ready(&jobs, &session, id);
+    assert_eq!(captured["status"], "ready");
+    assert_eq!(captured["page"]["revision"], 0);
+    assert_eq!(captured["currentRevision"], 1);
+    assert_eq!(session.revision(), Revision(1));
+}
+
+#[test]
 fn a_blocked_checker_leaves_mutations_available_and_cannot_publish_an_old_revision() {
     let (mut jobs, observed, release) = blocked_first_job();
     let mut session = session();

@@ -1,4 +1,3 @@
-use super::classic_world::certified_battle_extent;
 use crate::model::{BattleRecord, NativeRecordId, StableId};
 
 pub const BATTLE_GRID_WIDTH: usize = 13;
@@ -54,9 +53,7 @@ impl std::fmt::Display for BattleCodecError {
 impl std::error::Error for BattleCodecError {}
 
 pub fn decode_battles(bytes: &[u8]) -> DecodedBattleFile {
-    let complete_bytes = certified_battle_extent(bytes)
-        .map(|extent| extent.authored_records * BATTLE_RECORD_BYTES)
-        .unwrap_or(bytes.len() / BATTLE_RECORD_BYTES * BATTLE_RECORD_BYTES);
+    let complete_bytes = bytes.len() / BATTLE_RECORD_BYTES * BATTLE_RECORD_BYTES;
     let records = bytes[..complete_bytes]
         .chunks_exact(BATTLE_RECORD_BYTES)
         .enumerate()
@@ -81,11 +78,7 @@ pub fn encode_battles(
     }
 
     let source_body_bytes = compatibility_source
-        .map(|source| {
-            certified_battle_extent(source)
-                .map(|extent| extent.authored_records * BATTLE_RECORD_BYTES)
-                .unwrap_or(source.len() / BATTLE_RECORD_BYTES * BATTLE_RECORD_BYTES)
-        })
+        .map(|source| source.len() / BATTLE_RECORD_BYTES * BATTLE_RECORD_BYTES)
         .unwrap_or(0);
     let required_bytes = selected
         .last()

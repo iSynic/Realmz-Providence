@@ -87,6 +87,7 @@ fn item_draft_fresh_create_edit_durable_reopen_undo_redo_and_classic_text_round_
     draft["allocation"] = Value::Null;
     draft["definition"]["description"] = json!("A newly authored blade.\nKeeps its special tuple.");
     assert_eq!(submit(&mut reopened, &store, draft, 'b')["ok"], true);
+    drop(store);
     let (_, saved) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(
         saved.snapshot().scenario_item_rules[0].definition.special,

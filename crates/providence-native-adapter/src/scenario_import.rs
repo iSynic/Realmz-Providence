@@ -21,7 +21,8 @@ use crate::mapstats_import::import_mapstats_catalog_into_session;
 use crate::player_map_import::import_classic_player_map_names;
 use crate::player_map_import::import_classic_player_maps;
 use crate::request_params::required_u64;
-use crate::rule_import::import_caste_rules;
+use crate::rule_import::import_native_caste_rules;
+use crate::rule_import::import_native_race_rules;
 use crate::rule_import::import_race_rules;
 use crate::rule_import::import_rule_names;
 use crate::rule_import::import_scenario_items;
@@ -139,21 +140,7 @@ fn import_rules(
     sources: &ScenarioSources,
     steps: &mut Vec<String>,
 ) -> Result<(), String> {
-    run_import(
-        scratch,
-        store,
-        import_race_rules,
-        json!({"path": race_import_path(sources)?}),
-    )?;
-    steps.push("race-rules".into());
-
-    run_import(
-        scratch,
-        store,
-        import_caste_rules,
-        json!({"path": rule_path(sources, "Data Caste")}),
-    )?;
-    steps.push("caste-rules".into());
+    import_race_and_caste(scratch, store, sources, steps)?;
     run_import(
         scratch,
         store,
@@ -187,6 +174,41 @@ fn import_rules(
     Ok(())
 }
 
+fn import_race_and_caste(
+    scratch: &mut EditorSession,
+    store: &ProjectStore,
+    sources: &ScenarioSources,
+    steps: &mut Vec<String>,
+) -> Result<(), String> {
+    run_import(
+        scratch,
+        store,
+        if sources.scenario_directory.join("Data Race").is_file() {
+            import_native_race_rules
+        } else {
+            import_race_rules
+        },
+        json!({"path": rule_path(sources, "Data Race")}),
+    )?;
+    steps.push("race-rules".into());
+
+    run_import(
+        scratch,
+        store,
+        |session, store, params| {
+            import_native_caste_rules(
+                session,
+                store,
+                params,
+                sources.scenario_directory.join("Data Caste").is_file(),
+            )
+        },
+        json!({"path": rule_path(sources, "Data Caste")}),
+    )?;
+    steps.push("caste-rules".into());
+    Ok(())
+}
+
 fn rule_path(sources: &ScenarioSources, family: &str) -> std::path::PathBuf {
     let scenario = sources.scenario_directory.join(family);
     if scenario.is_file() {
@@ -194,20 +216,6 @@ fn rule_path(sources: &ScenarioSources, family: &str) -> std::path::PathBuf {
     } else {
         sources.application_data_directory.join(family)
     }
-}
-
-fn race_import_path(sources: &ScenarioSources) -> Result<std::path::PathBuf, String> {
-    let path = rule_path(sources, "Data Race");
-    let bytes = crate::import_inputs::read(&path)
-        .map_err(|error| format!("could not read Data Race: {error}"))?;
-    if path.starts_with(&sources.scenario_directory)
-        && bytes.len() < 30 * providence_core::codecs::RACE_RECORD_BYTES
-    {
-        // Bootstrap retains the malformed optional table. Application rules
-        // remain a separate selectable source, never recovered scenario data.
-        return Ok(sources.application_data_directory.join("Data Race"));
-    }
-    Ok(path)
 }
 
 fn import_terrain(
@@ -506,12 +514,10 @@ fn finish_import(
     Ok(result)
 }
 
-type ImportSlice = fn(&mut EditorSession, Option<&ProjectStore>, Value) -> Result<Value, String>;
-
 fn run_import(
     scratch: &mut EditorSession,
     store: &ProjectStore,
-    import: ImportSlice,
+    import: impl FnOnce(&mut EditorSession, Option<&ProjectStore>, Value) -> Result<Value, String>,
     params: Value,
 ) -> Result<(), String> {
     let params = scratch_params(scratch, params);

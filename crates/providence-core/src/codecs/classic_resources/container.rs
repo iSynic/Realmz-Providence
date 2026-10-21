@@ -86,3 +86,11 @@ pub(super) fn replace_resource_fork_payload(
     }
     Ok(output)
 }
+
+pub fn is_classic_resource_fork_path(native_path: &str) -> bool {
+    native_path.ends_with(".rsrc")
+        || native_path.ends_with(".rsf")
+        || native_path
+            .split('/')
+            .any(|part| part == ".rsrc" || part.starts_with("._"))
+}

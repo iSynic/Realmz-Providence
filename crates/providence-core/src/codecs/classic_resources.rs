@@ -6,7 +6,7 @@ mod mutations;
 mod reader;
 mod writer;
 
-pub use container::classic_resource_fork_candidate_paths;
+pub use container::{classic_resource_fork_candidate_paths, is_classic_resource_fork_path};
 pub use contracts::{
     ResourceEntry, ResourceEntryChange, ResourceEntryEvidence, ResourceEntryVersion,
     ResourceForkDiffReport, ResourceForkError, ResourceIdentity,

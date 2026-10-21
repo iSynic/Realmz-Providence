@@ -1,7 +1,7 @@
 {
   "applicationPackage": "application.realmz2",
   "applicationCampaignId": "realmz-classic-application-library",
-  "applicationPackageHash": "82b8718f183bb07135ca0438d833c534754e16361314759b83e5192ccb55cbad",
+  "applicationPackageHash": "a5c5c2a1cc3c1f2ba3014c6881403c6a92a6bc572ad7fac3e0ca6c3f7521c717",
   "applicationMediaCatalogPath": "media.json",
   "classicApplicationDataDirectory": "../../godot/bundled/realmz-reference"
 }

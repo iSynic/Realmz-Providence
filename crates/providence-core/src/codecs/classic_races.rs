@@ -8,7 +8,14 @@ pub const CLASSIC_RACE_RECORDS: usize = 30;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodedRaceRuleFile {
     pub rules: Vec<SourcedRaceRule>,
+    pub unprojected_spans: Vec<UnprojectedRaceRecordSpan>,
     pub trailing_bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnprojectedRaceRecordSpan {
+    pub physical_record_index: usize,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,19 +84,30 @@ impl std::fmt::Display for RaceCodecError {
 impl std::error::Error for RaceCodecError {}
 
 pub fn decode_race_rules(bytes: &[u8], source_blob: Option<BlobId>) -> DecodedRaceRuleFile {
-    let count = (bytes.len() / RACE_RECORD_BYTES).min(CLASSIC_RACE_RECORDS);
+    let count = bytes.len() / RACE_RECORD_BYTES;
     let body_bytes = count * RACE_RECORD_BYTES;
     let rules = bytes[..body_bytes]
         .chunks_exact(RACE_RECORD_BYTES)
         .enumerate()
+        .take(usize::from(u8::MAX))
         .map(|(index, row)| SourcedRaceRule {
             source: format!("Data Race record {index}"),
             source_blob: source_blob.clone(),
-            definition: decode_definition(index as u8 + 1, row),
+            definition: decode_definition(u8::try_from(index + 1).expect("bounded race ID"), row),
+        })
+        .collect();
+    let typed_body_bytes = (usize::from(u8::MAX) * RACE_RECORD_BYTES).min(body_bytes);
+    let unprojected_spans = bytes[typed_body_bytes..body_bytes]
+        .chunks_exact(RACE_RECORD_BYTES)
+        .enumerate()
+        .map(|(index, row)| UnprojectedRaceRecordSpan {
+            physical_record_index: typed_body_bytes / RACE_RECORD_BYTES + index,
+            bytes: row.to_vec(),
         })
         .collect();
     DecodedRaceRuleFile {
         rules,
+        unprojected_spans,
         trailing_bytes: bytes[body_bytes..].to_vec(),
     }
 }
@@ -102,7 +120,7 @@ pub fn encode_race_rules(
     selected.sort_by_key(|rule| rule.definition.classic_id);
     let mut seen = BTreeSet::new();
     for rule in &selected {
-        validate_definition(&rule.definition)?;
+        validate_source_rule_for_encode(rule, compatibility_source)?;
         if !seen.insert(rule.definition.classic_id) {
             return Err(RaceCodecError::DuplicateClassicId(
                 rule.definition.classic_id,
@@ -111,7 +129,7 @@ pub fn encode_race_rules(
     }
 
     let source_rows = compatibility_source
-        .map(|source| (source.len() / RACE_RECORD_BYTES).min(CLASSIC_RACE_RECORDS))
+        .map(|source| source.len() / RACE_RECORD_BYTES)
         .unwrap_or(0);
     let source_body_bytes = source_rows * RACE_RECORD_BYTES;
     let required_rows = selected
@@ -343,7 +361,9 @@ fn validate_definition(definition: &RaceRuleDefinition) -> Result<(), RaceCodecE
 }
 
 fn same_native_semantics(left: &RaceRuleDefinition, right: &RaceRuleDefinition) -> bool {
-    left.eligible_caste_ids == right.eligible_caste_ids
+    left.id == right.id
+        && left.classic_id == right.classic_id
+        && left.eligible_caste_ids == right.eligible_caste_ids
         && left.hit_modifiers == right.hit_modifiers
         && left.ability_bonuses == right.ability_bonuses
         && left.save_bonuses == right.save_bonuses
@@ -418,6 +438,33 @@ fn write_i32(row: &mut [u8], offset: usize, value: i32) {
     row[offset..offset + 4].copy_from_slice(&value.to_be_bytes());
 }
 
+fn validate_source_rule_for_encode(
+    rule: &SourcedRaceRule,
+    compatibility_source: Option<&[u8]>,
+) -> Result<(), RaceCodecError> {
+    if rule.definition.classic_id > CLASSIC_RACE_RECORDS as u8 {
+        let row_index = usize::from(rule.definition.classic_id - 1);
+        let unchanged_source_row = compatibility_source
+            .filter(|source| row_index < source.len() / RACE_RECORD_BYTES)
+            .map(|source| {
+                let start = row_index * RACE_RECORD_BYTES;
+                decode_definition(
+                    rule.definition.classic_id,
+                    &source[start..start + RACE_RECORD_BYTES],
+                )
+            })
+            .is_some_and(|decoded| same_native_semantics(&decoded, &rule.definition));
+        if !unchanged_source_row {
+            return Err(RaceCodecError::ClassicIdOutOfRange(
+                rule.definition.classic_id,
+            ));
+        }
+    } else {
+        validate_definition(&rule.definition)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -431,44 +478,46 @@ mod tests {
             .collect()
     }
 
+    const BUNDLED_RACE_MECHANICS: [(i32, i32, i32, i32); 30] = [
+        (70, 12, 2, 1),
+        (250, 13, 2, 2),
+        (250, 13, 2, 3),
+        (55, 14, 2, 4),
+        (130, 10, 3, 5),
+        (190, 10, 2, 6),
+        (210, 10, 2, 7),
+        (150, 12, 2, 8),
+        (55, 13, 2, 9),
+        (45, 14, 3, 10),
+        (60, 11, 3, 11),
+        (45, 13, 4, 12),
+        (300, 18, 3, 13),
+        (45, 12, 2, 14),
+        (70, 14, 4, 15),
+        (300, 24, 4, 16),
+        (90, 14, 3, 17),
+        (120, 10, 3, 18),
+        (65, 15, 4, 19),
+        (18, 12, 1, 8),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+        (18, 12, 2, 0),
+    ];
+
     #[test]
     fn bundled_races_use_castle_record_stride_and_preserve_file_residue() {
         let input = include_bytes!("../../../../godot/bundled/realmz-reference/Data Race");
         let mut decoded = decode_race_rules(input, None);
         // Castle structs.h/loadprofile read 408-byte rows; its menus use 30 races.
-        let expected = [
-            (70, 12, 2, 1),
-            (250, 13, 2, 2),
-            (250, 13, 2, 3),
-            (55, 14, 2, 4),
-            (130, 10, 3, 5),
-            (190, 10, 2, 6),
-            (210, 10, 2, 7),
-            (150, 12, 2, 8),
-            (55, 13, 2, 9),
-            (45, 14, 3, 10),
-            (60, 11, 3, 11),
-            (45, 13, 4, 12),
-            (300, 18, 3, 13),
-            (45, 12, 2, 14),
-            (70, 14, 4, 15),
-            (300, 24, 4, 16),
-            (90, 14, 3, 17),
-            (120, 10, 3, 18),
-            (65, 15, 4, 19),
-            (18, 12, 1, 8),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-            (18, 12, 2, 0),
-        ];
-        assert_eq!(decoded.rules.len(), expected.len());
+        let expected = BUNDLED_RACE_MECHANICS;
+        assert_eq!(decoded.rules.len(), input.len() / RACE_RECORD_BYTES);
         for (rule, expected) in decoded.rules.iter().zip(expected) {
             let race = &rule.definition;
             assert_eq!(
@@ -483,7 +532,10 @@ mod tests {
                 race.id.0
             );
         }
-        assert_eq!(decoded.trailing_bytes, input[30 * 408..]);
+        assert_eq!(
+            decoded.trailing_bytes,
+            input[(input.len() / RACE_RECORD_BYTES) * RACE_RECORD_BYTES..]
+        );
         assert_eq!(
             encode_race_rules(&decoded.rules, Some(input)).unwrap(),
             input
@@ -517,6 +569,45 @@ mod tests {
             encode_race_rules(&decoded.rules, Some(&input)).expect("re-encode"),
             input
         );
+    }
+
+    #[test]
+    fn decoder_retains_rows_beyond_typed_ids_and_encoder_preserves_source_rows() {
+        let mut input = vec![0; RACE_RECORD_BYTES * 258 + 3];
+        input[RACE_RECORD_BYTES * CLASSIC_RACE_RECORDS
+            ..RACE_RECORD_BYTES * CLASSIC_RACE_RECORDS + 2]
+            .copy_from_slice(&123i16.to_be_bytes());
+        input[RACE_RECORD_BYTES * 255..RACE_RECORD_BYTES * 255 + 2]
+            .copy_from_slice(&456i16.to_be_bytes());
+
+        let decoded = decode_race_rules(&input, None);
+        assert_eq!(decoded.rules.len(), usize::from(u8::MAX));
+        assert_eq!(
+            decoded.rules[CLASSIC_RACE_RECORDS].definition.classic_id,
+            31
+        );
+        assert_eq!(
+            decoded.rules[CLASSIC_RACE_RECORDS].definition.hit_modifiers[0],
+            123
+        );
+        assert_eq!(decoded.unprojected_spans.len(), 3);
+        assert_eq!(decoded.unprojected_spans[0].physical_record_index, 255);
+        assert_eq!(
+            &decoded.unprojected_spans[0].bytes[..2],
+            &456i16.to_be_bytes()
+        );
+        assert_eq!(decoded.trailing_bytes, vec![0; 3]);
+        assert_eq!(
+            encode_race_rules(&decoded.rules, Some(&input)).unwrap(),
+            input
+        );
+
+        let mut edited = decoded.rules.clone();
+        edited[CLASSIC_RACE_RECORDS].definition.hit_modifiers[0] = 124;
+        assert!(matches!(
+            encode_race_rules(&edited, Some(&input)),
+            Err(RaceCodecError::ClassicIdOutOfRange(31))
+        ));
     }
 
     #[test]

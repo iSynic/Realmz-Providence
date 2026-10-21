@@ -242,6 +242,11 @@ fn monster_appearance_preview_uses_exact_application_pair_and_bounded_payloads()
         &application_store,
         &mut library,
     );
+    let project_root = project_store.root().to_owned();
+    drop(project_store);
+    let (_, reopened) = ProjectStore::open_session(project_root).expect("reopen restored fallback");
+    assert_eq!(reopened.revision(), Revision(2));
+    assert!(reopened.snapshot().assets.is_empty());
 }
 
 fn appearance_library_fixture(temporary: &Path) -> (OpenMonsterLibrary, StableId) {
@@ -429,10 +434,6 @@ fn restore_default_pair(
             &json!({"method": "monster-appearance.restore-defaults"}),
         )
         .expect("checkpoint restored fallback");
-    let (_, reopened) =
-        ProjectStore::open_session(project_store.root()).expect("reopen restored fallback");
-    assert_eq!(reopened.revision(), Revision(2));
-    assert!(reopened.snapshot().assets.is_empty());
 }
 
 fn application_appearance_fixture(

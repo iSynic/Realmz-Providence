@@ -40,6 +40,20 @@ fn project_rebuilt_v3_trigger_programs_filtered(
     let mut triggers = Vec::with_capacity(selected.len());
     let mut programs = Vec::with_capacity(selected.len());
     for trigger in selected {
+        if allow_deferred && !placed_trigger_is_defined(trigger) {
+            let id = action_point_id(trigger);
+            validate_identifier(&id)?;
+            if !index.trigger_ids.insert(id.clone()) {
+                return Err(RebuiltV3ScenarioError::DuplicateTriggerId(id));
+            }
+            programs.push(program_projection(
+                trigger,
+                action_point_program_id(trigger),
+                &extra_codes,
+                true,
+            )?);
+            continue;
+        }
         let (placed, program) =
             project_placed_trigger(snapshot, trigger, &extra_codes, allow_deferred, &mut index)?;
         triggers.push(placed);
@@ -65,7 +79,14 @@ fn selected_triggers<'a>(
         .world
         .action_points
         .iter()
-        .filter(|trigger| placed_trigger_is_defined(trigger))
+        .filter(|trigger| {
+            program_ids.is_some()
+                && matches!(
+                    snapshot.origin,
+                    crate::model::ProjectOrigin::Imported { .. }
+                )
+                || placed_trigger_is_defined(trigger)
+        })
         .filter(|trigger| {
             program_ids
                 .is_none_or(|program_ids| program_ids.contains(&action_point_program_id(trigger)))
@@ -151,8 +172,9 @@ fn destination<'a>(
         x: trigger.post_action_x,
         y: trigger.post_action_y,
     };
-    if usize::from(destination_coordinate.x) >= CLASSIC_MAP_SIZE
-        || usize::from(destination_coordinate.y) >= CLASSIC_MAP_SIZE
+    if !allow_deferred
+        && (usize::from(destination_coordinate.x) >= CLASSIC_MAP_SIZE
+            || usize::from(destination_coordinate.y) >= CLASSIC_MAP_SIZE)
     {
         return Err(RebuiltV3ScenarioError::DestinationOutsideMap(
             trigger.identity.clone(),

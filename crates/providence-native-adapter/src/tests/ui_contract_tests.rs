@@ -27,7 +27,7 @@ fn ui_contract_commands_are_recognized_by_the_top_level_dispatcher() {
         })
         .collect::<BTreeSet<_>>();
     assert_eq!(screens.len(), 46);
-    assert_eq!(commands.len(), 333);
+    assert_eq!(commands.len(), 342);
     assert!(commands.contains("spell.draft.apply"));
     assert!(commands.contains("spell-reference.preview"));
     assert!(commands.contains("special-art.preview"));
@@ -35,6 +35,8 @@ fn ui_contract_commands_are_recognized_by_the_top_level_dispatcher() {
     assert!(commands.contains("scenario-item.apply-library-artwork"));
     assert!(commands.contains("action-settings.commit-repair"));
     assert!(commands.contains("action-settings.reconcile-repair"));
+    assert!(commands.contains("action-settings.choose-repair-message"));
+    assert!(commands.contains("action-settings.peek-repair-message"));
     assert!(commands.contains("treasure.create"));
     assert!(commands.contains("treasure.clear"));
     assert!(commands.contains("shop.create"));

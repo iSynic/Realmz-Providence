@@ -11,6 +11,9 @@ impl<'a> ReachabilityBuilder<'a> {
         Ok(Self {
             snapshot,
             catalog,
+            random_regions: Default::default(),
+            #[cfg(test)]
+            naive_random_regions: false,
             references: BTreeSet::new(),
             reachable_programs: BTreeSet::new(),
             reachable_simple: BTreeSet::new(),

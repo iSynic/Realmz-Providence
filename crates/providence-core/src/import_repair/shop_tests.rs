@@ -32,92 +32,113 @@ fn fixture() -> (ProjectSnapshot, BTreeMap<String, Vec<u8>>) {
     (snapshot, BTreeMap::from([("Data SD".into(), bytes)]))
 }
 
-fn command(assessment: RepairAssessment, replace_conflicts: bool) -> RepairCommand {
+fn legacy_removal(snapshot: &ProjectSnapshot) -> RepairCommand {
+    let assessment = assess(snapshot, &fixture().1).unwrap();
     RepairCommand {
         expected_source_identity: assessment.source_identity,
         expected_previous_version: assessment.previous_version,
-        changes: assessment
-            .entries
-            .into_iter()
-            .filter(|entry| replace_conflicts || !entry.conflict)
-            .collect(),
+        changes: vec![RepairEntry {
+            key: "shop:1:quarantine".into(),
+            family: "Shops".into(),
+            entity: StableId("shop:1".into()),
+            field: "inventory interpretation".into(),
+            conflict: false,
+            change: RepairChange::ShopQuarantine {
+                expected: Box::new(snapshot.shops[1].clone()),
+                reason: "persisted legacy review".into(),
+            },
+        }],
     }
 }
 
 #[test]
-fn old_interpretation_is_corrected_without_changing_source_and_with_one_undo() {
-    let (snapshot, files) = fixture();
-    let assessment = assess(&snapshot, &files).unwrap();
-    assert_eq!(assessment.entries.len(), 2);
-    assert!(assessment.entries.iter().all(|entry| !entry.conflict));
-    let original = snapshot.clone();
-    let mut session = EditorSession::new(snapshot);
-    session
-        .execute(ExpectedRevisionCommand {
-            expected_revision: Revision(0),
-            command: EditorCommand::RepairImportedContent(command(assessment, false)),
-        })
-        .unwrap();
-    assert_eq!(
-        session.snapshot().shops,
-        decode_shops(&files["Data SD"]).records
-    );
-    assert_eq!(
-        encode_shops(&session.snapshot().shops, Some(&files["Data SD"])).unwrap(),
-        files["Data SD"]
-    );
-    assert_eq!(session.undo_history().len(), 1);
-    session
-        .execute(ExpectedRevisionCommand {
-            expected_revision: Revision(1),
-            command: EditorCommand::Undo,
-        })
-        .unwrap();
-    assert_eq!(session.snapshot(), &original);
-    session
-        .execute(ExpectedRevisionCommand {
-            expected_revision: Revision(2),
-            command: EditorCommand::Redo,
-        })
-        .unwrap();
-    assert_eq!(session.snapshot().shops.len(), 1);
-}
-
-#[test]
-fn authored_inventory_is_retained_by_default_and_requires_explicit_replacement() {
+fn assessment_retains_native_rows_and_authored_edits_as_preservation_diagnostics() {
     let (mut snapshot, files) = fixture();
-    snapshot.shops[1].inflation = 150;
     snapshot.shops[1].authored = true;
+    snapshot.shops[1].inflation = 150;
+    let before = snapshot.clone();
     let assessment = assess(&snapshot, &files).unwrap();
     assert!(
         assessment
             .entries
             .iter()
-            .find(|entry| entry.entity.0 == "shop:1")
-            .unwrap()
-            .conflict
+            .all(|entry| !matches!(entry.change, RepairChange::ShopQuarantine { .. }))
     );
-    let mut explicit = snapshot.clone();
-    apply(&mut snapshot, command(assessment.clone(), false)).unwrap();
-    assert_eq!(snapshot.shops.len(), 2);
+    assert_eq!(assessment.preservation_diagnostics.len(), 2);
     assert!(
-        snapshot
-            .shops
+        assessment
+            .preservation_diagnostics
             .iter()
-            .any(|shop| shop.native_id.0 == 1 && shop.inflation == 150)
+            .all(|message| message.contains("separate project"))
     );
-    apply(&mut explicit, command(assessment, true)).unwrap();
-    assert_eq!(explicit.shops.len(), 1);
+    assert_eq!(snapshot, before);
+    assert_eq!(
+        encode_shops(
+            &decode_shops(&files["Data SD"]).records,
+            Some(&files["Data SD"])
+        )
+        .unwrap(),
+        files["Data SD"]
+    );
 }
 
 #[test]
-fn changed_inventory_or_source_rejects_the_review_without_partial_mutation() {
-    let (mut snapshot, mut files) = fixture();
-    let review = assess(&snapshot, &files).unwrap();
-    snapshot.shops[2].inflation = 5;
+fn persisted_legacy_removal_is_rejected_without_canonical_or_history_mutation() {
+    let (mut snapshot, files) = fixture();
+    snapshot.shops[1].authored = true;
+    snapshot.shops[1].inflation = 150;
+    let command = legacy_removal(&snapshot);
     let before = snapshot.clone();
-    assert!(apply(&mut snapshot, command(review, true)).is_err());
+    let mut direct = snapshot.clone();
+    assert!(
+        apply(&mut direct, command.clone())
+            .unwrap_err()
+            .contains("cannot be removed")
+    );
+    assert_eq!(direct, before);
+    let mut session = EditorSession::new(snapshot);
+    assert!(
+        session
+            .execute(ExpectedRevisionCommand {
+                expected_revision: Revision(0),
+                command: EditorCommand::RepairImportedContent(command)
+            })
+            .is_err()
+    );
+    assert_eq!(session.snapshot(), &before);
+    assert_eq!(session.revision(), Revision(0));
+    assert!(session.undo_history().is_empty());
+    assert_eq!(files, fixture().1);
+}
+
+#[test]
+fn omitted_native_rows_are_diagnosed_without_restoring_over_authored_state() {
+    let (mut snapshot, files) = fixture();
+    snapshot.shops.remove(2);
+    snapshot.shops[0].inflation = 77;
+    let before = snapshot.clone();
+    let assessment = assess(&snapshot, &files).unwrap();
+    assert!(assessment.preservation_diagnostics.iter().any(
+        |message| message.contains("Shop 2") && message.contains("import preservation defect")
+    ));
+    assert!(assessment.entries.is_empty());
     assert_eq!(snapshot, before);
-    files.get_mut("Data SD").unwrap()[0] ^= 1;
-    assert!(assess(&snapshot, &files).is_err());
+    let mut changed_source = files;
+    changed_source.get_mut("Data SD").unwrap()[0] ^= 1;
+    assert!(assess(&snapshot, &changed_source).is_err());
+}
+
+#[test]
+fn current_interpretation_still_diagnoses_a_previously_omitted_shop() {
+    let (mut snapshot, files) = fixture();
+    snapshot.import_interpretation_version = INTERPRETATION_VERSION;
+    snapshot.shops.remove(2);
+    let assessment = assess(&snapshot, &files).unwrap();
+    assert!(assessment.entries.is_empty());
+    assert!(
+        assessment
+            .preservation_diagnostics
+            .iter()
+            .any(|message| message.contains("Shop 2"))
+    );
 }

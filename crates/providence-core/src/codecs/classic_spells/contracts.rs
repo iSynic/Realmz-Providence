@@ -13,6 +13,8 @@ pub const STANDARD_SPELL_RECORDS: usize = STANDARD_SPELL_CLASSES * SPELLS_PER_CL
 pub const STANDARD_SPELL_BYTES: usize = SPELL_RECORD_BYTES * STANDARD_SPELL_RECORDS;
 pub const SCENARIO_SPELL_RECORDS: usize = 105;
 pub const SCENARIO_SPELL_BYTES: usize = SPELL_RECORD_BYTES * SCENARIO_SPELL_RECORDS;
+pub(super) const MAX_TYPED_STANDARD_SPELL_RECORDS: usize = 3360;
+pub(crate) const MAX_TYPED_SCENARIO_SPELL_RECORDS: usize = 4155;
 pub const SPELL_NAME_RESOURCE_MIN_ID: i16 = 5000;
 pub const SPELL_NAME_RESOURCE_MAX_ID: i16 = 5006;
 pub const SPELL_NAMES_PER_RESOURCE: usize = 15;
@@ -38,7 +40,14 @@ pub const STANDARD_SPELL_CODEC: CodecDescriptor = CodecDescriptor {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodedSpellFile {
     pub spells: Vec<SourcedSpellDefinition>,
+    pub unprojected_spans: Vec<UnprojectedSpellRecordSpan>,
     pub trailing_bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnprojectedSpellRecordSpan {
+    pub physical_record_index: usize,
+    pub bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

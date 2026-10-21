@@ -255,14 +255,31 @@ fn xap_transfer_keeps_the_loaded_simple_result_context() {
         .actions
         .push(action(1, 39, 149));
     let mixed = derive_rebuilt_v3_reachability(&snapshot).expect("independent root path");
-    assert!(mixed.unresolved_references.iter().any(|reference| {
+    assert!(mixed.unresolved_references.is_empty());
+    assert!(mixed.references.iter().any(|reference| {
         reference.source == StableId("xap:149".into())
-            && reference.field == "actions[0].extraCode[2]"
+            && reference.field == "actions[0].extraCode[2].retainedResult"
             && reference.target
-                == RebuiltV3ReachabilityTarget::Invalid(
-                    "inline encounter result mode 1 row 3".into(),
-                )
+                == RebuiltV3ReachabilityTarget::Program(StableId("simple:3:result:3".into()))
     }));
+    let mut copied = snapshot.simple_encounters[0].clone();
+    copied.native_id = NativeRecordId(7);
+    copied.identity = StableId("simple-encounter:7".into());
+    snapshot.simple_encounters.push(copied);
+    snapshot.extra_codes.push(ExtraCodeRow {
+        native_id: NativeRecordId(76),
+        values: [-1, 7, 149, 0, 0],
+    });
+    snapshot.extra_action_points[0]
+        .actions
+        .insert(0, action(0, 7, 76));
+    snapshot.extra_action_points[0].actions[1].slot = 1;
+    let copied = derive_rebuilt_v3_reachability(&snapshot).expect("copy loads encounter owner");
+    assert!(copied.references.iter().any(|reference| reference.source
+        == StableId("xap:149".into())
+        && reference.field == "actions[1].extraCode[2]"
+        && reference.target
+            == RebuiltV3ReachabilityTarget::Program(StableId("simple:7:result:3".into()))));
 }
 
 #[test]
@@ -284,4 +301,61 @@ fn xap_transfer_keeps_the_loaded_complex_result_context() {
             && reference.target
                 == RebuiltV3ReachabilityTarget::Program(StableId("complex:3:result:3".into()))
     }));
+}
+
+#[test]
+fn rescheduled_timer_does_not_inherit_its_issuing_encounter_owner() {
+    let mut snapshot = prelude_payment_fixture();
+    snapshot.world.action_points[0].actions = vec![action(0, 4, 3)];
+    snapshot.simple_encounters[0].actions = vec![action(28, 54, 76)];
+    let mut retained = snapshot.simple_encounters[0].clone();
+    retained.native_id = NativeRecordId(7);
+    retained.identity = StableId("simple-encounter:7".into());
+    retained.actions.clear();
+    snapshot.simple_encounters.push(retained);
+    snapshot.extra_codes.extend([
+        ExtraCodeRow {
+            native_id: NativeRecordId(76),
+            values: [2, 100, 0, 1, 0],
+        },
+        ExtraCodeRow {
+            native_id: NativeRecordId(75),
+            values: [1, 2, 3, 0, 0],
+        },
+    ]);
+    snapshot.extra_action_points[0].actions = vec![action(0, 3, 75)];
+    snapshot.timed_encounters.push(TimedEncounter {
+        identity: StableId("timed-encounter:2".into()),
+        native_id: NativeRecordId(2),
+        day: -1,
+        increment: 0,
+        percent: 100,
+        door: 149,
+        required_level: -1,
+        required_random_rect: -1,
+        required_x: -1,
+        required_y: -1,
+        required_item: -1,
+        required_quest: -1,
+        location_kind: TimedEncounterLocationKind::Any,
+        authored: false,
+    });
+    let report = derive_rebuilt_v3_reachability(&snapshot).unwrap();
+    assert!(
+        report
+            .references
+            .iter()
+            .any(|r| r.source == StableId("xap:149".into())
+                && r.field == "actions[0].extraCode[2].retainedResult"
+                && r.target
+                    == RebuiltV3ReachabilityTarget::Program(StableId("simple:7:result:3".into())))
+    );
+    assert!(
+        report
+            .references
+            .iter()
+            .any(|r| r.source == StableId("simple:3:result:3".into())
+                && r.field == "actions[4].rescheduledTimed"
+                && r.target == RebuiltV3ReachabilityTarget::Program(StableId("xap:149".into())))
+    );
 }

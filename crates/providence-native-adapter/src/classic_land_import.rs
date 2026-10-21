@@ -1,10 +1,10 @@
+use crate::classic_source_retention::store_source_annex;
 use crate::execute;
 use crate::request_params::required_string;
 use crate::request_params::required_u64;
 use providence_core::codecs::ACTION_POINT_LEVEL_BYTES;
 use providence_core::codecs::GLOBAL_MACRO_HOOK_BYTES;
 use providence_core::codecs::RANDOM_LEVEL_RECORD_BYTES;
-use providence_core::codecs::certified_extra_action_point_extent;
 use providence_core::codecs::decode_extra_action_points;
 use providence_core::codecs::decode_extra_codes;
 use providence_core::codecs::decode_global_macro_hooks;
@@ -33,10 +33,10 @@ use serde_json::json;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use providence_core::codecs::{EXTRA_ACTION_POINT_RECORD_BYTES, MAP_LEVEL_BYTES};
+use providence_core::codecs::MAP_LEVEL_BYTES;
 use providence_core::model::{
-    ActionPoint, BlobId, ExtraActionPoint, ExtraCodeRow, LandLayout, MapLevel,
-    ScenarioApplicationContract, ScenarioMessage, SimpleEncounter,
+    ActionPoint, ExtraActionPoint, ExtraCodeRow, LandLayout, MapLevel, ScenarioApplicationContract,
+    ScenarioMessage, SimpleEncounter,
 };
 
 pub(crate) fn import_classic_land_slice(
@@ -93,9 +93,9 @@ fn read_source(
 fn decode_maps(inputs: &BTreeMap<String, Vec<u8>>) -> Result<Vec<MapLevel>, String> {
     let data_ld = &inputs["Data LD"];
     let maps = decode_land_maps(data_ld);
-    if maps.records.is_empty() || !maps.trailing_bytes.is_empty() {
+    if !maps.trailing_bytes.is_empty() {
         return Err(format!(
-            "Data LD must contain one or more complete {MAP_LEVEL_BYTES}-byte land levels"
+            "Data LD must contain complete {MAP_LEVEL_BYTES}-byte land levels; partial levels are unsupported"
         ));
     }
     if encode_land_maps(&maps.records, Some(data_ld)).map_err(|error| error.to_string())?
@@ -220,13 +220,6 @@ fn decode_land_extra_actions(
 ) -> Result<Vec<ExtraActionPoint>, String> {
     let extra_action_points = if let Some(data_ed3) = inputs.get("Data ED3") {
         let decoded = decode_extra_action_points(data_ed3);
-        if !decoded.trailing_bytes.is_empty()
-            && certified_extra_action_point_extent(data_ed3).is_none()
-        {
-            return Err(format!(
-                "Data ED3 must contain only complete {EXTRA_ACTION_POINT_RECORD_BYTES}-byte rows"
-            ));
-        }
         if encode_extra_action_points(&decoded.records, Some(data_ed3))
             .map_err(|error| error.to_string())?
             != *data_ed3
@@ -327,18 +320,6 @@ fn attach_runtime_sources(
     }
 }
 
-fn store_annex(store: &ProjectStore, sources: &[ClassicSourceBlob]) -> Result<BlobId, String> {
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
-    Ok(annex_blob)
-}
-
 fn prepare_land_import(
     session: &EditorSession,
     store: &ProjectStore,
@@ -355,7 +336,7 @@ fn prepare_land_import(
     let global_macro_hooks = decode_hooks(inputs)?;
     let sources = retain_sources(session, store, inputs)?;
     attach_runtime_sources(session, inputs, &sources, &mut maps);
-    let annex_blob = store_annex(store, &sources)?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let counts = json!({
         "maps": maps.len(),
         "actionPoints": action_points.len(),

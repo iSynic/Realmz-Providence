@@ -1,4 +1,4 @@
-use crate::classic_source_retention::replace_sources;
+use crate::classic_source_retention::{replace_sources, store_source_annex};
 use crate::execute;
 use crate::request_params::required_string;
 use providence_core::codecs::OPTION_LABEL_RECORD_BYTES;
@@ -33,7 +33,7 @@ pub(crate) fn import_classic_treasures(
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < TREASURE_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < TREASURE_RECORD_BYTES {
         return Err(format!(
             "Data TD must contain at least one complete {TREASURE_RECORD_BYTES}-byte record"
         ));
@@ -49,14 +49,7 @@ pub(crate) fn import_classic_treasures(
         store,
         &[("Data TD", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -102,13 +95,7 @@ pub(crate) fn import_classic_shops(
         store,
         &[("Data SD", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(
-        &json!({"format": "providence-classic-source-annex-v1", "files": sources}),
-    )
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -123,8 +110,13 @@ pub(crate) fn import_classic_shops(
     if let Some(object) = result.as_object_mut() {
         object.insert("count".into(), json!(count));
         object.insert("trailingBytes".into(), json!(trailing_bytes));
-        object.insert("quarantinedRecords".into(), json!(quarantined));
-        object.insert("quarantinedCount".into(), json!(quarantined_count));
+        object.insert("preservedRecordDiagnostics".into(), json!(quarantined));
+        object.insert(
+            "preservedRecordDiagnosticCount".into(),
+            json!(quarantined_count),
+        );
+        object.insert("quarantinedRecords".into(), json!([]));
+        object.insert("quarantinedCount".into(), json!(0));
     }
     Ok(result)
 }
@@ -161,13 +153,7 @@ pub(crate) fn import_classic_option_labels(
         store,
         &[("Data OD", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(
-        &json!({"format": "providence-classic-source-annex-v1", "files": sources}),
-    )
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -193,7 +179,7 @@ fn read_shop_source(directory: &Path) -> Result<Vec<u8>, String> {
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < SHOP_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < SHOP_RECORD_BYTES {
         return Err(format!(
             "Data SD must contain at least one complete {SHOP_RECORD_BYTES}-byte record"
         ));

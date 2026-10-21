@@ -123,38 +123,15 @@ fn project_rebuilt_v3_shops_filtered(
     let mut projected = Vec::with_capacity(records.len());
     for record in records {
         validate_record(record, &mut seen)?;
-        let mut stock = Vec::new();
-        for category_start in (0..SHOP_ITEM_SLOTS).step_by(SHOP_CATEGORY_SIZE) {
-            for slot in category_start..category_start + SHOP_CATEGORY_SIZE {
-                let item_id = record.item_ids[slot];
-                if item_id < 0 {
-                    break;
-                }
-                if item_id == 0 {
-                    continue;
-                }
-                if item_id > 999 {
-                    return Err(RebuiltV3ShopError::InvalidItem {
-                        classic_id: record.native_id.0,
-                        slot,
-                        item_id,
-                    });
-                }
-                let stable_id = StableId(format!("classic.item.{item_id}"));
-                if !item_ids.contains(&stable_id) {
-                    return Err(RebuiltV3ShopError::MissingItem {
-                        classic_id: record.native_id.0,
-                        slot,
-                        item_id,
-                    });
-                }
-                stock.push(RebuiltV3ShopStock {
-                    slot: slot as u16,
-                    item_id: stable_id,
-                    quantity: u16::from(record.quantities[slot]),
-                });
-            }
-        }
+        let stock = selected_shop_stock(
+            record,
+            item_ids,
+            shop_ids.is_some()
+                && matches!(
+                    snapshot.origin,
+                    crate::model::ProjectOrigin::Imported { .. }
+                ),
+        )?;
         projected.push(RebuiltV3ShopDefinition {
             id: StableId(format!("classic.shop.{}", record.native_id.0)),
             classic_id: record.native_id.0,
@@ -196,6 +173,47 @@ fn validate_record(
         });
     }
     Ok(())
+}
+
+fn selected_shop_stock(
+    record: &ShopRecord,
+    item_ids: &BTreeSet<StableId>,
+    allow_deferred: bool,
+) -> Result<Vec<RebuiltV3ShopStock>, RebuiltV3ShopError> {
+    let mut stock = Vec::new();
+    for category_start in (0..SHOP_ITEM_SLOTS).step_by(SHOP_CATEGORY_SIZE) {
+        for slot in category_start..category_start + SHOP_CATEGORY_SIZE {
+            let item_id = record.item_ids[slot];
+            if item_id < 0 {
+                break;
+            }
+            if item_id == 0 {
+                continue;
+            }
+
+            if item_id > 999 && !allow_deferred {
+                return Err(RebuiltV3ShopError::InvalidItem {
+                    classic_id: record.native_id.0,
+                    slot,
+                    item_id,
+                });
+            }
+            let stable_id = StableId(format!("classic.item.{item_id}"));
+            if !item_ids.contains(&stable_id) && !allow_deferred {
+                return Err(RebuiltV3ShopError::MissingItem {
+                    classic_id: record.native_id.0,
+                    slot,
+                    item_id,
+                });
+            }
+            stock.push(RebuiltV3ShopStock {
+                slot: slot as u16,
+                item_id: stable_id,
+                quantity: u16::from(record.quantities[slot]),
+            });
+        }
+    }
+    Ok(stock)
 }
 
 #[cfg(test)]

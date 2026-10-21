@@ -14,7 +14,9 @@ mod fixtures;
 use fixtures::*;
 mod failures;
 mod legacy_item_texts;
+mod legacy_random_bounds;
 mod scenario_read;
+mod source_compression;
 
 #[test]
 fn archive_is_byte_deterministic_sorted_compact_and_manifest_exact() {
@@ -36,7 +38,10 @@ fn archive_is_byte_deterministic_sorted_compact_and_manifest_exact() {
     assert_eq!(first, second);
 
     let mut archive = ZipArchive::new(Cursor::new(first)).expect("read archive");
-    let names = archive.file_names().map(str::to_string).collect::<Vec<_>>();
+    let names = archive
+        .file_names()
+        .map(|name| name.expect("entry name").into_owned())
+        .collect::<Vec<_>>();
     assert_eq!(
         names,
         [
@@ -51,7 +56,7 @@ fn archive_is_byte_deterministic_sorted_compact_and_manifest_exact() {
         let file = archive.by_index(index).expect("entry");
         assert_eq!(
             file.compression(),
-            if file.name().ends_with(".json") {
+            if file.name().expect("entry name").ends_with(".json") {
                 CompressionMethod::Deflated
             } else {
                 CompressionMethod::Stored

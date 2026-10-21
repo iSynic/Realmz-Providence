@@ -31,24 +31,89 @@ fn standard_name_resource_entries() -> Vec<ResourceEntry> {
 }
 
 #[test]
-fn standard_data_s_decodes_only_the_four_runtime_classes() {
+fn standard_data_s_decodes_complete_physical_prefix_beyond_fixed_classes() {
     let mut source = vec![0; STANDARD_SPELL_BYTES + SCENARIO_SPELL_BYTES];
     source[0] = 255;
     source[STANDARD_SPELL_BYTES - 1] = 7;
     let decoded = decode_standard_spells(&source, None);
-    assert_eq!(decoded.spells.len(), STANDARD_SPELL_RECORDS);
-    assert_eq!(decoded.trailing_bytes.len(), SCENARIO_SPELL_BYTES);
+    assert_eq!(
+        decoded.spells.len(),
+        STANDARD_SPELL_RECORDS + SCENARIO_SPELL_RECORDS
+    );
+    assert!(decoded.trailing_bytes.is_empty());
     assert_eq!(decoded.spells[0].definition.classic_id, 1101);
     assert_eq!(decoded.spells[104].definition.classic_id, 1715);
     assert_eq!(decoded.spells[105].definition.classic_id, 2101);
     assert_eq!(decoded.spells[419].definition.classic_id, 4715);
+    assert_eq!(decoded.spells[420].definition.classic_id, 5101);
     assert_eq!(decoded.spells[0].definition.range_min, 255);
     assert!(decoded.trailing_bytes.iter().all(|byte| *byte == 0));
 }
 
 #[test]
+fn scenario_spells_decode_complete_rows_beyond_supported_slots() {
+    let source = vec![0; SPELL_RECORD_BYTES * (SCENARIO_SPELL_RECORDS + 1) + 2];
+    let decoded = decode_scenario_spells(&source, None);
+
+    assert_eq!(decoded.spells.len(), SCENARIO_SPELL_RECORDS + 1);
+    assert_eq!(
+        decoded.spells[SCENARIO_SPELL_RECORDS]
+            .definition
+            .record_index,
+        105
+    );
+    assert_eq!(
+        decoded.spells[SCENARIO_SPELL_RECORDS].definition.classic_id,
+        5801
+    );
+    assert_eq!(decoded.trailing_bytes, vec![0; 2]);
+    assert_eq!(
+        encode_scenario_spells(&decoded.spells, Some(&source)).unwrap(),
+        source
+    );
+
+    let mut edited = decoded.spells.clone();
+    edited[SCENARIO_SPELL_RECORDS].definition.range_min = 1;
+    assert!(matches!(
+        encode_scenario_spells(&edited, Some(&source)),
+        Err(SpellCodecError::RecordIndexOutOfRange(105))
+    ));
+}
+
+#[test]
+fn spell_rows_without_representable_signed_ids_remain_unprojected() {
+    let scenario_source = vec![0; SPELL_RECORD_BYTES * (MAX_TYPED_SCENARIO_SPELL_RECORDS + 1) + 1];
+    let scenario = decode_scenario_spells(&scenario_source, None);
+    assert_eq!(scenario.spells.len(), MAX_TYPED_SCENARIO_SPELL_RECORDS);
+    assert_eq!(scenario.unprojected_spans.len(), 1);
+    assert_eq!(
+        scenario.unprojected_spans[0].physical_record_index,
+        MAX_TYPED_SCENARIO_SPELL_RECORDS
+    );
+    assert_eq!(
+        scenario.unprojected_spans[0].bytes.len(),
+        SPELL_RECORD_BYTES
+    );
+    assert_eq!(scenario.trailing_bytes, vec![0]);
+
+    let standard_source = vec![0; SPELL_RECORD_BYTES * (MAX_TYPED_STANDARD_SPELL_RECORDS + 1) + 2];
+    let standard = decode_standard_spells(&standard_source, None);
+    assert_eq!(standard.spells.len(), MAX_TYPED_STANDARD_SPELL_RECORDS);
+    assert_eq!(standard.unprojected_spans.len(), 1);
+    assert_eq!(
+        standard.unprojected_spans[0].physical_record_index,
+        MAX_TYPED_STANDARD_SPELL_RECORDS
+    );
+    assert_eq!(
+        standard.unprojected_spans[0].bytes.len(),
+        SPELL_RECORD_BYTES
+    );
+    assert_eq!(standard.trailing_bytes, vec![0; 2]);
+}
+
+#[test]
 fn standard_data_s_round_trips_runtime_rows_and_trailing_compatibility_bytes() {
-    let mut source = vec![0; STANDARD_SPELL_BYTES + 17];
+    let mut source = vec![0; STANDARD_SPELL_BYTES + SPELL_RECORD_BYTES + 17];
     source[0] = 255;
     source[STANDARD_SPELL_BYTES - 1] = 7;
     source[STANDARD_SPELL_BYTES..].fill(0xa5);
@@ -58,6 +123,13 @@ fn standard_data_s_round_trips_runtime_rows_and_trailing_compatibility_bytes() {
         encode_standard_spells(&decoded.spells, Some(&source)).expect("encode standard spells"),
         source
     );
+
+    let mut edited = decoded.spells.clone();
+    edited[STANDARD_SPELL_RECORDS].definition.range_min = 1;
+    assert!(matches!(
+        encode_standard_spells(&edited, Some(&source)),
+        Err(SpellCodecError::RecordIndexOutOfRange(420))
+    ));
 }
 
 #[test]

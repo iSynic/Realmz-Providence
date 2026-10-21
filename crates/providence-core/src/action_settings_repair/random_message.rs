@@ -53,6 +53,7 @@ pub struct MessageRangePage {
     pub total: usize,
     pub unique_messages: usize,
     pub unresolved_messages: usize,
+    pub first_unresolved: Option<MessageRangeEntry>,
     pub includes_no_message: bool,
     pub wait_mode: MessageWaitMode,
     pub errors: Vec<FieldError>,
@@ -110,13 +111,13 @@ fn bounds(input: &RandomMessageInput) -> Result<[i16; 2], Vec<FieldError>> {
     }
 }
 
-struct MessageIndex<'a> {
+pub(super) struct MessageIndex<'a> {
     by_number: BTreeMap<u32, Vec<&'a ScenarioMessage>>,
     identity_counts: BTreeMap<&'a StableId, usize>,
 }
 
 impl<'a> MessageIndex<'a> {
-    fn new(snapshot: &'a ProjectSnapshot) -> Self {
+    pub(super) fn new(snapshot: &'a ProjectSnapshot) -> Self {
         let mut by_number = BTreeMap::<_, Vec<_>>::new();
         let mut identity_counts = BTreeMap::new();
         for message in &snapshot.messages {
@@ -132,7 +133,7 @@ impl<'a> MessageIndex<'a> {
         }
     }
 
-    fn resolve(&self, id: u32) -> Result<&'a ScenarioMessage, MessageRangeStatus> {
+    pub(super) fn resolve(&self, id: u32) -> Result<&'a ScenarioMessage, MessageRangeStatus> {
         let matching = self.by_number.get(&id).map(Vec::as_slice).unwrap_or(&[]);
         let [message] = matching else {
             return Err(if matching.is_empty() {
@@ -207,16 +208,13 @@ pub fn message_range(
         .iter()
         .filter(|id| index.resolve(**id).is_err())
         .collect();
-    let errors = unresolved.first().map_or_else(Vec::new, |first| {
-        vec![FieldError {
-            field: "messageRange".into(),
-            message: format!(
-                "Cannot resolve {} message targets in this range. Check Message {} first.",
-                unresolved.len(),
-                first
-            ),
-        }]
+    let first_unresolved = unresolved.first().and_then(|id| {
+        values
+            .iter()
+            .find(|value| u32::from(value.unsigned_abs()) == **id)
+            .map(|value| index.entry(*value))
     });
+    let errors = range_errors(unresolved.len(), first_unresolved.as_ref());
     let limit = limit.clamp(1, 128);
     let wait_mode = match (
         values.iter().any(|value| *value > 0),
@@ -239,9 +237,22 @@ pub fn message_range(
         total: values.len(),
         unique_messages: unique.len(),
         unresolved_messages: unresolved.len(),
+        first_unresolved,
         includes_no_message: values.contains(&0),
         wait_mode,
         errors,
+    })
+}
+
+fn range_errors(count: usize, first: Option<&MessageRangeEntry>) -> Vec<FieldError> {
+    first.map_or_else(Vec::new, |entry| {
+        vec![FieldError {
+            field: "messageRange".into(),
+            message: format!(
+                "Cannot resolve {count} message targets in this range. Check Message {} first.",
+                entry.value.unsigned_abs()
+            ),
+        }]
     })
 }
 

@@ -9,7 +9,7 @@ pub(super) fn diagnostics(snapshot: &ProjectSnapshot) -> Vec<Diagnostic> {
         return Vec::new();
     }
     let mut findings = partial_records(snapshot);
-    quarantined_race(snapshot, &mut findings);
+    incomplete_rules(snapshot, &mut findings);
     quarantined_shops(snapshot, &mut findings);
     findings
 }
@@ -38,18 +38,22 @@ fn partial_records(snapshot: &ProjectSnapshot) -> Vec<Diagnostic> {
         .collect::<Vec<_>>()
 }
 
-fn quarantined_race(snapshot: &ProjectSnapshot, findings: &mut Vec<Diagnostic>) {
-    if let Some(source) = snapshot.classic_sources.iter().find(|source| {
-        source.native_path == "Data Race"
-            && source.byte_length < 30 * crate::codecs::RACE_RECORD_BYTES as u64
-    }) {
-        findings.push(Diagnostic {
-            code: "source.race-table.quarantined".into(),
-            severity: Severity::Warning,
-            message: format!("Data Race has {} bytes; Castle requires 30 complete 408-byte records. The exact file is retained. Application rules are available; this scenario table cannot be selected.", source.byte_length),
-            entity: Some(StableId("classic-source:Data Race".into())),
-            field: None,
-        });
+fn incomplete_rules(snapshot: &ProjectSnapshot, findings: &mut Vec<Diagnostic>) {
+    for (path, stride) in [
+        ("Data Race", crate::codecs::RACE_RECORD_BYTES),
+        ("Data Caste", crate::codecs::CASTE_RECORD_BYTES),
+    ] {
+        if let Some(source) = snapshot
+            .classic_sources
+            .iter()
+            .find(|source| source.native_path == path && source.byte_length < 30 * stride as u64)
+        {
+            findings.push(Diagnostic {
+                code: "source.rule-table.incomplete".into(), severity: Severity::Warning,
+                message: format!("{path} supplies {} complete definitions and {} trailing bytes. The exact file is retained; missing native slots remain unavailable when this family is selected.", source.byte_length / stride as u64, source.byte_length % stride as u64),
+                entity: Some(StableId(format!("classic-source:{path}"))), field: None,
+            });
+        }
     }
 }
 

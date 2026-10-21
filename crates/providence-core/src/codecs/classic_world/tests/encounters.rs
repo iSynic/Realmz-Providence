@@ -4,7 +4,7 @@ use super::super::{
 use crate::model::ClassicAction;
 
 #[test]
-fn simple_encounter_no_edit_preserves_annex_and_authored_row_regenerates() {
+fn simple_encounter_edit_preserves_unowned_bytes_and_unchanged_text() {
     let mut source = vec![0xa5; SIMPLE_ENCOUNTER_RECORD_BYTES];
     source[104..106].copy_from_slice(&47i16.to_be_bytes());
     source[106..109].copy_from_slice(&[2, b'G', b'o']);
@@ -26,10 +26,10 @@ fn simple_encounter_no_edit_preserves_annex_and_authored_row_regenerates() {
     assert_eq!(&edited[104..106], &12i16.to_be_bytes());
     assert_eq!(edited[3] as i8, -1);
     assert_eq!(&edited[38..40], &47i16.to_be_bytes());
-    assert!(
-        edited[109..SIMPLE_ENCOUNTER_RECORD_BYTES]
-            .iter()
-            .all(|byte| *byte == 0)
+    assert_eq!(&edited[100..104], &source[100..104]);
+    assert_eq!(
+        &edited[106..SIMPLE_ENCOUNTER_RECORD_BYTES],
+        &source[106..SIMPLE_ENCOUNTER_RECORD_BYTES]
     );
     assert_eq!(&edited[SIMPLE_ENCOUNTER_RECORD_BYTES..], &[0xca, 0xfe]);
 }

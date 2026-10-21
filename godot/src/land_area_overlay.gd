@@ -27,6 +27,7 @@ var _canvas: ProvidenceMapCanvas
 var _outline_cells: Dictionary = {}
 var _draw_origin := Rect2()
 var _visible_cells := Rect2i()
+var _generation_preview := false
 
 
 func _ready() -> void:
@@ -61,6 +62,7 @@ func cancel_gesture() -> void:
 
 
 func show_preview(cells: Array, projection: Dictionary = {}) -> void:
+	_generation_preview = projection.get("generationPreview", false)
 	preview = cells.duplicate(true)
 	painted = projection.get("terrainCells", []).duplicate(true)
 	protected = projection.get("protectedCells", []).duplicate(true)
@@ -154,6 +156,7 @@ func _draw() -> void:
 	if _canvas == null: return
 	_draw_origin = _canvas.cell_rect(Vector2i.ZERO)
 	_visible_cells = _canvas.visible_cell_bounds()
+	if _generation_preview: _draw_generation(); return
 	_draw_cells(selected, Color(0.6, 0.8, 1, 0.65))
 	_draw_cells(preview, Color(0.95, 0.76, 0.39, 0.8))
 	_draw_cells(protected, Color(0.88, 0.52, 0.44, 0.8))
@@ -169,6 +172,20 @@ func _draw() -> void:
 	_draw_cells(retiled,Color(0.4,0.7,1,0.8)); _draw_markers(retiled,"~",Color(0.4,0.8,1))
 	_draw_outline()
 	_draw_markers(unresolved, "!", Color(0.95, 0.76, 0.39))
+
+
+func _draw_generation() -> void:
+	for cell: Dictionary in painted:
+		var coordinate := Vector2i(int(cell.x), int(cell.y))
+		if not _visible_cells.has_point(coordinate): continue
+		var texture: Texture2D = _canvas.terrain_texture(int(cell.tile))
+		if texture != null: draw_texture_rect(texture, _rectangle(coordinate), false)
+	for cell: Dictionary in painted:
+		var coordinate := Vector2i(int(cell.x), int(cell.y))
+		if _visible_cells.has_point(coordinate): draw_rect(_rectangle(coordinate), Color("66caff80"), false, 1)
+	_draw_cells(protected, Color("f5cc71"))
+	_draw_markers(protected, "P", Color("f5cc71"))
+	_draw_outline(Color("c9a0ee"))
 
 
 func _draw_markers(cells: Array, marker: String, color: Color) -> void:
@@ -200,14 +217,14 @@ func _draw_cells(cells: Array, color: Color) -> void:
 		draw_rect(rectangle, Color(color, 0.16)); draw_rect(rectangle, color, false, 1)
 
 
-func _draw_outline() -> void:
+func _draw_outline(color := Color("ffd166")) -> void:
 	for cell: Vector2i in _outline_cells:
 		if not _visible_cells.has_point(cell): continue
 		var rect := _rectangle(cell)
 		var corners := [rect.position,rect.position+Vector2(rect.size.x,0),rect.end,rect.position+Vector2(0,rect.size.y)]
 		var directions := [Vector2i.UP,Vector2i.RIGHT,Vector2i.DOWN,Vector2i.LEFT]
 		for side in 4:
-			if not _outline_cells.has(cell+directions[side]): draw_line(corners[side],corners[(side+1)%4],Color("ffd166"),2)
+			if not _outline_cells.has(cell+directions[side]): draw_line(corners[side],corners[(side+1)%4],color,2)
 
 
 func _rectangle(cell: Vector2i) -> Rect2:

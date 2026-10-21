@@ -388,6 +388,7 @@ fn write_intentionally_invalid_archive(
             .compression_method(compression)
             .compression_level((compression == CompressionMethod::Deflated).then_some(9))
             .last_modified_time(zip::DateTime::default())
+            .system(zip::System::Unix)
             .unix_permissions(0o644);
         writer
             .start_file(path, options)
@@ -414,7 +415,10 @@ fn read_archive_files(bytes: &[u8]) -> Result<BTreeMap<String, Vec<u8>>, String>
     let mut files = BTreeMap::new();
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
-        let path = entry.name().to_string();
+        let path = entry
+            .name()
+            .map_err(|error| error.to_string())?
+            .into_owned();
         let mut payload = Vec::with_capacity(entry.size() as usize);
         entry
             .read_to_end(&mut payload)

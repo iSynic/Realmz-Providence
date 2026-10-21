@@ -83,6 +83,9 @@ fn project_rebuilt_v3_timed_encounters_filtered(
 ) -> Result<RebuiltV3TimedEncounterProjection, RebuiltV3TimedEncounterError> {
     let mut records = snapshot.timed_encounters.iter().collect::<Vec<_>>();
     records.sort_by_key(|encounter| encounter.native_id);
+    if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+        return project_imported_timed_records(&records);
+    }
     let runtime_ids = runtime_timed_encounter_ids(snapshot);
     let tolerate_invalid =
         program_ids.is_some() && matches!(snapshot.origin, ProjectOrigin::Imported { .. });
@@ -199,6 +202,51 @@ fn project_timed_record(
             TimedEncounterLocationKind::Land => RebuiltV3TimedEncounterLocationKind::Land,
             TimedEncounterLocationKind::Dungeon => RebuiltV3TimedEncounterLocationKind::Dungeon,
         },
+    })
+}
+
+fn project_imported_timed_records(
+    records: &[&TimedEncounter],
+) -> Result<RebuiltV3TimedEncounterProjection, RebuiltV3TimedEncounterError> {
+    let mut ids = BTreeSet::new();
+    let mut timed_encounters = Vec::with_capacity(records.len());
+    for encounter in records {
+        if !ids.insert(encounter.native_id.0) {
+            return Err(RebuiltV3TimedEncounterError::DuplicateId(
+                encounter.native_id.0,
+            ));
+        }
+        validate_timed_encounter_shape(encounter).map_err(|error| {
+            RebuiltV3TimedEncounterError::InvalidRecord {
+                encounter: encounter.identity.clone(),
+                reason: error.to_string(),
+            }
+        })?;
+        // Presence is independent of the scheduler and the selected macro's availability.
+        timed_encounters.push(RebuiltV3TimedEncounter {
+            id: encounter.native_id.0,
+            day: encounter.day,
+            increment: encounter.increment,
+            chance_percent: encounter.percent,
+            classic_macro_id: encounter.door,
+            program_id: StableId(format!("xap:{}", encounter.door)),
+            required_level: encounter.required_level,
+            required_random_rectangle: encounter.required_random_rect,
+            required_x: encounter.required_x,
+            required_y: encounter.required_y,
+            required_item_id: encounter.required_item,
+            required_quest_id: encounter.required_quest,
+            location_kind: match encounter.location_kind {
+                TimedEncounterLocationKind::Any => RebuiltV3TimedEncounterLocationKind::Any,
+                TimedEncounterLocationKind::Land => RebuiltV3TimedEncounterLocationKind::Land,
+                TimedEncounterLocationKind::Dungeon => RebuiltV3TimedEncounterLocationKind::Dungeon,
+            },
+        });
+    }
+    Ok(RebuiltV3TimedEncounterProjection {
+        timed_encounters,
+        excluded_native_ids: Vec::new(),
+        quarantined_native_ids: Vec::new(),
     })
 }
 

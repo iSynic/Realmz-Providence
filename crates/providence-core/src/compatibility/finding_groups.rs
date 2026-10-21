@@ -18,7 +18,7 @@ pub(super) fn runtime_conditions(
                 finding.code.as_str(),
                 "timed-encounter.location.invalid-level"
                     | "rogue-encounter.damage.inverted"
-                    | "source.race-table.quarantined"
+                    | "source.rule-table.incomplete"
             )
         })
     {

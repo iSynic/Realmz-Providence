@@ -67,3 +67,55 @@ fn removed_valid_music_does_not_reappear_from_source_evidence() {
     compile(&project, sources, &BTreeMap::new(), &mut manifest).unwrap();
     assert!(manifest.get("Custom 2 Music").is_none());
 }
+
+#[test]
+fn old_quarantined_madg_without_descriptor_is_still_exact_native_output() {
+    let bytes = b"MADGopaque original source";
+    let project = imported(bytes);
+    let sources = ClassicCompatibilitySources {
+        scenario_music: [
+            None,
+            Some(PreservedCompatibilitySource {
+                blob: &project.classic_sources[0].blob,
+                bytes,
+            }),
+            None,
+        ],
+        ..Default::default()
+    };
+    let mut manifest = NativeManifest::default();
+    compile(&project, sources, &BTreeMap::new(), &mut manifest).unwrap();
+    assert_eq!(manifest.get("Custom 2 Music").unwrap().bytes, bytes);
+}
+
+#[test]
+fn opaque_imported_descriptor_exports_exactly_but_fresh_compilation_rejects_it() {
+    let bytes = b"MADGopaque original source";
+    let mut project = imported(bytes);
+    let blob = project.classic_sources[0].blob.clone();
+    project
+        .assets
+        .push(crate::codecs::imported_scenario_music_asset(2, bytes, blob.clone()).unwrap());
+    let payloads = BTreeMap::from([(blob.0.clone(), bytes.to_vec())]);
+    let mut manifest = NativeManifest::default();
+    compile(
+        &project,
+        ClassicCompatibilitySources::default(),
+        &payloads,
+        &mut manifest,
+    )
+    .unwrap();
+    assert_eq!(manifest.get("Custom 2 Music").unwrap().bytes, bytes);
+    project.origin = ProjectOrigin::Authored;
+    let mut fresh = NativeManifest::default();
+    assert!(
+        compile(
+            &project,
+            ClassicCompatibilitySources::default(),
+            &payloads,
+            &mut fresh
+        )
+        .is_err()
+    );
+    assert!(fresh.get("Custom 2 Music").is_none());
+}

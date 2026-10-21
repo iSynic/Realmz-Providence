@@ -1,0 +1,193 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/offline_help_reader.gd" id="1"]
+[ext_resource type="Script" path="res://src/offline_help_article.gd" id="2"]
+[ext_resource type="PackedScene" path="res://src/media_preview_window.tscn" id="3"]
+
+[node name="OfflineHelp" type="Window"]
+visible = false
+title = "Providence Documents"
+size = Vector2i(1560, 840)
+min_size = Vector2i(1100, 640)
+transient = true
+script = ExtResource("1")
+
+[node name="Surface" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = "HelpRoot"
+
+[node name="Layout" type="VBoxContainer" parent="Surface"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Header" type="MarginContainer" parent="Surface/Layout"]
+custom_minimum_size = Vector2(0, 57)
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="Surface/Layout/Header"]
+layout_mode = 2
+
+[node name="Labels" type="VBoxContainer" parent="Surface/Layout/Header/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="Kicker" type="Label" parent="Surface/Layout/Header/Row/Labels"]
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+text = "PROVIDENCE AUTHORING MANUAL"
+
+[node name="Title" type="Label" parent="Surface/Layout/Header/Row/Labels"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Documents"
+
+[node name="Close" type="Button" parent="Surface/Layout/Header/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "Close"
+
+[node name="Columns" type="HBoxContainer" parent="Surface/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="Navigation" type="PanelContainer" parent="Surface/Layout/Columns"]
+custom_minimum_size = Vector2(270, 0)
+layout_mode = 2
+theme_type_variation = "HelpInset"
+
+[node name="Body" type="VBoxContainer" parent="Surface/Layout/Columns/Navigation"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="NavigationHeading" type="Label" parent="Surface/Layout/Columns/Navigation/Body"]
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+text = "MANUAL SEARCH"
+
+[node name="Search" type="LineEdit" parent="Surface/Layout/Columns/Navigation/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Search manual…"
+clear_button_enabled = true
+
+[node name="SearchStatus" type="Label" parent="Surface/Layout/Columns/Navigation/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+text = "MANUAL CHAPTERS · 13"
+
+[node name="ChapterScroll" type="ScrollContainer" parent="Surface/Layout/Columns/Navigation/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Chapters" type="VBoxContainer" parent="Surface/Layout/Columns/Navigation/Body/ChapterScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="ClearSearch" type="Button" parent="Surface/Layout/Columns/Navigation/Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Clear Search"
+
+[node name="ArticleMargin" type="MarginContainer" parent="Surface/Layout/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="ArticleScroll" type="ScrollContainer" parent="Surface/Layout/Columns/ArticleMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Article" type="VBoxContainer" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+script = ExtResource("2")
+
+[node name="Intro" type="PanelContainer" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article"]
+layout_mode = 2
+theme_type_variation = "HelpCard"
+
+[node name="Body" type="VBoxContainer" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article/Intro"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ChapterKind" type="Label" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article/Intro/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+autowrap_mode = 2
+
+[node name="Row" type="HBoxContainer" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article/Intro/Body"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Summary" type="Label" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article/Intro/Body/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 2
+
+[node name="OpenTool" type="Button" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article/Intro/Body/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "Open Tool →"
+
+[node name="Sections" type="VBoxContainer" parent="Surface/Layout/Columns/ArticleMargin/ArticleScroll/Article"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Index" type="PanelContainer" parent="Surface/Layout/Columns"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+theme_type_variation = "HelpInset"
+
+[node name="Body" type="VBoxContainer" parent="Surface/Layout/Columns/Index"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JumpHeading" type="Label" parent="Surface/Layout/Columns/Index/Body"]
+layout_mode = 2
+theme_type_variation = "HelpKicker"
+text = "JUMP TO\nIN THIS CHAPTER"
+
+[node name="IndexScroll" type="ScrollContainer" parent="Surface/Layout/Columns/Index/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Anchors" type="VBoxContainer" parent="Surface/Layout/Columns/Index/Body/IndexScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AnchorStatus" type="Label" parent="Surface/Layout/Columns/Index/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "HelpSecondary"
+autowrap_mode = 2
+
+[node name="ImagePeek" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true

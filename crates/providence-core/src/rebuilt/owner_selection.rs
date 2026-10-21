@@ -3,7 +3,7 @@ mod contracts;
 mod references;
 
 use super::RebuiltV3ScenarioDocument;
-use crate::model::ProjectSnapshot;
+use crate::model::{ProjectOrigin, ProjectSnapshot};
 use catalogs::CatalogInputs;
 pub use contracts::{
     RebuiltV3ReachableOwnerError, RebuiltV3ReachableOwnerSelection, RebuiltV3RuntimeCatalogKind,
@@ -17,7 +17,10 @@ pub fn project_rebuilt_v3_reachable_owners(
     scenario: &RebuiltV3ScenarioDocument,
 ) -> Result<RebuiltV3ReachableOwnerSelection, RebuiltV3ReachableOwnerError> {
     // Keep failure precedence: instruction operands, timed rows, Treasure, Shop.
-    let references = derive_catalog_references(scenario)?;
+    let references = derive_catalog_references(
+        scenario,
+        matches!(snapshot.origin, ProjectOrigin::Imported { .. }),
+    )?;
     let program_ids = scenario
         .programs
         .iter()

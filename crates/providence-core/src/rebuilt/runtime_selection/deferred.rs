@@ -28,6 +28,7 @@ pub(super) fn collect(
     collect_owners(catalogs, &mut deferred_references);
     collect_rogue_targets(encounters, &mut deferred_references);
     collect_quarantined_timers(catalogs, &mut deferred_references);
+    collect_missing_timer_programs(encounters, catalogs, &mut deferred_references);
     collect_post_action_maps(snapshot, encounters, &mut deferred_references);
     collect_item_spells(catalogs, &mut deferred_references);
     collect_battle_references(snapshot, combat, &mut deferred_references);
@@ -147,6 +148,7 @@ fn collect_post_action_maps(
         .iter()
         .map(|program| program.id.clone())
         .collect::<std::collections::BTreeSet<_>>();
+
     deferred_references.extend(snapshot.world.action_points.iter().filter_map(|trigger| {
         if !emitted_program_ids.contains(&crate::rebuilt::runtime_ids::action_point_program_id(
             trigger,
@@ -308,4 +310,32 @@ fn deferred_reachability_reference(
         ),
         disposition: RebuiltV3DeferredDisposition::Deferred,
     }
+}
+
+fn collect_missing_timer_programs(
+    encounters: &SelectedEncounters,
+    catalogs: &SelectedCatalogs,
+    deferred_references: &mut BTreeSet<RebuiltV3DeferredReference>,
+) {
+    let emitted_program_ids = encounters
+        .scenario
+        .programs
+        .iter()
+        .map(|program| program.id.clone())
+        .collect::<BTreeSet<_>>();
+    deferred_references.extend(
+        catalogs
+            .owners
+            .timed_encounters
+            .iter()
+            .filter(|encounter| !emitted_program_ids.contains(&encounter.program_id))
+            .map(|encounter| RebuiltV3DeferredReference {
+                source: StableId(format!("timed-encounter:{}", encounter.id)),
+                field: "classicMacroId".into(),
+                target_kind: "program".into(),
+                target_id: encounter.program_id.0.clone(),
+                reason: "the supplied timer references an unavailable native program".into(),
+                disposition: RebuiltV3DeferredDisposition::Deferred,
+            }),
+    );
 }

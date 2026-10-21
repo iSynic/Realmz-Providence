@@ -39,6 +39,7 @@ pub fn project_rebuilt_v3_normal_monsters_by_classic_ids(
         descriptions: &descriptions,
         macro_ids: &macro_ids,
         allow_deferred: false,
+        fresh: !matches!(snapshot.origin, ProjectOrigin::Imported { .. }),
         allow_v4_values: false,
     };
     let mut records = normal_sets
@@ -70,6 +71,21 @@ pub fn project_rebuilt_v3_monsters_by_classic_ids(
     snapshot: &ProjectSnapshot,
     classic_ids: &BTreeSet<u32>,
 ) -> Result<RebuiltV3MonsterCatalog, RebuiltV3MonsterError> {
+    project_selected_monsters(snapshot, classic_ids, false)
+}
+
+pub(crate) fn project_current_monsters_by_classic_ids(
+    snapshot: &ProjectSnapshot,
+    classic_ids: &BTreeSet<u32>,
+) -> Result<RebuiltV3MonsterCatalog, RebuiltV3MonsterError> {
+    project_selected_monsters(snapshot, classic_ids, true)
+}
+
+fn project_selected_monsters(
+    snapshot: &ProjectSnapshot,
+    classic_ids: &BTreeSet<u32>,
+    current: bool,
+) -> Result<RebuiltV3MonsterCatalog, RebuiltV3MonsterError> {
     let allow_deferred = matches!(snapshot.origin, ProjectOrigin::Imported { .. });
     let descriptions = validated_selected_descriptions(snapshot, classic_ids)?;
     let macro_ids = snapshot
@@ -82,7 +98,8 @@ pub fn project_rebuilt_v3_monsters_by_classic_ids(
         descriptions: &descriptions,
         macro_ids: &macro_ids,
         allow_deferred,
-        allow_v4_values: allow_deferred,
+        fresh: !allow_deferred,
+        allow_v4_values: current || allow_deferred,
     };
     let mut seen_sets = BTreeSet::new();
     let mut projected_sets = ProjectedSets::default();

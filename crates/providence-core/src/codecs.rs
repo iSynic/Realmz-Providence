@@ -25,6 +25,7 @@ mod classic_resources;
 mod classic_rogue_encounters;
 mod classic_rule_authoring;
 mod classic_rule_names;
+mod classic_scenario_baseline;
 mod classic_scenario_contact;
 mod classic_scenario_icons;
 mod classic_scenario_music;
@@ -39,6 +40,8 @@ mod classic_special_land_solidity;
 mod classic_special_land_tiles;
 mod classic_spells;
 mod classic_text_feedback;
+#[cfg(test)]
+mod classic_text_fields_tests;
 mod classic_text_resources;
 mod classic_timed_encounters;
 mod classic_treasures;
@@ -71,6 +74,7 @@ pub use classic_resources::*;
 pub use classic_rogue_encounters::*;
 pub use classic_rule_authoring::*;
 pub use classic_rule_names::*;
+pub use classic_scenario_baseline::CLASSIC_SCENARIO_BASELINE_FILES;
 pub use classic_scenario_contact::*;
 pub use classic_scenario_icons::*;
 pub use classic_scenario_music::*;
@@ -394,11 +398,14 @@ pub const SIMPLE_ENCOUNTER_CODEC: CodecDescriptor = CodecDescriptor {
     family: NativeFileFamily::SimpleEncounters,
     native_path: "Data ED",
     record_bytes: SIMPLE_ENCOUNTER_RECORD_BYTES,
-    owned_byte_ranges: &[OwnedByteRange {
-        start: 0,
-        end: SIMPLE_ENCOUNTER_RECORD_BYTES,
-    }],
-    compatibility_overlay: CompatibilityOverlayPolicy::RegenerateEditedRow,
+    owned_byte_ranges: &[
+        OwnedByteRange { start: 0, end: 103 },
+        OwnedByteRange {
+            start: 104,
+            end: SIMPLE_ENCOUNTER_RECORD_BYTES,
+        },
+    ],
+    compatibility_overlay: CompatibilityOverlayPolicy::OverlayOwnedBytes,
 };
 
 pub const COMPLEX_ENCOUNTER_CODEC: CodecDescriptor = CodecDescriptor {

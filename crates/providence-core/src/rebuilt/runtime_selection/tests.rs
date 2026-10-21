@@ -3,6 +3,7 @@ use crate::model::{BlobId, ExtraCodeRow, NativeRecordId, ProjectOrigin};
 
 mod fixtures;
 use fixtures::{action, runtime_snapshot};
+mod missing_catalog_rows;
 
 #[test]
 fn selection_is_exact_deterministic_and_preserves_unreachable_invalid_sources() {
@@ -88,6 +89,7 @@ fn imported_selection_preserves_callers_and_defers_missing_optional_targets() {
     snapshot.origin = ProjectOrigin::Imported {
         compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
     };
+    snapshot.timed_encounters[1].identity = StableId("timed-encounter:1".into());
     snapshot.messages.clear();
     snapshot.shops.clear();
     snapshot
@@ -132,6 +134,7 @@ fn imported_opcode_92_preserves_the_instruction_and_defers_only_its_missing_map(
     snapshot.origin = ProjectOrigin::Imported {
         compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
     };
+    snapshot.timed_encounters[1].identity = StableId("timed-encounter:1".into());
     snapshot.extra_action_points[0].actions = vec![action(0, 92, 100)];
     snapshot.extra_codes.extend([
         ExtraCodeRow {
@@ -160,6 +163,7 @@ fn imported_opcode_92_preserves_the_instruction_and_defers_only_its_missing_map(
 fn selection_refuses_opcode_44_outside_an_encounter_result_context() {
     let mut snapshot = runtime_snapshot();
     snapshot.extra_action_points[0].actions = vec![action(0, 44, 4)];
+    snapshot.timed_encounters[1].identity = StableId("timed-encounter:1".into());
     snapshot.messages.clear();
 
     let error = project_rebuilt_v3_reachable_runtime(&snapshot)

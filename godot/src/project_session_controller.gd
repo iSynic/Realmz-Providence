@@ -38,7 +38,7 @@ func save_as(project_path: String) -> void:
 		failed.emit(detail)
 		_operations.notify_completed(response)
 		return
-	bridge.stop()
+	bridge.stop(_has_draft.is_valid() and not _has_draft.call())
 	bridge = candidate
 	var activated := await _activate_opened(response)
 	_operations.call_deferred("notify_completed", response)
@@ -61,7 +61,7 @@ func create_project(project_id: String, project_path: String) -> void:
 		failed.emit(detail)
 		_operations.notify_completed(response)
 		return
-	bridge.stop()
+	bridge.stop(_has_draft.is_valid() and not _has_draft.call())
 	bridge = candidate
 	var activated := await _activate_opened(response)
 	_operations.call_deferred("notify_completed", response)
@@ -88,7 +88,7 @@ func open_project(project_path: String) -> void:
 			failed.emit(str(response.get("error", "Project open failed.")))
 		_operations.notify_completed(response)
 		return
-	bridge.stop()
+	bridge.stop(_has_draft.is_valid() and not _has_draft.call())
 	bridge = candidate
 	var activated := await _activate_opened(response)
 	_operations.call_deferred("notify_completed", response)
@@ -119,6 +119,8 @@ func configure_application_library(directory: String) -> Dictionary:
 		return {"ok": false, "error": "Wait for the current operation to finish."}
 	var candidate := bridge.fork_connection()
 	var response: Dictionary = await _operations.configure_library(candidate, "application", normalized)
+	if response.get("ok", false) and bridge.shared_session_enabled():
+		return await _replace_shared_application_support(candidate,normalized)
 	if response.get("ok", false):
 		response = await _operations.open_project(candidate, bridge.current_project_path(), {
 			"applicationLibrary": normalized, "referenceCatalog": bridge.current_reference_catalog_root(),
@@ -132,13 +134,31 @@ func configure_application_library(directory: String) -> Dictionary:
 		return response
 	# Settings validation and the replacement adapter succeeded before retiring
 	# the live session. A failed candidate never discards the current connection.
-	bridge.stop()
+	bridge.stop(_has_draft.is_valid() and not _has_draft.call())
 	bridge = candidate
 	var activated := await _activate_opened(response)
 	_operations.call_deferred("notify_completed", response)
 	if not activated:
 		return {"ok": false, "error": "The application library was configured, but the project view could not load. Reopen the project before continuing."}
 	return {"ok": true}
+
+
+func _replace_shared_application_support(candidate, directory: String) -> Dictionary:
+	var options: PackedStringArray = bridge.application_support_options(directory)
+	var response: Dictionary = await _operations.request("session.replace-support",{"options":options,"expectedRevision":_read_context.call().revision})
+	if response.get("ok",false): bridge.adopt_application_support(directory,options)
+	_operations.finish(response,false,false)
+	candidate.stop()
+	if not response.get("ok",false):
+		_operations.notify_completed(response)
+		response["error"] = "The preference was saved; live application support was not changed. " + str(response.get("error","Could not replace application support."))
+		return response
+	var activated := await _activate_opened(response)
+	_operations.call_deferred("notify_completed",response)
+	if not activated:
+		_operations.requires_reopen = true
+		return {"ok":false,"supportChanged":true,"error":"Application support changed, but its views could not refresh. Reopen this project before continuing."}
+	return {"ok":true,"supportChanged":true}
 
 
 func save() -> void:

@@ -1,3 +1,4 @@
+use crate::classic_source_retention::store_source_annex;
 use crate::execute;
 use crate::request_params::required_string;
 use crate::request_params::required_u64;
@@ -20,7 +21,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use providence_core::codecs::MAP_LEVEL_BYTES;
-use providence_core::model::{ActionPoint, BlobId, MapLevel};
+use providence_core::model::{ActionPoint, MapLevel};
 
 pub(crate) fn import_classic_dungeon_slice(
     session: &mut EditorSession,
@@ -46,7 +47,7 @@ pub(crate) fn import_classic_dungeon_slice(
     join_random_levels(&mut maps, &inputs)?;
     let sources = retain_sources(session, store, &inputs)?;
     attach_runtime_source(&sources, &mut maps);
-    let annex_blob = store_annex(store, &sources)?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let counts = json!({
         "maps": maps.len(),
         "actionPoints": action_points.len(),
@@ -82,9 +83,9 @@ fn read_dungeon_sources(directory: &std::path::Path) -> Result<BTreeMap<String, 
 fn decode_maps(inputs: &BTreeMap<String, Vec<u8>>) -> Result<Vec<MapLevel>, String> {
     let data_dl = &inputs["Data DL"];
     let maps = decode_dungeon_maps(data_dl);
-    if maps.records.is_empty() || !maps.trailing_bytes.is_empty() {
+    if !maps.trailing_bytes.is_empty() {
         return Err(format!(
-            "Data DL must contain one or more complete {MAP_LEVEL_BYTES}-byte dungeon levels"
+            "Data DL must contain complete {MAP_LEVEL_BYTES}-byte dungeon levels; partial levels are unsupported"
         ));
     }
     if encode_dungeon_maps(&maps.records, Some(data_dl)).map_err(|error| error.to_string())?
@@ -181,16 +182,4 @@ fn attach_runtime_source(sources: &[ClassicSourceBlob], maps: &mut [MapLevel]) {
             .expect("Data RDD records were joined")
             .source_blob = Some(runtime_blob.clone());
     }
-}
-
-fn store_annex(store: &ProjectStore, sources: &[ClassicSourceBlob]) -> Result<BlobId, String> {
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
-    Ok(annex_blob)
 }

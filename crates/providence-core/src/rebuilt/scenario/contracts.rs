@@ -135,9 +135,18 @@ pub fn imported_extra_code_tail(snapshot: &ProjectSnapshot) -> Option<RebuiltExt
         .classic_sources
         .iter()
         .find(|source| source.native_path == "Data EDCD")?;
-    let available_bytes = source.byte_length % 10;
+    let record_bytes = crate::codecs::EXTRA_CODE_RECORD_BYTES as u64;
+    let available_bytes = source.byte_length % record_bytes;
+    // Classic encoding extends the complete body before reattaching source residue.
+    let complete_rows = snapshot
+        .extra_codes
+        .iter()
+        .map(|row| u64::from(row.native_id.0) + 1)
+        .max()
+        .unwrap_or(0)
+        .max(source.byte_length / record_bytes);
     (available_bytes != 0).then_some(RebuiltExtraCodeTail {
-        row_id: source.byte_length / 10,
+        row_id: complete_rows,
         available_bytes,
     })
 }

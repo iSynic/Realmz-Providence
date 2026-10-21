@@ -144,40 +144,58 @@ fn shared_pict_keeps_every_pixel_instead_of_only_the_dungeon_crop() {
 }
 
 #[test]
-fn duplicate_identities_are_preserved_in_source_but_never_selected_as_assets() {
-    let rgba = vec![255; 32 * 32 * 4];
-    let cicn = encode_scenario_icon_cicn(&rgba, 32, 32).unwrap();
-    let fork = write_resource_fork_preserving_duplicates(&[
-        ResourceEntry {
-            resource_type: *b"cicn",
-            id: 451,
-            name: "First".into(),
-            attributes: 0,
-            data: cicn.clone(),
-        },
-        ResourceEntry {
-            resource_type: *b"cicn",
-            id: 451,
-            name: "Second".into(),
-            attributes: 0,
-            data: cicn,
-        },
-    ])
-    .unwrap();
-
+fn duplicate_native_media_selects_first_occurrence_and_retains_inventory() {
+    let entries = duplicate_native_entries();
+    let fork = write_resource_fork_preserving_duplicates(&entries).unwrap();
     let catalog = derive_classic_media_catalog(&fork).unwrap();
-    assert!(catalog.assets.is_empty());
+    assert_eq!(catalog.assets.len(), 1);
+    assert_eq!(catalog.assets[0].label, "First");
+    assert_eq!(catalog.assets[0].classic_payload, entries[0].data);
+    assert_eq!(
+        parse_resource_entries_preserving_duplicates(&fork).unwrap(),
+        entries
+    );
     assert!(catalog.failures.is_empty());
     assert_eq!(
         catalog.ambiguous_resources,
-        [ClassicMediaAmbiguity {
+        vec![ClassicMediaAmbiguity {
             resource: ClassicResourceKey {
                 resource_type: "cicn".into(),
-                resource_id: 451,
+                resource_id: 451
             },
             occurrences: 2,
         }]
     );
+}
+
+#[test]
+fn undecodable_first_duplicate_does_not_fall_through_to_later_artwork() {
+    let mut entries = duplicate_native_entries();
+    entries[0].data = vec![0];
+    let fork = write_resource_fork_preserving_duplicates(&entries).unwrap();
+    let catalog = derive_classic_media_catalog(&fork).unwrap();
+    assert!(catalog.assets.is_empty());
+    assert_eq!(catalog.failures.len(), 1);
+    assert_eq!(catalog.failures[0].label, "First");
+    assert_eq!(catalog.ambiguous_resources[0].occurrences, 2);
+    assert_eq!(
+        parse_resource_entries_preserving_duplicates(&fork).unwrap(),
+        entries
+    );
+}
+
+fn duplicate_native_entries() -> Vec<ResourceEntry> {
+    [255, 0]
+        .into_iter()
+        .enumerate()
+        .map(|(index, pixel)| ResourceEntry {
+            resource_type: *b"cicn",
+            id: 451,
+            name: if index == 0 { "First" } else { "Second" }.into(),
+            attributes: 0,
+            data: encode_scenario_icon_cicn(&vec![pixel; 32 * 32 * 4], 32, 32).unwrap(),
+        })
+        .collect()
 }
 
 #[test]

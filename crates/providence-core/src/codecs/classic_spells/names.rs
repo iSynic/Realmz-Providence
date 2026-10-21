@@ -100,7 +100,9 @@ pub fn hydrate_scenario_spell_names(
     }
     if found {
         for spell in spells {
-            spell.text_source_blob = Some(source_blob.clone());
+            if usize::from(spell.definition.record_index) < SCENARIO_SPELL_RECORDS {
+                spell.text_source_blob = Some(source_blob.clone());
+            }
         }
     } else {
         warnings.push("Data Spell name resource contains no STR# 5000 through 5006".into());
@@ -113,6 +115,12 @@ fn spell_names_by_record(
 ) -> Result<std::collections::BTreeMap<u16, &SourcedSpellDefinition>, SpellCodecError> {
     let mut by_record = std::collections::BTreeMap::new();
     for spell in spells {
+        if usize::from(spell.definition.record_index) >= SCENARIO_SPELL_RECORDS
+            && spell.source_blob.is_some()
+            && !spell.name_authored
+        {
+            continue;
+        }
         validate_spell(&spell.definition, scenario_spell_classic_id)?;
         if by_record
             .insert(spell.definition.record_index, spell)

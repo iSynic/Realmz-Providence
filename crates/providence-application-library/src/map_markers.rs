@@ -434,12 +434,13 @@ fn archive_files(bytes: &[u8]) -> Result<BTreeMap<String, Vec<u8>>, String> {
     let mut files = BTreeMap::new();
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).map_err(|e| e.to_string())?;
-        if file.name() == "manifest.json" {
+        let name = file.name().map_err(|e| e.to_string())?.into_owned();
+        if name == "manifest.json" {
             continue;
         }
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes).map_err(|e| e.to_string())?;
-        files.insert(file.name().into(), bytes);
+        files.insert(name, bytes);
     }
     Ok(files)
 }

@@ -12,6 +12,11 @@ signal command_requested(command: String)
 	%PaintSelectedTileRow,
 	%StampSelectionRow,
 	%RevealMapRow,
+	%HelpDocumentsRow,
+	%HelpShortcutsRow,
+	%HelpGlossaryRow,
+	%HelpEvidenceRow,
+	%HelpAboutRow,
 ]
 @onready var _buttons: Dictionary = {
 	"navigate.view-flow": %ViewFlow,
@@ -21,6 +26,11 @@ signal command_requested(command: String)
 	"map.paint-selected-tile": %PaintSelectedTile,
 	"map.stamp-selection": %StampSelection,
 	"map.reveal-explorer": %RevealMap,
+	"help.documents": %HelpDocuments,
+	"help.shortcuts": %HelpShortcuts,
+	"help.compatibility": %HelpGlossary,
+	"help.source-evidence": %HelpEvidence,
+	"help.about": %HelpAbout,
 }
 
 
@@ -61,7 +71,7 @@ func _filter_rows(query: String) -> void:
 		row.visible = normalized.is_empty() or button.text.to_lower().contains(normalized)
 		if row.visible:
 			visible_count += 1
-	%CommandPaletteStatus.text = "%d result%s · disabled commands explain why" % [visible_count, "" if visible_count == 1 else "s"]
+	%CommandPaletteStatus.text = "%d result%s Â· disabled commands explain why" % [visible_count, "" if visible_count == 1 else "s"]
 
 
 func _request_command(command: String) -> void:

@@ -113,6 +113,26 @@ mod simple_encounters;
 mod spells;
 mod world_catalogs;
 
+thread_local! {
+    static FAIL_AFTER_DOMAIN_WRITE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Fails the next command after its handler wrote, as a handler with a late fallible step would.
+pub(super) fn fail_after_domain_write(
+    changed: Vec<StableId>,
+) -> Result<Vec<StableId>, SessionError> {
+    if FAIL_AFTER_DOMAIN_WRITE.replace(false) {
+        return Err(SessionError::InvalidMessageDraft(
+            "injected failure after domain write".into(),
+        ));
+    }
+    Ok(changed)
+}
+
+fn arm_failure_after_domain_write() {
+    FAIL_AFTER_DOMAIN_WRITE.set(true);
+}
+
 fn sample_snapshot() -> ProjectSnapshot {
     ProjectSnapshot {
         format_version: SNAPSHOT_FORMAT_VERSION,

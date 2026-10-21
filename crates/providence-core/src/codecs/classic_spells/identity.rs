@@ -13,20 +13,14 @@ pub fn standard_spell_classic_id(record_index: u16) -> Option<i16> {
     if usize::from(record_index) >= STANDARD_SPELL_RECORDS {
         return None;
     }
-    let class = usize::from(record_index) / SPELLS_PER_CLASS + 1;
-    let within_class = usize::from(record_index) % SPELLS_PER_CLASS;
-    let level = within_class / SPELL_NAMES_PER_RESOURCE + 1;
-    let slot = within_class % SPELL_NAMES_PER_RESOURCE + 1;
-    i16::try_from(class * 1000 + level * 100 + slot).ok()
+    standard_spell_physical_classic_id(usize::from(record_index))
 }
 
 pub fn scenario_spell_classic_id(record_index: u16) -> Option<i16> {
     if usize::from(record_index) >= SCENARIO_SPELL_RECORDS {
         return None;
     }
-    let level = record_index / 15 + 1;
-    let slot = record_index % 15 + 1;
-    Some(5000 + i16::try_from(level).ok()? * 100 + i16::try_from(slot).ok()?)
+    scenario_spell_physical_classic_id(usize::from(record_index))
 }
 
 pub(super) fn validate_spell(
@@ -49,4 +43,34 @@ pub(super) fn validate_spell(
         });
     }
     Ok(())
+}
+
+pub(super) fn standard_spell_physical_classic_id(record_index: usize) -> Option<i16> {
+    let class = record_index / SPELLS_PER_CLASS + 1;
+    let within_class = record_index % SPELLS_PER_CLASS;
+    let level = within_class / SPELL_NAMES_PER_RESOURCE + 1;
+    let slot = within_class % SPELL_NAMES_PER_RESOURCE + 1;
+    i16::try_from(
+        class
+            .checked_mul(1000)?
+            .checked_add(level.checked_mul(100)?)?
+            .checked_add(slot)?,
+    )
+    .ok()
+}
+
+pub(crate) fn scenario_spell_physical_classic_id(record_index: usize) -> Option<i16> {
+    let level = record_index / SPELL_NAMES_PER_RESOURCE + 1;
+    let slot = record_index % SPELL_NAMES_PER_RESOURCE + 1;
+    i16::try_from(
+        5000usize
+            .checked_add(level.checked_mul(100)?)?
+            .checked_add(slot)?,
+    )
+    .ok()
+}
+
+pub fn scenario_spell_is_runtime_addressable(spell: &SpellDefinition) -> bool {
+    scenario_spell_classic_id(spell.record_index) == Some(spell.classic_id)
+        && spell.id.0 == format!("classic.spell.{}", spell.classic_id)
 }

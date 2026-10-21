@@ -58,27 +58,12 @@ pub(crate) fn preflight_files(directory: &Path, names: &[&str], role: &str) -> R
     }
 }
 
-pub(crate) const REQUIRED_FULL_SCENARIO_FILES: &[&str] = &[
-    "Data BD",
-    "Data DD",
-    "Data DDD",
-    "Data DL",
-    "Data ED",
-    "Data ED2",
-    "Data ED3",
-    "Data EDCD",
-    "Data LD",
-    "Data MD",
-    "Data NI",
-    "Data RD",
-    "Data RDD",
-    "Data SD",
-    "Data SD2",
-    "Data Solids",
-    "Data TD",
-    "Data TD2",
-    "Data TD3",
-];
+pub(crate) fn required_full_scenario_files() -> Vec<&'static str> {
+    providence_core::codecs::CLASSIC_SCENARIO_BASELINE_FILES
+        .iter()
+        .map(|row| row.0)
+        .collect()
+}
 
 pub(crate) const REQUIRED_APPLICATION_DATA_FILES: &[&str] = &[
     "Combat Data BD",

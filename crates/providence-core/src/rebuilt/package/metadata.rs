@@ -1,7 +1,8 @@
 use super::super::{RebuiltV3Start, project_rebuilt_v3_bootstrap};
 use super::{
     REBUILT_V3_SCHEMA_SHA256, REBUILT_V4_SCHEMA_SHA256, REBUILT_V5_SCHEMA_SHA256,
-    REBUILT_V6_SCHEMA_SHA256, RebuiltV3CompilerIdentity, RebuiltV3Manifest, RebuiltV3ManifestError,
+    REBUILT_V6_SCHEMA_SHA256, REBUILT_V7_SCHEMA_SHA256, RebuiltV3CompilerIdentity,
+    RebuiltV3Manifest, RebuiltV3ManifestError,
 };
 use crate::model::{ProjectOrigin, ProjectSnapshot, StableId};
 
@@ -51,8 +52,9 @@ pub(super) fn from_manifest(
         (5, REBUILT_V5_SCHEMA_SHA256) if source.compiler.project_origin == "imported" => {
             REBUILT_V5_SCHEMA_SHA256
         }
-        (6, REBUILT_V6_SCHEMA_SHA256) if source.compiler.project_origin == "imported" => {
-            REBUILT_V6_SCHEMA_SHA256
+        (6, REBUILT_V6_SCHEMA_SHA256) => REBUILT_V6_SCHEMA_SHA256,
+        (7, REBUILT_V7_SCHEMA_SHA256) if source.compiler.project_origin == "imported" => {
+            REBUILT_V7_SCHEMA_SHA256
         }
         _ => {
             return Err(RebuiltV3ManifestError::UnsupportedSchemaContract {

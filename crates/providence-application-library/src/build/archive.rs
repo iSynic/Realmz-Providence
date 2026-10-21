@@ -3,7 +3,7 @@ use providence_core::{
     model::{BlobId, ProjectSnapshot},
     rebuilt::{
         RebuiltV3AssetIndex, RebuiltV3CompilerIdentity, RebuiltV3ContentDocument,
-        RebuiltV3FileInput, compile_rebuilt_v3_manifest,
+        RebuiltV3FileInput, compile_rebuilt_v6_manifest,
     },
 };
 use providence_rebuilt_package::{inspect_rebuilt_v3_archive, write_rebuilt_v3_archive};
@@ -31,7 +31,7 @@ pub(super) fn build(
         "realmz.scenario.classic-vm-v1".into(),
         "realmz.world.topology-v2".into(),
     ];
-    let manifest = compile_rebuilt_v3_manifest(
+    let manifest = compile_rebuilt_v6_manifest(
         snapshot,
         &RebuiltV3CompilerIdentity {
             version: env!("CARGO_PKG_VERSION").into(),

@@ -333,7 +333,7 @@ func _populate_document() -> void:
 	_rogue_enabled.button_pressed = bool(_document.get("thief", false))
 	_rogue_reset.button_pressed = int(_document.get("thiefFail", 0)) != 0
 	_render_rogue()
-	_typed_count.text = "%d / %d bytes" % [_typed.text.to_ascii_buffer().size(), TEXT_BYTES]
+	_typed_count.text = "%d / %d bytes" % [_typed.text.length(), TEXT_BYTES]
 	_technical.text = "Data ED2 record %d · preserved casteSuccess %d · alignment byte and unknown encodings retained · revision %d" % [int(_document.get("nativeId", 0)), int(_document.get("casteSuccess", 0)), _revision]
 	_updating = false
 	_render_steps(); _update_flow(); _update_validation()
@@ -506,9 +506,7 @@ func draft_error() -> Dictionary:
 	return {}
 
 func _text_error(value: String, label: String) -> Dictionary:
-	for index in range(value.length()):
-		if value.unicode_at(index) > 127: return preload("res://src/editor_draft_apply.gd").failure("%s contains unsupported characters." % label, self)
-	if value.to_ascii_buffer().size() > TEXT_BYTES: return preload("res://src/editor_draft_apply.gd").failure("%s exceeds the 39-byte Classic limit." % label, self)
+	if value.length() > TEXT_BYTES: return preload("res://src/editor_draft_apply.gd").failure("%s exceeds the 39-byte Classic limit." % label, self)
 	return {}
 
 func _update_validation() -> void:
@@ -522,7 +520,7 @@ func _update_validation() -> void:
 
 func _changed(_value = null) -> void:
 	if _updating: return
-	_typed_count.text = "%d / %d bytes" % [_typed.text.to_ascii_buffer().size(), TEXT_BYTES]
+	_typed_count.text = "%d / %d bytes" % [_typed.text.length(), TEXT_BYTES]
 	_update_flow(); _update_validation()
 
 func _physical_changed(_value: String, slot: int) -> void:
@@ -530,7 +528,7 @@ func _physical_changed(_value: String, slot: int) -> void:
 
 func _update_physical_count(slot: int) -> void:
 	var row := _physical[slot] as Dictionary
-	var count := (row.text as LineEdit).text.to_ascii_buffer().size()
+	var count := (row.text as LineEdit).text.length()
 	(row.count as Label).text = "%d/%d" % [count, TEXT_BYTES]
 	(row.count as Label).add_theme_color_override("font_color", Color("f09a82") if count > TEXT_BYTES else Color("8fa5b9"))
 

@@ -6,6 +6,8 @@ pub(super) fn dependency_extra_code_opcode(opcode: i16) -> bool {
         2 | 3
             | 7
             | 21
+            | 23
+            | -23
             | 31
             | 33
             | 38
@@ -13,6 +15,7 @@ pub(super) fn dependency_extra_code_opcode(opcode: i16) -> bool {
             | 42
             | 46
             | 48
+            | 54
             | 55
             | 56
             | 58

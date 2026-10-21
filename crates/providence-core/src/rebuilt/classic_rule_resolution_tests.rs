@@ -4,6 +4,8 @@ use crate::session::{EditorCommand, EditorSession, ExpectedRevisionCommand, Revi
 
 fn imported(selection: u16) -> (ProjectSnapshot, RebuiltV3RuleCatalog) {
     let mut snapshot = super::super::rules::tests::complete_rule_snapshot();
+    crate::codecs::derive_caste_eligibility(&snapshot.race_rules, &mut snapshot.caste_rules)
+        .unwrap();
     let application = project_rebuilt_v3_rule_catalog(&snapshot).unwrap();
     let blob = BlobId(format!("sha256:{}", "a".repeat(64)));
     snapshot.origin = ProjectOrigin::Imported {
@@ -17,7 +19,7 @@ fn imported(selection: u16) -> (ProjectSnapshot, RebuiltV3RuleCatalog) {
             byte_length: if *path == "Data Race" {
                 (30 * crate::codecs::RACE_RECORD_BYTES) as u64
             } else {
-                12
+                (30 * crate::codecs::CASTE_RECORD_BYTES) as u64
             },
         })
         .collect();
@@ -176,7 +178,14 @@ fn inactive_zero_table_is_preserved_but_present_active_zero_table_never_falls_ba
         .as_mut()
         .unwrap()
         .native_menu_selection = 20;
-    assert!(resolve_classic_rules(&snapshot, &application, &names()).is_err());
+    let selected = resolve_classic_rules(&snapshot, &application, &names()).unwrap();
+    assert_eq!(
+        selected.effective_snapshot.race_rules[0]
+            .definition
+            .maximum_age,
+        0
+    );
+    assert_eq!(selected.runtime_overrides.races.len(), 30);
 }
 
 #[test]
@@ -361,7 +370,7 @@ fn a_quarantined_race_table_cannot_become_scenario_mechanics_through_fallback_ro
         resolve_classic_rules(&snapshot, &application, &names())
             .err()
             .unwrap()
-            .contains("quarantined")
+            .contains("substituted")
     );
     assert_eq!(snapshot.classic_sources[0].byte_length, 872);
 }

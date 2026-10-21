@@ -113,7 +113,8 @@ fn shop_import_keeps_native_gaps_and_later_unreferenced_extensions() {
         json!({"expectedRevision":0, "directory":directory}),
     )
     .unwrap();
-    assert_eq!(imported["quarantinedCount"], 1);
+    assert_eq!(imported["quarantinedCount"], 0);
+    assert_eq!(imported["preservedRecordDiagnosticCount"], 1);
     assert_eq!(
         session
             .snapshot()
@@ -121,7 +122,7 @@ fn shop_import_keeps_native_gaps_and_later_unreferenced_extensions() {
             .iter()
             .map(|shop| shop.native_id.0)
             .collect::<Vec<_>>(),
-        [0, 2]
+        [0, 1, 2]
     );
     assert_eq!(
         providence_core::codecs::encode_shops(&session.snapshot().shops, Some(&bytes)).unwrap(),

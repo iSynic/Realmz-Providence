@@ -67,6 +67,7 @@ fn scenario_import_baseline_and_post_import_paint_history_survive_reopen() {
             &serde_json::json!({"method": "project.import-classic-scenario"}),
         )
         .unwrap();
+    drop(store);
     let (store, mut session) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(session.snapshot(), &baseline);
     assert!(!session.can_undo() && !session.can_redo());
@@ -77,6 +78,7 @@ fn scenario_import_baseline_and_post_import_paint_history_survive_reopen() {
             &serde_json::json!({"method": "map.paint-terrain"}),
         )
         .unwrap();
+    drop(store);
     let (store, mut session) = ProjectStore::open_session(temporary.path()).unwrap();
     execute(&mut session, EditorCommand::Undo);
     assert_eq!(session.snapshot(), &baseline);
@@ -84,6 +86,7 @@ fn scenario_import_baseline_and_post_import_paint_history_survive_reopen() {
     store
         .checkpoint_session(&session, &serde_json::json!({"method": "history.undo"}))
         .unwrap();
+    drop(store);
     let (store, mut session) = ProjectStore::open_session(temporary.path()).unwrap();
     assert!(!session.can_undo() && session.can_redo());
     paint(&mut session, 164);
@@ -94,6 +97,7 @@ fn scenario_import_baseline_and_post_import_paint_history_survive_reopen() {
             &serde_json::json!({"method": "map.paint-terrain"}),
         )
         .unwrap();
+    drop(store);
     let (_, mut session) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(session.snapshot().world.maps[0].tiles[0], 164);
     execute(&mut session, EditorCommand::Undo);
@@ -123,11 +127,13 @@ fn legacy_import_history_reopens_without_changing_authored_truth_or_losing_redo_
     paint(&mut painter, 90);
     let painted = painter.snapshot().clone();
     let import_entry = SessionHistoryEntry {
+        attribution: None,
         snapshot: authored.clone(),
         changed_entities: vec![authored.project_id.clone()],
         references_unchanged: false,
     };
     let paint_entry = SessionHistoryEntry {
+        attribution: None,
         snapshot: imported.clone(),
         changed_entities: vec![StableId("land:0".into())],
         references_unchanged: false,
@@ -169,11 +175,13 @@ fn assert_legacy_redo_recovery(
             undo: vec![],
             redo: vec![
                 SessionHistoryEntry {
+                    attribution: None,
                     snapshot: painted,
                     changed_entities: vec![StableId("land:0".into())],
                     references_unchanged: false,
                 },
                 SessionHistoryEntry {
+                    attribution: None,
                     snapshot: imported.clone(),
                     changed_entities: vec![authored.project_id],
                     references_unchanged: false,

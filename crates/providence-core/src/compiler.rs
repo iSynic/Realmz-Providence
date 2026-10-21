@@ -7,6 +7,7 @@ mod economy_files;
 mod encounter_files;
 mod errors;
 pub mod export_trim;
+mod fresh_baseline;
 mod item_files;
 mod manifest;
 mod music;
@@ -144,6 +145,7 @@ fn compile_classic_slice_manifest(
     world_files::special_land_solidity(snapshot, sources, &mut manifest)?;
     resources::compile(snapshot, sources, asset_payloads, &mut manifest)?;
     retained::preserve_unprojected(snapshot, sources, &mut manifest)?;
+    fresh_baseline::complete(snapshot, &mut manifest)?;
     Ok(manifest)
 }
 

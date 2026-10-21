@@ -241,6 +241,20 @@ fn assert_mapstats_is_reference_only(
     root: &std::path::Path,
     source_count: usize,
 ) {
+    let combat_path = root.join("Data Combat BD");
+    write_mapstats_reference(&combat_path);
+    crate::mapstats_import::import_mapstats_catalog_into_session(
+        reopened,
+        store,
+        -1,
+        combat_path,
+        "Data Combat BD".into(),
+    )
+    .expect("supply shared combat profiles required by complete terrain projection");
+    assert_eq!(reopened.snapshot().classic_sources.len(), source_count);
+    assert!(reopened.snapshot().classic_sources.iter().all(|source| {
+        source.native_path != "Data Desert BD" && source.native_path != "Data Combat BD"
+    }));
     let rebuilt = dispatch_result(reopened, "project.inspect-rebuilt-map-inputs", json!({}))
         .expect("project complete Rebuilt map inputs");
     assert_eq!(rebuilt["maps"][0]["baseTile"], 156);
@@ -266,6 +280,7 @@ fn assert_mapstats_is_reference_only(
     );
     assert_absent_global_preserved(root);
     assert!(!root.join("compiled").join("Data Desert BD").exists());
+    assert!(!root.join("compiled").join("Data Combat BD").exists());
 }
 
 fn assert_absent_global_preserved(root: &std::path::Path) {

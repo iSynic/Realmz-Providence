@@ -14,7 +14,7 @@ impl EditorSession {
         decode: impl FnOnce(&mut Self) -> Result<T, E>,
     ) -> Result<(ProjectSnapshot, T), E> {
         let mut staging = Self::new(ProjectSnapshot::new_authored(project_id));
-        staging.staging_import = true;
+        staging.private_staging = true;
         let result = decode(&mut staging)?;
         Ok((staging.snapshot, result))
     }
@@ -24,6 +24,9 @@ impl EditorSession {
         command: EditorCommand,
     ) -> Result<ChangeProjection, SessionError> {
         let changed = self.apply_domain_command(command)?;
+        if let Some(staged) = &mut self.staged_changes {
+            staged.extend(changed.iter().cloned());
+        }
         Ok(self.import_refresh_projection(changed))
     }
 

@@ -8,9 +8,9 @@ mod metadata;
 pub use contracts::{
     REBUILT_V3_REQUIRED_DOCUMENTS, REBUILT_V3_SCHEMA_SHA256, REBUILT_V3_SUPPORTED_CAPABILITIES,
     REBUILT_V4_SCHEMA_SHA256, REBUILT_V5_SCHEMA_SHA256, REBUILT_V6_SCHEMA_SHA256,
-    RebuiltV3CompilerIdentity, RebuiltV3FileInput, RebuiltV3FileIntegrity, RebuiltV3Manifest,
-    RebuiltV3ManifestArtifact, RebuiltV3ManifestCompiler, RebuiltV3ManifestEngine,
-    RebuiltV3ManifestError,
+    REBUILT_V7_SCHEMA_SHA256, RebuiltV3CompilerIdentity, RebuiltV3FileInput,
+    RebuiltV3FileIntegrity, RebuiltV3Manifest, RebuiltV3ManifestArtifact,
+    RebuiltV3ManifestCompiler, RebuiltV3ManifestEngine, RebuiltV3ManifestError,
 };
 pub use integrity::{is_rebuilt_v3_package_path, rebuilt_v3_media_digest};
 
@@ -85,6 +85,22 @@ pub fn compile_rebuilt_v6_manifest(
     capabilities: &[String],
     inputs: &[RebuiltV3FileInput<'_>],
 ) -> Result<RebuiltV3ManifestArtifact, RebuiltV3ManifestError> {
+    compile_rebuilt_manifest(
+        snapshot,
+        compiler_identity,
+        capabilities,
+        inputs,
+        6,
+        REBUILT_V6_SCHEMA_SHA256,
+    )
+}
+
+pub fn compile_rebuilt_v7_manifest(
+    snapshot: &ProjectSnapshot,
+    compiler_identity: &RebuiltV3CompilerIdentity,
+    capabilities: &[String],
+    inputs: &[RebuiltV3FileInput<'_>],
+) -> Result<RebuiltV3ManifestArtifact, RebuiltV3ManifestError> {
     if !matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
         return Err(RebuiltV3ManifestError::SchemaV4RequiresImportedOrigin);
     }
@@ -93,8 +109,8 @@ pub fn compile_rebuilt_v6_manifest(
         compiler_identity,
         capabilities,
         inputs,
-        6,
-        REBUILT_V6_SCHEMA_SHA256,
+        7,
+        REBUILT_V7_SCHEMA_SHA256,
     )
 }
 

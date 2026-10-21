@@ -158,6 +158,7 @@ impl ProjectStore {
                 let snapshot = self.prepare_history_entry(&entry.snapshot, base, base_manifest)?;
                 let compressed = compress_local_session_snapshot(&snapshot)?;
                 Ok(StoredSessionHistoryEntry {
+                    attribution: entry.attribution.clone(),
                     snapshot: self.put_local_session_blob(&compressed)?,
                     changed_entities: entry.changed_entities.clone(),
                     references_unchanged: entry.references_unchanged,
@@ -234,6 +235,7 @@ impl ProjectStore {
                     _ => self.load_snapshot_document(&bytes)?,
                 };
                 Ok(SessionHistoryEntry {
+                    attribution: entry.attribution.clone(),
                     snapshot,
                     changed_entities: entry.changed_entities.clone(),
                     references_unchanged: entry.references_unchanged,
@@ -307,6 +309,7 @@ fn transfer_history_checkpoint(
     push_stored_history(
         destination,
         StoredSessionHistoryEntry {
+            attribution: entry.attribution.clone(),
             snapshot: previous_snapshot,
             changed_entities: entry.changed_entities.clone(),
             references_unchanged: entry.references_unchanged,
@@ -332,6 +335,7 @@ fn append_edit_checkpoint(
     push_stored_history(
         undo,
         StoredSessionHistoryEntry {
+            attribution: entry.attribution.clone(),
             snapshot: previous_snapshot,
             changed_entities: entry.changed_entities.clone(),
             references_unchanged: entry.references_unchanged,

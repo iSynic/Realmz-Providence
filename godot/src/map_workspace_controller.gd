@@ -23,6 +23,7 @@ var tile_behavior := preload("res://src/tile_behavior_controller.gd").new()
 var cell_behavior := preload("res://src/land_cell_behavior_controller.gd").new()
 var custom_landlooks := preload("res://src/custom_landlook_controller.gd").new()
 var smart_terrain := preload("res://src/smart_terrain_controller.gd").new()
+var terrain_generation := preload("res://src/terrain_generation_controller.gd").new()
 var magic_brush := preload("res://src/magic_brush_controller.gd").new()
 var terrain_mapping := preload("res://src/terrain_mapping_controller.gd").new()
 var special_placement := preload("res://src/land_special_placement.gd").new()
@@ -30,6 +31,7 @@ var ap_placement := preload("res://src/map_ap_placement_controller.gd").new()
 var world_special := preload("res://src/world_special_catalog_controller.gd").new()
 var chrome := preload("res://src/map_workspace_chrome.gd").new()
 var context_tools := preload("res://src/map_context_tools.gd").new()
+const SECTION_ROUTES := ["maps.dungeon", "maps.layout", "maps.special-land"]
 var mode := "select"
 var _registry
 var _operations: ProvidenceEditorOperation
@@ -41,7 +43,6 @@ var _record_inspector: Control
 var _dialog_owner: Node
 var _navigation
 var _scripts
-var _messages
 var _read_context: Callable
 var _accept: Callable
 var _accept_draft: Callable
@@ -76,12 +77,23 @@ func initialize(registry, operations: ProvidenceEditorOperation, inspector: Prov
 	_inspector.tool_requested.connect(_open_cell_tool)
 	_land.script_authoring_requested.connect(_open_cell_script)
 	_land.section_requested.connect(_open_land_section)
-	for sections in [_registry.view("maps.dungeon").get_node("%WorldSections"), _registry.view("maps.layout").get_node("%WorldSections"), _registry.view("maps.special-land").get_node("%WorldSpecialCatalog").get_node("%WorldSections")]:
-		sections.section_requested.connect(_open_land_section)
+	for route in SECTION_ROUTES: registry.on_realize(route, _bind_world_sections.bind(route))
 	_registry.view("maps.dungeon").script_authoring_requested.connect(_open_cell_script)
 
 
-func configure_commands(read_context: Callable, read_references: Callable, accept_response: Callable, accept_draft: Callable, navigation, scripts, messages) -> void:
+
+# Each World page carries its own section bar; a page realized later binds its bar then.
+func _bind_world_sections(page: Control, route: String) -> void:
+	var sections := _world_sections(page, route)
+	sections.section_requested.connect(_open_land_section)
+	if _read_context.is_valid(): sections.set_context(not document.identity.is_empty() and bool(_read_context.call().connected))
+
+
+func _world_sections(page: Control, route: String) -> Control:
+	return page.get_node("%WorldSpecialCatalog").get_node("%WorldSections") if route == "maps.special-land" else page.get_node("%WorldSections")
+
+
+func configure_commands(read_context: Callable, read_references: Callable, accept_response: Callable, accept_draft: Callable, navigation, scripts) -> void:
 	_read_context = read_context
 	_accept = accept_response
 	_accept_draft = accept_draft
@@ -95,7 +107,6 @@ func configure_commands(read_context: Callable, read_references: Callable, accep
 	_inspector.get_node("%CellBehavior").pressed.connect(func(): _navigation.request_authoring_navigation(cell_behavior.open,"opening cell behavior"))
 	paint.workspace.authoring_cell_requested.connect(func(): _navigation.request_authoring_navigation(cell_behavior.open.bind(_land.get_node("PaintSelectionContext/CellDetails")), "opening Cell Details"))
 	_scripts = scripts
-	_messages = messages
 	references.initialize(_inspector, document, _operations, read_context, read_references)
 	references.projection_applied.connect(projection_applied.emit)
 	references.status_changed.connect(status_changed.emit)
@@ -135,6 +146,7 @@ func attach_session(bridge: RefCounted) -> void:
 	custom_landlooks.attach_session(bridge)
 	smart_terrain.attach_session(bridge)
 	magic_brush.attach_session(bridge)
+	terrain_generation.attach_session(bridge)
 	terrain_mapping.attach_session(bridge)
 	special_placement.attach_session(bridge)
 	world_special.attach_session(bridge)
@@ -177,17 +189,31 @@ func initialize_paint() -> void:
 	special_placement.initialize(_dialog_owner,self,_operations,_navigation.open_script_target)
 	special_placement.failed.connect(failed.emit)
 	special_placement.projection_applied.connect(projection_applied.emit)
-	world_special.initialize(_registry.view("maps.special-land").get_node("%WorldSpecialCatalog"),self,_operations,_navigation.select_route)
-	world_special.failed.connect(failed.emit)
-	world_special.projection_applied.connect(projection_applied.emit)
+	_registry.on_realize("maps.special-land", _bind_world_special)
 	paint_resources.failed.connect(failed.emit)
 	paint_resources.resource_selected.connect(_use_paint_resource)
 	dungeon_stamps.initialize(_dialog_owner, _registry.view("maps.dungeon"), document, _operations, _read_context, _accept_draft)
 	dungeon_stamps.projection_applied.connect(projection_applied.emit)
 	dungeon_stamps.failed.connect(failed.emit)
 	chrome.initialize(_sidebar, _land, _registry.view("maps.dungeon"), _inspector_host, _inspector, document, paint, smart_terrain, magic_brush, regions, _navigation.request_authoring_navigation, open_level_settings, _open_land_section, _open_cell_tool); chrome.bind_stamps(land_authoring, dungeon_stamps)
+	initialize_generation()
 	initialize_map_placement()
 	present_paint_workspace()
+
+
+
+# The catalog controller holds the session even before its page exists; binding only adds the view.
+func _bind_world_special(page: Control) -> void:
+	world_special.initialize(page.get_node("%WorldSpecialCatalog"),self,_operations,_navigation.select_route)
+	world_special.failed.connect(failed.emit)
+	world_special.projection_applied.connect(projection_applied.emit)
+
+
+func initialize_generation() -> void:
+	terrain_generation.initialize(_dialog_owner, document, _land, land_authoring, _operations, paint_context, _accept_draft)
+	terrain_generation.projection_applied.connect(projection_applied.emit)
+	terrain_generation.failed.connect(failed.emit)
+	chrome.bind_generation(terrain_generation)
 
 
 func initialize_map_placement() -> void:
@@ -211,6 +237,7 @@ func has_unapplied_changes() -> bool:
 	if ap_placement.has_unapplied_changes(): return true
 	if cell_behavior.has_unapplied_changes(): return true
 	if lifecycle.has_unapplied_changes(): return true
+	if terrain_generation.has_unapplied_changes(): return true
 	if smart_terrain.has_unapplied_changes(): return true
 	if magic_brush.has_unapplied_changes(): return true
 	if terrain_mapping.has_unapplied_changes(): return true
@@ -229,6 +256,7 @@ func discard_draft() -> void:
 	ap_placement.discard_draft()
 	cell_behavior.discard_draft()
 	lifecycle.discard_draft()
+	terrain_generation.discard_draft()
 	smart_terrain.discard_draft()
 	magic_brush.discard_draft()
 	terrain_mapping.discard_draft()
@@ -247,6 +275,7 @@ func commit_selected() -> Dictionary:
 	if ap_placement.has_unapplied_changes(): return await ap_placement.commit_selected()
 	if cell_behavior.has_unapplied_changes(): return await cell_behavior.commit_selected()
 	if lifecycle.has_unapplied_changes(): return await lifecycle.commit_selected()
+	if terrain_generation.has_unapplied_changes(): return await terrain_generation.commit_selected()
 	if smart_terrain.has_unapplied_changes(): return await smart_terrain.commit_selected()
 	if magic_brush.has_unapplied_changes(): return await magic_brush.commit_selected()
 	if terrain_mapping.has_unapplied_changes(): return await terrain_mapping.commit_selected()
@@ -324,8 +353,9 @@ func present_paint_workspace() -> void:
 	_land.set_authoring_context(not document.identity.is_empty() and bool(context.connected) and not document.is_dungeon, document.selected_cell.x >= 0)
 	if is_instance_valid(paint.workspace.tiles_dock):
 		paint.workspace.tiles_dock.set_map_context(not document.identity.is_empty() and bool(context.connected) and not document.is_dungeon)
-	for sections in [_registry.view("maps.dungeon").get_node("%WorldSections"), _registry.view("maps.layout").get_node("%WorldSections"), _registry.view("maps.special-land").get_node("%WorldSpecialCatalog").get_node("%WorldSections")]:
-		sections.set_context(not document.identity.is_empty() and bool(context.connected))
+	for route in SECTION_ROUTES:
+		var page: Control = _registry.peek(route)
+		if page != null: _world_sections(page, route).set_context(not document.identity.is_empty() and bool(context.connected))
 	if active:
 		if _inspector.get_parent() == _inspector_host: _inspector.hide()
 		_record_inspector.hide()
@@ -416,7 +446,7 @@ func open_reference(reference: Dictionary) -> void:
 	var target := str(reference.get("targetId", ""))
 	var native_id := target.get_slice(":", target.get_slice_count(":") - 1).to_int()
 	match kind:
-		"message": _messages.open_native(native_id)
+		"message": _registry.view("text.messages").open_native(native_id)
 		"simple-encounter": await _scripts.open_simple_encounter_by_native_id(native_id)
 		"extra-action-point":
 			await _navigation.select_route("scripts.macros")
@@ -463,6 +493,7 @@ func teardown() -> void:
 	world_special.attach_session(null)
 	special_placement.attach_session(null)
 	cell_behavior.attach_session(null)
+	terrain_generation.attach_session(null)
 	smart_terrain.attach_session(null)
 	terrain_mapping.attach_session(null)
 	custom_landlooks.attach_session(null)
@@ -482,9 +513,10 @@ func dispose() -> void:
 	context_tools.dispose()
 	ap_placement.dispose()
 	chrome.dispose()
-	world_special.dispose()
+	if _registry.peek("maps.special-land") != null: world_special.dispose()
 	special_placement.dispose()
 	selection_changed.disconnect(cell_behavior.selection_changed); cell_behavior.dispose()
+	terrain_generation.dispose()
 	smart_terrain.dispose()
 	magic_brush.dispose()
 	terrain_mapping.dispose()
@@ -501,7 +533,7 @@ func dispose() -> void:
 	paint.dispose()
 	document.dispose()
 	_read_context = Callable(); _accept = Callable(); _accept_draft = Callable()
-	_navigation = null; _scripts = null; _messages = null
+	_navigation = null; _scripts = null
 	_registry = null
 
 

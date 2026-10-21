@@ -216,6 +216,7 @@ func _empty_history(shell) -> void:
 
 
 func _click_button(button: Button) -> void:
+	await _wait_history()
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.position = button.get_global_rect().get_center()
@@ -228,6 +229,7 @@ func _click_button(button: Button) -> void:
 
 
 func _history_shortcut(redo: bool) -> void:
+	await _wait_history()
 	root.gui_release_focus()
 	var event := InputEventKey.new()
 	event.keycode = KEY_Z
@@ -242,7 +244,11 @@ func _history_shortcut(redo: bool) -> void:
 
 
 func _wait_history() -> void:
-	while _shell_under_test != null and _shell_under_test._operations.busy:
+	var deadline := Time.get_ticks_msec() + 15000
+	while _shell_under_test != null and (_shell_under_test._operations.busy or _shell_under_test._bridge.operation_busy() or _shell_under_test._collaboration._checking):
+		if Time.get_ticks_msec() >= deadline:
+			_check(false, "History operation boundary did not settle")
+			return
 		await process_frame
 
 
@@ -358,7 +364,7 @@ func _mutate(shell, method: String, params: Dictionary) -> bool:
 
 func _tiles(shell) -> Array:
 	var opened: Dictionary = shell._bridge.request("map.open", {"identity": "land:1"})
-	return opened.result.map.tiles if _check(opened.get("ok", false), "Map read failed") else []
+	return opened.result.map.tiles if _check(opened.get("ok", false), "Map read failed: " + str(opened.get("error", ""))) else []
 
 
 func _frames(count: int) -> void:
@@ -372,8 +378,12 @@ func _check(condition: bool, message: String) -> bool:
 	return condition
 
 func _settle_paint(shell) -> void:
-	while shell._operations.busy: await process_frame
-	await process_frame
+	var deadline := Time.get_ticks_msec() + 15000
+	while shell._operations.busy or shell._bridge.operation_busy() or shell._collaboration._checking:
+		if Time.get_ticks_msec() >= deadline:
+			_check(false, "Paint operation boundary did not settle")
+			return
+		await process_frame
 
 
 func _check_atlas_selection(dock, atlas) -> void:

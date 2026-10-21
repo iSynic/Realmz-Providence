@@ -7,12 +7,16 @@ pub(super) fn handles(method: &str) -> bool {
     matches!(
         method,
         "map.thumbnail"
+            | "map.region-preview"
             | "map.render-atlas"
             | "map.tile-catalog"
             | "player-map.resources.list"
             | "player-map.resource.preview"
             | "player-map.preview"
     ) || method.starts_with("smart-terrain.")
+        || method.starts_with("terrain-generation.")
+        || method == "map-connectivity.preview"
+        || method.starts_with("special-land-solidity.")
         || method.starts_with("terrain-mapping.")
         || method.starts_with("magic-brush.")
         || matches!(
@@ -37,10 +41,13 @@ pub(super) fn dispatch(
     params: Value,
 ) -> Result<Value, String> {
     match method.split('.').next().unwrap_or_default() {
-        "smart-terrain" | "terrain-mapping" | "magic-brush" => {
-            crate::terrain_atlas::dispatch(session, store, catalogs, method, &params)
+        "terrain-generation" | "map-connectivity" => {
+            crate::terrain_generation::dispatch(session, store, catalogs, method, &params)
         }
-        "map" if method == "map.tile-catalog" => {
+        "special-land-solidity" => {
+            crate::special_land_solidity::dispatch(session, store, method, &params)
+        }
+        "smart-terrain" | "terrain-mapping" | "magic-brush" => {
             crate::terrain_atlas::dispatch(session, store, catalogs, method, &params)
         }
         "player-map" if method == "player-map.preview" => {
@@ -49,16 +56,7 @@ pub(super) fn dispatch(
         "player-map" => {
             crate::player_map_resources::dispatch(session, store, catalogs, method, &params)
         }
-        "map" if method == "map.thumbnail" => {
-            crate::map_thumbnail::read(session, store, catalogs, params)
-        }
-        "map" => crate::map_rendering::read_map_render_atlas(
-            session,
-            store,
-            catalogs.application_media,
-            catalogs.application_media_store,
-            params,
-        ),
+        "map" => dispatch_map(session, store, catalogs, method, params),
         "paint-resources" | "map-stamp" => {
             crate::paint_resources::dispatch(session, store, catalogs, method, &params)
         }
@@ -79,5 +77,28 @@ pub(super) fn dispatch(
         }
         "random-region" => crate::random_regions::dispatch(session, catalogs, method, &params),
         _ => Err(format!("unknown method {method}")),
+    }
+}
+
+fn dispatch_map(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    catalogs: CatalogViews<'_>,
+    method: &str,
+    params: Value,
+) -> Result<Value, String> {
+    match method {
+        "map.region-preview" => crate::map_region_preview::read(session, store, catalogs, params),
+        "map.thumbnail" => crate::map_thumbnail::read(session, store, catalogs, params),
+        "map.tile-catalog" => {
+            crate::terrain_atlas::dispatch(session, store, catalogs, method, &params)
+        }
+        _ => crate::map_rendering::read_map_render_atlas(
+            session,
+            store,
+            catalogs.application_media,
+            catalogs.application_media_store,
+            params,
+        ),
     }
 }

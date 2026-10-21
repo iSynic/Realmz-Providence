@@ -37,6 +37,7 @@ fn selection_and_clear_survive_reopen_undo_redo_and_portable_copy() {
     store
         .checkpoint_session(&session, &json!({"method":"classic-rule-selection.set"}))
         .unwrap();
+    drop(store);
     let (store, mut reopened) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(
         reopened.snapshot().classic_rule_selection,
@@ -56,6 +57,7 @@ fn selection_and_clear_survive_reopen_undo_redo_and_portable_copy() {
     store
         .checkpoint_session(&reopened, &json!({"method":"classic-rule-selection.clear"}))
         .unwrap();
+    drop(store);
     let (store, mut reopened) = ProjectStore::open_session(temporary.path()).unwrap();
     assert!(reopened.snapshot().classic_rule_selection.is_none());
     reopened
@@ -67,7 +69,8 @@ fn selection_and_clear_survive_reopen_undo_redo_and_portable_copy() {
     store
         .checkpoint_session(&reopened, &json!({"method":"history.undo"}))
         .unwrap();
-    let (_, mut reopened) = ProjectStore::open_session(temporary.path()).unwrap();
+    drop(store);
+    let (store, mut reopened) = ProjectStore::open_session(temporary.path()).unwrap();
     assert_eq!(reopened.snapshot().classic_rule_selection, Some(selected));
     verify_portable_copy(&store, &mut reopened);
 }

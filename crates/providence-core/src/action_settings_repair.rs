@@ -1,13 +1,20 @@
 mod choices;
 mod context;
 mod input;
+mod message_presentation;
+mod message_selection;
 mod presentation;
 mod random_area;
 mod random_message;
+mod shared_scope;
 
 pub use choices::{Choice, ChoicePage, TargetSelection, area_choices, map_choices};
 pub use context::RepairUse;
 pub use input::{RepairInput, SettingsValues};
+pub use message_presentation::{
+    MessageRepairComparison, MessageRepairView, compare_random_message, preview_random_message,
+};
+pub use message_selection::{MessageTextPeek, choose_message, message_choices, peek_message};
 pub use presentation::{RepairComparison, RepairView, compare, preview};
 pub use random_area::{FieldError, RandomAreaInput, chance_text, parse_chance};
 pub use random_message::{
@@ -29,6 +36,7 @@ pub enum RepairScope {
     #[default]
     OnlyThisAction,
     SharedActions,
+    ConfirmedActions,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,6 +53,8 @@ pub struct RepairDraft<Input = RandomAreaInput> {
     pub scope: RepairScope,
     pub mode_changed: bool,
     pub original_use_count: usize,
+    #[serde(default)]
+    pub confirmed_callers: Vec<crate::session::ActionSettingsCallerConfirmation>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,6 +120,7 @@ fn prepare_input<Input: RepairInput>(
         context_fingerprint: context_fingerprint(snapshot, &source, slot)
             .map_err(|error| error.to_string())?,
         original_use_count: context::affected_uses(snapshot, &source, &action).len(),
+        confirmed_callers: Vec::new(),
         source,
         slot,
         revision,
@@ -130,7 +141,14 @@ pub fn change<Input: RepairInput>(
     match field {
         "scope" => {
             draft.scope = match value {
-                "only-this-action" => RepairScope::OnlyThisAction,
+                "only-this-action" => {
+                    draft.confirmed_callers.clear();
+                    RepairScope::OnlyThisAction
+                }
+                "confirmed-actions" => {
+                    draft.confirmed_callers = shared_scope::confirmation(snapshot, draft)?;
+                    RepairScope::ConfirmedActions
+                }
                 "shared-actions" => {
                     return Err(
                         crate::session::settings_write_policy::LEGACY_SHARED_WRITE_UNSUPPORTED
@@ -149,6 +167,10 @@ pub fn change<Input: RepairInput>(
             let mode_changed = draft.input.changes_mode(field, value);
             draft.input.change(snapshot, field, value)?;
             draft.mode_changed |= mode_changed;
+            if draft.scope == RepairScope::ConfirmedActions {
+                draft.scope = RepairScope::OnlyThisAction;
+                draft.confirmed_callers.clear();
+            }
         }
     }
     Ok(())
@@ -230,21 +252,9 @@ pub fn plan<Input: RepairInput>(
     revision: Revision,
     draft: &RepairDraft<Input>,
 ) -> Result<(ActionSettingsEdit, RepairIntent), String> {
-    let action = current_action(snapshot, revision, draft)?;
-    let values = draft.input.values(snapshot).map_err(|errors| {
-        errors
-            .into_iter()
-            .map(|error| error.message)
-            .collect::<Vec<_>>()
-            .join("\n")
-    })?;
-    if !draft
-        .input
-        .retained_matches(&Input::initial(snapshot, &action))
-    {
-        return Err(
-            "The retained settings changed. Review the current repair before applying.".into(),
-        );
+    let (action, values) = validated_input(snapshot, revision, draft)?;
+    if draft.scope == RepairScope::ConfirmedActions {
+        return shared_scope::plan(snapshot, revision, draft, &action, values);
     }
     crate::session::settings_write_policy::check_scope(draft.scope == RepairScope::SharedActions)?;
     let requested = std::iter::once(values.primary)
@@ -279,6 +289,30 @@ pub fn plan<Input: RepairInput>(
     };
     let intent = repair_intent(snapshot, revision, &action, &edit)?;
     Ok((edit, intent))
+}
+
+fn validated_input<Input: RepairInput>(
+    snapshot: &ProjectSnapshot,
+    revision: Revision,
+    draft: &RepairDraft<Input>,
+) -> Result<(ClassicAction, SettingsValues), String> {
+    let action = current_action(snapshot, revision, draft)?;
+    let values = draft.input.values(snapshot).map_err(|errors| {
+        errors
+            .into_iter()
+            .map(|error| error.message)
+            .collect::<Vec<_>>()
+            .join("\n")
+    })?;
+    if !draft
+        .input
+        .retained_matches(&Input::initial(snapshot, &action))
+    {
+        return Err(
+            "The retained settings changed. Review the current repair before applying.".into(),
+        );
+    }
+    Ok((action, values))
 }
 
 fn repair_intent(

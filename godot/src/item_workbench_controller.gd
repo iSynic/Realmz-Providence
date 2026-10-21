@@ -15,6 +15,7 @@ var _references = preload("res://src/item_reference_controller.gd").new()
 var _records = preload("res://src/item_record_operations.gd").new()
 var _catalog_artwork = preload("res://src/item_inventory_artwork.gd").new()
 var _validation_timer: Timer
+var _save_state: Array = ["", false, false]
 
 
 func initialize(view: ProvidenceItemEditor, operations: ProvidenceEditorOperation, read_context: Callable, accept_draft: Callable) -> void:
@@ -39,19 +40,24 @@ func initialize(view: ProvidenceItemEditor, operations: ProvidenceEditorOperatio
 	_references.initialize(view, operations, func(): return _bridge, func(): return _generation)
 	_records.initialize(view, operations, func(): return _bridge, func(): return _generation, _read_context)
 	_catalog_artwork.initialize(view, operations, func(): return _bridge, func(): return _generation)
+	# A page realized during a session joins it and shows the project's current save state.
+	if _bridge != null: attach_session(_bridge)
+	view.show_save_state(_save_state[0], _save_state[1], _save_state[2])
 
 
 func configure_navigation(open_source: Callable, open_target: Callable, play_sound: Callable) -> void:
 	_references.configure_navigation(open_source, open_target, play_sound)
 
 
+# The session is kept before the Items page exists, so the page can join it when it binds.
 func attach_session(bridge: RefCounted) -> void:
 	_generation += 1
+	_bridge = bridge
+	if _view == null: return
 	_catalog_artwork.reset()
 	_catalog_request += 1
 	_preview_request += 1
 	_pending.clear()
-	_bridge = bridge
 	_validation_timer.stop()
 	_references.close()
 	_records.close()
@@ -63,8 +69,18 @@ func teardown() -> void:
 	attach_session(null)
 
 
+func show_save_state(message: String, unsaved: bool, failed := false) -> void:
+	_save_state = [message, unsaved, failed]
+	if _view != null: _view.show_save_state(message, unsaved, failed)
+
+
+func reset_items(revision: int) -> void:
+	if _view != null: _view.set_items([], revision)
+
+
 func dispose() -> void:
 	_generation += 1
+	if _view == null: return
 	_catalog_artwork.dispose()
 	_references.dispose()
 	_records.dispose()

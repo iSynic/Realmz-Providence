@@ -17,6 +17,12 @@ pub fn project_rebuilt_v3_monster_catalog(
     project_monster_catalog(snapshot, None, false).map(|(catalog, _)| catalog)
 }
 
+pub fn project_rebuilt_monster_catalog(
+    snapshot: &ProjectSnapshot,
+) -> Result<RebuiltV3MonsterCatalog, RebuiltV3MonsterError> {
+    project_monster_catalog(snapshot, None, true).map(|(catalog, _)| catalog)
+}
+
 pub fn project_rebuilt_v4_imported_monster_catalog(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3MonsterCatalog, RebuiltV3MonsterError> {
@@ -55,7 +61,8 @@ fn project_monster_catalog(
         descriptions: &descriptions,
         macro_ids: &macro_ids,
         allow_deferred: reachable_monster_ids.is_some() && imported,
-        allow_v4_values: allow_v4_values && imported,
+        fresh: !imported,
+        allow_v4_values,
     };
     let mut seen_sets = BTreeSet::new();
     let mut projected_sets = ProjectedSets::default();

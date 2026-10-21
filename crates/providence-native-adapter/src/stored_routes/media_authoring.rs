@@ -1,5 +1,6 @@
 //! Reviewed media commands bind exact content, ownership and both document revisions.
 mod allocation;
+mod available_slot;
 
 pub(crate) fn check_retained_landlook(
     session: &EditorSession,
@@ -41,6 +42,7 @@ pub(super) fn dispatch(
     params: &Value,
 ) -> Result<Value, String> {
     match method {
+        "media.import.allocate" => available_slot::read(session, project, catalogs, params),
         "media.music-slots" => music_slots::list(session, params),
         "media.music-audition.prepare" => {
             music_audition::prepare(session, project, catalogs, params)
@@ -84,9 +86,18 @@ fn checked_hash(
 ) -> Result<String, String> {
     let mut intent = params.clone();
     if let Some(object) = intent.as_object_mut() {
-        object.remove("operationId");
-        object.remove("reviewHash");
-        object.remove("measurePerformance");
+        for field in [
+            "operationId",
+            "reviewHash",
+            "measurePerformance",
+            "expectedRevision",
+            "projectId",
+            "sessionGeneration",
+            "_hostSession",
+            "_historyAttribution",
+        ] {
+            object.remove(field);
+        }
     }
     let bytes = serde_json::to_vec(&json!([
         session.snapshot().project_id,

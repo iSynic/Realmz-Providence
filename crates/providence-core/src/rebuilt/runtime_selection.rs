@@ -118,25 +118,57 @@ impl std::error::Error for RebuiltV3ReachableRuntimeError {}
 mod deferred;
 mod instructions;
 mod integrity;
+mod preservation;
 mod sources;
 
 pub fn project_rebuilt_v3_reachable_runtime(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3ReachableRuntimeSelection, RebuiltV3ReachableRuntimeError> {
+    project_runtime(snapshot, false)
+}
+
+/// Imported physical records remain available independently of diagnostic reachability.
+pub fn project_rebuilt_v3_runtime(
+    snapshot: &ProjectSnapshot,
+) -> Result<RebuiltV3ReachableRuntimeSelection, RebuiltV3ReachableRuntimeError> {
+    project_runtime(
+        snapshot,
+        matches!(
+            snapshot.origin,
+            crate::model::ProjectOrigin::Imported { .. }
+        ),
+    )
+}
+
+fn project_runtime(
+    snapshot: &ProjectSnapshot,
+    preserve: bool,
+) -> Result<RebuiltV3ReachableRuntimeSelection, RebuiltV3ReachableRuntimeError> {
     // Stage order preserves the first reported failure as well as output ordering.
-    let reachability = derive_rebuilt_v3_reachability(snapshot)
+    let mut reachability = derive_rebuilt_v3_reachability(snapshot)
         .map_err(RebuiltV3ReachableRuntimeError::Reachability)?;
-    let combat = super::combat_selection::project_rebuilt_v3_reachable_combat_from_report(
+    let diagnostic = reachability.clone();
+    if preserve {
+        preservation::expand(snapshot, &mut reachability);
+    }
+    let mut combat = super::combat_selection::project_rebuilt_v3_reachable_combat_from_report(
         snapshot,
         &reachability,
     )
     .map_err(RebuiltV3ReachableRuntimeError::Combat)?;
-    let encounters = sources::select_encounters(snapshot, &reachability)?;
+    if preserve {
+        preservation::retain_monsters(snapshot, &diagnostic, &mut combat)?;
+    }
+    let encounters = sources::select_encounters(snapshot, &reachability, preserve)?;
     let catalogs = sources::select_catalogs(snapshot, &encounters, &combat)?;
     let text = sources::select_text_resources(snapshot, &encounters.scenario)?;
     let mut deferred = deferred::collect(snapshot, &reachability, &encounters, &catalogs, &combat);
+    deferred.extend(super::imported_rule_diagnostics(snapshot));
     integrity::validate(snapshot, &reachability, &encounters, &mut deferred)?;
     let mut selection = assemble_selection(reachability, encounters, catalogs, combat, text);
+    selection.reachable_program_ids = diagnostic.reachable_program_ids;
+    selection.reachable_simple_encounter_ids = diagnostic.reachable_simple_encounter_ids;
+    selection.reachable_complex_encounter_ids = diagnostic.reachable_complex_encounter_ids;
     selection.deferred_references = deferred.into_iter().collect();
     Ok(selection)
 }

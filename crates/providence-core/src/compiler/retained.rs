@@ -31,7 +31,7 @@ pub(super) fn preserve_unprojected(
     };
     for source in &snapshot.classic_sources {
         if manifest.get(&source.native_path).is_some()
-            || !unprojected(snapshot, &source.native_path)
+            || (source.byte_length != 0 && !unprojected(snapshot, &source.native_path))
         {
             continue;
         }

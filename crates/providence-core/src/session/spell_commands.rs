@@ -68,31 +68,7 @@ impl EditorSession {
         sources: Vec<ClassicSourceBlob>,
         spells: Vec<SourcedSpellDefinition>,
     ) -> Result<Vec<StableId>, SessionError> {
-        let spell_sources = sources
-            .iter()
-            .filter(|source| source.native_path == "Data Spell")
-            .collect::<Vec<_>>();
-        if spell_sources.len() != 1
-            || spell_sources[0].byte_length < crate::codecs::SCENARIO_SPELL_BYTES as u64
-        {
-            return Err(SessionError::InvalidClassicImport(
-                "Data Spell requires one source blob containing all 105 records".into(),
-            ));
-        }
-        let spell_source = &spell_sources[0].blob;
-        if spells.len() != crate::codecs::SCENARIO_SPELL_RECORDS
-            || spells
-                .iter()
-                .any(|spell| spell.source_blob.as_ref() != Some(spell_source))
-            || spells
-                .iter()
-                .any(|spell| spell.text_source_blob != spells[0].text_source_blob)
-        {
-            return Err(SessionError::InvalidClassicImport(
-                "Data Spell requires 105 records with one consistent source identity".into(),
-            ));
-        }
-        validate_spell_identities(&spells, crate::codecs::scenario_spell_classic_id)?;
+        validate_imported_scenario_spells(&sources, &spells)?;
         let identities = std::iter::once(self.snapshot.project_id.clone())
             .chain(
                 self.snapshot
@@ -151,6 +127,51 @@ impl EditorSession {
         spell.definition = definition;
         Ok(vec![identity])
     }
+}
+
+fn validate_imported_scenario_spells(
+    sources: &[ClassicSourceBlob],
+    spells: &[SourcedSpellDefinition],
+) -> Result<(), SessionError> {
+    let spell_sources = sources
+        .iter()
+        .filter(|source| source.native_path == "Data Spell")
+        .collect::<Vec<_>>();
+    if spell_sources.len() != 1 {
+        return Err(SessionError::InvalidClassicImport(
+            "Data Spell requires one exact source blob".into(),
+        ));
+    }
+    let expected_records = (spell_sources[0].byte_length / crate::codecs::SPELL_RECORD_BYTES as u64)
+        .min(crate::codecs::MAX_TYPED_SCENARIO_SPELL_RECORDS as u64)
+        as usize;
+    let spell_source = &spell_sources[0].blob;
+    if spells.len() != expected_records
+        || spells
+            .iter()
+            .any(|spell| spell.source_blob.as_ref() != Some(spell_source))
+        || spells
+            .iter()
+            .take(crate::codecs::SCENARIO_SPELL_RECORDS)
+            .any(|spell| spell.text_source_blob != spells[0].text_source_blob)
+    {
+        return Err(SessionError::InvalidClassicImport(
+                "Data Spell requires every representable complete source row with consistent source identities".into(),
+            ));
+    }
+    validate_spell_identities(spells, |index| {
+        crate::codecs::scenario_spell_physical_classic_id(usize::from(index))
+    })?;
+    if spells
+        .iter()
+        .enumerate()
+        .any(|(index, spell)| usize::from(spell.definition.record_index) != index)
+    {
+        return Err(SessionError::InvalidClassicImport(
+            "Data Spell rows must retain their complete native prefix".into(),
+        ));
+    }
+    Ok(())
 }
 
 fn validate_spell_identities(

@@ -1,4 +1,5 @@
 use super::*;
+mod custom_tables;
 use crate::codecs::BATTLE_GRID_SLOTS;
 use crate::model::{BattleRecord, CLASSIC_MAP_SIZE, MapLevel, MapRuntimeMetadata, NativeRecordId};
 use crate::rebuilt::{RebuiltV3MapInputs, package_capabilities, project_rebuilt_v3_map_inputs};

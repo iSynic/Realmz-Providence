@@ -67,6 +67,20 @@ func has_any_draft() -> bool:
 	return has_draft() or first_draft() != null
 
 
+func draft_locations() -> Array:
+	var result: Array = []
+	for editor: Control in _tabs.get_children() + _detached.keys():
+		if not editor_has_draft(editor): continue
+		var route := str(editor.get_meta("route_identity", ""))
+		var selected := preload("res://src/discovery_selection.gd").record(editor, route)
+		var kind := str(selected.get("kind", "Editor")).replace("-", " ").capitalize()
+		var number := str(selected.get("nativeId", ""))
+		if number.is_valid_float(): number = str(int(float(number)))
+		var label := kind if number.is_empty() or kind in ["Race", "Caste"] else "%s %s" % [kind,number]
+		result.append({"route":route,"identity":str(selected.get("identity", "")),"label":label})
+	return result
+
+
 func discard() -> void:
 	var editor := current_editor()
 	if _custom.has(editor):

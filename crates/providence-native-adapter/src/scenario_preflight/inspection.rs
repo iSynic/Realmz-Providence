@@ -1,5 +1,5 @@
 use super::{
-    REQUIRED_FULL_SCENARIO_FILES, inventory::ImportInventory, inventory::unowned_scenario_files,
+    inventory::ImportInventory, inventory::unowned_scenario_files, required_full_scenario_files,
     startup::resolve_startup_file_selected,
 };
 use crate::{
@@ -78,7 +78,7 @@ pub(crate) fn inspect_classic_scenario_import(params: Value) -> Result<Value, St
     } = ImportInspection::resolve(&params)?;
     let startup_path = startup_result.as_ref().ok();
 
-    let required_scenario_names = REQUIRED_FULL_SCENARIO_FILES
+    let required_scenario_names = required_full_scenario_files()
         .iter()
         .map(|name| name.to_string())
         .collect::<BTreeSet<_>>();

@@ -13,3 +13,5 @@ mod fixtures;
 mod payment;
 mod roots;
 use fixtures::*;
+
+mod accepted_dependencies;

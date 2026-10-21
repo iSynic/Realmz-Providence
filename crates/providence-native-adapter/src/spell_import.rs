@@ -1,6 +1,7 @@
+use crate::classic_source_retention::store_source_annex;
 use crate::execute;
 use crate::request_params::required_string;
-use providence_core::codecs::SCENARIO_SPELL_BYTES;
+use providence_core::codecs::SPELL_RECORD_BYTES;
 use providence_core::codecs::STANDARD_SPELL_BYTES;
 use providence_core::codecs::STANDARD_SPELL_RECORDS;
 use providence_core::codecs::decode_scenario_spells;
@@ -35,37 +36,14 @@ pub(crate) fn import_classic_spells(
     })?;
     let path = PathBuf::from(required_string(&params, "path")?);
     let (mut decoded, source) = read_scenario_spell_source(store, &path)?;
+    let complete_records = source.byte_length as usize / SPELL_RECORD_BYTES;
     let (text_source, warnings) =
         prepare_scenario_spell_names(store, &params, &mut decoded.spells)?;
 
-    let previous_text_blobs = session
-        .snapshot()
-        .scenario_spells
-        .iter()
-        .filter_map(|spell| spell.text_source_blob.as_ref())
-        .collect::<std::collections::BTreeSet<_>>();
-    let mut sources = session
-        .snapshot()
-        .classic_sources
-        .iter()
-        .filter(|source| {
-            source.native_path != "Data Spell" && !previous_text_blobs.contains(&source.blob)
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-    sources.push(source);
-    if let Some(text_source) = text_source {
-        sources.push(text_source);
-    }
-    sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
-    let annex_bytes = serde_json::to_vec(
-        &json!({ "format": "providence-classic-source-annex-v1", "files": sources }),
-    )
-    .map_err(|error| error.to_string())?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let sources = replace_scenario_spell_sources(session.snapshot(), source, text_source);
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let trailing_bytes = decoded.trailing_bytes.len();
+    let imported_records = decoded.spells.len();
     let mut result = execute(
         session,
         &params,
@@ -76,8 +54,12 @@ pub(crate) fn import_classic_spells(
         },
     )?;
     if let Some(object) = result.as_object_mut() {
-        object.insert("count".into(), json!(105));
+        object.insert("count".into(), json!(imported_records));
         object.insert("trailingBytes".into(), json!(trailing_bytes));
+        object.insert(
+            "sourceOnlyCompleteRecords".into(),
+            json!(complete_records.saturating_sub(imported_records)),
+        );
         object.insert("sourceWarnings".into(), json!(warnings));
     }
     Ok(result)
@@ -110,6 +92,7 @@ pub(crate) fn import_standard_spells(
     let decoded = validate_standard_spells(&bytes, blob.clone(), &text_bytes, text_blob.clone())?;
 
     let trailing_bytes = decoded.trailing_bytes.len();
+    let complete_records = bytes.len() / SPELL_RECORD_BYTES;
     let sources = vec![
         ClassicSourceBlob {
             native_path: "Data S".into(),
@@ -133,6 +116,10 @@ pub(crate) fn import_standard_spells(
     if let Some(object) = result.as_object_mut() {
         object.insert("count".into(), json!(STANDARD_SPELL_RECORDS));
         object.insert("trailingBytes".into(), json!(trailing_bytes));
+        object.insert(
+            "sourceOnlyCompleteRecords".into(),
+            json!(complete_records.saturating_sub(STANDARD_SPELL_RECORDS)),
+        );
     }
     Ok(result)
 }
@@ -143,16 +130,8 @@ fn read_scenario_spell_source(
 ) -> Result<(DecodedSpellFile, ClassicSourceBlob), String> {
     let bytes = crate::import_inputs::read(path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < SCENARIO_SPELL_BYTES {
-        return Err(format!(
-            "Data Spell must contain all 105 records ({SCENARIO_SPELL_BYTES} bytes)"
-        ));
-    }
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let decoded = decode_scenario_spells(&bytes, Some(blob.clone()));
-    if decoded.spells.len() != 105 {
-        return Err("Data Spell did not decode all 105 scenario spell records".into());
-    }
     if encode_scenario_spells(&decoded.spells, Some(&bytes)).map_err(|error| error.to_string())?
         != bytes
     {
@@ -231,9 +210,10 @@ fn validate_standard_spells(
     text_blob: BlobId,
 ) -> Result<DecodedSpellFile, String> {
     let mut decoded = decode_standard_spells(bytes, Some(blob));
-    if decoded.spells.len() != STANDARD_SPELL_RECORDS {
+    if decoded.spells.len() < STANDARD_SPELL_RECORDS {
         return Err("Data S did not decode all 420 standard spell records".into());
     }
+    decoded.spells.truncate(STANDARD_SPELL_RECORDS);
     hydrate_standard_spell_names(&mut decoded.spells, text_bytes, text_blob)
         .map_err(|error| format!("standard spell names failed native validation: {error}"))?;
     project_rebuilt_v3_standard_spell_catalog(&ProjectSnapshot {
@@ -243,4 +223,28 @@ fn validate_standard_spells(
     .map_err(|error| format!("standard spell catalog failed Rebuilt validation: {error}"))?;
 
     Ok(decoded)
+}
+
+fn replace_scenario_spell_sources(
+    snapshot: &ProjectSnapshot,
+    source: ClassicSourceBlob,
+    text_source: Option<ClassicSourceBlob>,
+) -> Vec<ClassicSourceBlob> {
+    let mut sources = snapshot
+        .classic_sources
+        .iter()
+        .filter(|existing| {
+            existing.native_path != source.native_path
+                && text_source
+                    .as_ref()
+                    .is_none_or(|text| existing.native_path != text.native_path)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    sources.push(source);
+    if let Some(text_source) = text_source {
+        sources.push(text_source);
+    }
+    sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
+    sources
 }

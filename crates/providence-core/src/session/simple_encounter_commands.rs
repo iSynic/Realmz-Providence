@@ -178,20 +178,18 @@ fn validate_simple_encounter_identity(encounter: &SimpleEncounter) -> Result<(),
 
 fn validate_simple_encounter_texts(encounter: &SimpleEncounter) -> Result<(), SessionError> {
     for (slot, text) in encounter.texts.iter().enumerate() {
-        if !text.is_ascii() {
-            return Err(SessionError::InvalidSimpleEncounter {
+        let bytes = crate::codecs::encode_classic_text_payload(text).map_err(|error| {
+            SessionError::InvalidSimpleEncounter {
                 identity: encounter.identity.clone(),
-                reason: format!(
-                    "response {slot} contains text outside the currently certified ASCII subset"
-                ),
-            });
-        }
-        if text.len() > 79 {
+                reason: format!("response {slot}: {error}"),
+            }
+        })?;
+        if bytes.len() > 79 {
             return Err(SessionError::InvalidSimpleEncounter {
                 identity: encounter.identity.clone(),
                 reason: format!(
                     "response {slot} uses {} bytes; Classic maximum is 79",
-                    text.len()
+                    bytes.len()
                 ),
             });
         }

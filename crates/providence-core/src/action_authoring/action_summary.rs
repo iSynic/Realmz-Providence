@@ -12,7 +12,10 @@ pub(super) fn summarize(
     if opcode == 50 {
         return character_selection_summary(fields, authoring);
     }
-    if fields.len() == 1 && fields[0].target_kind.is_some() {
+    if fields.len() == 1
+        && fields[0].target_kind.is_some()
+        && fields[0].reference_behavior.is_none()
+    {
         return String::new();
     }
     let mut inserted_controls = BTreeSet::new();
@@ -152,6 +155,14 @@ fn field<'a>(fields: &'a [DescribedActionField], key: &str) -> Option<&'a Descri
 }
 
 fn result(field: Option<&DescribedActionField>) -> String {
+    let value = base_result(field);
+    match field.and_then(|field| field.reference_behavior.as_ref()) {
+        Some(behavior) => format!("{value} ({})", behavior.current_label),
+        None => value,
+    }
+}
+
+fn base_result(field: Option<&DescribedActionField>) -> String {
     let Some(field) = field else {
         return "Unresolved".into();
     };

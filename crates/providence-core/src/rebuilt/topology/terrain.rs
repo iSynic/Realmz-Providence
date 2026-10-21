@@ -1,5 +1,6 @@
 use super::contracts::{RebuiltV3CompactLandTileProfile, RebuiltV3TopologyError};
-use crate::model::{ProjectSnapshot, StableId, TerrainProfile};
+use crate::model::{StableId, TerrainProfile};
+use std::collections::BTreeMap;
 
 pub(super) fn compact_land_tile_profile(
     profile: &TerrainProfile,
@@ -16,43 +17,60 @@ pub(super) fn compact_land_tile_profile(
     ))
 }
 
-pub(super) fn terrain_profile<'snapshot>(
-    snapshot: &'snapshot ProjectSnapshot,
-    map: &StableId,
-    tile: i16,
-    landlook: Option<i8>,
-) -> Result<&'snapshot TerrainProfile, RebuiltV3TopologyError> {
-    let exact = snapshot
-        .terrain_catalog
-        .iter()
-        .filter(|profile| profile.tile == tile && profile.landlook == landlook)
-        .collect::<Vec<_>>();
-    if exact.len() > 1 {
-        return Err(RebuiltV3TopologyError::AmbiguousTerrainProfile { landlook, tile });
-    }
-    if let Some(profile) = exact.first() {
-        return Ok(profile);
-    }
-    if landlook.is_some() {
-        let shared = snapshot
-            .terrain_catalog
-            .iter()
-            .filter(|profile| profile.tile == tile && profile.landlook.is_none())
-            .collect::<Vec<_>>();
-        if shared.len() > 1 {
-            return Err(RebuiltV3TopologyError::AmbiguousTerrainProfile {
-                landlook: None,
-                tile,
-            });
+#[derive(Clone, Copy)]
+enum TerrainProfileIndexEntry<'snapshot> {
+    Unique(&'snapshot TerrainProfile),
+    Ambiguous,
+}
+
+pub(super) struct TerrainProfileIndex<'snapshot> {
+    profiles: BTreeMap<(i16, Option<i8>), TerrainProfileIndexEntry<'snapshot>>,
+}
+
+impl<'snapshot> TerrainProfileIndex<'snapshot> {
+    pub(super) fn new(catalog: &'snapshot [TerrainProfile]) -> Self {
+        let mut profiles = BTreeMap::new();
+        for profile in catalog {
+            let key = (profile.tile, profile.landlook);
+            profiles
+                .entry(key)
+                .and_modify(|entry| *entry = TerrainProfileIndexEntry::Ambiguous)
+                .or_insert(TerrainProfileIndexEntry::Unique(profile));
         }
-        if let Some(profile) = shared.first() {
-            return Ok(profile);
-        }
+        Self { profiles }
     }
-    Err(RebuiltV3TopologyError::MissingTerrainProfile {
-        map: map.clone(),
-        tile,
-    })
+
+    pub(super) fn get(
+        &self,
+        map: &StableId,
+        tile: i16,
+        landlook: Option<i8>,
+    ) -> Result<&'snapshot TerrainProfile, RebuiltV3TopologyError> {
+        let exact = self.profiles.get(&(tile, landlook));
+        match exact {
+            Some(TerrainProfileIndexEntry::Unique(profile)) => return Ok(profile),
+            Some(TerrainProfileIndexEntry::Ambiguous) => {
+                return Err(RebuiltV3TopologyError::AmbiguousTerrainProfile { landlook, tile });
+            }
+            None => {}
+        }
+        if landlook.is_some() {
+            match self.profiles.get(&(tile, None)) {
+                Some(TerrainProfileIndexEntry::Unique(profile)) => return Ok(profile),
+                Some(TerrainProfileIndexEntry::Ambiguous) => {
+                    return Err(RebuiltV3TopologyError::AmbiguousTerrainProfile {
+                        landlook: None,
+                        tile,
+                    });
+                }
+                None => {}
+            }
+        }
+        Err(RebuiltV3TopologyError::MissingTerrainProfile {
+            map: map.clone(),
+            tile,
+        })
+    }
 }
 
 pub(super) fn semantic_flags(
@@ -115,3 +133,7 @@ pub(super) fn special_land_resource_id(raw_tile: i16) -> Option<i16> {
     }
     Some(resource_id)
 }
+
+#[cfg(test)]
+#[path = "terrain_index_tests.rs"]
+mod tests;

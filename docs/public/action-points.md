@@ -9,6 +9,16 @@ and ordered steps. **Entry marker on this tile** explicitly changes the map
 cell when you Apply. Marker and record edits share one Undo transaction.
 Changing only chance or steps preserves the existing tile encoding.
 
+For a reusable program, select **Extra Action Points**, choose its record, and
+select the step to edit. **Choose action…** opens the action picker; the selected
+action supplies its settings controls. Apply the Extra AP draft before saving
+the project or following another record through a guarded navigation.
+
+![The current native Extra AP editor, with its Random Message step selected](images/native-workspaces/extra-action-point-1600x900.png)
+
+The screenshot is a prepared authored example in the current native development
+build. It shows actual controls and sample text; it is not a scenario walkthrough.
+
 Moving or placing an AP marks its destination. Apply that placement before
 editing the destination marker. Unplaced APs have no tile marker to edit.
 Land secret tiles use the map's existing secret controls; the AP editor provides
@@ -20,6 +30,38 @@ Multiple imported APs may share one coordinate. Native record order determines
 which placed record takes precedence, including dormant records. Filtering or
 renaming a record does not change that order. Use the earlier-AP link to inspect
 the record that takes precedence; marker changes apply to their shared cell.
+
+## Choose a resource and its behavior
+
+Some actions use the sign of a resource number to select a different behavior.
+Choose the resource normally, then use the named checkbox below its settings:
+
+- Sound: **Wait for sound to finish**.
+- Message: **Continue without waiting**.
+- Shop: **Open immediately**.
+- Player Map: **Display immediately**.
+- Quest: **Clear quest flag**.
+
+Changing the resource keeps the selected behavior. These are draft changes;
+Apply records them together, Undo/Redo restores them, and Save makes them durable.
+The same controls appear in Action Points, Extra Action Points and Simple or
+Complex Encounter steps, including applicable Extra Code settings.
+
+A checkbox appears only where that action actually supports the alternative.
+For example, Heal and Damage always use the absolute message number, so their
+message field has no waiting checkbox. A conditional message/XAP field offers
+message behavior only in its message mode. Zero has no distinct negative form;
+an unavailable checkbox explains that boundary. Imported values stay intact.
+
+![The native Play Sound settings with waiting enabled](images/native-workspaces/signed-reference-sound-1600x900.png)
+
+This prepared authored example shows the real native controls; it is not a
+scenario walkthrough.
+
+Some native settings serve two purposes. A Battle sound can also select the
+revive-loss XAP; waiting cannot make that destination negative. The Spell Points
+sound also supplies Minimum Spell Points, so the quantity limit still applies.
+These fields name both uses and explain unavailable choices beside the control.
 
 ## Find records by their applied state
 
@@ -51,6 +93,13 @@ instructions remain preserved. Program checks may prevent later effects even
 when the player can physically enter the tile. These views are authoring context,
 not a live playthrough evaluator or a guarantee of reachability.
 
-Imported Classic packages use schema v6 to retain exact signed native tile
-words. Newly authored packages retain schema v3; older package contracts remain
-readable. A separate compatible Rebuilt installation is needed for playtest.
+Current development exports use schema v6 for both imported and newly authored
+scenarios, retaining exact signed native tile words. Older package contracts
+remain readable. The published beta's contract is recorded separately in
+[package versions](package-versions.md). A separate compatible Rebuilt
+installation is needed for playtest.
+
+For a Display Random Message action with missing or unresolved settings, see
+[the native Random Message repair guide](random-message-repair.md). Its range
+preview, exact Message picker and shared scope operate on a repair draft; Save
+remains explicit.

@@ -21,6 +21,8 @@ use crate::model::{CasteRuleDefinition, ProjectSnapshot, RaceRuleDefinition};
 pub struct RebuiltV3ContentDocument {
     pub kind: String,
     pub schema_version: u8,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub classic_records: Option<super::RebuiltV7ClassicRecords>,
     pub campaign: RebuiltV3Campaign,
     pub messages: Vec<RebuiltV3Message>,
     pub option_labels: Vec<super::RebuiltV3OptionLabel>,
@@ -85,15 +87,16 @@ impl std::error::Error for RebuiltV3ContentError {}
 pub fn project_rebuilt_v3_content(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3ContentDocument, RebuiltV3ContentError> {
+    project_content(snapshot, false)
+}
+
+fn project_content(
+    snapshot: &ProjectSnapshot,
+    current: bool,
+) -> Result<RebuiltV3ContentDocument, RebuiltV3ContentError> {
     let campaign =
         project_rebuilt_v3_campaign(snapshot).ok_or(RebuiltV3ContentError::MissingCampaign)?;
-    let scenario = project_rebuilt_v3_scenario(snapshot)
-        .map_err(|error| invalid_section("scenario", error))?;
-    let option_labels = project_rebuilt_v3_option_labels(snapshot)
-        .map_err(|error| invalid_section("optionLabels", error))?;
-    validate_choice_prompt_references(snapshot, &scenario, &option_labels)?;
-    let shop_ids = snapshot.shops.iter().map(|shop| shop.native_id.0).collect();
-    validate_shop_references(&scenario, &shop_ids)?;
+    let (scenario, option_labels) = scenario_inputs(snapshot)?;
 
     let simple = project_rebuilt_v3_simple_encounters(snapshot)
         .map_err(|error| invalid_section("simpleEncounters", error))?;
@@ -103,8 +106,7 @@ pub fn project_rebuilt_v3_content(
         .map_err(|error| invalid_section("thiefEncounters", error))?;
     let timed = project_rebuilt_v3_timed_encounters(snapshot)
         .map_err(|error| invalid_section("timedEncounters", error))?;
-    let RebuiltV3RuleCatalog { races, castes } = project_rebuilt_v3_rule_catalog(snapshot)
-        .map_err(|error| invalid_section("rules", error))?;
+    let RebuiltV3RuleCatalog { races, castes } = content_rules(snapshot, current)?;
     let items = project_rebuilt_v3_combined_item_catalog(snapshot)
         .map_err(|error| invalid_section("items", error))?;
     let item_ids = items.iter().map(|item| item.id.clone()).collect();
@@ -115,14 +117,14 @@ pub fn project_rebuilt_v3_content(
         .map_err(|error| invalid_section("shops", error))?;
     let spells = project_rebuilt_v3_combined_spell_catalog(snapshot)
         .map_err(|error| invalid_section("spells", error))?;
-    let monsters = project_rebuilt_v3_monster_catalog(snapshot)
-        .map_err(|error| invalid_section("monsters", error))?;
+    let monsters = content_monsters(snapshot, current)?;
     let battles =
         project_rebuilt_v3_battles(snapshot).map_err(|error| invalid_section("battles", error))?;
 
     Ok(RebuiltV3ContentDocument {
+        classic_records: None,
         kind: "realmz2.content".into(),
-        schema_version: 3,
+        schema_version: if current { 6 } else { 3 },
         campaign,
         messages: simple.messages,
         option_labels,
@@ -144,6 +146,18 @@ pub fn project_rebuilt_v3_content(
     })
 }
 
+fn content_rules(
+    snapshot: &ProjectSnapshot,
+    current: bool,
+) -> Result<RebuiltV3RuleCatalog, RebuiltV3ContentError> {
+    let projector = if current {
+        super::project_rebuilt_rule_catalog
+    } else {
+        project_rebuilt_v3_rule_catalog
+    };
+    projector(snapshot).map_err(|error| invalid_section("rules", error))
+}
+
 pub fn compile_rebuilt_v3_content(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3ContentArtifact, RebuiltV3ContentError> {
@@ -151,16 +165,66 @@ pub fn compile_rebuilt_v3_content(
     compile_content_artifact(document, Vec::new())
 }
 
+fn scenario_inputs(
+    snapshot: &ProjectSnapshot,
+) -> Result<
+    (
+        super::RebuiltV3ScenarioDocument,
+        Vec<super::RebuiltV3OptionLabel>,
+    ),
+    RebuiltV3ContentError,
+> {
+    let scenario = project_rebuilt_v3_scenario(snapshot)
+        .map_err(|error| invalid_section("scenario", error))?;
+    let labels = project_rebuilt_v3_option_labels(snapshot)
+        .map_err(|error| invalid_section("optionLabels", error))?;
+    validate_choice_prompt_references(snapshot, &scenario, &labels)?;
+    let shop_ids = snapshot.shops.iter().map(|shop| shop.native_id.0).collect();
+    validate_shop_references(&scenario, &shop_ids)?;
+    Ok((scenario, labels))
+}
+
+pub fn compile_rebuilt_content(
+    snapshot: &ProjectSnapshot,
+) -> Result<RebuiltV3ContentArtifact, RebuiltV3ContentError> {
+    compile_content_artifact(project_rebuilt_content(snapshot)?, Vec::new())
+}
+
+pub fn project_rebuilt_content(
+    snapshot: &ProjectSnapshot,
+) -> Result<RebuiltV3ContentDocument, RebuiltV3ContentError> {
+    project_content(snapshot, true)
+}
+
 pub fn compile_rebuilt_v3_reachable_content(
     snapshot: &ProjectSnapshot,
     runtime: &super::RebuiltV3ReachableRuntimeSelection,
+) -> Result<RebuiltV3ContentArtifact, RebuiltV3ContentError> {
+    compile_reachable_content(snapshot, runtime, project_rebuilt_v3_rule_catalog(snapshot))
+}
+
+pub fn compile_rebuilt_reachable_content(
+    snapshot: &ProjectSnapshot,
+    runtime: &super::RebuiltV3ReachableRuntimeSelection,
+) -> Result<RebuiltV3ContentArtifact, RebuiltV3ContentError> {
+    compile_reachable_content(
+        snapshot,
+        runtime,
+        super::project_rebuilt_rule_catalog(snapshot),
+    )
+}
+
+fn compile_reachable_content(
+    snapshot: &ProjectSnapshot,
+    runtime: &super::RebuiltV3ReachableRuntimeSelection,
+    rules: Result<RebuiltV3RuleCatalog, super::RebuiltV3RuleCatalogError>,
 ) -> Result<RebuiltV3ContentArtifact, RebuiltV3ContentError> {
     let campaign =
         project_rebuilt_v3_campaign(snapshot).ok_or(RebuiltV3ContentError::MissingCampaign)?;
     let option_labels = project_rebuilt_v3_option_labels(snapshot)
         .map_err(|error| invalid_section("optionLabels", error))?;
-    let RebuiltV3RuleCatalog { races, castes } = project_rebuilt_v3_rule_catalog(snapshot)
-        .map_err(|error| invalid_section("rules", error))?;
+    let RebuiltV3RuleCatalog { races, castes } =
+        rules.map_err(|error| invalid_section("rules", error))?;
     let mut items = super::project_rebuilt_v3_item_catalog(snapshot)
         .map_err(|error| invalid_section("items", error))?;
     if !snapshot.scenario_item_rules.is_empty() {
@@ -185,6 +249,7 @@ pub fn compile_rebuilt_v3_reachable_content(
     let thief_encounters = project_rebuilt_v3_rogue_encounters(snapshot)
         .map_err(|error| invalid_section("thiefEncounters", error))?;
     let document = RebuiltV3ContentDocument {
+        classic_records: None,
         kind: "realmz2.content".into(),
         schema_version: 3,
         campaign,
@@ -376,3 +441,15 @@ fn validate_shop_references(
 #[cfg(test)]
 #[path = "content_tests.rs"]
 pub(crate) mod tests;
+
+fn content_monsters(
+    snapshot: &ProjectSnapshot,
+    current: bool,
+) -> Result<super::RebuiltV3MonsterCatalog, RebuiltV3ContentError> {
+    if current {
+        super::monsters::project_rebuilt_monster_catalog(snapshot)
+    } else {
+        project_rebuilt_v3_monster_catalog(snapshot)
+    }
+    .map_err(|error| invalid_section("monsters", error))
+}

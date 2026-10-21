@@ -34,6 +34,8 @@ def run(command, timeout):
         print(f"Native workflow exceeded its {timeout:g}-second wall-clock deadline.", file=sys.stderr)
         return 124
     print(output, end="")
+    if process.returncode:
+        print(f"Native workflow exited with code {process.returncode} (0x{process.returncode & 0xffffffff:08x}).", file=sys.stderr)
     return process.returncode
 
 

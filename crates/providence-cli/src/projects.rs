@@ -35,7 +35,7 @@ pub(crate) fn create_project_with_support(
     }
     let snapshot = ProjectSnapshot::new_authored(StableId(project_id.into()));
     let created = match support {
-        Some(root) => crate::new_project_baseline::Baseline::read(project_id, root)
+        Some(root) => providence_storage::AuthoredProjectBaseline::read(project_id, root)
             .and_then(|baseline| baseline.create(directory)),
         None => ProjectStore::create_new(directory, &snapshot).map_err(|error| error.to_string()),
     };

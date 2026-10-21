@@ -11,6 +11,7 @@ var _dungeon: Control
 var _map
 var _paint
 var _smart
+var _generator
 var _magic
 var _regions
 var _guard: Callable
@@ -56,6 +57,22 @@ func initialize(sidebar: Control, land: Control, dungeon: Control, host: Control
 	_dungeon.get_node("DungeonWorkbench/DungeonCanvasRegion/DungeonTools").hide()
 
 
+func bind_generation(controller: RefCounted) -> void:
+	_generator = controller
+	land_inspector.mount(controller.view, "generate")
+	controller.active_changed.connect(_generation_changed)
+
+
+func _generation_changed(active: bool) -> void:
+	if active:
+		_sidebar.show_brush_controls(false)
+		_sidebar.set_tool_mode("generate")
+		land_inspector.show_pane("generate", "Generate Terrain")
+		land_inspector.restore()
+	else:
+		land_inspector.show_pane(_current_land, "Selection Inspector" if _current_land == "selection" else "Paint Inspector")
+
+
 func present(canvas_active: bool, connected: bool, available: bool) -> void:
 	_sidebar.present_land_paint(not _map.is_dungeon, available)
 	_sidebar.present_world_context(canvas_active)
@@ -68,6 +85,8 @@ func present(canvas_active: bool, connected: bool, available: bool) -> void:
 	if _current_tool == "action-point":
 		(dungeon_inspector if _map.is_dungeon else land_inspector).show_pane("action-point","Action Point Placement")
 		_sidebar.set_tool_mode("action-point"); return
+	if land_inspector.visible and _generator != null and _generator.is_open():
+		_generation_changed(true); return
 	if land_inspector.visible:
 		land_inspector.show_pane("regions" if _regions.active else "smart" if _smart.is_open() else "magic" if _magic.is_open() else _current_land, "Random Rectangles" if _regions.active else "Paint Inspector" if _current_land != "selection" else "Selection Inspector")
 		if _smart.is_open(): _sidebar.set_tool_mode("smart")
@@ -87,11 +106,13 @@ func request_tool(tool: String) -> void:
 
 func _activate(tool: String) -> void:
 	_record_context.clear()
+	if _generator != null and tool != "generate" and _generator.is_open(): _generator.discard_draft()
 	if tool != "magic" and _magic.is_open(): _magic.discard_draft()
 	if tool == "smart": await _smart.open(); return
 	if _smart.is_open(): _smart.discard_draft()
 	if _regions.active and not _regions.pinned: _regions.close()
 	if tool == "magic": await _magic.open(); return
+	if tool == "generate" and _generator != null: await _generator.open(); return
 	if tool == "stamp": await _cell_tool.call("stamp"); return
 	if _map.is_dungeon: _dungeon.request_tool(tool)
 	elif tool == "wand": _land.paint_tool_requested.emit("wand")
@@ -102,6 +123,7 @@ func _activate(tool: String) -> void:
 
 func _present_tool(tool: String) -> void:
 	_current_tool = tool
+	if _generator != null and _generator.is_open(): _generation_changed(true); return
 	if _smart.is_open(): _sidebar.set_tool_mode("smart"); return
 	if _magic.is_open(): _sidebar.set_tool_mode("magic"); return
 	_sidebar.set_tool_mode(tool)
@@ -147,8 +169,10 @@ func _accept_pane(label: String) -> void:
 	_record_context.clear()
 	if _smart.is_open(): _smart.discard_draft()
 	if _magic.is_open(): _magic.discard_draft()
+	if _generator != null and label != "Generate Terrain" and _generator.is_open(): _generator.discard_draft()
 	if _regions.active and not _regions.pinned and label != "Random Rectangles": _regions.close()
 	match label:
+		"Generate Terrain": await request_tool("generate")
 		"Action Point Placement": await request_tool("action-point")
 		"Map Setup": await _setup.call()
 		"Land Layout": await _section.call("LandLayout")
@@ -177,6 +201,8 @@ func dispose() -> void:
 	_land_author.tool_activated.disconnect(_present_land_tool); _land_author = null
 	_sidebar.authoring_tool_requested.disconnect(request_tool)
 	_dungeon.tool_changed.disconnect(_present_tool); _land.paint_tool_requested.disconnect(_present_tool)
+	if _generator != null: _generator.active_changed.disconnect(_generation_changed)
+	_generator = null
 	_smart.active_changed.disconnect(_smart_changed)
 	_magic.active_changed.disconnect(_magic_changed)
 	_smart.view.recovery_changed.disconnect(land_inspector.set_recovery_available)

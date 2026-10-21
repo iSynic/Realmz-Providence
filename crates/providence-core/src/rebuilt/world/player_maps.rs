@@ -1,5 +1,5 @@
 use super::{
-    RebuiltV3PlayerMap, RebuiltV3PlayerMapCoordinate, RebuiltV3PlayerMapMarker,
+    PlayerMapPolicy, RebuiltV3PlayerMap, RebuiltV3PlayerMapCoordinate, RebuiltV3PlayerMapMarker,
     RebuiltV3PlayerMapRect, RebuiltV3WorldError,
 };
 use crate::{
@@ -14,6 +14,7 @@ pub(super) fn project_player_map(
     snapshot: &ProjectSnapshot,
     record: &PlayerMapRecord,
     application_media: Option<&ApplicationMediaCatalog>,
+    policy: PlayerMapPolicy,
 ) -> Result<RebuiltV3PlayerMap, RebuiltV3WorldError> {
     let invalid = |reason: String| RebuiltV3WorldError::InvalidPlayerMap {
         player_map: record.identity.clone(),
@@ -23,7 +24,7 @@ pub(super) fn project_player_map(
         .ok()
         .filter(|id| *id < 20)
         .ok_or_else(|| invalid("Classic ID is outside 0 through 19".into()))?;
-    if record.icon_size <= 0 {
+    if record.icon_size <= 0 && !(policy == PlayerMapPolicy::NativeRecords && record.show < 0) {
         return Err(invalid(format!(
             "icon size {} is not positive; Classic divides by this value",
             record.icon_size

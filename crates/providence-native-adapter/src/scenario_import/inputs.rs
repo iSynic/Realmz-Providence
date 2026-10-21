@@ -1,7 +1,7 @@
 use crate::{
     request_params::required_string,
     scenario_preflight::{
-        REQUIRED_APPLICATION_DATA_FILES, REQUIRED_FULL_SCENARIO_FILES, preflight_files,
+        REQUIRED_APPLICATION_DATA_FILES, preflight_files, required_full_scenario_files,
         resolve_classic_native_file, resolve_startup_file_selected,
     },
 };
@@ -45,7 +45,7 @@ fn scenario_directory(params: &Value) -> Result<(PathBuf, String, PathBuf), Stri
         .filter(|name| !name.is_empty())
         .ok_or_else(|| "Classic scenario directory has no portable final name".to_string())?
         .to_owned();
-    preflight_files(&directory, REQUIRED_FULL_SCENARIO_FILES, "scenario")?;
+    preflight_files(&directory, &required_full_scenario_files(), "scenario")?;
     let startup_path = resolve_startup_file_selected(
         &directory,
         &folder_name,

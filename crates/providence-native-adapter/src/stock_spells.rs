@@ -1,6 +1,9 @@
 //! Cached application spell definitions stay outside portable authored truth.
 use providence_core::{
-    codecs::{STANDARD_SPELL_BYTES, decode_standard_spells, hydrate_standard_spell_names},
+    codecs::{
+        STANDARD_SPELL_BYTES, STANDARD_SPELL_RECORDS, decode_standard_spells,
+        hydrate_standard_spell_names,
+    },
     model::{BlobId, SpellDefinition},
 };
 use sha2::{Digest, Sha256};
@@ -21,7 +24,11 @@ impl StockSpells {
         }
         let text = fs::read(root.join("Custom Names.rsrc"))
             .map_err(|error| format!("Could not read Stock spell names: {error}"))?;
-        let mut rows = decode_standard_spells(&binary, None).spells;
+        let mut rows = decode_standard_spells(&binary, None)
+            .spells
+            .into_iter()
+            .take(STANDARD_SPELL_RECORDS)
+            .collect::<Vec<_>>();
         let text_hash = format!("sha256:{:x}", Sha256::digest(&text));
         hydrate_standard_spell_names(&mut rows, &text, BlobId(text_hash.clone()))
             .map_err(|error| format!("Stock spell names are invalid: {error}"))?;

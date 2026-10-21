@@ -357,7 +357,7 @@ func _persist(shell, project: String) -> void:
 	var before := _tiles(shell)
 	await shell._project_session.save()
 	var reopened: Dictionary = shell._bridge.start_project(project)
-	if not _check(reopened.get("ok",false),"Smart input project did not reopen"): return
+	if not _check(reopened.get("ok",false),"Smart input project did not reopen: %s" % reopened.get("error", "")): return
 	await shell._activate_session(reopened); await shell._maps.document.load_map("land:1"); await _settle(shell)
 	_check(_tiles(shell)==before,"Save/reopen lost Smart terrain changes")
 	_check(shell.reported_errors.is_empty(),"Unexpected real Smart terrain errors: "+str(shell.reported_errors))

@@ -1,4 +1,5 @@
 mod contracts;
+mod diagnostics;
 mod eligibility;
 mod validation;
 
@@ -7,20 +8,43 @@ use crate::{
     model::ProjectSnapshot,
 };
 pub use contracts::{CLASSIC_RULE_RECORDS, RebuiltV3RuleCatalog, RebuiltV3RuleCatalogError};
+pub(crate) use diagnostics::imported_rule_diagnostics;
 use eligibility::validate_eligibility;
 use validation::{validate_castes, validate_counts, validate_name_catalog, validate_races};
 
 pub fn project_rebuilt_v3_rule_catalog(
     snapshot: &ProjectSnapshot,
 ) -> Result<RebuiltV3RuleCatalog, RebuiltV3RuleCatalogError> {
+    project_catalog(snapshot, false)
+}
+
+/// Imported native tables can end before slot 30. Missing rows are not stock definitions.
+pub fn project_rebuilt_rule_catalog(
+    snapshot: &ProjectSnapshot,
+) -> Result<RebuiltV3RuleCatalog, RebuiltV3RuleCatalogError> {
+    project_catalog(
+        snapshot,
+        matches!(
+            snapshot.origin,
+            crate::model::ProjectOrigin::Imported { .. }
+        ),
+    )
+}
+
+fn project_catalog(
+    snapshot: &ProjectSnapshot,
+    native: bool,
+) -> Result<RebuiltV3RuleCatalog, RebuiltV3RuleCatalogError> {
     if snapshot.classic_rule_selection.is_some() {
         return Err(RebuiltV3RuleCatalogError::UnresolvedSelection);
     }
-    validate_counts(snapshot)?;
+    if !native {
+        validate_counts(snapshot)?;
+    }
     validate_name_catalog(snapshot)?;
-    let race_ids = validate_races(snapshot)?;
-    let caste_ids = validate_castes(snapshot)?;
-    validate_eligibility(snapshot, &race_ids, &caste_ids)?;
+    let race_ids = validate_races(snapshot, native)?;
+    let caste_ids = validate_castes(snapshot, native)?;
+    validate_eligibility(snapshot, &race_ids, &caste_ids, native)?;
 
     let mut races = snapshot
         .race_rules

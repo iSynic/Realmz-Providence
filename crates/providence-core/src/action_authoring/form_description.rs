@@ -98,6 +98,7 @@ fn decorate_fields(
     super::monster_name_tag_control::decorate(snapshot, action.opcode, fields);
     super::map_tile_control::decorate(snapshot, application, query, action.opcode, fields);
     super::field_uses::describe(snapshot, application, query, action.opcode, fields);
+    super::reference_behavior::decorate(action.opcode, query, fields);
 }
 
 fn companion_fields(
@@ -445,6 +446,7 @@ fn described_direct_field(
             .and_then(|kind| preview(snapshot, application, query, kind, query.target_native_id)),
         evidence: field_evidence(entry, unresolved),
         uses: Vec::new(),
+        reference_behavior: None,
     })
 }
 

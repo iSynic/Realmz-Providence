@@ -18,6 +18,7 @@ class PaintBridge extends "res://src/native_bridge.gd":
 		return super._request(method, params)
 
 var _failed := false
+signal controlled_release
 
 
 func _initialize() -> void:
@@ -45,7 +46,7 @@ func _run() -> void:
 		await shell._activate_session(created)
 		if await _create_maps(shell):
 			await _exercise(shell)
-	shell.free()
+	shell.queue_free()
 	OS.set_environment("PROVIDENCE_PROJECT_PATH", prior)
 	await process_frame
 	if not _failed: print("PROVIDENCE_MAP_PAINT_WORKFLOW_OK gesture=one-command markers=core-owned undo=visible redo=visible rejection=atomic context=guarded save=reopened")
@@ -103,6 +104,7 @@ func _exercise(shell) -> void:
 	_check(_tiles(shell, "land:1") == painted and canvas._tiles == painted, "One Redo failed to restore the entire stroke and visible map")
 	_check(canvas.zoom_percent() == zoom and canvas.pan_offset() == pan, "Redo reset the author's map view")
 	canvas.zoom_fit()
+	await _prove_old_settle_race(shell)
 	await _exercise_rejections(shell, canvas)
 	await _exercise_persistence(shell, canvas)
 	await _exercise_viewport_input(shell, canvas)
@@ -244,7 +246,7 @@ func _mutate(shell, method: String, params: Dictionary) -> bool:
 
 func _tiles(shell, identity: String) -> Array:
 	var opened: Dictionary = shell._bridge.request("map.open", {"identity": identity})
-	if not _check(opened.get("ok", false), "Could not inspect " + identity): return []
+	if not _check(opened.get("ok", false), "Could not inspect " + identity + ": " + str(opened.get("error", ""))): return []
 	return opened.result.map.tiles
 
 
@@ -294,5 +296,32 @@ func _check(condition: bool, message: String) -> bool:
 	return condition
 
 func _settle(shell) -> void:
+	var deadline := Time.get_ticks_msec() + 15000
+	while shell._operations.busy or shell._bridge.operation_busy() or shell._collaboration._checking:
+		if Time.get_ticks_msec() >= deadline:
+			_check(false, "Map workflow did not reach a completed operation boundary")
+			return
+		await process_frame
+
+
+func _prove_old_settle_race(shell) -> void:
+	await _settle(shell)
+	_controlled_late_lease(shell)
+	# The former helper tested busy, then yielded one additional frame. A new
+	# operation can claim that frame before the caller's direct inspection.
 	while shell._operations.busy: await process_frame
 	await process_frame
+	_check(shell._operations.busy, "Controlled late operation did not reproduce the old settle boundary")
+	var rejected: Dictionary = shell._bridge.request("map.open", {"identity":"land:1"})
+	_check(rejected.get("busy", false), "A direct read during the controlled lease must be rejected as busy")
+	controlled_release.emit()
+	await _settle(shell)
+	_check(not _tiles(shell, "land:1").is_empty(), "Completed operation boundary must permit direct inspection")
+	print("MAP_HARNESS_RACE_REPRODUCED old-tail-returned-busy direct-read-rejected observable-boundary-corrected")
+
+
+func _controlled_late_lease(shell) -> void:
+	await process_frame
+	_check(shell._operations.begin(shell._bridge, "Controlled late paint fixture read"), "Could not acquire controlled lease")
+	await controlled_release
+	shell._operations.finish({"ok":true}, false, false)

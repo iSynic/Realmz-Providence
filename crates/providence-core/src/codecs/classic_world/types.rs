@@ -56,5 +56,10 @@ pub enum ClassicWorldCodecError {
         slot: usize,
         bytes: usize,
     },
+    EncounterTextUnrepresentable {
+        native_id: NativeRecordId,
+        slot: usize,
+        reason: String,
+    },
     MissingEncounterCompatibilitySource(NativeRecordId),
 }

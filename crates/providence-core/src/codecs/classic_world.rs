@@ -34,7 +34,9 @@ pub use cells::{
     apply_land_path_marker, clear_action_point_marker, decode_dungeon_cell, decode_land_cell,
     ensure_action_point_marker, paint_land_cell_preserving_markers,
 };
-pub use encounters::{decode_simple_encounters, encode_simple_encounters};
+pub use encounters::{
+    decode_simple_choice_display, decode_simple_encounters, encode_simple_encounters,
+};
 pub use extra_action_points::{decode_extra_action_points, encode_extra_action_points};
 pub use maps::{decode_dungeon_maps, decode_land_maps, encode_dungeon_maps, encode_land_maps};
 pub use types::{

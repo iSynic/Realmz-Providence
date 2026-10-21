@@ -211,7 +211,8 @@ fn unsafe_inline_branch_problem_repairs_the_mode_and_target_pair() {
     });
     snapshot.extra_codes.push(ExtraCodeRow {
         native_id: NativeRecordId(8),
-        values: [1, 2, 0, 106, 107],
+        // Inline result 4 is invalid even when a retained encounter supplies the owner.
+        values: [1, 2, 4, 106, 107],
     });
     let mut session = EditorSession::new(snapshot);
 

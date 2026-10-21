@@ -82,13 +82,20 @@ func _clear() -> void:
 	if is_instance_valid(_window): _window.dismiss()
 
 
+# Background reads, including this controller's own follow-up list query and the
+# collaboration poll, hold the operation or bridge lease; claiming it then fails with
+# "Wait for the current operation to finish". Every workflow here waits for both.
+func _lease_busy() -> bool:
+	return _operations.busy or _bridge != null and _bridge.operation_busy()
+
+
 func _params() -> Dictionary:
 	return {"expectedRevision": int(_workspace.paint_context().revision), "identity": _map.identity}
 
 
 func _query(query: String, kind: String, offset: int) -> void:
 	_query_generation += 1; var sequence := _query_generation; var origin := _origin.duplicate(true)
-	while _operations.busy and _matches(origin): await _view.get_tree().process_frame
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
 	if not _matches(origin) or sequence != _query_generation or not _window.visible: return
 	var params := _params(); params.merge({"query": query, "kind": kind, "offset": offset, "limit": 64})
 	params.scope = _window.collection_scope()
@@ -98,13 +105,38 @@ func _query(query: String, kind: String, offset: int) -> void:
 	_resource_revision = int(response.result.resourceRevision); _window.present_list(response.result)
 
 
+func refresh_external(operation: ProvidenceEditorOperation) -> Dictionary:
+	if not is_instance_valid(_window) or not _window.visible or not _matches(_origin): return {"ok":true}
+	# Re-presenting the resource would dismiss an open geometry review, so keep it as a draft.
+	if has_unapplied_changes() or _window.geometry_pending(): return {"ok":true, "draftKept":true}
+	var origin := _origin.duplicate(true)
+	var selected := str(_window.draft().get("identity", ""))
+	var params := _params(); params.merge(_window.query_context()); params.limit = 64
+	var response: Dictionary = await operation.request("paint-resources.list", params)
+	if not _matches(origin) or not response.get("ok", false): return response
+	_resource_revision = int(response.result.resourceRevision)
+	_window.present_list(response.result)
+	if selected.is_empty(): return response
+	if not response.result.items.any(func(item): return item.identity == selected):
+		_window.clear_resource("Choose a resource from the updated collection.")
+		return response
+	params = _params(); params.resourceIdentity = selected
+	response = await operation.request("paint-resources.open", params)
+	if _matches(origin) and response.get("ok", false):
+		_window.present_resource(response.result.resource, false, response.result.ownership == "built-in", str(response.result.availabilityReason) if response.result.availabilityReason != null else "", response.result.get("renderCells", []), response.result.get("specialPreviews", []))
+	return response
+
+
 func _request(operation: ProvidenceEditorOperation, method: String, params: Dictionary) -> Dictionary:
 	return await operation.request(method, params)
 
 
 func _open_entry(identity: String) -> void:
 	if not _pending.is_empty() or _window.has_unapplied_changes(): return
-	var origin := _origin.duplicate(true); var params := _params(); params.resourceIdentity = identity
+	var origin := _origin.duplicate(true)
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
+	if not _matches(origin): return
+	var params := _params(); params.resourceIdentity = identity
 	var response := await _operations.run_workflow(_bridge, "Open paint resource", _request.bind("paint-resources.open", params), null, true)
 	if not _matches(origin): return
 	if not response.get("ok", false): _failure(response); return
@@ -126,10 +158,12 @@ func _new_palette(favorite := false) -> void:
 func _capture() -> void:
 	var selected: Array = _dungeon.selected_cells() if _map.is_dungeon else _workspace.land_authoring.selected
 	if selected.is_empty(): _window.present_error("Select map cells before capturing a stamp."); return
+	var origin := _origin.duplicate(true)
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
+	if not _matches(origin): return
 	var template := {"identity": "paint:" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "New stamp", "collection": "",
 		"kind": "stamp", "levelType": "land", "tilesetId": "capture", "width": 1, "height": 1, "cells": [], "favorite": false}
 	var params := _params(); params.merge({"identity": _map.identity, "cells": selected.map(func(cell): return {"x": int(cell.x), "y": int(cell.y)}), "resource": template})
-	var origin := _origin.duplicate(true)
 	var response := await _operations.run_workflow(_bridge, "Capture terrain stamp", _request.bind("paint-resources.capture", params), null, true)
 	if not _matches(origin): return
 	if not response.get("ok", false): _failure(response); return
@@ -141,7 +175,7 @@ func _capture() -> void:
 func capture_selection(focus: Control) -> void:
 	open("stamp", focus)
 	var origin := _origin.duplicate(true)
-	while _operations.busy and _matches(origin): await _view.get_tree().process_frame
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
 	if _matches(origin) and _window.visible: await _capture()
 
 
@@ -163,6 +197,8 @@ func _delete(identity: String) -> void:
 func _change(change: Dictionary) -> Dictionary:
 	if _submitting or not _pending.is_empty(): return {"ok": false, "error": "Check the original collection operation first."}
 	var origin := _origin.duplicate(true)
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
+	if not _matches(origin): return {"ok": false, "error": "The resource destination changed."}
 	var params := _params(); params.merge({"resourceRevision": _resource_revision, "change": change, "operationId": Crypto.new().generate_random_bytes(32).hex_encode()})
 	_submitting = true; _window.set_busy(true)
 	var response := await _operations.run_workflow(_bridge, "Save local paint resources", _request.bind("paint-resources.apply", params), null, true)
@@ -247,6 +283,8 @@ func dispose() -> void:
 
 func _preview_features(tile: int, changes: Array, generation: int) -> void:
 	var origin := _origin.duplicate(true)
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
+	if not _matches(origin): return
 	var params := _params(); params.merge({"tile":tile,"changes":changes})
 	var response := await _operations.run_workflow(_bridge, "Preview stamp cell features", _request.bind("paint-resources.preview-features", params), null, true)
 	if not _matches(origin): return
@@ -257,6 +295,8 @@ func _preview_features(tile: int, changes: Array, generation: int) -> void:
 func _preview_resource(resource: Dictionary) -> void:
 	_preview_sequence += 1; var sequence := _preview_sequence
 	var origin := _origin.duplicate(true)
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
+	if not _matches(origin) or sequence != _preview_sequence: return
 	var params := _params(); params.resource = _integers(resource)
 	var response := await _operations.run_workflow(_bridge, "Preview saved stamp", _request.bind("paint-resources.preview", params), null, true)
 	if not _matches(origin) or sequence != _preview_sequence: return
@@ -268,7 +308,7 @@ func _preview_resource(resource: Dictionary) -> void:
 
 func _preview_geometry(resource: Dictionary, edit: Dictionary, generation: int) -> void:
 	var origin := _origin.duplicate(true)
-	while _operations.busy and _matches(origin): await _view.get_tree().process_frame
+	while _lease_busy() and _matches(origin): await _view.get_tree().process_frame
 	if not _matches(origin) or not _pending.is_empty(): return
 	var params := _params(); params.merge({"resource": _integers(resource), "edit": edit})
 	var response := await _operations.run_workflow(_bridge, "Review resource geometry", _request.bind("paint-resources.geometry", params), null, true)
@@ -291,7 +331,7 @@ func _reference_visibility() -> void:
 
 func _restore_reference() -> void:
 	_returning_reference = true; var generation := _generation
-	while _operations.busy and generation==_generation: await _view.get_tree().process_frame
+	while _lease_busy() and generation==_generation: await _view.get_tree().process_frame
 	if generation!=_generation: return
 	if _view.is_visible_in_tree() and not _kept_reference.is_empty() and _matches(_kept_reference.origin):
 		var kept := _kept_reference.duplicate(true); _kept_reference.clear(); _origin = kept.origin

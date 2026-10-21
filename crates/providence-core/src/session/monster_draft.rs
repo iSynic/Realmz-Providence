@@ -229,12 +229,6 @@ pub(crate) fn validate_text(
     text: &str,
     maximum: usize,
 ) -> Result<(), SessionError> {
-    if !text.is_ascii() {
-        return Err(SessionError::InvalidMonster {
-            identity: identity.clone(),
-            reason: "Monster text currently supports ASCII; non-ASCII text cannot be exported without substitution".into(),
-        });
-    }
     let bytes = crate::codecs::encode_classic_text_payload(text).map_err(|error| {
         SessionError::InvalidMonster {
             identity: identity.clone(),

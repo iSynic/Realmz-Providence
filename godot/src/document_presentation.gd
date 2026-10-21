@@ -29,10 +29,15 @@ func initialize(tabs: TabContainer, registry, changes, operations: ProvidenceEdi
 	_layout = layout
 	_command_bar = command_bar
 	tabs.tab_changed.connect(select_document)
+	# Method binders, not lambdas: a lambda would keep this controller alive from the registry.
 	for route in ["scripts.quests", "scripts.action-points", "scripts.macros"]:
-		_registry.view(route).apply_state_changed.connect(_script_apply_state.bind(route))
-	_registry.view("text.messages").apply_state_changed.connect(_string_apply_state)
-	_registry.view("scripts.global-macros").apply_state_changed.connect(_global_apply_state)
+		_registry.on_realize(route, _bind_apply_state.bind(_script_apply_state.bind(route)))
+	_registry.on_realize("text.messages", _bind_apply_state.bind(_string_apply_state))
+	_registry.on_realize("scripts.global-macros", _bind_apply_state.bind(_global_apply_state))
+
+
+func _bind_apply_state(page: Control, listener: Callable) -> void:
+	page.apply_state_changed.connect(listener)
 
 func _global_apply_state() -> void:
 	if _registry.identity_for_tab(_tabs.current_tab) == "scripts.global-macros":
@@ -68,6 +73,8 @@ func select_document(tab: int) -> void:
 	var route: String = _registry.identity_for_tab(tab)
 	if _encounter_route_tabs != null: _encounter_route_tabs.present_route(route)
 	if _issues.tab_changed(tab): return
+	# The tab may have been set with signals blocked; its slot can still be a placeholder.
+	_registry.realize_tab(tab)
 	var view := _tabs.get_tab_control(tab)
 	if view.get_meta("detached_editor", false):
 		set_inspector_visible(false); _command_bar.set_route_has_commit(false)

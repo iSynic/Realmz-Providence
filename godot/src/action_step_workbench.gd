@@ -71,6 +71,9 @@ func _ready() -> void:
 	_field_renderer.search_requested.connect(_request_field_targets)
 	_field_renderer.open_requested.connect(func(kind, value, identity, context): peek_requested.emit(kind, value, identity, context))
 	_field_renderer.preview_requested.connect(func(kind, value, identity, status): preview_requested.emit(kind, value, identity, status))
+	_field_renderer.selection_rejected.connect(func(message):
+		_preview.text = message
+		_preview.visible = true)
 	var spacious := get_viewport_rect().size.y > 900.0
 	_description.visible = spacious
 	_step_list.item_selected.connect(_select_slot)
@@ -181,13 +184,25 @@ func _description_slot(request_id: int) -> int:
 func _focused_field_key() -> String:
 	var owner := get_viewport().gui_get_focus_owner()
 	for key in _field_controls:
+		if owner != null and owner == _field_controls[key].get("behaviorControl"):
+			return "behavior:" + str(key)
 		var control := (_field_controls[key] as Dictionary).control as Control
 		if owner == control or (control is SpinBox and owner == (control as SpinBox).get_line_edit()):
 			return str(key)
+	if owner == null and not _field_renderer.pending_behavior_focus.is_empty():
+		return "behavior:" + _field_renderer.pending_behavior_focus
 	return ""
 
 
 func _restore_field_focus(key: String) -> void:
+	if key.begins_with("behavior:"):
+		var descriptor: Dictionary = _field_controls.get(key.trim_prefix("behavior:"), {})
+		var checkbox = descriptor.get("behaviorControl")
+		if checkbox is CheckBox and not checkbox.disabled:
+			checkbox.grab_focus()
+		elif descriptor.get("control") is Control:
+			descriptor.control.grab_focus()
+		return
 	if not _field_controls.has(key): return
 	var control := (_field_controls[key] as Dictionary).control as Control
 	if not control.is_visible_in_tree(): return
@@ -450,6 +465,7 @@ func _request_description() -> void:
 	_describe_generation += 1
 	var settings := _dictionary(draft.get("settings"))
 	_draft_steps[_selected_slot]["descriptionPending"] = true
+	_field_renderer.mark_description_pending()
 	_draft_steps[_selected_slot].erase("descriptionError")
 	_draft_steps[_selected_slot]["descriptionRequest"] = _describe_generation
 	validation_changed.emit()
@@ -559,7 +575,7 @@ func _accept_target(index: int) -> void:
 	if _target_field.is_empty():
 		_target_value.value = value
 	elif _field_controls.has(_target_field):
-		_field_renderer.accept_target(_target_field, value)
+		if not _field_renderer.accept_target(_target_field, value, str(_target_panel.get_meta("target_kind", ""))): return
 	_target_panel.hide()
 
 

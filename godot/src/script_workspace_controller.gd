@@ -22,11 +22,19 @@ var _accept_response: Callable
 var _accept_draft_response: Callable
 var _request_navigation: Callable
 var _maps: ProvidenceMapDocumentController
-var _encounters: Control
-var _complex_encounters: Control
-var _extra_actions: Control
+var _documents: RefCounted
 var _action_points: Control
-var _globals: Control
+# Lazy pages: reading one realizes and binds it (see lazy-workbench-pages.md).
+var _encounters: Control:
+	get: return _documents.view("encounters.simple")
+var _complex_encounters: Control:
+	get: return _documents.view("encounters.complex")
+var _extra_actions: Control:
+	get: return _documents.view("scripts.macros")
+var _globals: Control:
+	get: return _documents.view("scripts.global-macros")
+const RECORD_ROUTES := {"encounter": "encounters.simple", "complexEncounter": "encounters.complex",
+	"extraActionPoint": "scripts.macros", "actionPoint": "scripts.action-points"}
 var _records: Dictionary = {}
 var _global_commands := preload("res://src/global_macro_controller.gd").new()
 var _action_catalog: Dictionary = {}
@@ -43,40 +51,48 @@ func initialize(documents: RefCounted, maps: ProvidenceMapDocumentController, re
 	_read_context = read_context
 	_accept_response = accept_response
 	_accept_draft_response = accept_draft_response
-	_encounters = documents.view("encounters.simple")
-	_complex_encounters = documents.view("encounters.complex")
-	_extra_actions = documents.view("scripts.macros")
+	_documents = documents
 	_action_points = documents.view("scripts.action-points")
-	_globals = documents.view("scripts.global-macros")
-	_bind_route_tabs(documents.view("scripts.quests"))
-	_global_commands.initialize(_globals, operations, _read_context, _accept_draft_response)
-	_global_commands.projection_applied.connect(func(projection): projection_applied.emit(projection))
-	_add_record(documents, operations, "encounters.simple", _encounters,
-		{"record": "encounter", "commitKey": "draft", "list": "encounter.list-simple", "open": "encounter.open-simple", "update": "encounter.apply-simple-draft", "limit": 128})
-	_add_record(documents, operations, "encounters.complex", _complex_encounters,
-		{"record": "complexEncounter", "commitKey": "draft", "list": "encounter.list-complex", "open": "encounter.open-complex", "update": "encounter.apply-complex-draft", "limit": 128})
-	_add_record(documents, operations, "scripts.macros", _extra_actions,
-		{"record": "extraActionPoint", "commitKey": "draft", "list": "extra-action-point.list", "open": "extra-action-point.open", "update": "extra-action-point.apply-draft", "limit": 128})
-	_add_record(documents, operations, "scripts.action-points", _action_points,
+	_add_record("scripts.action-points", _action_points,
 		{"record": "actionPoint", "commitKey": "draft", "list": "action-point.list", "open": "action-point.open", "update": "action-point.apply-draft", "limit": 100})
-	_bind_encounters()
-	_bind_complex_encounters()
 	_bind_action_points()
 	_action_points.commit_handler = commit_action_point
-	_globals.hooks_update_requested.connect(update_global_macros)
-	_globals.extra_action_point_open_requested.connect(open_extra_action_point_by_native_id)
-	_globals.selection_changed.connect(func(row): inspector_requested.emit("global-macro", row, []))
-	for view in [_encounters, _complex_encounters, _extra_actions, _action_points, _globals]:
-		view.compile_requested.connect(func(): compile_requested.emit())
-	documents.register_controller("scripts.global-macros", preload("res://src/workbench_controller.gd").new("scripts.global-macros", _globals, _global_commands.reload, _global_commands.teardown))
+	# The startup page binds now; the other script and encounter pages bind on first use.
+	documents.on_realize("encounters.simple", _bind_encounters)
+	documents.on_realize("encounters.complex", _bind_complex_encounters)
+	documents.on_realize("scripts.macros", _bind_extra_actions)
+	documents.on_realize("scripts.global-macros", _bind_globals)
+	documents.on_realize("scripts.quests", _bind_context_routes)
 
 
-func _add_record(documents: RefCounted, operations: ProvidenceEditorOperation, route: String, view: Control, methods: Dictionary) -> void:
+func _add_record(route: String, view: Control, methods: Dictionary) -> void:
 	var owner := preload("res://src/script_record_controller.gd").new()
-	owner.initialize(view, methods, operations, _read_context, _accept_response, _accept_draft_response, _request_navigation)
+	owner.initialize(view, methods, _operations, _read_context, _accept_response, _accept_draft_response, _request_navigation)
 	owner.projection_applied.connect(func(projection): projection_applied.emit(projection))
+	# A page realized during a session joins it, as if it had been attached at open.
+	if _bridge != null: owner.attach_session(_bridge)
+	if not _action_catalog.is_empty(): view.set_action_catalog(_action_catalog)
+	view.compile_requested.connect(func(): compile_requested.emit())
 	_records[methods.record] = owner
-	documents.register_controller(route, preload("res://src/workbench_controller.gd").new(route, view, _refresh_record.bind(methods.record), owner.teardown))
+	_documents.register_controller(route, preload("res://src/workbench_controller.gd").new(route, view, _refresh_record.bind(methods.record), owner.teardown))
+
+
+# Record controllers bind with their page, so asking for one realizes its page.
+func _record(record: String) -> RefCounted:
+	_documents.view(RECORD_ROUTES[record])
+	return _records[record]
+
+
+func _bind_globals(view: Control) -> void:
+	_global_commands.initialize(view, _operations, _read_context, _accept_draft_response)
+	_global_commands.projection_applied.connect(func(projection): projection_applied.emit(projection))
+	if _bridge != null: _global_commands.attach_session(_bridge)
+	view.hooks_update_requested.connect(update_global_macros)
+	view.extra_action_point_open_requested.connect(open_extra_action_point_by_native_id)
+	view.selection_changed.connect(func(row): inspector_requested.emit("global-macro", row, []))
+	view.compile_requested.connect(func(): compile_requested.emit())
+	_bind_context_routes(view)
+	_documents.register_controller("scripts.global-macros", preload("res://src/workbench_controller.gd").new("scripts.global-macros", view, _global_commands.reload, _global_commands.teardown))
 
 
 func _refresh_record(operation: ProvidenceEditorOperation, record: String) -> Dictionary:
@@ -93,72 +109,80 @@ func _refresh_record(operation: ProvidenceEditorOperation, record: String) -> Di
 	return await _records[record].reload(preferred, operation, map_identity, not preferred.is_empty())
 
 
-func _bind_encounters() -> void:
-	_encounters.encounter_open_requested.connect(open_simple_encounter)
-	_encounters.encounter_apply_draft_requested.connect(commit_simple_encounter)
-	_encounters.create_requested.connect(_create_simple_encounter)
-	_encounters.copy_source_requested.connect(_preview_simple_encounter_copy_source)
-	_encounters.prompt_search_requested.connect(_search_encounter_prompts)
-	_encounters.action_target_search_requested.connect(func(query): _search_action_targets(_encounters, query))
-	_encounters.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(_encounters, query, request_id, slot))
-	_encounters.message_open_requested.connect(func(id): message_requested.emit(id))
-	_encounters.semantic_target_open_requested.connect(func(kind, id, identity, context): semantic_target_requested.emit(kind, id, identity, context))
-	_encounters.sound_preview_requested.connect(func(id, identity, status): sound_preview_requested.emit(id, identity, status))
-	_encounters.code_help_requested.connect(func(code, origin): code_help_requested.emit(code, origin))
-	_encounters.manual_requested.connect(func(page, origin): manual_requested.emit(page, origin))
-	_encounters.selection_changed.connect(func(document, references): inspector_requested.emit("encounter", document, references))
+func _bind_encounters(view: Control) -> void:
+	_add_record("encounters.simple", view,
+		{"record": "encounter", "commitKey": "draft", "list": "encounter.list-simple", "open": "encounter.open-simple", "update": "encounter.apply-simple-draft", "limit": 128})
+	view.encounter_open_requested.connect(open_simple_encounter)
+	view.encounter_apply_draft_requested.connect(commit_simple_encounter)
+	view.create_requested.connect(_create_simple_encounter)
+	view.copy_source_requested.connect(_preview_simple_encounter_copy_source)
+	view.prompt_search_requested.connect(_search_encounter_prompts)
+	_bind_encounter_links(view)
+	view.selection_changed.connect(func(document, references): inspector_requested.emit("encounter", document, references))
 
 
-func _bind_complex_encounters() -> void:
-	_complex_encounters.encounter_open_requested.connect(open_complex_encounter)
-	_complex_encounters.encounter_apply_draft_requested.connect(commit_complex_encounter)
-	_complex_encounters.create_requested.connect(_create_complex_encounter)
-	_complex_encounters.copy_source_requested.connect(_preview_complex_encounter_copy_source)
-	_complex_encounters.prompt_search_requested.connect(func(query): _search_encounter_prompts_for(_complex_encounters, query))
-	_complex_encounters.response_search_requested.connect(_search_complex_response)
-	_complex_encounters.rogue_search_requested.connect(_search_rogue_encounters)
-	_complex_encounters.action_target_search_requested.connect(func(query): _search_action_targets(_complex_encounters, query))
-	_complex_encounters.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(_complex_encounters, query, request_id, slot))
-	_complex_encounters.message_open_requested.connect(func(id): message_requested.emit(id))
-	_complex_encounters.semantic_target_open_requested.connect(func(kind, id, identity, context): semantic_target_requested.emit(kind, id, identity, context))
-	_complex_encounters.sound_preview_requested.connect(func(id, identity, status): sound_preview_requested.emit(id, identity, status))
-	_complex_encounters.code_help_requested.connect(func(code, origin): code_help_requested.emit(code, origin))
-	_complex_encounters.manual_requested.connect(func(page, origin): manual_requested.emit(page, origin))
-	_complex_encounters.selection_changed.connect(func(document, references): inspector_requested.emit("complex-encounter", document, references))
+func _bind_complex_encounters(view: Control) -> void:
+	_add_record("encounters.complex", view,
+		{"record": "complexEncounter", "commitKey": "draft", "list": "encounter.list-complex", "open": "encounter.open-complex", "update": "encounter.apply-complex-draft", "limit": 128})
+	view.encounter_open_requested.connect(open_complex_encounter)
+	view.encounter_apply_draft_requested.connect(commit_complex_encounter)
+	view.create_requested.connect(_create_complex_encounter)
+	view.copy_source_requested.connect(_preview_complex_encounter_copy_source)
+	view.prompt_search_requested.connect(func(query): _search_encounter_prompts_for(view, query))
+	view.response_search_requested.connect(_search_complex_response)
+	view.rogue_search_requested.connect(_search_rogue_encounters)
+	_bind_encounter_links(view)
+	view.selection_changed.connect(func(document, references): inspector_requested.emit("complex-encounter", document, references))
 
 
-func _bind_route_tabs(quests: Control) -> void:
+func _bind_encounter_links(view: Control) -> void:
+	view.action_target_search_requested.connect(func(query): _search_action_targets(view, query))
+	view.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(view, query, request_id, slot))
+	view.message_open_requested.connect(func(id): message_requested.emit(id))
+	view.semantic_target_open_requested.connect(func(kind, id, identity, context): semantic_target_requested.emit(kind, id, identity, context))
+	view.sound_preview_requested.connect(func(id, identity, status): sound_preview_requested.emit(id, identity, status))
+	view.code_help_requested.connect(func(code, origin): code_help_requested.emit(code, origin))
+	view.manual_requested.connect(func(page, origin): manual_requested.emit(page, origin))
+
+
+func _bind_story_route_tabs(view: Control) -> void:
 	var routes := {"ActionPointsRouteTab": "scripts.action-points", "ExtraActionPointsRouteTab": "scripts.macros",
 		"GlobalMacrosRouteTab": "scripts.global-macros", "StoryFlagsRouteTab": "scripts.quests"}
-	for view in [_action_points, _extra_actions]:
-		for name in routes:
-			var button := view.get_node("StoryRouteTabs/" + name) as Button
-			button.disabled = false
-			button.pressed.connect(func(): route_requested.emit(routes[name]))
-	for view in [_action_points, _extra_actions, _globals, quests]:
-		view.find_child("ContextRoutes", true, false).route_requested.connect(route_requested.emit)
+	for name in routes:
+		var button := view.get_node("StoryRouteTabs/" + name) as Button
+		button.disabled = false
+		button.pressed.connect(func(): route_requested.emit(routes[name]))
+	_bind_context_routes(view)
+
+
+func _bind_context_routes(view: Control) -> void:
+	view.find_child("ContextRoutes", true, false).route_requested.connect(route_requested.emit)
+
+
+func _bind_extra_actions(view: Control) -> void:
+	_add_record("scripts.macros", view,
+		{"record": "extraActionPoint", "commitKey": "draft", "list": "extra-action-point.list", "open": "extra-action-point.open", "update": "extra-action-point.apply-draft", "limit": 128})
+	_bind_story_route_tabs(view)
+	view.row_open_requested.connect(open_extra_action_point)
+	view.row_update_requested.connect(commit_extra_action_point)
+	view.action_retarget_requested.connect(retarget_extra_action_point_action)
+	view.extra_code_update_requested.connect(upsert_extra_code)
+	view.catalog_query_requested.connect(func(preferred): _records.extraActionPoint.reload(preferred))
+	view.create_requested.connect(_create_extra_action_point)
+	view.duplicate_requested.connect(_duplicate_extra_action_point)
+	view.delete_requested.connect(_delete_extra_action_point)
+	view.selection_changed.connect(func(document, references): inspector_requested.emit("extra-action-point", document, references))
+	_bind_step_links(view)
 
 
 func _bind_action_points() -> void:
-	_extra_actions.row_open_requested.connect(open_extra_action_point)
-	_extra_actions.row_update_requested.connect(commit_extra_action_point)
-	_extra_actions.action_retarget_requested.connect(retarget_extra_action_point_action)
-	_extra_actions.extra_code_update_requested.connect(upsert_extra_code)
-	_extra_actions.action_target_search_requested.connect(func(query): _search_action_targets(_extra_actions, query))
-	_extra_actions.catalog_query_requested.connect(func(preferred): _records.extraActionPoint.reload(preferred))
-	_extra_actions.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(_extra_actions, query, request_id, slot))
-	_extra_actions.create_requested.connect(_create_extra_action_point)
-	_extra_actions.duplicate_requested.connect(_duplicate_extra_action_point)
-	_extra_actions.delete_requested.connect(_delete_extra_action_point)
-	_extra_actions.selection_changed.connect(func(document, references): inspector_requested.emit("extra-action-point", document, references))
+	_bind_story_route_tabs(_action_points)
 	_action_points.map_changed_requested.connect(reload_action_points_for_map)
 	_action_points.row_open_requested.connect(open_action_point)
 	_action_points.row_update_requested.connect(commit_action_point)
 	_action_points.action_retarget_requested.connect(retarget_action_point_action)
 	_action_points.extra_code_update_requested.connect(upsert_action_point_extra_code)
-	_action_points.action_target_search_requested.connect(func(query): _search_action_targets(_action_points, query))
 	_action_points.catalog_query_requested.connect(func(preferred): _records.actionPoint.reload(preferred, null, _map_context()))
-	_action_points.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(_action_points, query, request_id, slot))
 	_action_points.create_requested.connect(_create_action_point)
 	_action_points.duplicate_requested.connect(_duplicate_action_point)
 	_action_points.clear_requested.connect(_clear_action_point)
@@ -166,16 +190,21 @@ func _bind_action_points() -> void:
 	_action_points.map_behavior_requested.connect(func(identity, x, y): map_behavior_requested.emit(identity, x, y))
 	_action_points.map_reveal_requested.connect(func(identity, x, y): map_reveal_requested.emit(identity, x, y))
 	_action_points.selection_changed.connect(func(document, references): inspector_requested.emit("action-point", document, references))
-	for view in [_extra_actions, _action_points]:
-		view.code_help_requested.connect(func(code, origin): code_help_requested.emit(code, origin))
-		view.message_open_requested.connect(func(id): message_requested.emit(id))
-		view.sound_open_requested.connect(func(id): sound_requested.emit(id))
-		view.sound_preview_requested.connect(func(id, identity, status): sound_preview_requested.emit(id, identity, status))
-		view.sound_stop_requested.connect(func(): sound_stop_requested.emit())
-		view.simple_encounter_open_requested.connect(open_simple_encounter_by_native_id)
-		view.extra_action_point_open_requested.connect(open_extra_action_point_by_native_id)
-		view.semantic_target_open_requested.connect(func(kind: String, native_id: int, identity: String, context: Dictionary):
-			semantic_target_requested.emit(kind, native_id, identity, context))
+	_bind_step_links(_action_points)
+
+
+func _bind_step_links(view: Control) -> void:
+	view.action_target_search_requested.connect(func(query): _search_action_targets(view, query))
+	view.action_form_describe_requested.connect(func(query, request_id, slot): _describe_action_form(view, query, request_id, slot))
+	view.code_help_requested.connect(func(code, origin): code_help_requested.emit(code, origin))
+	view.message_open_requested.connect(func(id): message_requested.emit(id))
+	view.sound_open_requested.connect(func(id): sound_requested.emit(id))
+	view.sound_preview_requested.connect(func(id, identity, status): sound_preview_requested.emit(id, identity, status))
+	view.sound_stop_requested.connect(func(): sound_stop_requested.emit())
+	view.simple_encounter_open_requested.connect(open_simple_encounter_by_native_id)
+	view.extra_action_point_open_requested.connect(open_extra_action_point_by_native_id)
+	view.semantic_target_open_requested.connect(func(kind: String, native_id: int, identity: String, context: Dictionary):
+		semantic_target_requested.emit(kind, native_id, identity, context))
 
 
 func attach_session(bridge: RefCounted) -> void:
@@ -183,39 +212,48 @@ func attach_session(bridge: RefCounted) -> void:
 	_action_catalog.clear()
 	_pending_form_descriptions.clear()
 	for owner in _records.values(): owner.attach_session(bridge)
-	_global_commands.attach_session(bridge)
+	if _documents.peek("scripts.global-macros") != null: _global_commands.attach_session(bridge)
 
 
+func teardown() -> void:
+	_bridge = null
+	reset_projection(0)
+
+
+# Session fan-out visits realized pages only; a page realized later starts empty and stale.
 func reset_projection(revision: int) -> void:
-	_encounters.set_summaries({"items": [], "total": 0}, revision)
-	_complex_encounters.set_summaries({"items": [], "total": 0}, revision)
-	_extra_actions.set_summaries({"items": [], "total": 0}, revision)
-	_globals.set_document({"revision": revision, "hooks": [], "assignedScripts": []})
+	for route in ["encounters.simple", "encounters.complex", "scripts.macros"]:
+		var view: Control = _documents.peek(route)
+		if view != null: view.set_summaries({"items": [], "total": 0}, revision)
+	var globals: Control = _documents.peek("scripts.global-macros")
+	if globals != null: globals.set_document({"revision": revision, "hooks": [], "assignedScripts": []})
 
 
 func dispose() -> void:
+	# A queued form read outlives the shell's operation; an empty queue ends its drain.
+	_pending_form_descriptions.clear()
 	for owner in _records.values(): owner.dispose()
-	_global_commands.dispose()
+	if _documents.peek("scripts.global-macros") != null: _global_commands.dispose()
 
 
 func commit_simple_encounter(encounter: Dictionary) -> void:
-	await _records.encounter.commit(encounter)
+	await _record("encounter").commit(encounter)
 
 
 func commit_complex_encounter(encounter: Dictionary) -> void:
-	await _records.complexEncounter.commit(encounter)
+	await _record("complexEncounter").commit(encounter)
 
 
 func retarget_encounter_prompt(identity: String, target_native_id: int) -> void:
-	await _records.encounter.submit("encounter.prompt.retarget", {"source": identity, "targetNativeId": target_native_id})
+	await _record("encounter").submit("encounter.prompt.retarget", {"source": identity, "targetNativeId": target_native_id})
 
 
 func retarget_encounter_action(identity: String, slot: int, target_native_id: int) -> void:
-	await _records.encounter.submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
+	await _record("encounter").submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
 
 
 func commit_extra_action_point(extra_action_point: Dictionary) -> void:
-	await _records.extraActionPoint.commit(extra_action_point)
+	await _record("extraActionPoint").commit(extra_action_point)
 
 
 func update_global_macros(hooks: Dictionary) -> void:
@@ -223,23 +261,23 @@ func update_global_macros(hooks: Dictionary) -> void:
 
 
 func retarget_extra_action_point_action(identity: String, slot: int, target_native_id: int) -> void:
-	await _records.extraActionPoint.submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
+	await _record("extraActionPoint").submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
 
 
 func commit_action_point(action_point: Dictionary) -> void:
-	await _records.actionPoint.commit(action_point)
+	await _record("actionPoint").commit(action_point)
 
 
 func retarget_action_point_action(identity: String, slot: int, target_native_id: int) -> void:
-	await _records.actionPoint.submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
+	await _record("actionPoint").submit("action-reference.retarget", {"source": identity, "slot": slot, "targetNativeId": target_native_id})
 
 
 func upsert_action_point_extra_code(row: Dictionary) -> void:
-	await _records.actionPoint.submit("extra-code.upsert", {"row": row})
+	await _record("actionPoint").submit("extra-code.upsert", {"row": row})
 
 
 func upsert_extra_code(row: Dictionary) -> void:
-	await _records.extraActionPoint.submit("extra-code.upsert", {"row": row})
+	await _record("extraActionPoint").submit("extra-code.upsert", {"row": row})
 
 
 func _load_action_catalog(operation: ProvidenceEditorOperation) -> Dictionary:
@@ -247,10 +285,10 @@ func _load_action_catalog(operation: ProvidenceEditorOperation) -> Dictionary:
 	var response := await operation.request("action-definition.list", {"cursor": "0", "limit": 128})
 	if response.get("ok", false):
 		_action_catalog = (response.result as Dictionary).duplicate(true)
-		_action_points.set_action_catalog(_action_catalog)
-		_extra_actions.set_action_catalog(_action_catalog)
-		_encounters.set_action_catalog(_action_catalog)
-		_complex_encounters.set_action_catalog(_action_catalog)
+		# Pages realized later receive the catalog when they bind.
+		for route in RECORD_ROUTES.values():
+			var view: Control = _documents.peek(route)
+			if view != null: view.set_action_catalog(_action_catalog)
 	return response
 
 
@@ -374,18 +412,18 @@ func _request_action_form(operation: ProvidenceEditorOperation, query: Dictionar
 
 
 func _create_action_point(map_identity: String, x: int, y: int) -> void:
-	var response: Dictionary = await _records.actionPoint.submit("action-point.create", {
+	var response: Dictionary = await _record("actionPoint").submit("action-point.create", {
 		"mapIdentity": map_identity, "x": x, "y": y})
 	await _open_changed_record(response, "actionPoint", "action-point:")
 
 
 func _create_simple_encounter() -> void:
-	var response: Dictionary = await _records.encounter.submit("encounter.create-simple", {})
+	var response: Dictionary = await _record("encounter").submit("encounter.create-simple", {})
 	await _open_changed_record(response, "encounter", "simple-encounter:")
 
 
 func _create_complex_encounter() -> void:
-	var response: Dictionary = await _records.complexEncounter.submit("encounter.create-complex", {})
+	var response: Dictionary = await _record("complexEncounter").submit("encounter.create-complex", {})
 	await _open_changed_record(response, "complexEncounter", "complex-encounter:")
 
 
@@ -410,27 +448,27 @@ func _request_complex_encounter_copy_source(operation: ProvidenceEditorOperation
 
 
 func _duplicate_action_point(source: String, x: int, y: int) -> void:
-	var response: Dictionary = await _records.actionPoint.submit("action-point.duplicate", {
+	var response: Dictionary = await _record("actionPoint").submit("action-point.duplicate", {
 		"source": source, "x": x, "y": y})
 	await _open_changed_record(response, "actionPoint", "action-point:")
 
 
 func _clear_action_point(source: String) -> void:
-	await _records.actionPoint.submit("action-point.clear", {"source": source})
+	await _record("actionPoint").submit("action-point.clear", {"source": source})
 
 
 func _create_extra_action_point() -> void:
-	var response: Dictionary = await _records.extraActionPoint.submit("extra-action-point.create", {})
+	var response: Dictionary = await _record("extraActionPoint").submit("extra-action-point.create", {})
 	await _open_changed_record(response, "extraActionPoint", "extra-action-point:")
 
 
 func _duplicate_extra_action_point(source: String) -> void:
-	var response: Dictionary = await _records.extraActionPoint.submit("extra-action-point.duplicate", {"source": source})
+	var response: Dictionary = await _record("extraActionPoint").submit("extra-action-point.duplicate", {"source": source})
 	await _open_changed_record(response, "extraActionPoint", "extra-action-point:")
 
 
 func _delete_extra_action_point(source: String, confirmed: bool) -> void:
-	await _records.extraActionPoint.submit("extra-action-point.delete", {"source": source, "confirmed": confirmed})
+	await _record("extraActionPoint").submit("extra-action-point.delete", {"source": source, "confirmed": confirmed})
 
 
 func _open_changed_record(response: Dictionary, record: String, prefix: String) -> void:
@@ -440,28 +478,28 @@ func _open_changed_record(response: Dictionary, record: String, prefix: String) 
 	for value in change.get("changedEntities", []) as Array:
 		var identity := str(value)
 		if identity.begins_with(prefix):
-			await _records[record].open_record(identity)
+			await _record(record).open_record(identity)
 			return
 
 
 func reload_simple_encounters(preferred_identity: String = "") -> bool:
-	return _accept_response.call(await _records.encounter.reload(preferred_identity))
+	return _accept_response.call(await _record("encounter").reload(preferred_identity))
 
 
 func reload_complex_encounters(preferred_identity: String = "") -> bool:
-	return _accept_response.call(await _records.complexEncounter.reload(preferred_identity))
+	return _accept_response.call(await _record("complexEncounter").reload(preferred_identity))
 
 
 func open_simple_encounter(identity: String) -> bool:
-	return _accept_response.call(await _records.encounter.open_record(identity))
+	return _accept_response.call(await _record("encounter").open_record(identity))
 
 
 func open_complex_encounter(identity: String) -> bool:
-	return _accept_response.call(await _records.complexEncounter.open_record(identity))
+	return _accept_response.call(await _record("complexEncounter").open_record(identity))
 
 
 func reload_extra_action_points(preferred_identity: String = "") -> bool:
-	return _accept_response.call(await _records.extraActionPoint.reload(preferred_identity))
+	return _accept_response.call(await _record("extraActionPoint").reload(preferred_identity))
 
 
 func reload_global_macros() -> bool:
@@ -470,21 +508,21 @@ func reload_global_macros() -> bool:
 
 func reload_action_points(preferred_identity: String = "") -> bool:
 	if preferred_identity.is_empty(): preferred_identity = _action_points.selected_identity()
-	return _accept_response.call(await _records.actionPoint.reload(preferred_identity, null, _map_context(), not preferred_identity.is_empty()))
+	return _accept_response.call(await _record("actionPoint").reload(preferred_identity, null, _map_context(), not preferred_identity.is_empty()))
 
 
 func reload_action_points_for_map(map_identity: String, preferred_identity: String = "") -> bool:
-	return _accept_response.call(await _records.actionPoint.reload(preferred_identity, null, map_identity))
+	return _accept_response.call(await _record("actionPoint").reload(preferred_identity, null, map_identity))
 
 
 func restore_location(route: String, state: Dictionary) -> bool:
 	var record := str({"scripts.action-points":"actionPoint", "scripts.macros":"extraActionPoint", "encounters.simple":"encounter", "encounters.complex":"complexEncounter"}.get(route, ""))
 	if record.is_empty(): return false
-	var view: Control = {"actionPoint":_action_points, "extraActionPoint":_extra_actions, "encounter":_encounters, "complexEncounter":_complex_encounters}[record]
+	var view: Control = _documents.view(route)
 	view.prime_navigation_state(state)
 	var map_identity := str(state.get("mapIdentity", "")) if record == "actionPoint" else ""
 	await _wait_for_form_descriptions(view)
-	var restored: bool = _accept_response.call(await _records[record].reload(str(state.get("identity", "")), null, map_identity, true))
+	var restored: bool = _accept_response.call(await _record(record).reload(str(state.get("identity", "")), null, map_identity, true))
 	if restored: view.restore_navigation_state(state)
 	return restored
 
@@ -504,7 +542,7 @@ func _map_level_type() -> String:
 
 
 func open_action_point(identity: String) -> bool:
-	return _accept_response.call(await _records.actionPoint.open_record(identity))
+	return _accept_response.call(await _record("actionPoint").open_record(identity))
 
 
 func open_action_point_at_step(identity: String, slot: int) -> bool:
@@ -525,11 +563,11 @@ func prepare_action_point_creation(map_identity: String, x: int, y: int) -> bool
 
 func open_source(kind: String, identity: String) -> bool:
 	var record := str({"action-point": "actionPoint", "extra-action-point": "extraActionPoint", "simple-encounter": "encounter", "complex-encounter": "complexEncounter"}.get(kind, ""))
-	if not _records.has(record): return false
-	var view: Control = _action_points if record == "actionPoint" else (_extra_actions if record == "extraActionPoint" else (_encounters if record == "encounter" else _complex_encounters))
+	if not RECORD_ROUTES.has(record): return false
+	var view: Control = _documents.view(RECORD_ROUTES[record])
 	if record in ["actionPoint", "extraActionPoint"]:
 		await _wait_for_form_descriptions(view)
-	var opened: bool = bool(_accept_response.call(await _records[record].open_record(identity)))
+	var opened: bool = bool(_accept_response.call(await _record(record).open_record(identity)))
 	return opened
 
 
@@ -544,14 +582,14 @@ func _wait_for_form_descriptions(_view: Control) -> void:
 func repair_reference(request: Dictionary) -> void:
 	var kind := str(request.source).get_slice(":", 0)
 	var record := str({"action-point": "actionPoint", "extra-action-point": "extraActionPoint", "simple-encounter": "encounter", "complex-encounter": "complexEncounter"}.get(kind, ""))
-	if not _records.has(record): return
+	if not RECORD_ROUTES.has(record): return
 	var params := {"source": str(request.source), "targetNativeId": int(request.targetNativeId)}
 	var method := "encounter.prompt.retarget"
 	if str(request.field) != "promptMessage":
 		if int(request.slot) < 0: return
 		method = "action-reference.retarget"
 		params["slot"] = int(request.slot)
-	await _records[record].submit(method, params)
+	await _record(record).submit(method, params)
 
 
 func open_action_point_by_record_index(record_index: int) -> void:
@@ -565,7 +603,7 @@ func open_action_point_by_record_index(record_index: int) -> void:
 
 
 func open_extra_action_point(identity: String) -> bool:
-	return _accept_response.call(await _records.extraActionPoint.open_record(identity))
+	return _accept_response.call(await _record("extraActionPoint").open_record(identity))
 
 
 func open_extra_action_point_by_native_id(native_id: int) -> void:

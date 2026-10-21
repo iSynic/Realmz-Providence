@@ -1,6 +1,5 @@
 use crate::execute;
 use crate::request_params::required_string;
-use providence_core::codecs::RACE_RECORD_BYTES;
 use providence_core::codecs::decode_caste_rules;
 use providence_core::codecs::decode_race_rules;
 use providence_core::codecs::decode_rule_name_catalog;
@@ -11,6 +10,7 @@ use providence_core::codecs::encode_caste_rules;
 use providence_core::codecs::encode_race_rules;
 use providence_core::codecs::encode_scenario_item_rules;
 use providence_core::codecs::encode_standard_item_rules;
+use providence_core::codecs::{CASTE_RECORD_BYTES, RACE_RECORD_BYTES};
 use providence_core::session::EditorCommand;
 use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
@@ -22,6 +22,23 @@ pub(crate) fn import_race_rules(
     store: Option<&ProjectStore>,
     params: Value,
 ) -> Result<Value, String> {
+    import_races(session, store, params, false)
+}
+
+pub(crate) fn import_native_race_rules(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    params: Value,
+) -> Result<Value, String> {
+    import_races(session, store, params, true)
+}
+
+fn import_races(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    params: Value,
+    native: bool,
+) -> Result<Value, String> {
     let store = store.ok_or_else(|| {
         "race-rules.import requires serve-project so Data Race bytes have a durable blob store"
             .to_string()
@@ -31,10 +48,11 @@ pub(crate) fn import_race_rules(
         .map_err(|error| format!("could not read Data Race: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let decoded = decode_race_rules(&bytes, Some(blob));
-    if decoded.rules.len() != 30 {
+    let complete_records = bytes.len() / RACE_RECORD_BYTES;
+    if !native && decoded.rules.len() < 30 {
         return Err(format!(
             "Data Race must contain at least 30 complete {RACE_RECORD_BYTES}-byte records; found {} records and {} trailing bytes",
-            decoded.rules.len(),
+            complete_records,
             decoded.trailing_bytes.len()
         ));
     }
@@ -44,24 +62,9 @@ pub(crate) fn import_race_rules(
         return Err("Data Race failed exact no-edit round-trip validation".into());
     }
     let trailing_bytes = decoded.trailing_bytes.len();
-    let mut result = execute(
-        session,
-        &params,
-        EditorCommand::ReplaceRaceRules {
-            rules: decoded.rules,
-        },
-    )?;
-    if let Some(object) = result.as_object_mut() {
-        object.insert("trailingBytes".into(), json!(trailing_bytes));
-        object.insert(
-            "trailingDisposition".into(),
-            json!(if trailing_bytes == 0 {
-                "none"
-            } else {
-                "preserved-source-bytes"
-            }),
-        );
-    }
+    let rules = decoded.rules.into_iter().take(30).collect();
+    let mut result = execute(session, &params, EditorCommand::ReplaceRaceRules { rules })?;
+    project_rule_import_extent(&mut result, complete_records, trailing_bytes);
     Ok(result)
 }
 
@@ -70,11 +73,30 @@ pub(crate) fn import_caste_rules(
     store: Option<&ProjectStore>,
     params: Value,
 ) -> Result<Value, String> {
+    import_castes(session, store, params, false, false)
+}
+
+pub(crate) fn import_native_caste_rules(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    params: Value,
+    scenario_source: bool,
+) -> Result<Value, String> {
+    import_castes(session, store, params, true, scenario_source)
+}
+
+fn import_castes(
+    session: &mut EditorSession,
+    store: Option<&ProjectStore>,
+    params: Value,
+    native: bool,
+    allow_incomplete: bool,
+) -> Result<Value, String> {
     let store = store.ok_or_else(|| {
         "caste-rules.import requires serve-project so Data Caste bytes have a durable blob store"
             .to_string()
     })?;
-    if session.snapshot().race_rules.len() != 30 {
+    if !native && session.snapshot().race_rules.len() != 30 {
         return Err(
             "caste-rules.import requires the complete 30-record race table for reciprocal eligibility"
                 .into(),
@@ -85,10 +107,10 @@ pub(crate) fn import_caste_rules(
         .map_err(|error| format!("could not read Data Caste: {error}"))?;
     let blob = store.put_blob(&bytes).map_err(|error| error.to_string())?;
     let mut decoded = decode_caste_rules(&bytes, Some(blob));
-    if decoded.rules.len() != 30 || !decoded.trailing_bytes.is_empty() {
+    if !allow_incomplete && decoded.rules.len() < 30 {
         return Err(format!(
-            "Data Caste must contain exactly 30 576-byte records; found {} records and {} trailing bytes",
-            decoded.rules.len(),
+            "Data Caste must contain at least 30 complete {CASTE_RECORD_BYTES}-byte records; found {} records and {} trailing bytes",
+            bytes.len() / CASTE_RECORD_BYTES,
             decoded.trailing_bytes.len()
         ));
     }
@@ -97,15 +119,25 @@ pub(crate) fn import_caste_rules(
     if round_trip != bytes {
         return Err("Data Caste failed exact no-edit round-trip validation".into());
     }
-    derive_caste_eligibility(&session.snapshot().race_rules, &mut decoded.rules)
+    let complete_records = bytes.len() / CASTE_RECORD_BYTES;
+    let trailing_bytes = decoded.trailing_bytes.len();
+    decoded.rules.truncate(30);
+    let derive = if native {
+        providence_core::codecs::derive_available_caste_eligibility
+    } else {
+        derive_caste_eligibility
+    };
+    derive(&session.snapshot().race_rules, &mut decoded.rules)
         .map_err(|error| format!("Data Caste eligibility is invalid: {error}"))?;
-    execute(
+    let mut result = execute(
         session,
         &params,
         EditorCommand::ReplaceCasteRules {
             rules: decoded.rules,
         },
-    )
+    )?;
+    project_rule_import_extent(&mut result, complete_records, trailing_bytes);
+    Ok(result)
 }
 
 pub(crate) fn import_rule_names(
@@ -228,4 +260,23 @@ pub(crate) fn import_scenario_items(
         object.insert("sourceWarnings".into(), json!(warnings));
     }
     Ok(result)
+}
+
+fn project_rule_import_extent(result: &mut Value, complete_records: usize, trailing_bytes: usize) {
+    if let Some(object) = result.as_object_mut() {
+        object.insert("trailingBytes".into(), json!(trailing_bytes));
+        object.insert(
+            "trailingDisposition".into(),
+            json!(if trailing_bytes == 0 {
+                "none"
+            } else {
+                "preserved-source-bytes"
+            }),
+        );
+        object.insert("consumerRecords".into(), json!(complete_records.min(30)));
+        object.insert(
+            "sourceOnlyCompleteRecords".into(),
+            json!(complete_records.saturating_sub(30)),
+        );
+    }
 }

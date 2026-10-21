@@ -20,7 +20,7 @@ use super::{
 use crate::codecs::SCENARIO_MUSIC_FILES;
 use crate::model::{ProjectSnapshot, StableId};
 use crate::rebuilt::{
-    ApplicationMediaCatalog, compile_rebuilt_v3_reachable_content,
+    ApplicationMediaCatalog, compile_rebuilt_reachable_content,
     compile_rebuilt_v3_reachable_world_with_application, imported_requires_rebuilt_v4,
     project_rebuilt_v3_reachable_media_with_application, project_rebuilt_v3_reachable_runtime,
 };
@@ -129,6 +129,9 @@ fn classify_application_backed_rebuilt_v3(
 fn imported_source_warnings(snapshot: &ProjectSnapshot) -> Vec<CompatibilityBlocker> {
     let mut warnings = music_warnings(snapshot);
     warnings.extend(partial_record_warnings(snapshot));
+    warnings.extend(finding_groups::deferred(
+        &crate::rebuilt::imported_rule_diagnostics(snapshot),
+    ));
     warnings
 }
 
@@ -257,7 +260,7 @@ fn classify_reachable(
             {
                 blockers.push(blocker("rebuilt.world.invalid", error.to_string(), None));
             }
-            if let Err(error) = compile_rebuilt_v3_reachable_content(snapshot, &runtime) {
+            if let Err(error) = compile_rebuilt_reachable_content(snapshot, &runtime) {
                 blockers.push(blocker(
                     "rebuilt.content-document.invalid",
                     error.to_string(),

@@ -99,8 +99,10 @@ fn imported_missing_catalogs_retain_exact_signed_callers() {
     scenario.programs[0].instructions =
         vec![instruction(0, 10, -8, None), instruction(1, 6, -9, None)];
     let selected = project_rebuilt_v3_reachable_owners(&snapshot, &scenario).unwrap();
-    assert!(selected.reachable_treasure_ids.is_empty() && selected.treasures.is_empty());
-    assert!(selected.reachable_shop_ids.is_empty() && selected.shops.is_empty());
+    assert_eq!(selected.reachable_treasure_ids, vec![3]);
+    assert_eq!(selected.treasures[0].classic_id, 3);
+    assert_eq!(selected.reachable_shop_ids, vec![4]);
+    assert_eq!(selected.shops[0].classic_id, 4);
     assert_eq!(
         selected
             .references
@@ -109,6 +111,34 @@ fn imported_missing_catalogs_retain_exact_signed_callers() {
             .collect::<Vec<_>>(),
         [(-9, 9), (-8, 8)]
     );
+}
+
+#[test]
+fn imported_missing_catalog_extra_code_keeps_callers_without_inventing_targets() {
+    for opcode in [48, 51, 73] {
+        for payload in [None, Some(vec![3, 4])] {
+            let (mut snapshot, mut scenario) = fixture();
+            let mut action = instruction(3, opcode, 32766, None);
+            action.extra_code = payload;
+            scenario.programs[0].instructions = vec![action];
+            let original = scenario.clone();
+            assert!(matches!(
+                project_rebuilt_v3_reachable_owners(&snapshot, &scenario),
+                Err(RebuiltV3ReachableOwnerError::MissingExtraCode {
+                    native_id: 32766,
+                    ..
+                })
+            ));
+            snapshot.origin = ProjectOrigin::Imported {
+                compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
+            };
+            let selected = project_rebuilt_v3_reachable_owners(&snapshot, &scenario).unwrap();
+            assert!(selected.references.is_empty());
+            assert_eq!(selected.reachable_treasure_ids, [3]);
+            assert_eq!(selected.reachable_shop_ids, [4]);
+            assert_eq!(scenario, original);
+        }
+    }
 }
 
 #[test]

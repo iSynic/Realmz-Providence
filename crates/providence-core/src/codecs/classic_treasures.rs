@@ -1,4 +1,3 @@
-use super::classic_world::certified_treasure_extent;
 use crate::model::{NativeRecordId, StableId, TreasureRecord};
 
 pub const TREASURE_ITEM_SLOTS: usize = 20;
@@ -43,9 +42,7 @@ impl std::fmt::Display for TreasureCodecError {
 impl std::error::Error for TreasureCodecError {}
 
 pub fn decode_treasures(bytes: &[u8]) -> DecodedTreasureFile {
-    let complete_bytes = certified_treasure_extent(bytes)
-        .map(|extent| extent.authored_records * TREASURE_RECORD_BYTES)
-        .unwrap_or(bytes.len() / TREASURE_RECORD_BYTES * TREASURE_RECORD_BYTES);
+    let complete_bytes = bytes.len() / TREASURE_RECORD_BYTES * TREASURE_RECORD_BYTES;
     let records = bytes[..complete_bytes]
         .chunks_exact(TREASURE_RECORD_BYTES)
         .enumerate()
@@ -69,11 +66,7 @@ pub fn encode_treasures(
         }
     }
     let source_body_bytes = compatibility_source
-        .map(|source| {
-            certified_treasure_extent(source)
-                .map(|extent| extent.authored_records * TREASURE_RECORD_BYTES)
-                .unwrap_or(source.len() / TREASURE_RECORD_BYTES * TREASURE_RECORD_BYTES)
-        })
+        .map(|source| source.len() / TREASURE_RECORD_BYTES * TREASURE_RECORD_BYTES)
         .unwrap_or(0);
     let required_bytes = selected
         .last()

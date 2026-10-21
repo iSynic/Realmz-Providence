@@ -113,23 +113,28 @@ fn list(
                 .contains(&query)
         })
         .collect::<Vec<_>>();
-    let offset = params
-        .get("seekIdentity")
-        .and_then(Value::as_str)
-        .and_then(|id| rows.iter().position(|(row, _, _)| row.id.0 == id))
-        .map(|i| i / limit * limit)
-        .unwrap_or_else(|| params.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize);
+    let offset = page_offset(&rows, params, limit);
     let total = rows.len();
     let items = rows.into_iter().skip(offset).take(limit).map(|(row, scope, present)| {
         let empty = scope == "scenario" && vacant(session, &row);
         json!({"identity":row.id,"classicId":row.classic_id,"recordIndex":row.record_index,
-            "name":row.name,"scope":scope,"present":present,"empty":empty,"unused":unused(session, &row, &called),"editable":scope=="scenario"&&!empty,
+            "name":row.name,"scope":scope,"present":present,"empty":empty,"unused":unused(session, &row, &called),"editable":scope=="scenario"&&!empty&&providence_core::codecs::scenario_spell_is_runtime_addressable(&row),
+            "runtimeAddressable":scope!="scenario"||providence_core::codecs::scenario_spell_is_runtime_addressable(&row),
             "usedBy":references.iter().filter(|r|r.target_kind==providence_core::references::TargetKind::Spell&&r.target_id==row.id.0).count()})
     }).collect::<Vec<_>>();
     Ok(
         json!({"revision":session.revision(),"items":items,"offset":offset,"limit":limit,"total":total,
         "truncated":offset.saturating_add(limit)<total,"stockAvailable":stock.is_some()||!session.snapshot().standard_spells.is_empty()}),
     )
+}
+
+fn page_offset(rows: &[(SpellDefinition, &str, bool)], params: &Value, limit: usize) -> usize {
+    params
+        .get("seekIdentity")
+        .and_then(Value::as_str)
+        .and_then(|id| rows.iter().position(|(row, _, _)| row.id.0 == id))
+        .map(|i| i / limit * limit)
+        .unwrap_or_else(|| params.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize)
 }
 
 fn unused(
@@ -205,7 +210,8 @@ pub(crate) fn open(
         .collect::<Vec<_>>();
     Ok(
         json!({"revision":session.revision(),"definition":definition,"scope":scope,"present":present,
-        "editable":scope=="scenario"&&!empty,"empty":empty,"copySource":copy,"usedBy":uses.len(),
+        "editable":scope=="scenario"&&!empty&&providence_core::codecs::scenario_spell_is_runtime_addressable(&definition),"empty":empty,"copySource":copy,"usedBy":uses.len(),
+        "runtimeAddressable":scope!="scenario"||providence_core::codecs::scenario_spell_is_runtime_addressable(&definition),
         "uses":uses.iter().take(64).collect::<Vec<_>>(),"usesTruncated":uses.len()>64,"outgoing":outgoing}),
     )
 }

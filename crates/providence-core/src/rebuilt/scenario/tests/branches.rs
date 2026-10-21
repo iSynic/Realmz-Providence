@@ -1,6 +1,42 @@
 use super::*;
 
 #[test]
+fn imported_branch_modes_and_ranges_remain_native_while_fresh_definitions_stay_strict() {
+    for (row_id, opcode, mode_index) in [
+        (10, 67, 1),
+        (11, 72, 3),
+        (12, 75, 3),
+        (13, 78, 2),
+        (14, 85, 0),
+    ] {
+        let mut snapshot = branch_snapshot();
+        snapshot
+            .extra_codes
+            .iter_mut()
+            .find(|row| row.native_id.0 == row_id)
+            .unwrap()
+            .values[mode_index] = -1;
+        assert!(project_rebuilt_v3_scenario(&snapshot).is_err());
+        snapshot.origin = crate::model::ProjectOrigin::Imported {
+            compatibility_annex: crate::model::BlobId(format!("sha256:{}", "a".repeat(64))),
+        };
+        let original = snapshot.clone();
+        let reachable = crate::rebuilt::derive_rebuilt_v3_reachability(&snapshot).unwrap();
+        let (projected, _, _) =
+            crate::rebuilt::scenario::project_rebuilt_v3_selected_scenario(&snapshot, &reachable)
+                .unwrap();
+        let action = projected
+            .programs
+            .iter()
+            .flat_map(|program| &program.instructions)
+            .find(|action| action.opcode == opcode)
+            .unwrap();
+        assert_eq!(action.extra_code.as_ref().unwrap()[mode_index], -1);
+        assert_eq!(snapshot, original);
+    }
+}
+
+#[test]
 fn branch_opcodes_resolve_all_three_pinned_runtime_destination_modes() {
     let snapshot = branch_snapshot();
     let scenario = project_rebuilt_v3_scenario(&snapshot).expect("branch targets resolve");

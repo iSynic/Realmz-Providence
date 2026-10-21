@@ -1,4 +1,3 @@
-use super::classic_world::certified_monster_extent;
 use crate::model::{MonsterDescription, MonsterRecord, MonsterSet, NativeRecordId, StableId};
 
 pub const MONSTER_RECORD_BYTES: usize = 210;
@@ -37,11 +36,18 @@ pub enum MonsterCodecError {
         native_id: NativeRecordId,
         bytes: usize,
     },
+    TextUnrepresentable {
+        native_id: NativeRecordId,
+        reason: String,
+    },
 }
 
 impl std::fmt::Display for MonsterCodecError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::TextUnrepresentable { native_id, reason } => {
+                write!(formatter, "monster {} text: {reason}", native_id.0)
+            }
             Self::DuplicateNativeId(native_id) => {
                 write!(formatter, "duplicate monster record id {}", native_id.0)
             }
@@ -80,9 +86,7 @@ impl std::fmt::Display for MonsterCodecError {
 impl std::error::Error for MonsterCodecError {}
 
 pub fn decode_monsters(bytes: &[u8], native_path: &str, set_id: i16) -> DecodedMonsterFile {
-    let complete_bytes = certified_monster_extent(bytes, native_path)
-        .map(|extent| extent.authored_records * MONSTER_RECORD_BYTES)
-        .unwrap_or(bytes.len() / MONSTER_RECORD_BYTES * MONSTER_RECORD_BYTES);
+    let complete_bytes = bytes.len() / MONSTER_RECORD_BYTES * MONSTER_RECORD_BYTES;
     let records = bytes[..complete_bytes]
         .chunks_exact(MONSTER_RECORD_BYTES)
         .enumerate()
@@ -117,11 +121,7 @@ pub fn encode_monsters(
 ) -> Result<Vec<u8>, MonsterCodecError> {
     let selected = sorted_unique(records)?;
     let source_body_bytes = compatibility_source
-        .map(|source| {
-            certified_monster_extent(source, native_path)
-                .map(|extent| extent.authored_records * MONSTER_RECORD_BYTES)
-                .unwrap_or(source.len() / MONSTER_RECORD_BYTES * MONSTER_RECORD_BYTES)
-        })
+        .map(|source| source.len() / MONSTER_RECORD_BYTES * MONSTER_RECORD_BYTES)
         .unwrap_or(0);
     let required_bytes = selected
         .last()
@@ -216,7 +216,7 @@ pub fn encode_monster_descriptions(
         if end <= source_body_bytes && record.text == decode_pascal_text(&output[start..end]) {
             continue;
         }
-        let bytes = encode_classic_text(&record.text);
+        let bytes = encode_classic_text(&record.text, record.native_id)?;
         if bytes.len() > 255 {
             return Err(MonsterCodecError::DescriptionTooLong {
                 native_id: record.native_id,
@@ -376,7 +376,7 @@ fn encode_monster_row(record: &MonsterRecord, row: &mut [u8]) -> Result<(), Mons
     row[165] = record.bonus_attack as u8;
     write_i16(row, 166, record.death_macro);
     write_i16(row, 168, record.max_spell_points);
-    let name = encode_classic_text(&record.display_name);
+    let name = encode_classic_text(&record.display_name, record.native_id)?;
     if name.len() > 40 {
         return Err(MonsterCodecError::DisplayNameTooLong {
             native_id: record.native_id,
@@ -449,36 +449,30 @@ fn write_i8s(row: &mut [u8], offset: usize, values: &[i8]) {
     }
 }
 fn decode_fixed_text(bytes: &[u8]) -> String {
-    bytes
+    let end = bytes
         .iter()
-        .take_while(|byte| **byte != 0)
-        .map(|byte| {
-            if (32..=126).contains(byte) {
-                *byte as char
-            } else {
-                ' '
-            }
-        })
-        .collect::<String>()
-        .trim_end()
-        .to_string()
+        .position(|byte| *byte == 0)
+        .unwrap_or(bytes.len());
+    super::classic_text_resources::decode_mac_roman_text(&bytes[..end])
 }
 fn decode_pascal_text(row: &[u8]) -> String {
     let end = (row.first().copied().unwrap_or(0) as usize + 1).min(row.len());
-    decode_fixed_text(row.get(1..end).unwrap_or_default())
+    super::classic_text_resources::decode_mac_roman_text(row.get(1..end).unwrap_or_default())
 }
-fn encode_classic_text(value: &str) -> Vec<u8> {
-    value
-        .chars()
-        .map(|character| {
-            if character.is_ascii() {
-                character as u8
-            } else {
-                b'?'
-            }
-        })
-        .collect()
+fn encode_classic_text(
+    value: &str,
+    native_id: NativeRecordId,
+) -> Result<Vec<u8>, MonsterCodecError> {
+    crate::codecs::encode_classic_text_payload(value).map_err(|error| {
+        MonsterCodecError::TextUnrepresentable {
+            native_id,
+            reason: error.to_string(),
+        }
+    })
 }
+
+#[cfg(test)]
+mod text_tests;
 
 #[cfg(test)]
 mod tests {

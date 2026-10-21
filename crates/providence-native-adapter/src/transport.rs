@@ -26,10 +26,54 @@ struct CommandTiming {
     history_snapshot_reused: bool,
 }
 
-struct ConnectionJobs {
+struct PendingCommand {
+    journal: Value,
+    measure: bool,
+    describes_startup: bool,
+    revision: Revision,
+    attribution: Option<providence_core::session::HistoryAttribution>,
+}
+impl PendingCommand {
+    fn capture(session: &EditorSession, request: &mut Request) -> Self {
+        let attribution = request
+            .params
+            .as_object_mut()
+            .and_then(|params| {
+                params.remove("_hostSession");
+                params.remove("_historyAttribution")
+            })
+            .and_then(|value| serde_json::from_value(value).ok());
+        Self {
+            journal: json!({"method":request.method,"params":request.params}),
+            measure: request.params["measurePerformance"]
+                .as_bool()
+                .unwrap_or(false),
+            describes_startup: request.method == "session.describe",
+            revision: session.revision(),
+            attribution: if request.method.starts_with("history.") {
+                None
+            } else {
+                attribution
+            },
+        }
+    }
+}
+
+pub(crate) struct ConnectionJobs {
+    terrain: crate::terrain_generation::jobs::Jobs,
     validation: validation_jobs::Jobs,
     imports: crate::scenario_import::jobs::Jobs,
     integrity: crate::library_integrity::Inspection,
+}
+impl ConnectionJobs {
+    pub(crate) fn new(catalogs: CatalogViews<'_>) -> Self {
+        Self {
+            terrain: Default::default(),
+            validation: validation_jobs::Jobs::with_catalogs(catalogs),
+            imports: crate::scenario_import::jobs::Jobs::default(),
+            integrity: crate::library_integrity::Inspection::begin(catalogs),
+        }
+    }
 }
 
 pub(crate) fn serve_io_with_libraries(
@@ -42,6 +86,7 @@ pub(crate) fn serve_io_with_libraries(
     mut writer: impl Write,
 ) -> Result<(), String> {
     let mut jobs = ConnectionJobs {
+        terrain: Default::default(),
         validation: validation_jobs::Jobs::with_catalogs(catalogs),
         imports: crate::scenario_import::jobs::Jobs::default(),
         integrity: crate::library_integrity::Inspection::begin(catalogs),
@@ -73,15 +118,16 @@ pub(crate) fn serve_io_with_libraries(
     Ok(())
 }
 
-fn process_request(
+pub(crate) fn process_request(
     session: &mut EditorSession,
     store: Option<&ProjectStore>,
     catalogs: CatalogViews<'_>,
     mut monster_library: Option<&mut OpenMonsterLibrary>,
     jobs: &mut ConnectionJobs,
-    request: Request,
+    mut request: Request,
     startup_timing: Option<&crate::startup::StartupTiming>,
 ) -> Response {
+    let command = PendingCommand::capture(session, &mut request);
     let receipt = match crate::monster_operation_receipts::start(
         store,
         monster_library.as_deref(),
@@ -91,14 +137,6 @@ fn process_request(
         crate::monster_operation_receipts::Start::Continue(receipt) => receipt,
         crate::monster_operation_receipts::Start::Reply(response) => return response,
     };
-    let command = json!({"method": request.method, "params": request.params});
-    let measure = request
-        .params
-        .get("measurePerformance")
-        .and_then(Value::as_bool)
-        .unwrap_or(false);
-    let describes_startup = request.method == "session.describe";
-    let previous_revision = session.revision();
     let previous_library_revision = monster_library
         .as_ref()
         .map(|library| library.session.revision());
@@ -115,21 +153,48 @@ fn process_request(
         dispatch_micros: started.elapsed().as_micros(),
         ..Default::default()
     };
-    if response.ok && session.revision() != previous_revision {
-        checkpoint_project(session, store, &command, &mut response, &mut timing);
+    let advanced = session.revision() != command.revision;
+    if advanced && let Some(attribution) = command.attribution {
+        session.attribute_latest_edit(attribution);
+    }
+    reject_unacknowledged_mutation(
+        &mut response,
+        advanced || library_advanced(monster_library.as_deref(), previous_library_revision),
+    );
+    if response.ok && advanced {
+        checkpoint_project(session, store, &command.journal, &mut response, &mut timing);
     }
     if response.ok {
         checkpoint_monster_library(monster_library, previous_library_revision, &mut response);
     }
-    if measure {
+    if command.measure {
         attach_performance_metrics(
             &mut response,
             timing,
-            startup_timing.filter(|_| describes_startup),
+            startup_timing.filter(|_| command.describes_startup),
         );
     }
     crate::monster_operation_receipts::finish(receipt, &mut response);
     response
+}
+
+fn library_advanced(library: Option<&OpenMonsterLibrary>, previous: Option<Revision>) -> bool {
+    library.is_some_and(|library| previous != Some(library.session.revision()))
+}
+
+/// A failed reply that still advanced a session is never checkpointed or attributed to the
+/// next command. The disk keeps the last acknowledged state and the client must reopen.
+pub(crate) fn reject_unacknowledged_mutation(response: &mut Response, advanced: bool) {
+    if response.ok || !advanced || response.outcome_unknown == Some(true) {
+        return;
+    }
+    let error = response.error.as_deref().unwrap_or("unknown error");
+    *response = unknown_outcome(
+        response.id,
+        format!(
+            "command could not be durably acknowledged because it failed after changing the session; reopen the project before retrying: {error}"
+        ),
+    );
 }
 
 fn checkpoint_project(
@@ -279,6 +344,10 @@ fn dispatch_with_imports(
     } else {
         jobs.imports
             .dispatch(session, store, &request.method, &request.params)
+            .or_else(|| {
+                jobs.terrain
+                    .dispatch(session, store, catalogs, &request.method, &request.params)
+            })
     };
     if let Some(result) = imported {
         match result {

@@ -31,6 +31,7 @@ mod economy_import;
 mod encounter_import;
 mod extra_code_commands;
 mod icon_media;
+mod identity;
 mod image_files;
 mod import_inputs;
 mod import_repair;
@@ -49,6 +50,8 @@ mod map_artwork;
 mod map_creation;
 mod map_overlays;
 mod map_paint_commands;
+mod map_region;
+mod map_region_preview;
 mod map_rendering;
 mod map_selection_commands;
 mod map_thumbnail;
@@ -89,10 +92,13 @@ mod readiness;
 mod rebuilt_export_plan;
 mod rebuilt_packages;
 mod rebuilt_publication;
+mod rebuilt_source_publication;
 mod record_catalog;
 mod reference_catalog;
 mod reference_strings;
+mod request_dispatch;
 mod request_params;
+use request_dispatch::dispatch;
 mod rule_catalog;
 mod rule_drafts;
 mod rule_import;
@@ -106,10 +112,12 @@ mod scenario_preflight;
 mod scenario_security;
 mod session_routes;
 mod session_summary;
+mod shared_host;
 mod smart_terrain;
 mod sound_media;
 mod special_land_artwork;
 mod special_land_media;
+mod special_land_solidity;
 mod spell_catalog;
 mod spell_drafts;
 mod spell_import;
@@ -119,6 +127,7 @@ mod stock_rules;
 mod stock_spells;
 mod stored_routes;
 mod terrain_atlas;
+mod terrain_generation;
 mod terrain_mapping;
 mod text_export;
 mod text_interchange;
@@ -139,7 +148,9 @@ mod validation_listing;
 mod wav_input;
 mod world_route_projections;
 
-use crate::catalogs::{CatalogViews, OpenLibraries, OpenMonsterLibrary};
+#[cfg(test)]
+use crate::catalogs::OpenMonsterLibrary;
+use crate::catalogs::{CatalogViews, OpenLibraries};
 use crate::request_params::required_u64;
 use crate::transport::serve_io_with_libraries;
 #[cfg(test)]
@@ -156,9 +167,10 @@ use providence_storage::ReferenceLibraryStore;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{env, io, process::ExitCode};
+#[cfg(test)]
 use stored_routes::dispatch as dispatch_result_with_catalogs;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Request {
     id: u64,
@@ -167,7 +179,7 @@ struct Request {
     params: Value,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Response {
     id: u64,
@@ -182,18 +194,30 @@ struct Response {
 
 fn main() -> ExitCode {
     let arguments = env::args().skip(1).collect::<Vec<_>>();
+    if let Some(identity) = identity::cli(&arguments) {
+        println!("{identity}");
+        return ExitCode::SUCCESS;
+    }
+    if matches!(
+        arguments.first().map(String::as_str),
+        Some(
+            "serve-shared-project"
+                | "serve-native-project"
+                | "serve-observer-project"
+                | "serve-native-control-project"
+                | "host-project"
+        )
+    ) {
+        return match shared_host::run(&arguments) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("{error}");
+                ExitCode::FAILURE
+            }
+        };
+    }
     if arguments.first().map(String::as_str) == Some("import-rebuilt-scenario") {
         return scenario_conversion::run(&arguments[1..]);
-    }
-    if arguments.as_slice() == ["build-identity"] {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&providence_core::build_identity::current(
-                "providence-native-adapter"
-            ))
-            .expect("build identity serializes")
-        );
-        return ExitCode::SUCCESS;
     }
     let startup = match startup::start(&mut arguments.into_iter()) {
         Ok(startup) => startup,
@@ -271,59 +295,6 @@ fn serve(
     )
 }
 
-fn dispatch(
-    session: &mut EditorSession,
-    store: Option<&ProjectStore>,
-    catalogs: CatalogViews<'_>,
-    monster_library: Option<&mut OpenMonsterLibrary>,
-    validation_jobs: &mut validation_jobs::Jobs,
-    request: Request,
-) -> Response {
-    let result = if request.method == "build.identity" {
-        serde_json::to_value(providence_core::build_identity::current(
-            "providence-native-adapter",
-        ))
-        .map_err(|error| error.to_string())
-    } else {
-        validation_jobs
-            .dispatch(
-                session,
-                store,
-                catalogs.application_media,
-                &request.method,
-                &request.params,
-            )
-            .unwrap_or_else(|| {
-                dispatch_result_with_catalogs(
-                    session,
-                    store,
-                    catalogs,
-                    monster_library,
-                    &request.method,
-                    request.params,
-                )
-            })
-    };
-    match result {
-        Ok(result) => Response {
-            id: request.id,
-            outcome_unknown: None,
-            ok: true,
-            result: Some(result),
-            error: None,
-        },
-        Err(error) => Response {
-            id: request.id,
-            outcome_unknown: error
-                .starts_with("Publication outcome unknown:")
-                .then_some(true),
-            ok: false,
-            result: None,
-            error: Some(error),
-        },
-    }
-}
-
 #[cfg(test)]
 fn dispatch_result_with_store(
     session: &mut EditorSession,
@@ -392,12 +363,18 @@ fn execute(
     command: EditorCommand,
 ) -> Result<Value, String> {
     let expected_revision = Revision(required_u64(params, "expectedRevision")?);
-    let projection = session
-        .execute(ExpectedRevisionCommand {
-            expected_revision,
-            command,
-        })
-        .map_err(|error| error.to_string())?;
+    let request = ExpectedRevisionCommand {
+        expected_revision,
+        command,
+    };
+    let projection = if let Some(raw) = params.get("_historyAttribution") {
+        let attribution = serde_json::from_value(raw.clone())
+            .map_err(|e| format!("invalid history attribution: {e}"))?;
+        session.execute_attributed(request, attribution)
+    } else {
+        session.execute(request)
+    }
+    .map_err(|error| error.to_string())?;
     serde_json::to_value(projection).map_err(|error| error.to_string())
 }
 

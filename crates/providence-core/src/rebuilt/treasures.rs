@@ -101,7 +101,13 @@ fn project_rebuilt_v3_treasures_filtered(
                 continue;
             }
             let stable_id = StableId(format!("classic.item.{item_id}"));
-            if !item_ids.contains(&stable_id) {
+            if !item_ids.contains(&stable_id)
+                && !(treasure_ids.is_some()
+                    && matches!(
+                        snapshot.origin,
+                        crate::model::ProjectOrigin::Imported { .. }
+                    ))
+            {
                 return Err(RebuiltV3TreasureError::MissingItem {
                     classic_id: record.native_id.0,
                     slot,

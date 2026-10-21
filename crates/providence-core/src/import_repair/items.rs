@@ -83,6 +83,30 @@ pub(super) fn text<'a>(
     }
 }
 
+pub(super) fn apply_text(
+    snapshot: &mut ProjectSnapshot,
+    record_index: u16,
+    field: &str,
+    expected: &str,
+    recovered: String,
+) -> Result<(), String> {
+    let record = snapshot
+        .scenario_item_rules
+        .iter_mut()
+        .find(|r| r.record_index == record_index)
+        .ok_or("Item destination is unavailable.")?;
+    if text(&record.definition, field)? != expected {
+        return Err("Item text changed; review the repair again.".into());
+    }
+    match field {
+        "name" => record.definition.name = recovered,
+        "unidentifiedName" => record.definition.unidentified_name = recovered,
+        "description" => record.definition.description = recovered,
+        _ => return Err("Unknown item text field.".into()),
+    }
+    Ok(())
+}
+
 fn compare_record(
     current: &crate::model::SourcedScenarioItemRule,
     before: &crate::model::SourcedScenarioItemRule,

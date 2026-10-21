@@ -99,19 +99,21 @@ pub(crate) fn publish_classic_directory(
             directory.display()
         ));
     }
-    fs::rename(staging.path(), directory).map_err(|error| {
-        if directory.exists() {
-            format!(
-                "refusing to overwrite existing Classic output {}",
-                directory.display()
-            )
-        } else {
-            format!(
-                "could not publish Classic output {}: {error}",
-                directory.display()
-            )
-        }
-    })?;
+    providence_publication::publish_directory_noclobber(staging.path(), directory).map_err(
+        |error| {
+            if directory.exists() {
+                format!(
+                    "refusing to overwrite existing Classic output {}",
+                    directory.display()
+                )
+            } else {
+                format!(
+                    "could not publish Classic output {}: {error}",
+                    directory.display()
+                )
+            }
+        },
+    )?;
     #[cfg(unix)]
     fs::File::open(parent)
         .and_then(|directory| directory.sync_all())

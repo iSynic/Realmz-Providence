@@ -4,8 +4,11 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+publish.workspace = true
 
 [dependencies]
+providence-session-client = { path = "../providence-session-client" }
+providence-publication = { path = "../providence-publication" }
 providence-application-library = { path = "../providence-application-library" }
 providence-core = { path = "../providence-core" }
 providence-rebuilt-package = { path = "../providence-rebuilt-package" }

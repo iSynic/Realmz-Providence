@@ -11,9 +11,10 @@ rebuilt; they are not an alternate source of authored truth.
 
 `providence-native-adapter` owns filesystem materialization, native process
 transport, asynchronous jobs and application-library resolution. Routine
-commands carry an expected revision and return bounded changes. A stale or
-uncertain response must not silently overwrite a draft or retry an authoring
-operation.
+commands carry an expected revision and return bounded changes. A rejected
+command leaves the project unchanged; a reply that fails after changing a session
+reports an unknown outcome and requires a reopen. A stale or uncertain response
+must not silently overwrite a draft or retry an authoring operation.
 
 `providence-rebuilt-package` validates and materializes the versioned package
 contract. `providence-application-library` builds and normalizes stock support.

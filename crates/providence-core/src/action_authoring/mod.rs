@@ -98,6 +98,9 @@ mod random_region_tests;
 mod random_shape_tests;
 #[cfg(test)]
 mod raw_control_disposition_tests;
+mod reference_behavior;
+#[cfg(test)]
+mod reference_behavior_tests;
 mod restricted_shop_presentation;
 mod rule_targets;
 mod semantic_inventory;
@@ -278,7 +281,11 @@ pub struct DescribedActionField {
     pub preview: Option<ActionValuePreview>,
     pub evidence: SemanticEvidence,
     pub uses: Vec<ActionFieldUse>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_behavior: Option<ReferenceBehavior>,
 }
+
+pub use reference_behavior::ReferenceBehavior;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -10,6 +10,7 @@ mod contracts;
 mod extra_code_actions;
 mod identities;
 mod programs;
+mod random_regions;
 mod roots;
 mod traversal;
 
@@ -52,6 +53,9 @@ enum Work {
 struct ReachabilityBuilder<'a> {
     snapshot: &'a ProjectSnapshot,
     catalog: catalog::ReachabilityCatalog<'a>,
+    random_regions: std::collections::BTreeMap<String, random_regions::RandomRegionClosure>,
+    #[cfg(test)]
+    naive_random_regions: bool,
     references: BTreeSet<RebuiltV3ReachabilityReference>,
     reachable_programs: BTreeSet<StableId>,
     reachable_simple: BTreeSet<u32>,

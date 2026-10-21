@@ -88,6 +88,42 @@ pub(crate) fn finish(pending: Option<PendingReceipt>, response: &mut Response) {
     }
 }
 
+pub(crate) fn record_project_rejection(
+    project: &ProjectStore,
+    request: &Request,
+    response: &mut Response,
+) -> Result<(), String> {
+    if library_mutation(&request.method)
+        || personal_mutation(&request.method)
+        || matches!(request.method.as_str(), "media.transfer.commit")
+        || request.method == "media.import.commit" && request.params["destination"] == "personal"
+    {
+        return Ok(());
+    }
+    let mut params = request.params.clone();
+    if let Some(params) = params.as_object_mut() {
+        params.remove("_hostSession");
+        params.remove("_historyAttribution");
+    }
+    let intent = Request {
+        id: request.id,
+        method: request.method.clone(),
+        params,
+    };
+    match start(Some(project), None, None, &intent) {
+        Start::Continue(pending) => {
+            finish(pending, response);
+            if response.outcome_unknown == Some(true) {
+                return Err(response.error.clone().unwrap_or_default());
+            }
+            Ok(())
+        }
+        Start::Reply(reply) => Err(reply.error.unwrap_or_else(|| {
+            "The original receipt already exists; inspect it before further edits.".into()
+        })),
+    }
+}
+
 fn read_original(
     project: Option<&ProjectStore>,
     library: Option<&OpenMonsterLibrary>,
@@ -160,6 +196,7 @@ fn mutation(method: &str) -> bool {
                 | "random-region.apply"
                 | "map.apply-intent"
                 | "smart-terrain.apply"
+                | "terrain-generation.apply"
                 | "magic-brush.apply"
                 | "terrain-mapping.accept"
                 | "map.create"
@@ -168,6 +205,7 @@ fn mutation(method: &str) -> bool {
                 | "map-stamp.apply"
                 | "tile-behavior.apply"
                 | "land-cell.apply"
+                | "special-land-solidity.initialize"
                 | "custom-landlook.apply"
                 | "custom-landlook.metadata.import"
                 | "random-region.clear"
@@ -197,7 +235,7 @@ fn personal_mutation(method: &str) -> bool {
     )
 }
 
-fn library_mutation(method: &str) -> bool {
+pub(crate) fn library_mutation(method: &str) -> bool {
     matches!(
         method,
         "monster-library.draft.apply"

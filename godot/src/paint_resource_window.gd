@@ -82,6 +82,7 @@ func present_list(result: Dictionary) -> void:
 		var label := "%s%s\n%s · %d × %d" % ["★ " if item.favorite else "", item.name, item.collection, int(item.width), int(item.height)]
 		var index := entries.add_item(label)
 		entries.set_item_metadata(index, str(item.identity))
+		if item.identity == _draft.get("identity", ""): entries.select(index)
 		entries.set_item_tooltip(index, "%s · %s" % [item.kind, item.tilesetId])
 		if item.get("availabilityReason") != null: entries.set_item_tooltip(index, str(item.availabilityReason))
 	_next = int(result.nextOffset) if result.get("nextOffset") != null else -1
@@ -125,6 +126,10 @@ func draft() -> Dictionary:
 
 func has_unapplied_changes() -> bool:
 	return not _draft.is_empty() and (_creating or draft() != _original)
+
+
+func query_context() -> Dictionary:
+	return {"query":get_node("%SearchResources").text, "kind":["", "palette", "stamp"][get_node("%ResourceKind").selected], "offset":_offset, "scope":collection_scope()}
 
 
 func discard_draft() -> void:
@@ -327,6 +332,11 @@ func present_resource_preview(identity: String, render_cells: Array, special_pre
 
 func present_geometry(response: Dictionary, generation: int) -> void:
 	_geometry.present(response, generation)
+
+
+## A geometry review is open or being prepared; like a draft, it must survive refreshes.
+func geometry_pending() -> bool:
+	return _geometry.pending()
 
 
 func _accept_geometry(resource: Dictionary, render_cells: Array) -> void:

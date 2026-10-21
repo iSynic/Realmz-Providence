@@ -23,6 +23,14 @@ fn collect_instruction(
     instruction: &RebuiltV3ClassicInstruction,
     selection: &mut Selection,
 ) -> Result<(), Error> {
+    if selection.defers_missing()
+        && instruction
+            .extra_code
+            .as_ref()
+            .is_none_or(|values| values.len() < 5)
+    {
+        return Ok(());
+    }
     let values = || {
         instruction
             .extra_code

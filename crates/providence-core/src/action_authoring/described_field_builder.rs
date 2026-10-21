@@ -70,5 +70,6 @@ pub(super) fn build(
         preview,
         evidence: field_evidence(entry, unresolved),
         uses: Vec::new(),
+        reference_behavior: None,
     }
 }

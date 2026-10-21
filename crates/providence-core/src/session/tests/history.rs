@@ -207,6 +207,7 @@ fn session_history_retains_only_the_most_recent_bounded_entries() {
 #[test]
 fn older_persisted_history_without_effect_metadata_stays_conservative() {
     let mut encoded = serde_json::to_value(SessionHistoryEntry {
+        attribution: None,
         snapshot: sample_snapshot(),
         changed_entities: vec![StableId("message:1".into())],
         references_unchanged: true,
@@ -219,4 +220,39 @@ fn older_persisted_history_without_effect_metadata_stays_conservative() {
     let decoded: SessionHistoryEntry =
         serde_json::from_value(encoded).expect("read older history entry");
     assert!(!decoded.references_unchanged);
+}
+
+#[test]
+fn a_command_failing_after_its_write_leaves_truth_revision_and_history_unchanged() {
+    let mut session = EditorSession::new(sample_snapshot());
+    assert_eq!(session.diagnostics().len(), 1);
+    let before = session.persisted_state();
+    let repair = || ExpectedRevisionCommand {
+        expected_revision: Revision(0),
+        command: EditorCommand::RetargetMessageReference {
+            source: StableId("action-point:7".into()),
+            field: "outcome.message".into(),
+            target_native_id: NativeRecordId(1),
+        },
+    };
+
+    arm_failure_after_domain_write();
+    session
+        .execute(repair())
+        .expect_err("injected late failure");
+    assert_eq!(session.revision(), Revision(0));
+    assert_eq!(session.persisted_state(), before);
+    assert_eq!(session.diagnostics().len(), 1);
+
+    session
+        .execute(repair())
+        .expect("the same command still applies");
+    assert!(session.diagnostics().is_empty());
+    session
+        .execute(ExpectedRevisionCommand {
+            expected_revision: Revision(1),
+            command: EditorCommand::Undo,
+        })
+        .expect("undo returns to the untouched baseline");
+    assert_eq!(session.snapshot(), &before.snapshot);
 }

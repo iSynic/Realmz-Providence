@@ -22,6 +22,38 @@ pub(crate) fn validate_presence(
     Ok(())
 }
 
+/// Widening v7 fields must not widen the archived unsigned-byte reader.
+pub(crate) fn validate_legacy_bounds(
+    version: u8,
+    world: &RebuiltV3WorldDocument,
+) -> Result<(), RebuiltV3ArchiveError> {
+    if version >= 7 {
+        return Ok(());
+    }
+    for map in &world.maps {
+        for rectangle in &map.random_rectangles {
+            if [
+                rectangle.top,
+                rectangle.left,
+                rectangle.bottom,
+                rectangle.right,
+            ]
+            .into_iter()
+            .any(|value| u8::try_from(value).is_err())
+            {
+                return Err(RebuiltV3ArchiveError::InvalidDocument {
+                    path: "world.json".into(),
+                    reason: format!(
+                        "map '{}' random rectangle '{}' bounds are outside the schema v{version} unsigned-byte representation",
+                        map.id.0, rectangle.id.0
+                    ),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
 pub(crate) fn validate(
     version: u8,
     world: &RebuiltV3WorldDocument,
@@ -29,7 +61,7 @@ pub(crate) fn validate(
     for map in &world.maps {
         let expected = usize::from(map.width) * usize::from(map.height);
         let valid = match (version, &map.classic_tile_values) {
-            (6, Some(values)) => values.len() == expected && expected != 0,
+            (6..=7, Some(values)) => values.len() == expected && expected != 0,
             (3..=5, None) => true,
             _ => false,
         };

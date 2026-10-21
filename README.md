@@ -34,6 +34,13 @@ with glibc 2.35 or newer. A Rebuilt installation is optional for authoring and
 export; interactive playtest uses a separate compatible Rebuilt process.
 
 [Action Point activation and filters](docs/public/action-points.md) explain entry markers, dormant records and applied Flow context.
+The [native authoring manual](docs/public/authoring-manual.md) covers the current
+development workflows, including [Random Message repair](docs/public/random-message-repair.md).
+
+Local MCP authoring and collaboration are in development. The
+[MCP guide](docs/mcp/README.md) describes the shared-session candidate, exposed
+tools and remaining certification gates. This is separate from the downloadable
+beta's supported scope.
 
 ## Why Providence?
 
@@ -54,8 +61,11 @@ export; interactive playtest uses a separate compatible Rebuilt process.
 
 ## Authoring tour
 
-These screenshots show the native editor with a freshly imported **Trouble in
-the Sword Lands** scenario and the bundled stock reference library.
+These October 15 screenshots show the current development editor with a freshly
+imported **Trouble in the Sword Lands** scenario and stock reference library.
+They accompany the current manual; the downloadable beta's exact contract remains
+in its [release notes](docs/public/beta-release.md). The captures are actual native
+views, with no scenario edits after import. They do not certify campaign completion.
 
 <table>
 <tr><td width="50%"><strong>Action Points</strong><br><img src="docs/screenshots/scripts-action-points.png" alt="Native Action Point editor"><br>Ordered script steps, trigger placement, result destinations and callers.</td><td width="50%"><strong>Complex Encounters</strong><br><img src="docs/screenshots/encounters-complex.png" alt="Native Complex Encounter editor"><br>Prompts, choices, conditions, spells and result scripts.</td></tr>
@@ -63,6 +73,7 @@ the Sword Lands** scenario and the bundled stock reference library.
 <tr><td><strong>Strings</strong><br><img src="docs/screenshots/text-messages.png" alt="Native String editor"><br>Messages, search, export checks and exact uses.</td><td><strong>Assets</strong><br><img src="docs/screenshots/assets.png" alt="Native asset gallery"><br>Scenario and reference media, previews and resource selection.</td></tr>
 <tr><td><strong>Spells</strong><br><img src="docs/screenshots/rules-spells.png" alt="Native Spell editor"><br>Stock copy sources, custom records, mechanics, sound and animation.</td><td><strong>Items</strong><br><img src="docs/screenshots/economy-items.png" alt="Native Item editor"><br>Item mechanics, restrictions, artwork and callers.</td></tr>
 <tr><td><strong>Validate</strong><br><img src="docs/screenshots/validate.png" alt="Native Validate workbench"><br>Grouped findings, affected counts and navigation to the source.</td><td><strong>Publish</strong><br><img src="docs/screenshots/publish.png" alt="Native Publish workbench"><br>Target readiness, export planning and output selection.</td></tr>
+<tr><td><strong>Dungeon Maps</strong><br><img src="docs/screenshots/maps-dungeon.png" alt="Native Dungeon editor"><br>Dungeon terrain, directional features and applied map context.</td><td><strong>Scenario Startup</strong><br><img src="docs/screenshots/scenario-startup.png" alt="Native scenario startup workbench"><br>Starting location, scenario metadata and rule selection.</td></tr>
 </table>
 
 ## What you can author

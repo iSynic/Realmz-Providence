@@ -1,43 +1,6 @@
-[gd_scene load_steps=38 format=3]
+[gd_scene load_steps=2 format=3]
 
-[ext_resource type="PackedScene" path="res://src/string_editor.tscn" id="1"]
-[ext_resource type="PackedScene" path="res://src/land_editor.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://src/simple_encounter_editor.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://src/extra_action_point_editor.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://src/item_editor.tscn" id="5"]
-[ext_resource type="PackedScene" path="res://src/action_point_editor.tscn" id="6"]
-[ext_resource type="PackedScene" path="res://src/global_macro_editor.tscn" id="7"]
-[ext_resource type="PackedScene" path="res://src/scenario_picture_editor.tscn" id="8"]
-[ext_resource type="PackedScene" path="res://src/scenario_sound_editor.tscn" id="9"]
-[ext_resource type="PackedScene" path="res://src/scenario_icon_editor.tscn" id="10"]
-[ext_resource type="PackedScene" path="res://src/special_land_editor.tscn" id="11"]
-[ext_resource type="PackedScene" path="res://src/dungeon_editor.tscn" id="12"]
-[ext_resource type="PackedScene" path="res://src/land_layout_editor.tscn" id="13"]
-[ext_resource type="PackedScene" path="res://src/player_maps_editor.tscn" id="14"]
-[ext_resource type="PackedScene" path="res://src/story_flags_editor.tscn" id="15"]
-[ext_resource type="PackedScene" path="res://src/reference_strings.tscn" id="16"]
-[ext_resource type="PackedScene" path="res://src/text_export_check.tscn" id="17"]
-[ext_resource type="PackedScene" path="res://src/complex_encounter_editor.tscn" id="18"]
-[ext_resource type="PackedScene" path="res://src/rogue_encounter_editor.tscn" id="19"]
-[ext_resource type="PackedScene" path="res://src/timed_encounter_editor.tscn" id="20"]
-[ext_resource type="PackedScene" path="res://src/battle_editor.tscn" id="21"]
-[ext_resource type="PackedScene" path="res://src/treasure_editor.tscn" id="22"]
-[ext_resource type="PackedScene" path="res://src/shop_editor.tscn" id="23"]
-[ext_resource type="PackedScene" path="res://src/spell_editor.tscn" id="24"]
-[ext_resource type="PackedScene" path="res://src/race_editor.tscn" id="25"]
-[ext_resource type="PackedScene" path="res://src/caste_editor.tscn" id="26"]
-[ext_resource type="PackedScene" path="res://src/scenario_startup_editor.tscn" id="27"]
-[ext_resource type="PackedScene" path="res://src/scenario_restrictions_editor.tscn" id="28"]
-[ext_resource type="PackedScene" path="res://src/scenario_contact_editor.tscn" id="29"]
-[ext_resource type="PackedScene" path="res://src/scenario_security_evidence.tscn" id="30"]
-[ext_resource type="PackedScene" path="res://src/monster_editor.tscn" id="31"]
-[ext_resource type="PackedScene" path="res://src/monster_library_editor.tscn" id="32"]
-[ext_resource type="PackedScene" path="res://src/vault_editor.tscn" id="33"]
-[ext_resource type="PackedScene" path="res://src/issues_workbench.tscn" id="34"]
-[ext_resource type="PackedScene" path="res://src/publish_workbench.tscn" id="35"]
-
-[ext_resource type="PackedScene" path="res://src/decoded_records_workbench.tscn" id="36"]
-[ext_resource type="PackedScene" path="res://src/source_evidence_workbench.tscn" id="37"]
+[ext_resource type="Script" path="res://src/lazy_document_page.gd" id="1"]
 
 [node name="DocumentTabs" type="TabContainer"]
 size_flags_horizontal = 3
@@ -45,158 +8,236 @@ size_flags_vertical = 3
 tabs_visible = false
 use_hidden_tabs_for_min_size = false
 
-[node name="String Editor" parent="." instance=ExtResource("1")]
+[node name="String Editor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/string_editor.tscn"
 metadata/route_identity = "text.messages"
 
-[node name="Thornwatch Coast" parent="." instance=ExtResource("2")]
+[node name="Thornwatch Coast" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/land_editor.tscn"
 metadata/route_identity = "maps.land"
 
-[node name="Simple Encounters" parent="." instance=ExtResource("3")]
+[node name="Simple Encounters" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/simple_encounter_editor.tscn"
 metadata/route_identity = "encounters.simple"
 
-[node name="Extra Action Points" parent="." instance=ExtResource("4")]
+[node name="Extra Action Points" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/extra_action_point_editor.tscn"
 metadata/route_identity = "scripts.macros"
 
-[node name="Items" parent="." instance=ExtResource("5")]
+[node name="Items" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/item_editor.tscn"
 metadata/route_identity = "economy.items"
 
-[node name="ActionPoints" parent="." instance=ExtResource("6")]
+[node name="ActionPoints" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/action_point_editor.tscn"
 metadata/route_identity = "scripts.action-points"
 
-[node name="Global Macros" parent="." instance=ExtResource("7")]
+[node name="Global Macros" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/global_macro_editor.tscn"
 metadata/route_identity = "scripts.global-macros"
 
-[node name="Scenario Pictures" parent="." instance=ExtResource("8")]
+[node name="Scenario Pictures" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_picture_editor.tscn"
 metadata/route_identity = "assets.pictures"
 
-[node name="Scenario Sounds" parent="." instance=ExtResource("9")]
+[node name="Scenario Sounds" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_sound_editor.tscn"
 metadata/route_identity = "assets.sounds"
 
-[node name="Scenario Icons" parent="." instance=ExtResource("10")]
+[node name="Scenario Icons" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_icon_editor.tscn"
 metadata/route_identity = "assets.icons"
 
-[node name="Special Land Tiles" parent="." instance=ExtResource("11")]
+[node name="Special Land Tiles" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/special_land_editor.tscn"
 metadata/route_identity = "maps.special-land"
 
-[node name="DungeonEditor" parent="." instance=ExtResource("12")]
+[node name="DungeonEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/dungeon_editor.tscn"
 metadata/route_identity = "maps.dungeon"
 
-[node name="LandLayoutEditor" parent="." instance=ExtResource("13")]
+[node name="LandLayoutEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/land_layout_editor.tscn"
 metadata/route_identity = "maps.layout"
 
-[node name="PlayerMapsEditor" parent="." instance=ExtResource("14")]
+[node name="PlayerMapsEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/player_maps_editor.tscn"
 metadata/route_identity = "player-maps.map-records"
 
-[node name="Quests" parent="." instance=ExtResource("15")]
+[node name="Quests" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/story_flags_editor.tscn"
 metadata/route_identity = "scripts.quests"
 
-[node name="Reference Strings" parent="." instance=ExtResource("16")]
+[node name="Reference Strings" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/reference_strings.tscn"
 metadata/route_identity = "text.text-resources"
 
-[node name="Export Check" parent="." instance=ExtResource("17")]
+[node name="Export Check" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/text_export_check.tscn"
 metadata/route_identity = "text.spell-check"
 
-[node name="Complex Encounters" parent="." instance=ExtResource("18")]
+[node name="Complex Encounters" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/complex_encounter_editor.tscn"
 metadata/route_identity = "encounters.complex"
 
-[node name="Rogue Encounters" parent="." instance=ExtResource("19")]
+[node name="Rogue Encounters" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/rogue_encounter_editor.tscn"
 metadata/route_identity = "encounters.rogue"
 
-[node name="Timed Encounters" parent="." instance=ExtResource("20")]
+[node name="Timed Encounters" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/timed_encounter_editor.tscn"
 metadata/route_identity = "encounters.timed"
 
-[node name="Battle Editor" parent="." instance=ExtResource("21")]
+[node name="Battle Editor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/battle_editor.tscn"
 metadata/route_identity = "combat.battles"
 
-[node name="Treasure" parent="." instance=ExtResource("22")]
+[node name="Treasure" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/treasure_editor.tscn"
 metadata/route_identity = "economy.treasure"
 
-[node name="Shops" parent="." instance=ExtResource("23")]
+[node name="Shops" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/shop_editor.tscn"
 metadata/route_identity = "economy.shops"
 
-[node name="SpellEditor" parent="." instance=ExtResource("24")]
+[node name="SpellEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/spell_editor.tscn"
 metadata/route_identity = "rules.spells"
 
-[node name="RaceEditor" parent="." instance=ExtResource("25")]
+[node name="RaceEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/race_editor.tscn"
 metadata/route_identity = "rules.races"
 
-[node name="CasteEditor" parent="." instance=ExtResource("26")]
+[node name="CasteEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/caste_editor.tscn"
 metadata/route_identity = "rules.castes"
 
-[node name="ScenarioStartupEditor" parent="." instance=ExtResource("27")]
+[node name="ScenarioStartupEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_startup_editor.tscn"
 metadata/route_identity = "scenario.startup"
 
-[node name="ScenarioRestrictionsEditor" parent="." instance=ExtResource("28")]
+[node name="ScenarioRestrictionsEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_restrictions_editor.tscn"
 metadata/route_identity = "scenario.restrictions"
 
-[node name="ScenarioContactEditor" parent="." instance=ExtResource("29")]
+[node name="ScenarioContactEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_contact_editor.tscn"
 metadata/route_identity = "scenario.contact"
 
-[node name="ScenarioSecurityEvidence" parent="." instance=ExtResource("30")]
+[node name="ScenarioSecurityEvidence" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/scenario_security_evidence.tscn"
 metadata/route_identity = "scenario.registration"
 
-[node name="MonsterEditor" parent="." instance=ExtResource("31")]
+[node name="MonsterEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/monster_editor.tscn"
 metadata/route_identity = "combat.monsters"
 
-[node name="MonsterLibraryEditor" parent="." instance=ExtResource("32")]
+[node name="MonsterLibraryEditor" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/monster_library_editor.tscn"
 metadata/route_identity = "combat.scrapbook"
 
-[node name="Vault of Arcana" parent="." instance=ExtResource("33")]
+[node name="Vault of Arcana" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/vault_editor.tscn"
 metadata/route_identity = "economy.vault"
 
-[node name="Issues" parent="." instance=ExtResource("34")]
+[node name="Issues" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/issues_workbench.tscn"
 metadata/route_identity = "linter.issues"
 
-[node name="Readiness" parent="." instance=ExtResource("35")]
+[node name="Readiness" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/publish_workbench.tscn"
 metadata/route_identity = "linter.readiness"
 
-[node name="Export Plan" parent="." instance=ExtResource("35")]
+[node name="Export Plan" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/publish_workbench.tscn"
 metadata/route_identity = "export.export-plan"
 
-[node name="Benchmark" parent="." instance=ExtResource("35")]
+[node name="Benchmark" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/publish_workbench.tscn"
 metadata/route_identity = "export.benchmark"
 
-[node name="DecodedRecords" parent="." instance=ExtResource("36")]
+[node name="DecodedRecords" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/decoded_records_workbench.tscn"
 metadata/route_identity = "records.decoded-records"
 
-[node name="TechnicalDetails" parent="." instance=ExtResource("37")]
+[node name="TechnicalDetails" type="Control" parent="."]
 layout_mode = 2
+script = ExtResource("1")
+page_scene = "res://src/source_evidence_workbench.tscn"
 metadata/route_identity = "records.evidence"

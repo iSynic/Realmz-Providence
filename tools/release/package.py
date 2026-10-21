@@ -19,7 +19,7 @@ from windows_runtime import verify_static_crt
 VERSION = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
 
 BINARIES = ["providence-cli", "providence-native-adapter", "providence-rebuilt-preview",
-            "providence-application-library"]
+            "providence-application-library", "providence-mcp"]
 
 
 def build_native(target_root, runtime):
@@ -85,6 +85,7 @@ def support(runtime, binaries, cache):
     shutil.copytree(ROOT / "godot/bundled/realmz-reference", runtime / "Realmz Data")
     shutil.copytree(ROOT / "godot/bundled/monster-library", runtime / "monster-library")
     shutil.copytree(ROOT / "support/rebuilt", runtime / "rebuilt-support")
+    shutil.copytree(ROOT / "support/mcp", runtime / "mcp")
     for name in ["LICENSE", "LICENSE-REALMZ.txt", "NOTICE", "THIRD_PARTY_NOTICES.md"]:
         shutil.copy2(ROOT / name, runtime / name)
     shutil.copytree(ROOT / "vendor", runtime / "third-party", ignore=shutil.ignore_patterns("src", "Cargo.toml", "Cargo.lock"))
@@ -95,7 +96,7 @@ def support(runtime, binaries, cache):
 
 def identity_manifest(runtime, resources, identity, godot):
     identities = {}
-    for name in ["providence-cli", "providence-native-adapter", "providence-application-library"]:
+    for name in ["providence-cli", "providence-native-adapter", "providence-application-library", "providence-mcp"]:
         build = json.loads(output([runtime / executable(name), "build-identity"]))
         if build["commit"] != identity["commit"] or build["sourceTree"] != identity["sourceTree"] or build["sourceDirty"]:
             raise ValueError(f"Embedded source identity mismatch: {name}: {build}")
@@ -112,6 +113,7 @@ def identity_manifest(runtime, resources, identity, godot):
 
 
 def export(godot, bundle):
+    run([os.sys.executable, ROOT / "tools/build-offline-help.py"])
     system = platform.system()
     presets = {"Windows": "Windows Desktop", "Linux": "Linux", "Darwin": "macOS"}
     filename = {"Windows": "Providence.exe", "Linux": "Providence", "Darwin": "Providence.app"}[system]

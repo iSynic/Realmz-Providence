@@ -22,10 +22,10 @@ fn sparse_invalid_categories_are_quarantined_without_a_twenty_shop_cap() {
     ]));
     bytes.extend(row(&[]));
     let decoded = decode_shops(&bytes);
-    assert_eq!(decoded.records.len(), 21);
+    assert_eq!(decoded.records.len(), 23);
     assert_eq!(
         decoded.records.last().unwrap().native_id,
-        NativeRecordId(20)
+        NativeRecordId(22)
     );
     assert_eq!(
         decoded
@@ -52,12 +52,12 @@ fn later_coherent_extension_keeps_native_offset_and_unrelated_bytes() {
             .iter()
             .map(|row| row.native_id.0)
             .collect::<Vec<_>>(),
-        [0, 3]
+        [0, 1, 2, 3]
     );
     assert_eq!(decoded.trailing_bytes, [0xde, 0xad]);
     assert_eq!(encode_shops(&decoded.records, Some(&bytes)).unwrap(), bytes);
-    decoded.records[1].inflation = 125;
-    decoded.records[1].authored = true;
+    decoded.records[3].inflation = 125;
+    decoded.records[3].authored = true;
     let output = encode_shops(&decoded.records, Some(&bytes)).unwrap();
     let changed = bytes
         .iter()

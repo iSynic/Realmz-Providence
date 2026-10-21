@@ -36,6 +36,11 @@ impl ProjectStore {
     }
 
     pub fn save_snapshot(&self, snapshot: &ProjectSnapshot) -> Result<String, StoreError> {
+        let _writer = self.writer_lease()?;
+        self.write_snapshot(snapshot)
+    }
+
+    pub(super) fn write_snapshot(&self, snapshot: &ProjectSnapshot) -> Result<String, StoreError> {
         let (bytes, digest) = self.prepare_full_snapshot(snapshot)?;
         self.backup_pre_selection_snapshot()?;
         atomic_write(&self.snapshot_path(), &bytes)?;

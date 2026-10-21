@@ -101,7 +101,7 @@ func _collection(shell) -> void:
 	window._choose_tile(); window._tile_atlas.select_tile(8); window._accept_tile(); window._tile_dialog.hide()
 	_check(window.has_unapplied_changes(), "Explicit nested tile acceptance did not stage a draft")
 	await controller.commit_selected(); await _settle(shell)
-	window._use(); await _settle(shell)
+	await _press(window.get_node("%UseResource")); await _settle(shell)
 	_check(not window.visible and int(dock.brush.cells[0]) == 8 and dock.ui.brush_name.text == "Village paths", "Use brush did not restore the named brush")
 	controller.open(); await _settle(shell); await controller._query("No such resource", "", 0)
 	_check(window.get_node("%Entries").item_count == 0 and window.draft().is_empty(), "Empty search retained stale resource details")
@@ -125,7 +125,7 @@ func _stamps(shell) -> void:
 	_check(window.draft().cells.size() == 2 and int(window.draft().cells[0].tile) == 112, "Capture copied markers or failed to omit special artwork")
 	window.get_node("%ResourceName").text = "Village corner"
 	window._draft.cells[0].tile = 5
-	await controller.commit_selected(); await _settle(shell); window._use(); await _settle(shell)
+	await controller.commit_selected(); await _settle(shell); await _press(window.get_node("%UseResource")); await _settle(shell)
 	_check(author._tool == "stamp" and author._overlay.active, "Use stamp did not activate destination placement")
 	var before := _tiles(shell); var revision: int = shell._session_view.revision
 	author._hover_stamp(Vector2i(3,3)); await _settle(shell)
@@ -229,6 +229,15 @@ func _settle(shell) -> void:
 	_check(false, "Paint collection operation did not settle")
 
 
+# Press a button the way a user can: only once it is enabled. Calling the handler
+# while the window still disables the action is a silent no-op by design.
+func _press(button: BaseButton) -> void:
+	var deadline := Time.get_ticks_msec() + 10000
+	while button.disabled and Time.get_ticks_msec() < deadline: await process_frame
+	_check(not button.disabled, "%s stayed disabled" % button.name)
+	button.pressed.emit()
+
+
 func _collection_layout(window: Window) -> void:
 	for viewport in [Vector2i(1600,900), Vector2i(1920,1080)]:
 		root.size = viewport; window.popup_centered(); await _frames(3)
@@ -259,7 +268,7 @@ func _dungeon_stamps(shell) -> void:
 	_check(int(window.draft().cells[0].tile) == tile, "Cancelling feature selection changed the Dungeon stamp draft")
 	window._choose_tile(); await _settle(shell); window._feature_dialog._change("stairs", true); await _settle(shell); window._feature_dialog._accept()
 	_check(int(window.draft().cells[0].tile) != tile and int(window.draft().cells[0].tile) & 0x9060 == 0, "Explicit feature acceptance lost safe field ownership")
-	await controller.commit_selected(); await _settle(shell); window._use(); await _settle(shell)
+	await controller.commit_selected(); await _settle(shell); await _press(window.get_node("%UseResource")); await _settle(shell)
 	await _dungeon_placement(shell)
 	await _dungeon_linked_return(shell)
 

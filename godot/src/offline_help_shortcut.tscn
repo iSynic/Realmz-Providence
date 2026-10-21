@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[node name="Shortcut" type="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Command" type="Label" parent="."]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+size_flags_vertical = 0
+autowrap_mode = 2
+
+[node name="Keys" type="Label" parent="."]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_vertical = 0
+autowrap_mode = 2
+
+[node name="Availability" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+autowrap_mode = 2

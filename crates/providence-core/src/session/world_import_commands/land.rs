@@ -281,16 +281,8 @@ fn validate_extra_action_points(
             .iter()
             .find(|source| source.native_path == "Data ED3")
             .expect("validated source path");
-        let certified_extent = crate::codecs::certified_extra_action_point_source(
-            &source.blob.0,
-            source.byte_length as usize,
-        );
-        let expected_records = certified_extent
-            .map(|extent| extent.authored_records)
-            .unwrap_or(source.byte_length as usize / EXTRA_ACTION_POINT_RECORD_BYTES);
-        let has_unclassified_remainder = certified_extent.is_none()
-            && !(source.byte_length as usize).is_multiple_of(EXTRA_ACTION_POINT_RECORD_BYTES);
-        if has_unclassified_remainder || extra_action_points.len() != expected_records {
+        let expected_records = source.byte_length as usize / EXTRA_ACTION_POINT_RECORD_BYTES;
+        if extra_action_points.len() != expected_records {
             return Err(SessionError::InvalidClassicImport(
                 "Data ED3 length does not match the decoded Extra Action Point count".into(),
             ));

@@ -23,6 +23,7 @@ var _project_backed := false
 var _library_only := false
 var _project_path := ""
 var _application_library_root := ""
+var _native_control: Dictionary = {}
 var _reference_catalog_root := ""
 var _monster_library_root := ""
 var _settings_path := "user://providence-settings.cfg"
@@ -36,6 +37,9 @@ var _requires_reopen := false
 var _repair_intent: Dictionary = {}
 var _repair_recovery_method := ""
 var _repair_reconnected := false
+var _native_client_id := Crypto.new().generate_random_bytes(16).hex_encode()
+var _project_support_options := PackedStringArray()
+var _shared_session := false
 
 
 func _init(settings_path_override: String = "") -> void:
@@ -124,6 +128,19 @@ func begin_project_start(project_path: String, options: Dictionary = {}) -> Dict
 	return _begin_connection(prepared, _connect_prepared.bind(executable, prepared.arguments))
 
 
+func begin_status_observer(source: ProvidenceNativeBridge) -> Dictionary:
+	if operation_busy() or _stdio != null or not source.shared_session_enabled():
+		return {"ok": false, "error": "Status observation needs an unused connection and an open shared project."}
+	if source._native_control.is_empty(): return {"ok":false,"error":"Reconnect the native project before registering connected editing state."}
+	var arguments := PackedStringArray(["serve-native-control-project", source.current_project_path(),
+		"--native-parent-id", str(int(source._native_control.clientId)), "--native-control-token", str(source._native_control.token)])
+	arguments.append_array(source.mcp_setup_context().supportOptions)
+	var prepared := {"arguments": arguments, "projectPath": source.current_project_path(),
+		"applicationLibrary": source.current_application_library_root(), "referenceCatalog": source.current_reference_catalog_root(),
+		"monsterLibrary": source.current_monster_library_root()}
+	return _begin_connection(prepared, _connect_prepared.bind(_adapter_path(), arguments))
+
+
 func begin_project_create(project_id: String, project_path: String) -> Dictionary:
 	if operation_busy() or _stdio != null:
 		return {"ok": false, "error": "A new project needs an unused connection."}
@@ -159,33 +176,45 @@ func _begin_connection(prepared: Dictionary, worker: Callable) -> Dictionary:
 
 
 func _prepare_project_start(project_path: String, application_library_root: String, reference_catalog_root: String, monster_library_root: String, require_snapshot: bool = true) -> Dictionary:
-	var normalized := project_path.strip_edges()
-	var snapshot_path := normalized.path_join("project.providence.json")
-	if normalized.is_empty() or (require_snapshot and not FileAccess.file_exists(snapshot_path)):
-		return {"ok": false, "error": "Selected directory does not contain project.providence.json: %s" % normalized}
-	var arguments := PackedStringArray(["serve-project", normalized])
-	var library_root := configured_application_library_root(application_library_root)
-	if not library_root.is_empty():
-		arguments.append("--application-library-root")
-		arguments.append(library_root)
-	var catalog_root := configured_reference_catalog_root(reference_catalog_root)
-	if not catalog_root.is_empty():
-		arguments.append("--reference-catalog-root")
-		arguments.append(catalog_root)
-	var monster_root := _append_monster_library(arguments, monster_library_root)
-	_append_personal_library(arguments)
-	preload("res://src/native_library_settings.gd").append_stock_items(arguments, bundled_classic_application_data_root())
-	return {"ok": true, "arguments": arguments, "projectPath": normalized,
-		"applicationLibrary": library_root, "referenceCatalog": catalog_root, "monsterLibrary": monster_root}
+	return preload("res://src/native_project_options.gd").prepare(project_path, require_snapshot, {
+		"application": configured_application_library_root(application_library_root), "reference": configured_reference_catalog_root(reference_catalog_root),
+		"monster": monster_library_root, "personal": configured_personal_library_root(), "rules": bundled_classic_application_data_root(),
+		"settingsPath": _settings_path, "owner": _native_client_id, "shared": OS.get_environment("PROVIDENCE_SHARED_SESSION") != "0"})
+
+
+func shared_session_enabled() -> bool:
+	return _shared_session
+
+
+func application_support_options(directory: String) -> PackedStringArray:
+	var options := _project_support_options.duplicate()
+	var index := options.find("--application-library-root")
+	if index >= 0: options[index+1] = directory
+	else: options.append_array(["--application-library-root",directory])
+	return options
+
+
+func adopt_application_support(directory: String, options: PackedStringArray) -> void:
+	_application_library_root = directory
+	_project_support_options = options
+
+
+func mcp_setup_context() -> Dictionary:
+	var filename := "providence-mcp.exe" if OS.get_name() == "Windows" else "providence-mcp"
+	return {"server": _adapter_path().get_base_dir().path_join(filename), "supportOptions": _project_support_options}
 
 
 func _apply_connection_options(prepared: Dictionary) -> void:
+	_shared_session = not prepared.arguments.is_empty() and prepared.arguments[0] == "serve-native-project"
 	_project_backed = prepared.get("projectBacked", true)
 	_library_only = prepared.get("libraryOnly", false)
 	_project_path = prepared.projectPath
 	_application_library_root = prepared.applicationLibrary
 	_reference_catalog_root = prepared.referenceCatalog
 	_monster_library_root = prepared.monsterLibrary
+	_project_support_options = prepared.arguments.slice(2) if _project_backed else PackedStringArray()
+	if _project_support_options.size() >= 2 and _project_support_options[0] == "--native-client-id": _project_support_options = _project_support_options.slice(2)
+	if _project_support_options.size() >= 4 and _project_support_options[0] == "--native-parent-id": _project_support_options = _project_support_options.slice(4)
 
 
 func _connect_prepared(executable: String, arguments: PackedStringArray) -> Dictionary:
@@ -239,12 +268,7 @@ func _start(arguments: PackedStringArray) -> Dictionary:
 
 
 func _validate_startup_response(response: Dictionary) -> Dictionary:
-	if not response.get("ok", false): return response
-	var result := response.get("result", {}) as Dictionary
-	var reported := int(result.get("adapterProtocol", 0))
-	if reported == REQUIRED_ADAPTER_PROTOCOL: return response
-	return {"ok": false, "adapterProtocolMismatch": true,
-		"error": "The selected native adapter does not match this editor (required protocol %d; reported %s). Restart Providence with a matching native build." % [REQUIRED_ADAPTER_PROTOCOL, "legacy" if reported == 0 else str(reported)]}
+	return preload("res://src/native_connection_startup.gd").validate(response, _process, REQUIRED_ADAPTER_PROTOCOL)
 
 
 func is_project_backed() -> bool:
@@ -468,7 +492,7 @@ func begin_repair_recovery(method: String, params: Dictionary, owner: int, recon
 func _prepare_repair_reconnect() -> Dictionary:
 	if not _project_backed and not _library_only:
 		return {"ok": false, "error": "The temporary scenario cannot be reopened. Copy your draft before closing."}
-	var connection := _prepare_auxiliary_start("serve-library", true) if _library_only else _prepare_project_start(_project_path, _application_library_root, _reference_catalog_root, _monster_library_root)
+	var connection := _prepare_auxiliary_start("serve-library", true) if _library_only else _resume_project_connection()
 	if not connection.get("ok", false): return connection
 	connection["executable"] = _adapter_path()
 	if str(connection.executable).is_empty(): return {"ok": false, "error": "Providence native adapter was not found."}
@@ -544,6 +568,10 @@ func poll_request() -> Dictionary:
 
 
 func _observe_response(response: Dictionary) -> Dictionary:
+	var result: Variant = response.get("result")
+	if result is Dictionary and result.has("_nativeControl"):
+		_native_control = result._nativeControl.duplicate(true)
+		result.erase("_nativeControl")
 	if str(response.get("error", "")).begins_with("command could not be durably acknowledged"):
 		response["outcomeUnknown"] = true
 	_requires_reopen = _requires_reopen or bool(response.get("outcomeUnknown", false))
@@ -558,7 +586,20 @@ func _reopen_required() -> Dictionary:
 func reconnect_project() -> Dictionary:
 	if not _project_backed:
 		return {"ok": false, "error": "The temporary scenario cannot be reopened. Copy your draft before closing."}
-	return start_project(_project_path, _application_library_root, _reference_catalog_root, _monster_library_root)
+	var prepared := _resume_project_connection()
+	stop()
+	_apply_connection_options(prepared)
+	return _start(prepared.arguments)
+
+
+func _resume_project_connection() -> Dictionary:
+	# An existing personal-library option is not interchangeable with opening
+	# an explicit library; replay the captured profile rather than infer it again.
+	var arguments := PackedStringArray(["serve-native-project" if _shared_session else "serve-project", _project_path])
+	if _shared_session: arguments.append_array(["--native-client-id", _native_client_id])
+	arguments.append_array(_project_support_options)
+	return {"ok":true,"arguments":arguments,"projectPath":_project_path,"applicationLibrary":_application_library_root,
+		"referenceCatalog":_reference_catalog_root,"monsterLibrary":_monster_library_root}
 
 
 func connection_alive() -> bool:
@@ -616,8 +657,11 @@ func connection_epoch() -> int:
 	return _connection_epoch
 
 
-func stop() -> void:
+func stop(drafts_resolved := false) -> void:
+	if drafts_resolved and _project_backed and shared_session_enabled() and _request_worker == null and _operation_owner == 0 and not _requires_reopen and connection_alive():
+		_request("session.detach", {"draftsResolved": true})
 	_connection_epoch += 1
+	_native_control.clear()
 	_operation_owner = 0
 	var pid := int(_process.get("pid", -1))
 	if pid > 0 and OS.is_process_running(pid):
@@ -639,6 +683,8 @@ func stop() -> void:
 	_application_library_root = ""
 	_reference_catalog_root = ""
 	_monster_library_root = ""
+	_project_support_options.clear()
+	_shared_session = false
 
 
 func _adapter_path() -> String:

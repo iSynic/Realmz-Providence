@@ -20,11 +20,26 @@ pub fn scenario_music_asset(
     bytes: &[u8],
     blob: BlobId,
 ) -> Result<AssetDescriptor, ScenarioMusicError> {
+    standard_mod_title(bytes)?;
+    imported_scenario_music_asset(slot, bytes, blob)
+}
+
+/// Retains a native music source and slot without claiming general MAD playback.
+pub fn imported_scenario_music_asset(
+    slot: u8,
+    bytes: &[u8],
+    blob: BlobId,
+) -> Result<AssetDescriptor, ScenarioMusicError> {
     let native_name = slot
         .checked_sub(1)
         .and_then(|index| SCENARIO_MUSIC_FILES.get(index as usize))
         .ok_or_else(|| ScenarioMusicError("Scenario music slot must be 1, 2, or 3".into()))?;
-    let title = standard_mod_title(bytes)?;
+    let legacy_mad = bytes.starts_with(b"MADG");
+    let title = if legacy_mad {
+        String::new()
+    } else {
+        standard_mod_title(bytes)?
+    };
     Ok(AssetDescriptor {
         identity: StableId(format!("asset:scenario-music:{slot}")),
         label: if title.is_empty() {
@@ -33,8 +48,15 @@ pub fn scenario_music_asset(
             title
         },
         kind: "music".into(),
-        mime_type: Some("audio/x-mod".into()),
-        classic_resource: Some(ClassicResourceKey {
+        mime_type: Some(
+            if legacy_mad {
+                "audio/x-mad"
+            } else {
+                "audio/x-mod"
+            }
+            .into(),
+        ),
+        classic_resource: (!legacy_mad).then(|| ClassicResourceKey {
             resource_type: "MOD ".into(),
             resource_id: slot.into(),
         }),
@@ -43,7 +65,7 @@ pub fn scenario_music_asset(
         byte_length: bytes.len() as u64,
         classic_payload_blob: Some(blob),
         classic_payload_byte_length: Some(bytes.len() as u64),
-        extension: Some("mod".into()),
+        extension: Some(if legacy_mad { "mad" } else { "mod" }.into()),
         width: None,
         height: None,
         duration_ms: None,
@@ -129,7 +151,7 @@ pub fn compile_scenario_music_files(
                 asset.identity.0
             ))
         })?;
-        let projected = scenario_music_asset(slot, bytes, asset.blob.clone())?;
+        let projected = imported_scenario_music_asset(slot, bytes, asset.blob.clone())?;
         if asset.byte_length != projected.byte_length
             || asset.classic_resource != projected.classic_resource
         {
@@ -205,5 +227,25 @@ mod tests {
             bytes[offset] = value;
             assert!(scenario_music_asset(1, &bytes, blob.clone()).is_err());
         }
+    }
+    #[test]
+    fn imported_madg_keeps_slot_and_exact_bytes_while_fresh_music_stays_strict() {
+        let bytes = b"MADGsupplied native bytes".to_vec();
+        let blob = BlobId(format!("sha256:{}", "c".repeat(64)));
+        assert!(scenario_music_asset(2, &bytes, blob.clone()).is_err());
+        let asset = imported_scenario_music_asset(2, &bytes, blob.clone()).unwrap();
+        assert_eq!(asset.scenario_music_slot, Some(2));
+        assert_eq!(asset.mime_type.as_deref(), Some("audio/x-mad"));
+        assert_eq!(asset.extension.as_deref(), Some("mad"));
+        assert!(asset.classic_resource.is_none());
+        assert_eq!(asset.label, "Custom 2 Music");
+        assert_eq!(
+            compile_scenario_music_files(
+                &[asset],
+                &BTreeMap::from([(blob.0.clone(), bytes.clone())])
+            )
+            .unwrap(),
+            [("Custom 2 Music".into(), blob, bytes)]
+        );
     }
 }

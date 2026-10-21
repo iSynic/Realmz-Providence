@@ -52,10 +52,10 @@ fn standard_spell_import_resolves_stock_links_and_reopens_exact_sources() {
 fn classic_spell_import_edit_compile_and_reopen_is_blob_backed_and_bounded() {
     let temporary = tempfile::tempdir().expect("temporary project");
     let source_path = temporary.path().join("Data Spell");
-    let mut source = vec![0u8; SCENARIO_SPELL_BYTES + 3];
+    let mut source = vec![0u8; SCENARIO_SPELL_BYTES + 30 + 3];
     source[28] = 7;
     source[29] = 255;
-    source[SCENARIO_SPELL_BYTES..].copy_from_slice(&[0xde, 0xad, 0xbe]);
+    source[SCENARIO_SPELL_BYTES + 30..].copy_from_slice(&[0xde, 0xad, 0xbe]);
     fs::write(&source_path, &source).expect("write controlled Data Spell");
     let name_source_path = temporary.path().join("Data Spell.rsrc");
     write_scenario_spell_names(&name_source_path);
@@ -74,7 +74,7 @@ fn classic_spell_import_edit_compile_and_reopen_is_blob_backed_and_bounded() {
         .expect("list bounded spell rows");
     assert_eq!(listed["items"].as_array().unwrap().len(), 1);
     assert_eq!(listed["items"][0]["classicId"], 5105);
-    assert_eq!(listed["total"], 105);
+    assert_eq!(listed["total"], 106);
     assert!(listed.get("snapshot").is_none());
 
     let opened = dispatch_result(&mut session, "spell.open", json!({"recordIndex": 4}))
@@ -168,7 +168,11 @@ fn import_standard_spells(
     let response: Value = serde_json::from_slice(&output).expect("import response");
     assert_eq!(response["ok"], true);
     assert_eq!(response["result"]["count"], STANDARD_SPELL_RECORDS);
-    assert_eq!(response["result"]["trailingBytes"], SCENARIO_SPELL_BYTES);
+    assert_eq!(response["result"]["trailingBytes"], 0);
+    assert_eq!(
+        response["result"]["sourceOnlyCompleteRecords"],
+        SCENARIO_SPELL_BYTES / providence_core::codecs::SPELL_RECORD_BYTES
+    );
     assert!(
         response["result"]["referenceChanges"]
             .as_array()
@@ -254,8 +258,9 @@ fn import_scenario_spells(
     .expect("import Data Spell through stored adapter");
     let response: Value = serde_json::from_slice(&output).expect("import response");
     assert_eq!(response["ok"], true);
-    assert_eq!(response["result"]["count"], 105);
+    assert_eq!(response["result"]["count"], 106);
     assert_eq!(response["result"]["trailingBytes"], 3);
+    assert_eq!(response["result"]["sourceOnlyCompleteRecords"], 0);
     assert!(
         response["result"]["referenceChanges"]
             .as_array()
@@ -331,7 +336,10 @@ fn assert_scenario_spell_compilation(
     let compiled = fs::read(root.join("compiled-data-spell")).expect("read compiled Data Spell");
     assert_eq!(&compiled[..30], &source[..30]);
     assert_eq!(compiled[4 * 30 + 10], 42);
-    assert_eq!(&compiled[SCENARIO_SPELL_BYTES..], &[0xde, 0xad, 0xbe]);
+    assert_eq!(
+        &compiled[SCENARIO_SPELL_BYTES..],
+        &source[SCENARIO_SPELL_BYTES..]
+    );
     let compiled_names =
         fs::read(root.join("compiled-data-spell.rsrc")).expect("read compiled Data Spell names");
     let level_names = providence_core::codecs::decode_string_list_resource(&compiled_names, 5000)
@@ -363,7 +371,7 @@ fn assert_reopened_scenario_spells(
     source: &[u8],
 ) {
     assert_eq!(reopened.revision(), Revision(2));
-    assert_eq!(reopened.snapshot().scenario_spells.len(), 105);
+    assert_eq!(reopened.snapshot().scenario_spells.len(), 106);
     assert_eq!(reopened.snapshot().scenario_spells[4].definition.cost, 42);
     assert_eq!(
         reopened.snapshot().scenario_spells[4].definition.name,
@@ -395,3 +403,6 @@ fn assert_reopened_scenario_spells(
         .expect("Data Spell source record");
     assert_eq!(store.read_blob(&source_record.blob).unwrap(), source);
 }
+
+#[path = "spell_import/physical_rows.rs"]
+mod physical_rows;

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::rebuilt::{REBUILT_V6_SCHEMA_SHA256, RebuiltV3CompilerIdentity};
+use crate::rebuilt::{REBUILT_V7_SCHEMA_SHA256, RebuiltV3CompilerIdentity};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,7 +29,7 @@ pub fn current(tool: impl Into<String>) -> ProvidenceBuildIdentity {
         commit: env!("PROVIDENCE_BUILD_COMMIT").into(),
         source_tree: env!("PROVIDENCE_SOURCE_TREE").into(),
         source_dirty: env!("PROVIDENCE_SOURCE_DIRTY") == "true",
-        schema_sha256: REBUILT_V6_SCHEMA_SHA256.into(),
+        schema_sha256: REBUILT_V7_SCHEMA_SHA256.into(),
         cargo_lock_sha256: env!("PROVIDENCE_CARGO_LOCK_SHA256").into(),
         rustc_version: env!("PROVIDENCE_RUSTC_VERSION").into(),
         cargo_version: env!("PROVIDENCE_CARGO_VERSION").into(),

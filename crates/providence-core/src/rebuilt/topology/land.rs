@@ -2,8 +2,8 @@ use super::{
     contracts::*,
     inputs::{cell_random_rectangle_ids, cell_trigger_ids, map_runtime},
     terrain::{
-        compact_land_tile_profile, edge_flags, normalized_land_tile, semantic_flags,
-        special_land_resource_id, terrain_profile,
+        TerrainProfileIndex, compact_land_tile_profile, edge_flags, normalized_land_tile,
+        semantic_flags, special_land_resource_id,
     },
 };
 use crate::model::{
@@ -39,15 +39,7 @@ pub(super) fn project_land_topologies(
     } else {
         None
     };
-    let missing_assets = snapshot
-        .world
-        .maps
-        .iter()
-        .filter(|map| map.level_type == LevelType::Land)
-        .flat_map(|map| map.tiles.iter().copied())
-        .filter_map(special_land_resource_id)
-        .filter(|resource_id| !special_land_assets.contains_key(resource_id))
-        .collect::<BTreeSet<_>>();
+    let missing_assets = missing_special_assets(snapshot, special_land_assets);
     if !missing_assets.is_empty() && !matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
         return Err(RebuiltV3TopologyError::MissingSpecialLandAssets(
             missing_assets.into_iter().collect(),
@@ -61,8 +53,17 @@ pub(super) fn project_land_topologies(
         .filter(|map| map.level_type == LevelType::Land)
         .collect::<Vec<_>>();
     maps.sort_by_key(|map| map.identity.clone());
+    let terrain_profiles = TerrainProfileIndex::new(&snapshot.terrain_catalog);
     maps.into_iter()
-        .map(|map| project_land_topology(snapshot, map, special_land_assets, solidity))
+        .map(|map| {
+            project_land_topology(
+                snapshot,
+                map,
+                special_land_assets,
+                solidity,
+                &terrain_profiles,
+            )
+        })
         .collect()
 }
 
@@ -71,23 +72,16 @@ fn project_land_topology(
     map: &MapLevel,
     special_land_assets: &BTreeMap<i16, StableId>,
     solidity: Option<&crate::model::SpecialLandSolidityCatalog>,
+    terrain_profiles: &TerrainProfileIndex<'_>,
 ) -> Result<RebuiltV3Topology, RebuiltV3TopologyError> {
     let runtime = map_runtime(map)?;
     let base_tile = runtime
         .base_tile
         .ok_or_else(|| RebuiltV3TopologyError::MissingRuntimeMetadata(map.identity.clone()))?;
-    let removed = compact_land_tile_profile(terrain_profile(
-        snapshot,
-        &map.identity,
-        60,
-        runtime.landlook,
-    )?)?;
-    let placed = compact_land_tile_profile(terrain_profile(
-        snapshot,
-        &map.identity,
-        147,
-        runtime.landlook,
-    )?)?;
+    let removed =
+        compact_land_tile_profile(terrain_profiles.get(&map.identity, 60, runtime.landlook)?)?;
+    let placed =
+        compact_land_tile_profile(terrain_profiles.get(&map.identity, 147, runtime.landlook)?)?;
     let projection = LandProjection {
         snapshot,
         map,
@@ -95,6 +89,7 @@ fn project_land_topology(
         base_tile,
         special_land_assets,
         solidity,
+        terrain_profiles,
     };
     let mut cells = Vec::with_capacity(map.tiles.len());
     for y in 0..CLASSIC_MAP_SIZE {
@@ -117,6 +112,7 @@ struct LandProjection<'snapshot> {
     base_tile: i16,
     special_land_assets: &'snapshot BTreeMap<i16, StableId>,
     solidity: Option<&'snapshot SpecialLandSolidityCatalog>,
+    terrain_profiles: &'snapshot TerrainProfileIndex<'snapshot>,
 }
 
 struct LandCellTerrain<'snapshot> {
@@ -136,12 +132,9 @@ impl LandProjection<'_> {
         } else {
             normalized_tile
         };
-        let profile = terrain_profile(
-            self.snapshot,
-            &self.map.identity,
-            profile_tile,
-            self.runtime.landlook,
-        )?;
+        let profile =
+            self.terrain_profiles
+                .get(&self.map.identity, profile_tile, self.runtime.landlook)?;
         let special_solid = if (-999..0).contains(&raw_tile) {
             self.solidity
                 .and_then(|catalog| catalog.solid.get((-raw_tile) as usize))
@@ -248,4 +241,19 @@ fn land_features(cell_id: &StableId, marker_band: u8) -> Vec<RebuiltV3CompactFea
         ));
     }
     features
+}
+
+fn missing_special_assets(
+    snapshot: &ProjectSnapshot,
+    special_land_assets: &BTreeMap<i16, StableId>,
+) -> BTreeSet<i16> {
+    snapshot
+        .world
+        .maps
+        .iter()
+        .filter(|map| map.level_type == LevelType::Land)
+        .flat_map(|map| map.tiles.iter().copied())
+        .filter_map(special_land_resource_id)
+        .filter(|resource_id| !special_land_assets.contains_key(resource_id))
+        .collect::<BTreeSet<_>>()
 }

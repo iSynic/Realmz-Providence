@@ -86,6 +86,7 @@ text = "MAP TOOLS"
 
 [node name="MapToolset" type="GridContainer" parent="."]
 layout_mode = 2
+theme_override_constants/h_separation = 2
 columns = 2
 
 [node name="PaintTool" type="Button" parent="MapToolset"]
@@ -178,6 +179,15 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 34)
 toggle_mode = false
 text = "Random Area"
+
+[node name="GenerateTool" type="Button" parent="MapToolset"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 34)
+toggle_mode = true
+text = "Generate Terrain"
+tooltip_text = "Generate selected Land terrain around fixed landmarks, then review and Apply once."
 
 [node name="LandTilesTool" type="Button" parent="MapToolset"]
 unique_name_in_owner = true

@@ -22,11 +22,11 @@ fn full_scenario_import_inspection_is_bounded_read_only_and_source_set_explicit(
     );
     assert_eq!(
         result["counts"]["requiredScenarioFiles"],
-        (REQUIRED_FULL_SCENARIO_FILES.len() + 1) as u64
+        (required_full_scenario_files().len() + 1) as u64
     );
     assert_eq!(
         result["counts"]["presentRequiredScenarioFiles"],
-        (REQUIRED_FULL_SCENARIO_FILES.len() + 1) as u64
+        (required_full_scenario_files().len() + 1) as u64
     );
     assert_eq!(
         result["counts"]["presentRequiredApplicationFiles"],
@@ -34,7 +34,7 @@ fn full_scenario_import_inspection_is_bounded_read_only_and_source_set_explicit(
     );
     assert_eq!(
         result["counts"]["scenarioSourceBytes"],
-        (REQUIRED_FULL_SCENARIO_FILES.len() + 316 + 3) as u64
+        (required_full_scenario_files().len() + 316 + 3) as u64
     );
     assert_eq!(
         result["counts"]["applicationSourceBytes"],
@@ -78,7 +78,7 @@ fn write_inspection_source_set(root: &Path) -> (PathBuf, PathBuf) {
     let application_root = root.join("Data Files");
     fs::create_dir_all(&scenario_root).expect("create scenario directory");
     fs::create_dir_all(&application_root).expect("create application directory");
-    for name in REQUIRED_FULL_SCENARIO_FILES {
+    for name in required_full_scenario_files() {
         let path = scenario_root.join(name);
         fs::write(path, [0x11]).expect("write required scenario file");
     }
@@ -219,7 +219,7 @@ fn full_scenario_import_decode_failure_preserves_live_and_durable_project() {
     let application_root = temporary.path().join("Data Files");
     fs::create_dir(&scenario_root).expect("create scenario");
     fs::create_dir(&application_root).expect("create application data");
-    for name in REQUIRED_FULL_SCENARIO_FILES {
+    for name in required_full_scenario_files() {
         fs::write(scenario_root.join(name), []).expect("write required scenario file");
     }
     fs::write(
@@ -255,8 +255,8 @@ fn full_scenario_import_decode_failure_preserves_live_and_durable_project() {
 use crate::dispatch_result_with_store;
 use crate::scenario_import::import_classic_scenario;
 use crate::scenario_preflight::REQUIRED_APPLICATION_DATA_FILES;
-use crate::scenario_preflight::REQUIRED_FULL_SCENARIO_FILES;
 use crate::scenario_preflight::classic_native_file_length;
+use crate::scenario_preflight::required_full_scenario_files;
 use crate::scenario_preflight::resolve_classic_native_file;
 use providence_core::model::ProjectSnapshot;
 use providence_core::model::StableId;

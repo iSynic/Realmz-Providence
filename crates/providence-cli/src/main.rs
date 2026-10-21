@@ -16,7 +16,6 @@ mod extra_code_certification;
 mod foundation;
 mod joined_dungeon;
 mod monster_certification;
-mod new_project_baseline;
 mod output;
 mod pict_inspection;
 mod projects;

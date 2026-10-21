@@ -28,6 +28,7 @@ func _run() -> void:
 
 
 func _measure_routes(shell: Control) -> void:
+	shell._documents.view("maps.special-land")  # The catalog view binds with its page.
 	var view: Control=shell._maps.world_special._view
 	view.theme=view.theme.duplicate(true)
 	for viewport in [Vector2i(1920,1080),Vector2i(1600,900)]:

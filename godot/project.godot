@@ -21,6 +21,10 @@ config/icon="res://branding/application-icon.png"
 config/macos_native_icon="res://branding/application-icon.icns"
 config/windows_native_icon="res://branding/application-icon.ico"
 
+[autoload]
+
+DisplaySettings="*res://src/display_scaling.gd"
+
 [display]
 
 window/size/viewport_width=1600
@@ -29,6 +33,7 @@ window/size/window_width_override=1600
 window/size/window_height_override=900
 window/size/min_width=1200
 window/size/min_height=720
+window/dpi/allow_hidpi=true
 
 [gui]
 

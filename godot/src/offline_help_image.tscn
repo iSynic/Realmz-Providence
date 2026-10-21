@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[node name="ImageCard" type="VBoxContainer"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Open" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+tooltip_text = "View full-size image"
+
+[node name="Image" type="TextureRect" parent="Open"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = -4.0
+offset_bottom = -4.0
+mouse_filter = 2
+texture_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Caption" type="Label" parent="."]
+layout_mode = 2
+theme_type_variation = "HelpSecondary"
+autowrap_mode = 2

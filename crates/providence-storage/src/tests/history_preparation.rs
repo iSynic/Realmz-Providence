@@ -42,8 +42,20 @@ fn assert_segmented_history(store: &ProjectStore, session: &EditorSession) {
             );
         }
     }
-    let (_, reopened) = ProjectStore::open_session(store.root()).unwrap();
-    assert_eq!(reopened.persisted_state(), session.persisted_state());
+    // Inspect serialized history through its owner rather than opening a competing writer.
+    let blob: String = store
+        .open_database()
+        .unwrap()
+        .query_row(
+            "SELECT value FROM metadata WHERE key = 'session_state_blob'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    let reopened = store
+        .load_persisted_session(&BlobId(blob), session.snapshot())
+        .unwrap();
+    assert_eq!(reopened, session.persisted_state());
 }
 
 #[test]
@@ -98,6 +110,7 @@ fn corrupt_history_only_source_rejects_save_before_replacing_portable_truth() {
         snapshot: snapshot("Current"),
         revision: Revision(2),
         undo: vec![SessionHistoryEntry {
+            attribution: None,
             snapshot: historical,
             changed_entities: vec![StableId("message:12".into())],
             references_unchanged: false,

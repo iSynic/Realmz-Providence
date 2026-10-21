@@ -1,4 +1,4 @@
-use crate::classic_source_retention::replace_sources;
+use crate::classic_source_retention::{replace_sources, store_source_annex};
 use crate::execute;
 use crate::request_params::required_string;
 use providence_core::codecs::BATTLE_RECORD_BYTES;
@@ -56,14 +56,7 @@ pub(crate) fn import_classic_monsters(
         });
     }
     sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let counts = json!({
         "sets": monster_sets.len(),
         "monsters": monster_sets.iter().map(|set| set.monsters.len()).sum::<usize>(),
@@ -101,7 +94,7 @@ pub(crate) fn import_classic_battles(
     }
     let bytes = crate::import_inputs::read(&path)
         .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-    if bytes.len() < BATTLE_RECORD_BYTES {
+    if !bytes.is_empty() && bytes.len() < BATTLE_RECORD_BYTES {
         return Err(format!(
             "Data BD must contain at least one complete {BATTLE_RECORD_BYTES}-byte record"
         ));
@@ -116,14 +109,7 @@ pub(crate) fn import_classic_battles(
         store,
         &[("Data BD", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(&json!({
-        "format": "providence-classic-source-annex-v1",
-        "files": sources,
-    }))
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let mut result = execute(
@@ -160,7 +146,7 @@ fn read_monster_sets(directory: &std::path::Path) -> Result<ImportedMonsterSets,
         }
         let bytes = crate::import_inputs::read(&path)
             .map_err(|error| format!("could not read {}: {error}", path.display()))?;
-        if bytes.len() < MONSTER_RECORD_BYTES {
+        if !bytes.is_empty() && bytes.len() < MONSTER_RECORD_BYTES {
             return Err(format!(
                 "{native_path} must contain at least one complete {MONSTER_RECORD_BYTES}-byte record"
             ));
@@ -189,7 +175,7 @@ fn read_monster_descriptions(
     let monster_descriptions = if description_path.is_file() {
         let bytes = crate::import_inputs::read(&description_path)
             .map_err(|error| format!("could not read {}: {error}", description_path.display()))?;
-        if bytes.len() < MONSTER_DESCRIPTION_RECORD_BYTES {
+        if !bytes.is_empty() && bytes.len() < MONSTER_DESCRIPTION_RECORD_BYTES {
             return Err(format!(
                 "Data DES must contain at least one complete {MONSTER_DESCRIPTION_RECORD_BYTES}-byte record"
             ));

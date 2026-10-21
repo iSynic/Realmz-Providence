@@ -94,12 +94,25 @@ visible = false
 layout_mode = 2
 custom_minimum_size = Vector2(0, 22)
 
-[node name="Status" type="Label" parent="Workspace/StatusBar"]
+[node name="Content" type="HBoxContainer" parent="Workspace/StatusBar"]
+layout_mode = 2
+
+[node name="Status" type="Label" parent="Workspace/StatusBar/Content"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
 theme_override_font_sizes/font_size = 11
 text = "Starting native session…"
+
+[node name="MCPStatus" type="Button" parent="Workspace/StatusBar/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "MCP · paused"
+flat = true
+tooltip_text = "Manage connected assistant clients and editing permission"
 
 [node name="CommandPalette" parent="." instance=ExtResource("9")]
 unique_name_in_owner = true

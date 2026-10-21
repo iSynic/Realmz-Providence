@@ -23,7 +23,9 @@ pub(super) fn page(
     Ok(
         json!({"revision": session.revision(), "projectId": session.snapshot().project_id,
             "assessment": {"sourceIdentity":assessment.source_identity, "previousVersion":assessment.previous_version,
-                "version":assessment.version,"entries":entries,"sourceRequirements":assessment.source_requirements},
+                "version":assessment.version,"entries":entries,"sourceRequirements":assessment.source_requirements,
+                "preservationDiagnostics":assessment.preservation_diagnostics.iter().take(limit).collect::<Vec<_>>(),
+                "preservationDiagnosticTotal":assessment.preservation_diagnostics.len()},
             "total":assessment.entries.len(), "offset":offset, "limit":limit,
             "safeCount": assessment.entries.iter().filter(|e| !e.conflict).count(),
             "conflictCount": assessment.entries.iter().filter(|e| e.conflict).count()}),
@@ -32,6 +34,11 @@ pub(super) fn page(
 
 fn entry(entry: &RepairEntry) -> Value {
     let (current, recovered) = match &entry.change {
+        providence_core::import_repair::RepairChange::NativeText {
+            expected,
+            recovered,
+            ..
+        } => (expected.clone(), recovered.clone()),
         providence_core::import_repair::RepairChange::Spell { record } => (
             String::new(),
             format!("Spell {}", record.definition.classic_id),
@@ -46,7 +53,9 @@ fn entry(entry: &RepairEntry) -> Value {
         }
         providence_core::import_repair::RepairChange::ShopQuarantine { expected, reason } => (
             format!("Shop {} inventory", expected.native_id.0),
-            format!("Exclude unverified inventory; preserve original Data SD bytes. {reason}"),
+            format!(
+                "Removal blocked; retain the native row and compare a separate source reimport. {reason}"
+            ),
         ),
     };
     json!({"key":entry.key, "family":entry.family, "entity":entry.entity, "field":entry.field,

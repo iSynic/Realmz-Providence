@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[node name="Chapter" type="Button"]
+custom_minimum_size = Vector2(0, 72)
+size_flags_horizontal = 3
+theme_type_variation = "HelpChapter"
+toggle_mode = true
+
+[node name="Inset" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Text" type="VBoxContainer" parent="Inset"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="Inset/Text"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 2
+
+[node name="Summary" type="Label" parent="Inset/Text"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = "HelpSecondary"
+autowrap_mode = 2

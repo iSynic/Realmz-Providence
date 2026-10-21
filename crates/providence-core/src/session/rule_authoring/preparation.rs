@@ -57,12 +57,20 @@ fn prepare(
     super::validation::validate_changed_ranges(draft, sources, baseline)?;
     super::eligibility::validate(snapshot, draft, sources, baseline)?;
     let mut races = if snapshot.race_rules.is_empty() {
-        decode_race_rules(sources.race, None).rules
+        decode_race_rules(sources.race, None)
+            .rules
+            .into_iter()
+            .take(crate::codecs::CLASSIC_RACE_RECORDS)
+            .collect()
     } else {
         snapshot.race_rules.clone()
     };
     let mut castes = if snapshot.caste_rules.is_empty() {
-        decode_caste_rules(sources.caste, None).rules
+        decode_caste_rules(sources.caste, None)
+            .rules
+            .into_iter()
+            .take(crate::codecs::CLASSIC_CASTE_RECORDS)
+            .collect()
     } else {
         snapshot.caste_rules.clone()
     };

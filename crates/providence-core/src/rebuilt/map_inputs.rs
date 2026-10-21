@@ -33,10 +33,10 @@ pub struct RebuiltV3MapCompilerInput {
 #[serde(rename_all = "camelCase")]
 pub struct RebuiltV3RandomRectangle {
     pub id: StableId,
-    pub top: u8,
-    pub left: u8,
-    pub bottom: u8,
-    pub right: u8,
+    pub top: i16,
+    pub left: i16,
+    pub bottom: i16,
+    pub right: i16,
     pub chance_ten_thousand: i16,
     pub battle_range: [i16; 2],
     pub random_doors: [i16; 3],
@@ -68,10 +68,10 @@ pub fn project_rebuilt_v3_random_rectangle(
     }
     Some(RebuiltV3RandomRectangle {
         id: rectangle.identity.clone(),
-        top: u8::try_from(top).ok()?,
-        left: u8::try_from(left).ok()?,
-        bottom: u8::try_from(bottom).ok()?,
-        right: u8::try_from(right).ok()?,
+        top,
+        left,
+        bottom,
+        right,
         chance_ten_thousand: rectangle.chance_ten_thousand,
         battle_range: rectangle.battle_range,
         random_doors: rectangle.random_doors,

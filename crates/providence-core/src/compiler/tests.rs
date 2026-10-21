@@ -19,6 +19,7 @@ use std::collections::BTreeSet;
 mod bootstrap;
 mod catalogs;
 mod combat;
+mod fresh_baseline;
 mod global;
 mod manifest;
 mod resources;

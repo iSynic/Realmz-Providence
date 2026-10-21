@@ -333,9 +333,7 @@ pub(super) fn validate_classic_treasure_import(
             "decoded treasures require Data TD provenance".into(),
         ));
     };
-    let complete_rows = certified_treasure_source(&source.blob.0, source.byte_length as usize)
-        .map(|extent| extent.authored_records)
-        .unwrap_or(source.byte_length as usize / TREASURE_RECORD_BYTES);
+    let complete_rows = source.byte_length as usize / TREASURE_RECORD_BYTES;
     if complete_rows != treasures.len() {
         return Err(SessionError::InvalidClassicImport(
             "Data TD complete-row count does not match the decoded treasure count".into(),
@@ -368,10 +366,10 @@ pub(super) fn validate_classic_shop_import(
             "decoded shops require Data SD provenance".into(),
         ));
     };
-    let source_bytes = source.byte_length as usize;
-    if shops.len() * SHOP_RECORD_BYTES > source_bytes {
+    let complete_rows = source.byte_length as usize / SHOP_RECORD_BYTES;
+    if complete_rows != shops.len() {
         return Err(SessionError::InvalidClassicImport(
-            "Data SD decoded shop prefix exceeds its source length".into(),
+            "Data SD complete-row count does not match the decoded shop count".into(),
         ));
     }
     let mut identities = std::collections::BTreeSet::new();
@@ -379,7 +377,7 @@ pub(super) fn validate_classic_shop_import(
         let index = shop.native_id.0 as usize;
         validate_shop_record_shape(shop)
             .map_err(|error| SessionError::InvalidClassicImport(error.to_string()))?;
-        if index >= source_bytes / SHOP_RECORD_BYTES
+        if index >= complete_rows
             || !identities.insert(shop.native_id)
             || shop.identity.0 != format!("shop:{index}")
             || shop.authored

@@ -1,0 +1,24 @@
+# Dependency policy checked in CI by `cargo deny check`.
+[graph]
+# Only the platforms Providence ships; wasm-only dependencies do not reach a bundle.
+targets = ["x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin"]
+all-features = true
+
+[advisories]
+# Unmaintained notices fail for direct dependencies and are reported for transitive ones.
+unmaintained = "workspace"
+
+[licenses]
+# Licenses compatible with distributing the GPL-3.0-or-later application.
+allow = ["0BSD", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-3-Clause", "GPL-3.0-or-later", "MIT",
+         "Unicode-3.0", "Zlib"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

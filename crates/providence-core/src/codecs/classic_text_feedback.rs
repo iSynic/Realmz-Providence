@@ -102,7 +102,12 @@ mod tests {
         );
         assert_eq!(&label_bytes[..12], &message_bytes[..12]);
         assert_eq!(decode_messages(&message_bytes).messages[0].text, text);
-        assert_eq!(decode_option_labels(&label_bytes).records[0].text, text);
+        let decoded_labels = decode_option_labels(&label_bytes);
+        assert_eq!(decoded_labels.records[0].text, text);
+        assert_eq!(
+            encode_option_labels(&decoded_labels.records, Some(&label_bytes)).unwrap(),
+            label_bytes
+        );
     }
 
     #[test]

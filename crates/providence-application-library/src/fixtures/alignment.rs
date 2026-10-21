@@ -5,7 +5,7 @@ use providence_core::{
     model::{BlobId, ClassicResourceKey, StableId},
     rebuilt::{
         ApplicationMediaAsset, ApplicationMediaCatalog, ApplicationMediaResolution,
-        REBUILT_V3_SCHEMA_SHA256, RebuiltV3AssetRecord, RebuiltV3ItemDefinition,
+        REBUILT_V6_SCHEMA_SHA256, RebuiltV3AssetRecord, RebuiltV3ItemDefinition,
         RebuiltV3SpellDefinition,
     },
 };
@@ -221,7 +221,7 @@ fn fixture_contract(
         kind: "providence.rebuilt-alignment-fixtures",
         format_version: 1,
         providence_commit: commit.into(),
-        schema_sha256: REBUILT_V3_SCHEMA_SHA256,
+        schema_sha256: REBUILT_V6_SCHEMA_SHA256,
         application_package_id: "realmz-classic-application-library",
         application_package_hash: application_package_hash.into(),
         coverage: FixtureCoverage {

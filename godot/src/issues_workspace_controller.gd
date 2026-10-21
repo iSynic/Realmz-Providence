@@ -8,7 +8,9 @@ const RepairDialog = preload("res://src/action_settings_repair_dialog.gd")
 const Routes = preload("res://src/route_catalog.gd")
 const ROUTE := "linter.issues"
 
-var workbench: Control
+# The Issues page binds on first use; reading it realizes it (see lazy-workbench-pages.md).
+var workbench: Control:
+	get: return _documents.view(ROUTE)
 var repair: Window
 var _import_repair: ProvidenceImportRepairDialog
 var _repair_shade: ColorRect
@@ -21,6 +23,9 @@ signal menu_state_changed
 signal restore_domain_requested
 
 var _root: Control
+var _documents: RefCounted
+var _session_minimum := -1
+var _repair_revision_shown := -1
 var _tabs: TabContainer
 var _bridge: RefCounted
 var _drafts: RefCounted
@@ -44,8 +49,9 @@ var _return_focus := ""
 var _opened_finding: Dictionary = {}
 
 
-func initialize(parent: Control, tabs: TabContainer, documents_host: Control, drafts: RefCounted, dialog_resolver: Callable, document: Control, operations: ProvidenceEditorOperation) -> void:
+func initialize(parent: Control, tabs: TabContainer, documents_host: Control, drafts: RefCounted, dialog_resolver: Callable, documents: RefCounted, operations: ProvidenceEditorOperation) -> void:
 	_root = parent
+	_documents = documents
 	_tabs = tabs
 	_drafts = drafts
 	_operations = operations
@@ -55,18 +61,11 @@ func initialize(parent: Control, tabs: TabContainer, documents_host: Control, dr
 	parent.add_child(_repair_shade)
 	_repair_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_initialize_repair(parent, operations)
-	workbench = document
 	_import_repair = preload("res://src/import_repair_dialog.tscn").instantiate()
 	_import_repair.operations = operations
 	parent.add_child(_import_repair)
 	_import_repair.applied.connect(_repair_applied)
-	workbench.get_node("%ReviewImport").pressed.connect(func(): if _bridge != null: _import_repair.review(_bridge))
-	workbench.state.configure_operations(operations)
-	workbench.destination_resolver = describe_destination
-	workbench.source_open_requested.connect(request_source)
-	workbench.state.refresh_completed.connect(_refresh_completed)
-	workbench.get_node("%SearchProblems").text_changed.connect(_cancel_source_open)
-	workbench.get_node("%SearchProblems").focus_entered.connect(_cancel_source_open)
+	documents.on_realize(ROUTE, _bind_workbench)
 	guard = DraftGuard.new()
 	guard.name = "IssuesDraftGuard"
 	guard.initialize(tabs, drafts, dialog_resolver)
@@ -80,6 +79,25 @@ func initialize(parent: Control, tabs: TabContainer, documents_host: Control, dr
 	documents_host.add_child(_back)
 
 
+
+func _bind_workbench(page: Control) -> void:
+	page.get_node("%ReviewImport").pressed.connect(func(): if _bridge != null: _import_repair.review(_bridge))
+	page.state.configure_operations(_operations)
+	page.destination_resolver = describe_destination
+	page.source_open_requested.connect(request_source)
+	page.state.refresh_completed.connect(_refresh_completed)
+	page.get_node("%SearchProblems").text_changed.connect(_cancel_source_open)
+	page.get_node("%SearchProblems").focus_entered.connect(_cancel_source_open)
+	_attach_page(page)
+
+
+# A page realized later takes the session state an open page would have received.
+func _attach_page(page: Control) -> void:
+	page.repair_applied_revision = _repair_revision_shown
+	page.state.attach(_bridge)
+	page.state.minimum_revision = _session_minimum
+
+
 func _initialize_repair(parent: Control, operations: ProvidenceEditorOperation) -> void:
 	repair = RepairDialog.new()
 	repair.operations = operations
@@ -88,9 +106,29 @@ func _initialize_repair(parent: Control, operations: ProvidenceEditorOperation) 
 	parent.add_child(repair)
 	repair.visibility_changed.connect(func(): _repair_shade.visible = repair.visible)
 	repair.applied.connect(_repair_applied)
+	repair.message_editor_requested.connect(_request_message_editor)
 	repair.returned.connect(func():
 		workbench.state.refresh(_current_revision())
 		workbench.restore_return_focus(_return_focus))
+
+
+func _request_message_editor(identity: String) -> void:
+	repair.request_navigation(_open_repair_message.bind(identity, _session_generation))
+
+
+func _open_repair_message(identity: String, generation: int) -> void:
+	if generation != _session_generation: return
+	var navigation = _navigation.get_ref() if _navigation != null else null
+	if navigation == null:
+		status_changed.emit("Messages navigation is unavailable. Your scenario has not changed.")
+		return
+	_return_available = true
+	_back.show()
+	var opened: bool = await preload("res://src/source_navigation.gd").open(navigation, {"source": identity, "field": "text"})
+	if generation != _session_generation: return
+	if not opened:
+		await navigation.select_route("text.messages")
+		status_changed.emit("Opened Messages. %s is missing or ambiguous; no replacement was selected." % identity.replace("message:", "Message "))
 
 
 func configure_navigation(layout: ProvidenceLayoutCoordinator, read_context: Callable, select_document: Callable, menu_command: Callable, open_script: Callable, navigation = null) -> void:
@@ -118,20 +156,25 @@ func session_changed(bridge, revision: int) -> void:
 	_bridge = bridge
 	_pending_source.clear()
 	_repair_check_pending = false
-	workbench.repair_applied_revision = -1
 	_saved_revision = revision
 	_return_available = false
 	_back.hide()
-	workbench.state.attach(bridge)
-	workbench.state.minimum_revision = revision
+	_repair_revision_shown = -1
+	_session_minimum = revision
+	var page: Control = _documents.peek(ROUTE)
+	if page != null: _attach_page(page)
 	if is_selected():
 		workbench.state.refresh(revision)
 		_update_status()
 
 
 func project_changed(revision: int) -> void:
-	workbench.repair_applied_revision = revision if _repair_check_pending else -1
-	workbench.state.minimum_revision = maxi(workbench.state.minimum_revision, revision)
+	_repair_revision_shown = revision if _repair_check_pending else -1
+	_session_minimum = maxi(_session_minimum, revision)
+	var page: Control = _documents.peek(ROUTE)
+	if page != null:
+		page.repair_applied_revision = _repair_revision_shown
+		page.state.minimum_revision = maxi(page.state.minimum_revision, revision)
 	if is_selected() and not repair.visible:
 		workbench.state.refresh(revision)
 		_update_status()
@@ -168,7 +211,8 @@ func _show() -> void:
 func tab_changed(tab: int) -> bool:
 	if Routes.document_identity(tab) != ROUTE:
 		_pending_source.clear()
-		workbench.state.cancel_refresh()
+		var page: Control = _documents.peek(ROUTE)
+		if page != null: page.state.cancel_refresh()
 		_layout.leave_issues()
 		_back.visible = _return_available
 		_update_status()

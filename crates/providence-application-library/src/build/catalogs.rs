@@ -2,7 +2,7 @@ use super::{documents, encoding, sources::VerifiedSources};
 use crate::corrections::{CertifiedApplicationCorrection, apply_certified_application_corrections};
 use providence_core::{
     codecs::{
-        decode_caste_rules, decode_race_rules, decode_rule_name_catalog,
+        STANDARD_SPELL_RECORDS, decode_caste_rules, decode_race_rules, decode_rule_name_catalog,
         decode_standard_item_rules, decode_standard_spells, derive_caste_eligibility,
         hydrate_standard_spell_names,
     },
@@ -72,8 +72,9 @@ impl Library {
             .map_err(|error| error.to_string())?;
         let rules =
             project_rebuilt_v3_rule_catalog(&snapshot).map_err(|error| error.to_string())?;
-        let assets =
+        let mut assets =
             project_rebuilt_v3_asset_index(&snapshot).map_err(|error| error.to_string())?;
+        assets.schema_version = 6;
         let mut counts = counts(
             &items,
             stock_item_count,
@@ -114,8 +115,11 @@ fn decode_items_and_spells(
     )
     .map_err(|error| error.to_string())?
     .rules;
-    snapshot.standard_spells =
-        decode_standard_spells(data_s, Some(encoding::blob_id(data_s))).spells;
+    snapshot.standard_spells = decode_standard_spells(data_s, Some(encoding::blob_id(data_s)))
+        .spells
+        .into_iter()
+        .take(STANDARD_SPELL_RECORDS)
+        .collect();
     hydrate_standard_spell_names(
         &mut snapshot.standard_spells,
         custom_names,
@@ -132,12 +136,18 @@ fn decode_rules(sources: &VerifiedSources, snapshot: &mut ProjectSnapshot) -> Re
         sources.bytes("Data Race")?,
         Some(encoding::blob_id(sources.bytes("Data Race")?)),
     )
-    .rules;
+    .rules
+    .into_iter()
+    .take(30)
+    .collect();
     snapshot.caste_rules = decode_caste_rules(
         sources.bytes("Data Caste")?,
         Some(encoding::blob_id(sources.bytes("Data Caste")?)),
     )
-    .rules;
+    .rules
+    .into_iter()
+    .take(30)
+    .collect();
     derive_caste_eligibility(&snapshot.race_rules, &mut snapshot.caste_rules)
         .map_err(|error| error.to_string())?;
     snapshot.rule_names = Some(

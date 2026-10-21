@@ -39,6 +39,7 @@ pub(super) struct SelectedTextResources {
 pub(super) fn select_encounters(
     snapshot: &ProjectSnapshot,
     reachability: &RebuiltV3ReachabilityReport,
+    preserve: bool,
 ) -> Result<SelectedEncounters, RebuiltV3ReachableRuntimeError> {
     let (scenario, simple_projection, complex_projection) =
         crate::rebuilt::scenario::project_rebuilt_v3_selected_scenario(snapshot, reachability)
@@ -58,7 +59,9 @@ pub(super) fn select_encounters(
         .iter()
         .map(|encounter| encounter.native_id.0)
         .collect::<std::collections::BTreeSet<_>>();
-    let rogue_ids = if allow_deferred {
+    let rogue_ids = if preserve {
+        available_rogue_ids.clone()
+    } else if allow_deferred {
         requested_rogue_ids
             .intersection(&available_rogue_ids)
             .copied()
@@ -135,8 +138,23 @@ pub(super) fn select_text_resources(
             resource_id: key.resource_id,
         })
         .collect::<std::collections::BTreeSet<_>>();
-    let assets = project_rebuilt_v3_selected_classic_resources(snapshot, &text_keys, &style_keys)
-        .map_err(RebuiltV3ReachableRuntimeError::Asset)?;
+    let available_text_keys = if matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+        text_keys
+            .iter()
+            .filter(|key| {
+                snapshot
+                    .assets
+                    .iter()
+                    .any(|asset| asset.classic_resource.as_ref() == Some(key))
+            })
+            .cloned()
+            .collect()
+    } else {
+        text_keys.clone()
+    };
+    let assets =
+        project_rebuilt_v3_selected_classic_resources(snapshot, &available_text_keys, &style_keys)
+            .map_err(RebuiltV3ReachableRuntimeError::Asset)?;
     let reachable_style_resource_ids = assets
         .assets
         .iter()

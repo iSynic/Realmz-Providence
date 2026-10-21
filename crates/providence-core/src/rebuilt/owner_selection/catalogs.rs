@@ -39,18 +39,12 @@ impl CatalogInputs {
             .map(|record| record.native_id.0)
             .collect::<BTreeSet<_>>();
         let reachable_treasure_ids = if allow_deferred {
-            requested_treasure_ids
-                .intersection(&available_treasure_ids)
-                .copied()
-                .collect()
+            available_treasure_ids
         } else {
             requested_treasure_ids
         };
         let reachable_shop_ids = if allow_deferred {
-            requested_shop_ids
-                .intersection(&available_shop_ids)
-                .copied()
-                .collect()
+            available_shop_ids
         } else {
             requested_shop_ids
         };

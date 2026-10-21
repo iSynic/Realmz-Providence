@@ -29,6 +29,7 @@ pub(super) fn dispatch(
 ) -> Result<Value, String> {
     match method {
         "map.catalog" => map_catalog(session, params),
+        "map.region" => crate::map_region::read(session, &params),
         "map.list" => map_list(session, params),
         "map.open" => map_open(session, params),
         "map.tile-catalog" => crate::land_tile_catalog::read(session, &params),

@@ -57,6 +57,7 @@ fn session_revision_undo_and_redo_survive_process_reopen() {
         .checkpoint_session(&reopened, &json!({"method": "history.undo"}))
         .expect("checkpoint undone state");
 
+    drop(store);
     let (_, mut reopened_undo) =
         ProjectStore::open_session(temporary.path()).expect("restore undone session");
     assert_eq!(reopened_undo.revision(), Revision(2));

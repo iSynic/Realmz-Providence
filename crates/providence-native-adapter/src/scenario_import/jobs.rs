@@ -27,6 +27,7 @@ struct State {
     total_items: usize,
     item_kind: String,
     result: Option<Result<Prepared, String>>,
+    committed_revision: Option<Revision>,
 }
 
 struct Prepared {
@@ -73,7 +74,12 @@ impl Jobs {
         let action = method.strip_prefix("project.import-classic-scenario.")?;
         Some(match action {
             "begin" => self.begin(session, store, params.clone()),
-            "status" | "cancel" | "commit" => self.continue_job(session, store, action, params),
+            "status" | "poll" | "cancel" | "commit" => self.continue_job(
+                session,
+                store,
+                if action == "poll" { "status" } else { action },
+                params,
+            ),
             _ => Err(format!("Unknown import job operation: {action}")),
         })
     }
@@ -147,24 +153,17 @@ impl Jobs {
             .as_ref()
             .filter(|job| job.id == id)
             .ok_or("Import job is unavailable.")?;
-        if action == "cancel" {
-            job.cancel.store(true, Ordering::Relaxed);
-            job.state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .result = None;
-            return Ok(json!({"jobId": id, "status": "cancelled"}));
-        }
         let store = store.ok_or("Import jobs require a portable project.")?;
-        if session.revision() != job.revision
-            || session.snapshot().project_id != job.project
-            || store.root() != job.destination
-        {
+        if session.snapshot().project_id != job.project || store.root() != job.destination {
             job.cancel.store(true, Ordering::Relaxed);
             return Err("Import job is stale; the active project is unchanged.".into());
         }
-        if job.cancel.load(Ordering::Relaxed) {
-            return Ok(json!({"jobId": id, "status": "cancelled"}));
+        if let Some(result) = terminal(job, action) {
+            return result;
+        }
+        if session.revision() != job.revision {
+            job.cancel.store(true, Ordering::Relaxed);
+            return Err("Import job is stale; the active project is unchanged.".into());
         }
         let mut state = job.state.lock().unwrap_or_else(|error| error.into_inner());
         if action == "status" {
@@ -185,8 +184,34 @@ impl Jobs {
             .ok_or("Import is not ready to commit.")??;
         job.cancel.store(true, Ordering::Relaxed);
         drop(state);
-        commit_prepared(session, store, job.revision, prepared)
+        let result = commit_prepared(session, store, job.revision, prepared)?;
+        job.state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .committed_revision = Some(session.revision());
+        Ok(result)
     }
+}
+
+fn terminal(job: &Job, action: &str) -> Option<Result<Value, String>> {
+    let mut state = job.state.lock().unwrap_or_else(|error| error.into_inner());
+    if let Some(revision) = state.committed_revision {
+        return Some(if action == "commit" {
+            Err(format!(
+                "Import job is stale: already committed at revision {}",
+                revision.0
+            ))
+        } else {
+            Ok(
+                json!({"jobId":job.id,"status":"committed","revision":revision,"committed":true,"settled":job.worker.is_finished()}),
+            )
+        });
+    }
+    if action == "cancel" {
+        job.cancel.store(true, Ordering::Relaxed);
+        state.result = None;
+    }
+    job.cancel.load(Ordering::Relaxed).then(|| Ok(json!({"jobId":job.id,"status":"cancelled","committed":false,"settled":job.worker.is_finished()})))
 }
 
 fn prepare(

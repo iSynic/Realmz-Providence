@@ -125,5 +125,6 @@ fn action_92_companion_field(
             note: "Classic action 92 reads the contiguous companion row geometry.".into(),
         },
         uses: Vec::new(),
+        reference_behavior: None,
     }
 }

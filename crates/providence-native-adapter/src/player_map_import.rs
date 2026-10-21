@@ -1,4 +1,4 @@
-use crate::classic_source_retention::replace_sources;
+use crate::classic_source_retention::{replace_sources, store_source_annex};
 use crate::execute;
 use crate::request_params::required_string;
 use crate::scenario_preflight::resolve_classic_native_file;
@@ -41,13 +41,7 @@ pub(crate) fn import_classic_player_maps(
         store,
         &[("Data MD2", &bytes)],
     )?;
-    let annex_bytes = serde_json::to_vec(
-        &json!({"format": "providence-classic-source-annex-v1", "files": sources}),
-    )
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     let count = decoded.records.len();
     let trailing_bytes = decoded.trailing_bytes.len();
     let runtime_addressable = decoded
@@ -174,13 +168,7 @@ fn retain_name_source(
         byte_length: length as u64,
     });
     sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
-    let annex_bytes = serde_json::to_vec(
-        &json!({"format": "providence-classic-source-annex-v1", "files": sources}),
-    )
-    .map_err(|error| format!("could not encode compatibility annex: {error}"))?;
-    let annex_blob = store
-        .put_blob(&annex_bytes)
-        .map_err(|error| error.to_string())?;
+    let annex_blob = store_source_annex(session.snapshot(), store, &sources)?;
     Ok((sources, annex_blob))
 }
 

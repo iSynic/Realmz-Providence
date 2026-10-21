@@ -25,9 +25,41 @@ pub(super) fn retain(
     }
     // The selected producer already resolved mechanics, names and eligibility. Exact stock
     // duplicates may be removed; native byte comparison cannot discard a name-only override.
-    let races = retain_exact_application_duplicates(content, application, "races")?;
-    let castes = retain_exact_application_duplicates(content, application, "castes")?;
-    Ok((races, castes, races, castes))
+    let races = retain_selected_family(content, application, "races", "raceSource")?;
+    let castes = retain_selected_family(content, application, "castes", "casteSource")?;
+    Ok((
+        races,
+        castes,
+        catalog_len(content, "races")?,
+        catalog_len(content, "castes")?,
+    ))
+}
+
+fn catalog_len(content: &Value, family: &str) -> Result<usize, String> {
+    content
+        .get(family)
+        .and_then(Value::as_array)
+        .map(Vec::len)
+        .ok_or_else(|| format!("scenario content has no {family} array"))
+}
+
+fn retain_selected_family(
+    content: &mut Value,
+    application: &Value,
+    family: &str,
+    source_field: &str,
+) -> Result<usize, String> {
+    // A selected native family suppresses application composition, including stock-equal rows.
+    if content
+        .pointer("/classicRecords/ruleSelection")
+        .and_then(|selection| selection.get(source_field))
+        .and_then(Value::as_str)
+        == Some("scenario")
+    {
+        catalog_len(content, family)?;
+        return Ok(0);
+    }
+    retain_exact_application_duplicates(content, application, family)
 }
 
 fn changed_record_ids(
@@ -113,6 +145,38 @@ fn retain_exact_application_duplicates(
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn selected_scenario_family_keeps_stock_equal_rows_while_application_family_deduplicates() {
+        let application =
+            json!({"races":[{"id":"classic.race.1"}], "castes":[{"id":"classic.caste.1"}]});
+        for (race_source, caste_source) in [
+            ("scenario", "application"),
+            ("application", "scenario"),
+            ("scenario", "scenario"),
+        ] {
+            let mut content = application.clone();
+            content["classicRecords"] =
+                json!({"ruleSelection":{"raceSource":race_source,"casteSource":caste_source}});
+            let absent = Path::new("not-read-for-selected-rules");
+            let counts = retain(&mut content, &application, true, true, absent, absent).unwrap();
+            assert_eq!(
+                content["races"].as_array().unwrap().len(),
+                usize::from(race_source == "scenario")
+            );
+            assert_eq!(
+                content["castes"].as_array().unwrap().len(),
+                usize::from(caste_source == "scenario")
+            );
+            assert_eq!(
+                (counts.0, counts.1),
+                (
+                    usize::from(race_source == "application"),
+                    usize::from(caste_source == "application")
+                )
+            );
+        }
+    }
 
     #[test]
     fn selected_rules_preserve_names_mechanics_and_eligibility_and_remove_only_exact_duplicates() {

@@ -63,8 +63,9 @@ pub(super) fn content(
     rules: RebuiltV3RuleCatalog,
 ) -> RebuiltV3ContentDocument {
     RebuiltV3ContentDocument {
+        classic_records: None,
         kind: "realmz2.content".into(),
-        schema_version: 3,
+        schema_version: 6,
         campaign: application_campaign(),
         messages: Vec::new(),
         option_labels: Vec::new(),
@@ -89,7 +90,7 @@ pub(super) fn content(
 pub(super) fn scenario() -> RebuiltV3ScenarioDocument {
     RebuiltV3ScenarioDocument {
         kind: "realmz2.scenario".into(),
-        schema_version: 3,
+        schema_version: 6,
         application_hooks: RebuiltV3ApplicationHooks {
             start_game: None,
             party_death: None,
@@ -108,7 +109,7 @@ pub(super) fn scenario() -> RebuiltV3ScenarioDocument {
 pub(super) fn application_world() -> RebuiltV3WorldDocument {
     RebuiltV3WorldDocument {
         kind: "realmz2.world".into(),
-        schema_version: 3,
+        schema_version: 6,
         battle_terrain_sets: Vec::new(),
         maps: vec![application_map()],
         player_maps: Vec::new(),
@@ -156,7 +157,7 @@ fn application_map() -> RebuiltV3WorldMap {
         },
         topology_format: "realmz2.compact-cell-rows.v2".into(),
         cells: vec![application_cell(); 8100],
-        classic_tile_values: None,
+        classic_tile_values: Some(vec![0; 8100]),
         boat_replacement_profiles: Some(boat_profiles()),
         random_rectangles: Vec::new(),
     }

@@ -12,6 +12,7 @@ use std::{
 };
 
 mod family_context;
+pub(crate) mod generation_geometry;
 #[cfg(test)]
 mod irregular_water_tests;
 pub mod linear;

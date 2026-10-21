@@ -1,5 +1,6 @@
 use super::{
-    RebuiltV3WorldDocument, RebuiltV3WorldError, layout, maps, player_selection, programs,
+    PlayerMapPolicy, RebuiltV3WorldDocument, RebuiltV3WorldError, layout, maps, player_selection,
+    programs,
 };
 use crate::{
     model::{ProjectSnapshot, StableId},
@@ -15,6 +16,7 @@ pub(super) fn project(
     special_land_assets: &BTreeMap<i16, StableId>,
     application_media: Option<&ApplicationMediaCatalog>,
     runtime: Option<&RebuiltV3ReachableRuntimeSelection>,
+    player_map_policy: PlayerMapPolicy,
 ) -> Result<RebuiltV3WorldDocument, RebuiltV3WorldError> {
     validate_map_identities(snapshot)?;
     let (transitions, land_layout) = layout::project(snapshot)?;
@@ -24,7 +26,12 @@ pub(super) fn project(
         .map_err(RebuiltV3WorldError::Topology)?;
     let programs = programs::project(snapshot, runtime)?;
     let program_refs = programs.programs.iter().collect::<Vec<_>>();
-    let player_maps = player_selection::project(snapshot, &program_refs, application_media)?;
+    let player_maps = player_selection::project(
+        snapshot,
+        &program_refs,
+        application_media,
+        player_map_policy,
+    )?;
     let maps = maps::project(snapshot, inputs.maps, topologies, &programs.programs)?;
     Ok(RebuiltV3WorldDocument {
         kind: "realmz2.world".into(),

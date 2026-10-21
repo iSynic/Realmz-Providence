@@ -61,6 +61,8 @@ enum CommandId {
 	HELP_COMPATIBILITY,
 	HELP_EVIDENCE,
 	HELP_ABOUT,
+	TOOLS_CONNECTIONS = 700,
+	VIEW_UI_SCALE = 800,
 }
 
 var _commands: Dictionary = {}
@@ -72,17 +74,20 @@ func _ready() -> void:
 	_build_file_menu()
 	_build_edit_menu()
 	_build_view_menu()
+	_build_scale_menu()
 	_build_navigate_menu()
 	_build_window_menu()
 	_build_help_menu()
-	for menu_name in [&"File", &"Edit", &"View", &"Navigate", &"Window", &"Help"]:
+	_add(get_node("Tools"), &"Tools", "MCP Connections…", &"tools.mcp-connections", CommandId.TOOLS_CONNECTIONS)
+	for menu_name in [&"File", &"Edit", &"View", &"Navigate", &"Window", &"Tools", &"Help"]:
 		var popup := get_node(NodePath(String(menu_name))) as PopupMenu
 		popup.about_to_popup.connect(command_state_refresh_requested.emit)
 		popup.id_pressed.connect(_on_menu_id_pressed.bind(menu_name))
+	$View/UIScale.id_pressed.connect(_on_menu_id_pressed.bind(&"UIScale"))
 
 
 func update_command_state(context: Dictionary) -> void:
-	for command in _before_busy: _set_enabled(command, _before_busy[command], "")
+	for command in _before_busy: _set_enabled(command, _before_busy[command].enabled, _before_busy[command].reason)
 	_before_busy.clear()
 	var session_connected := bool(context.get("sessionConnected", false))
 	var project_backed := bool(context.get("projectBacked", false))
@@ -102,6 +107,8 @@ func update_command_state(context: Dictionary) -> void:
 	_set_enabled(&"edit.redo", session_connected and bool(context.get("canRedo", false)), "Nothing is available to redo.")
 	_set_enabled(&"edit.duplicate", session_connected and project_backed and document_tab == 1 and has_map, "Duplicate is currently available only for the selected persistent map.")
 	_set_enabled(&"edit.find-document", document_tab in [0, 1, 33], "This document has no bounded search projection yet.")
+	for command in [&"edit.cut", &"edit.copy", &"edit.paste", &"edit.delete"]:
+		_set_enabled(command, context.get("textCommands", {}).get(String(command), false), "Focus an editable text field or select text to use this command.")
 	_set_enabled(&"navigate.back", bool(context.get("canNavigateBack", false)), "No earlier authoring location is available.")
 	_set_enabled(&"navigate.forward", bool(context.get("canNavigateForward", false)), "No later authoring location is available.")
 	for command in [&"navigate.go-to-entity", &"edit.find-global", &"navigate.find-uses", &"navigate.view-flow", &"navigate.used-by", &"view.links-uses"]:
@@ -109,13 +116,16 @@ func update_command_state(context: Dictionary) -> void:
 	_set_checked(&"view.project-explorer", bool(context.get("explorerVisible", true)))
 	_set_checked(&"view.inspector", bool(context.get("inspectorVisible", false)))
 	_set_checked(&"view.centered-workspace", bool(context.get("centeredWorkspace", false)))
+	_update_scale_state(context.get("uiScale", {}))
 	var has_multiple_tabs := int(context.get("tabCount", 0)) > 1
 	_set_enabled(&"window.next-document", has_multiple_tabs, "Only one document is available.")
 	_set_enabled(&"window.previous-document", has_multiple_tabs, "Only one document is available.")
 	if context.get("busy", false):
 		for command in _commands:
 			if str(command).begins_with("file.") or str(command).begins_with("edit.") or str(command).begins_with("window."):
-				_before_busy[command] = is_command_enabled(command)
+				var entry: Dictionary = _commands[command]
+				var popup: PopupMenu = entry.popup
+				_before_busy[command] = {"enabled": is_command_enabled(command), "reason": popup.get_item_tooltip(popup.get_item_index(int(entry.id)))}
 				_set_enabled(command, false, "Wait for the current operation to finish.")
 
 
@@ -126,6 +136,23 @@ func is_command_enabled(command: StringName) -> bool:
 	return not (entry.popup as PopupMenu).is_item_disabled((entry.popup as PopupMenu).get_item_index(int(entry.id)))
 
 
+func command_catalog() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for command in _commands:
+		var entry: Dictionary = _commands[command]
+		var popup: PopupMenu = entry.popup
+		var index := popup.get_item_index(int(entry.id))
+		var shortcut := popup.get_item_shortcut(index)
+		var keys: Array[String] = []
+		if shortcut != null:
+			for event: InputEvent in shortcut.events: keys.append(event.as_text())
+		rows.append({"command": String(command), "group": String(popup.name),
+			"label": popup.get_item_text(index), "shortcuts": keys,
+			"enabled": not popup.is_item_disabled(index),
+			"unavailableReason": popup.get_item_tooltip(index) if popup.is_item_disabled(index) else ""})
+	return rows
+
+
 func _build_file_menu() -> void:
 	var popup := $File as PopupMenu
 	_add(popup, &"File", "New Project", &"file.new-project", CommandId.FILE_NEW, KEY_N, true)
@@ -134,7 +161,7 @@ func _build_file_menu() -> void:
 	popup.add_separator()
 	_add(popup, &"File", "Save", &"file.save", CommandId.FILE_SAVE, KEY_S, true)
 	_add(popup, &"File", "Save Snapshot As…", &"file.save-as", CommandId.FILE_SAVE_AS, KEY_S, true, true)
-	_add(popup, &"File", "Close Project", &"file.close-project", CommandId.FILE_CLOSE, KEY_W, true)
+	_add(popup, &"File", "Close Project", &"file.close-project", CommandId.FILE_CLOSE, KEY_W, true, true)
 	popup.add_separator()
 	_add(popup, &"File", "Compile Targets…", &"file.compile-targets", CommandId.FILE_COMPILE)
 	_add(popup, &"File", "Preview in Rebuilt", &"file.preview-rebuilt", CommandId.FILE_PREVIEW_REBUILT, KEY_F6)
@@ -167,6 +194,8 @@ func _build_view_menu() -> void:
 	_add(popup, &"View", "Compiler Output", &"view.compiler-output", CommandId.VIEW_COMPILER)
 	_add(popup, &"View", "Source Evidence", &"view.source-evidence", CommandId.VIEW_EVIDENCE)
 	popup.add_separator()
+	popup.add_submenu_node_item("UI Scale", $View/UIScale)
+	popup.add_separator()
 	_add_radio(popup, &"View", "Balanced Density", &"view.balanced-density", CommandId.VIEW_BALANCED, true)
 	_add_radio(popup, &"View", "Compact Density", &"view.compact-density", CommandId.VIEW_COMPACT)
 	popup.add_separator()
@@ -176,6 +205,36 @@ func _build_view_menu() -> void:
 	popup.add_separator()
 	_add(popup, &"View", "Reset Layout", &"view.reset-layout", CommandId.VIEW_RESET)
 	_add_check(popup, &"View", "Center Workspace at 16:9", &"view.centered-workspace", CommandId.VIEW_CENTERED)
+
+
+func _build_scale_menu() -> void:
+	var popup: PopupMenu = $View/UIScale
+	var values := ["auto"]
+	for percent in preload("res://src/display_scaling.gd").PERCENTAGES: values.append(str(percent))
+	for index in values.size():
+		var command := StringName("view.ui-scale." + values[index])
+		_add_radio(popup, &"UIScale", "Automatic" if index == 0 else values[index] + "%", command, CommandId.VIEW_UI_SCALE + index, index == 0)
+		_set_enabled(command, true, "")
+	var key := InputEventKey.new()
+	key.keycode = KEY_0
+	key.ctrl_pressed = true
+	key.alt_pressed = true
+	var shortcut := Shortcut.new()
+	shortcut.events = [key]
+	popup.set_item_shortcut(1, shortcut)
+
+
+func _update_scale_state(state: Dictionary) -> void:
+	if state.is_empty(): return
+	var popup: PopupMenu = $View/UIScale
+	for index in popup.item_count:
+		var value := "auto" if index == 0 else str(preload("res://src/display_scaling.gd").PERCENTAGES[index - 1])
+		var selected: bool = value == state.preference
+		popup.set_item_checked(index, selected)
+		var label := "Automatic" if index == 0 else value + "%"
+		if index == 0 and selected: label += " (%d%%)" % roundi(state.effective * 100)
+		elif selected and state.requested > state.effective: label += " (fits at %d%%)" % roundi(state.effective * 100)
+		popup.set_item_text(index, label)
 
 
 func _build_navigate_menu() -> void:
@@ -209,12 +268,12 @@ func _build_help_menu() -> void:
 	_add(popup, &"Help", "Divinity Manual…", &"help.divinity-manual", CommandId.HELP_DIVINITY_MANUAL, KEY_F1)
 	_add(popup, &"Help", "Code Helper…", &"help.code-helper", CommandId.HELP_CODE_HELPER, KEY_F1, false, true)
 	popup.add_separator()
-	_add_disabled(popup, &"Help", "Providence Documents", &"help.documents", CommandId.HELP_DOCUMENTS)
-	_add_disabled(popup, &"Help", "Keyboard Shortcuts", &"help.shortcuts", CommandId.HELP_SHORTCUTS)
-	_add_disabled(popup, &"Help", "Compatibility Glossary", &"help.compatibility", CommandId.HELP_COMPATIBILITY)
-	_add_disabled(popup, &"Help", "Source Evidence Guide", &"help.source-evidence", CommandId.HELP_EVIDENCE)
+	_add(popup, &"Help", "Providence Documents", &"help.documents", CommandId.HELP_DOCUMENTS)
+	_add(popup, &"Help", "Keyboard Shortcuts", &"help.shortcuts", CommandId.HELP_SHORTCUTS)
+	_add(popup, &"Help", "Compatibility Glossary", &"help.compatibility", CommandId.HELP_COMPATIBILITY)
+	_add(popup, &"Help", "Source Evidence Guide", &"help.source-evidence", CommandId.HELP_EVIDENCE)
 	popup.add_separator()
-	_add_disabled(popup, &"Help", "About Providence", &"help.about", CommandId.HELP_ABOUT)
+	_add(popup, &"Help", "About Providence", &"help.about", CommandId.HELP_ABOUT)
 
 
 func _add(popup: PopupMenu, menu_name: StringName, label: String, command: StringName, id: int, keycode: Key = KEY_NONE, ctrl := false, shift := false, alt := false) -> void:

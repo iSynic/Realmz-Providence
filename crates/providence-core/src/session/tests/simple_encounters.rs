@@ -197,7 +197,7 @@ fn simple_encounter_update_is_bounded_undoable_and_rejects_lossy_text() {
     assert_eq!(session.snapshot().simple_encounters[0].texts[0], "Continue");
 
     let mut invalid = session.snapshot().simple_encounters[0].clone();
-    invalid.texts[0] = "Café".into();
+    invalid.texts[0] = "Café ☃".into();
     let error = session
         .execute(ExpectedRevisionCommand {
             expected_revision: Revision(2),
@@ -205,8 +205,8 @@ fn simple_encounter_update_is_bounded_undoable_and_rejects_lossy_text() {
                 encounter: Box::new(invalid),
             },
         })
-        .expect_err("uncertified encoding must fail before mutation");
-    assert!(error.to_string().contains("certified ASCII subset"));
+        .expect_err("unrepresentable encoding must fail before mutation");
+    assert!(error.to_string().contains("MacRoman"));
     assert_eq!(session.revision(), Revision(2));
 }
 
@@ -313,7 +313,7 @@ fn assert_complete_simple_encounter_draft(session: &EditorSession) {
 
 fn assert_invalid_simple_encounter_draft_is_atomic(session: &mut EditorSession) {
     let mut invalid = session.snapshot().simple_encounters[0].clone();
-    invalid.texts[0] = "Café".into();
+    invalid.texts[0] = "Café ☃".into();
     let before = session.snapshot().clone();
     let error = session
         .execute(ExpectedRevisionCommand {
@@ -333,7 +333,7 @@ fn assert_invalid_simple_encounter_draft_is_atomic(session: &mut EditorSession) 
             },
         })
         .expect_err("invalid text rejects the entire transaction");
-    assert!(error.to_string().contains("certified ASCII subset"));
+    assert!(error.to_string().contains("MacRoman"));
     assert_eq!(session.snapshot(), &before);
 }
 

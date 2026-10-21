@@ -3,6 +3,7 @@ extends Window
 signal applied(projection: Dictionary)
 signal returned
 signal edits_settled
+signal message_editor_requested(identity: String)
 
 const Presentation = preload("res://src/action_settings_repair_presentation.gd")
 const Picker = preload("res://src/action_settings_repair_picker.gd")
@@ -24,6 +25,7 @@ var picker := Picker.new()
 var operations: ProvidenceEditorOperation
 var _checking_fields := false
 var _generation := 0
+var message_workflow := preload("res://src/action_settings_message_workflow.gd").new()
 
 
 func _ready() -> void:
@@ -43,6 +45,7 @@ func _ready() -> void:
 		"review_draft": review_draft, "check_status": check_status,
 		"finish_confirmed": finish_confirmed, "copy_draft": copy_draft,
 	})
+	_initialize_messages()
 	apply_theme()
 	for entry in [["Land", "land"], ["Dungeon", "dungeon"]]: _option(ui.mapKind, entry)
 	for entry in [["Keep shape", "-1"], ["Set bounds", "0"], ["Move area", "1"], ["Adjust each edge", "2"]]: _option(ui.shapeMode, entry)
@@ -53,7 +56,7 @@ func _ready() -> void:
 	for key in ["map", "area"]: ui[key].pressed.connect(func(): open_picker(key))
 	ui.all_uses.pressed.connect(open_picker.bind("uses"))
 	ui.only.pressed.connect(change_field.bind("scope", "only-this-action"))
-	ui.shared.pressed.connect(change_field.bind("scope", "shared-actions"))
+	ui.shared.pressed.connect(func(): change_field("scope", "confirmed-actions" if view.get("family") == "random-message" else "shared-actions"))
 	ui.cancel.pressed.connect(request_cancel)
 	ui.copy.pressed.connect(copy_draft)
 	ui.compare.pressed.connect(compare_current)
@@ -79,7 +82,21 @@ func apply_theme(mode := "dark", density := "balanced") -> void:
 	_presentation.apply_theme(self, mode, density)
 	picker.theme = theme
 	_discard.theme = theme
+	message_workflow.apply_theme(theme, ui.background.get_theme_stylebox("panel"))
 	if not view.is_empty(): _render()
+
+
+func _initialize_messages() -> void:
+	add_child(message_workflow)
+	message_workflow.initialize(ui.message_form, ui.message_shade, operations)
+	ui.message_form.field_changed.connect(change_field)
+	message_workflow.editor_requested.connect(message_editor_requested.emit)
+	message_workflow.activity_changed.connect(func(busy): _busy = busy; _render())
+	message_workflow.view_received.connect(func(response):
+		if not response.get("ok", false): _read_failed(response); return
+		view = response.result
+		phase = str(view.phase)
+		_render())
 
 
 func open_repair(bridge, revision: int, source: String, slot: int) -> Dictionary:
@@ -135,6 +152,7 @@ func _flush_edits() -> void:
 		_render()
 		if phase not in ["editing", "stale-draft"]: break
 	_checking_fields = false
+	_render()
 	edits_settled.emit()
 
 
@@ -257,7 +275,7 @@ func back_to_editing() -> void:
 	if phase != "comparison" or not _comparison.get("canRebase", false) or _submitted: return
 	phase = "stale-draft"
 	_render()
-	ui.chanceAdjustment.grab_focus()
+	(ui.firstMessage if view.get("family") == "random-message" else ui.chanceAdjustment).grab_focus()
 
 
 func _read_failed(response: Dictionary) -> void:
@@ -280,7 +298,7 @@ func request_cancel() -> void:
 
 
 func request_navigation(action: Callable) -> void:
-	if _busy or picker.visible: return
+	if _busy or picker.visible or message_workflow.has_modal(): return
 	_pending_navigation = action
 	if phase == "matches-repair":
 		finish_confirmed()
@@ -295,6 +313,7 @@ func request_navigation(action: Callable) -> void:
 
 func _close() -> void:
 	_generation += 1
+	message_workflow.cancel()
 	hide()
 	returned.emit()
 	var action := _pending_navigation
@@ -304,7 +323,8 @@ func _close() -> void:
 
 func copy_draft() -> void:
 	var lines: Array[String] = ["Action settings draft", str(view.sourceLabel)]
-	for key in ["mapKind", "map", "area", "chanceAdjustment", "shapeMode", "bound0", "bound1", "bound2", "bound3"]:
+	var keys: Array = ["firstMessage", "lastMessage"] if view.get("family") == "random-message" else ["mapKind", "map", "area", "chanceAdjustment", "shapeMode", "bound0", "bound1", "bound2", "bound3"]
+	for key in keys:
 		var control: Control = ui[key]
 		lines.append("%s: %s" % [str(ui[key + "_label"].text), str(control.text)])
 	for edit: Array in _pending_edits: lines.append("Pending %s: %s" % [edit[0], edit[1]])
@@ -314,7 +334,7 @@ func copy_draft() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if visible and not picker.visible and not _discard.visible and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+	if visible and not picker.visible and not message_workflow.has_modal() and not _discard.visible and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		request_cancel()
 
@@ -338,3 +358,4 @@ func _render() -> void:
 		"phase": phase, "busy": _busy, "submitted": _submitted,
 		"comparison": _comparison, "pending_edits": _pending_edits,
 	})
+	message_workflow.set_context(_bridge, view, phase, _busy or _checking_fields)

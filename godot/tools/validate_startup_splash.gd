@@ -28,7 +28,7 @@ func _run() -> void:
 		await _check_artwork(splash, viewport)
 	assert(not delayed.startup_presentable and current_scene == splash)
 	delayed.allow_completion = true
-	await _wait_for_transition(splash)
+	if not await _wait_for_transition(splash): return
 	assert(current_scene == delayed and delayed.visible)
 	assert(_events == ["displayed", "loading", "editor"])
 	delayed.queue_free()
@@ -37,7 +37,7 @@ func _run() -> void:
 	var real_splash = scene.instantiate()
 	root.add_child(real_splash)
 	current_scene = real_splash
-	await _wait_for_transition(real_splash)
+	if not await _wait_for_transition(real_splash): return
 	var editor = current_scene
 	assert(editor.startup_presentable and editor.visible)
 	assert(editor._session_view.connected == OS.get_cmdline_user_args().has("--demo"))
@@ -55,11 +55,22 @@ func _wait_for_child(node_name: String) -> Control:
 	return root.get_node(NodePath(node_name)) as Control
 
 
-func _wait_for_transition(splash: Control) -> void:
+func _wait_for_transition(splash: Control) -> bool:
 	var deadline := Time.get_ticks_msec() + 45000
 	while is_instance_valid(splash) and Time.get_ticks_msec() < deadline:
 		await process_frame
-	assert(not is_instance_valid(splash), "Splash remained after the editor initialized")
+	if not is_instance_valid(splash): return true
+	var pending: Array[Dictionary] = []
+	for child in root.get_children():
+		if child.has_signal("startup_completed"):
+			var state := {"name": child.name, "presentable": child.startup_presentable}
+			if child.get("_operations") != null:
+				state["busy"] = child._operations.busy
+				state["operation"] = child._operations.label
+			pending.append(state)
+	push_error("PROVIDENCE_STARTUP_SPLASH_TIMEOUT " + JSON.stringify(pending))
+	quit(1)
+	return false
 
 
 func _check_artwork(splash: Control, viewport: Vector2i) -> void:

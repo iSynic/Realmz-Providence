@@ -94,7 +94,8 @@ impl ProjectStore {
         revision: Revision,
         command: &Value,
     ) -> Result<CheckpointOutcome, StoreError> {
-        let snapshot_sha256 = self.save_snapshot(snapshot)?;
+        let _writer = self.writer_lease()?;
+        let snapshot_sha256 = self.write_snapshot(snapshot)?;
         let infrastructure_warning = self
             .update_infrastructure(snapshot, revision, command, &snapshot_sha256, None)
             .err()
@@ -112,6 +113,7 @@ impl ProjectStore {
         session: &EditorSession,
         command: &Value,
     ) -> Result<CheckpointOutcome, StoreError> {
+        let _writer = self.writer_lease()?;
         let method = command
             .get("method")
             .and_then(Value::as_str)

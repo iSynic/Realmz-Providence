@@ -45,7 +45,7 @@ text = "Esc"
 [node name="CommandSearch" type="LineEdit" parent="CommandPaletteBody"]
 unique_name_in_owner = true
 layout_mode = 2
-placeholder_text = "Type a command or entity…"
+placeholder_text = "Type a command or entityâ€¦"
 clear_button_enabled = true
 
 [node name="CommandScopes" type="HBoxContainer" parent="CommandPaletteBody"]
@@ -73,122 +73,184 @@ disabled = true
 tooltip_text = "Entity search awaits bounded cross-family projections."
 text = "Entities"
 
-[node name="CommandResults" type="VBoxContainer" parent="CommandPaletteBody"]
+[node name="ResultsScroll" type="ScrollContainer" parent="CommandPaletteBody"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="CommandResults" type="VBoxContainer" parent="CommandPaletteBody/ResultsScroll"]
+size_flags_horizontal = 3
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 3
 
-[node name="ViewFlowRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="ViewFlowRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
-[node name="ViewFlow" type="Button" parent="CommandPaletteBody/CommandResults/ViewFlowRow"]
+[node name="ViewFlow" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/ViewFlowRow"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 alignment = 0
-text = "View Flow: selected record  ·  Navigate"
-[node name="OpenCurrentMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+text = "View Flow: selected record  Â·  Navigate"
+[node name="OpenCurrentMapRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="OpenCurrentMap" type="Button" parent="CommandPaletteBody/CommandResults/OpenCurrentMapRow"]
+[node name="OpenCurrentMap" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/OpenCurrentMapRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Open current Land Map  ·  World / Maps"
+text = "Open current Land Map  Â·  World / Maps"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/OpenCurrentMapRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/OpenCurrentMapRow"]
 layout_mode = 2
 text = "Enter"
 
-[node name="FitMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="FitMapRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="FitMap" type="Button" parent="CommandPaletteBody/CommandResults/FitMapRow"]
+[node name="FitMap" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/FitMapRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Fit Canvas  ·  View / Map"
+text = "Map: Fit Canvas  Â·  View / Map"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/FitMapRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/FitMapRow"]
 layout_mode = 2
 text = "F"
 
-[node name="ToggleActionPointsRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="ToggleActionPointsRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ToggleActionPoints" type="Button" parent="CommandPaletteBody/CommandResults/ToggleActionPointsRow"]
+[node name="ToggleActionPoints" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/ToggleActionPointsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Toggle Action Point Overlays  ·  View / Map"
+text = "Map: Toggle Action Point Overlays  Â·  View / Map"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/ToggleActionPointsRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/ToggleActionPointsRow"]
 layout_mode = 2
 text = ""
 
-[node name="PaintSelectedTileRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="PaintSelectedTileRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="PaintSelectedTile" type="Button" parent="CommandPaletteBody/CommandResults/PaintSelectedTileRow"]
+[node name="PaintSelectedTile" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/PaintSelectedTileRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Paint with Selected Tile  ·  Land Editor"
+text = "Map: Paint with Selected Tile  Â·  Land Editor"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/PaintSelectedTileRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/PaintSelectedTileRow"]
 layout_mode = 2
 text = "P"
 
-[node name="StampSelectionRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="StampSelectionRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="StampSelection" type="Button" parent="CommandPaletteBody/CommandResults/StampSelectionRow"]
+[node name="StampSelection" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/StampSelectionRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
 disabled = true
-text = "Map: Stamp Selection  ·  Land Editor"
+text = "Map: Stamp Selection  Â·  Land Editor"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/StampSelectionRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/StampSelectionRow"]
 layout_mode = 2
 text = ""
 
-[node name="RevealMapRow" type="HBoxContainer" parent="CommandPaletteBody/CommandResults"]
+[node name="RevealMapRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="RevealMap" type="Button" parent="CommandPaletteBody/CommandResults/RevealMapRow"]
+[node name="RevealMap" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/RevealMapRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
 disabled = true
-text = "Reveal Map in Project Explorer  ·  Navigate"
+text = "Reveal Map in Project Explorer  Â·  Navigate"
 
-[node name="Shortcut" type="Label" parent="CommandPaletteBody/CommandResults/RevealMapRow"]
+[node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/RevealMapRow"]
 layout_mode = 2
 text = "Ctrl+Shift+R"
+
+[node name="HelpDocumentsRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="HelpDocuments" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/HelpDocumentsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Documents  ·  Help"
+
+[node name="HelpShortcutsRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="HelpShortcuts" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/HelpShortcutsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Keyboard Shortcuts  ·  Help"
+
+[node name="HelpGlossaryRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="HelpGlossary" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/HelpGlossaryRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Compatibility Glossary  ·  Help"
+
+[node name="HelpEvidenceRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="HelpEvidence" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/HelpEvidenceRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "Source Evidence Guide  ·  Help"
+
+[node name="HelpAboutRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
+unique_name_in_owner = true
+layout_mode = 2
+[node name="HelpAbout" type="Button" parent="CommandPaletteBody/ResultsScroll/CommandResults/HelpAboutRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 0
+text = "About Providence  ·  Help"
 
 [node name="CommandPaletteStatus" type="Label" parent="CommandPaletteBody"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
-text = "6 results · disabled commands explain why"
+text = "6 results Â· disabled commands explain why"
 
 [connection signal="text_changed" from="CommandPaletteBody/CommandSearch" to="." method="_on_search_changed"]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/OpenCurrentMapRow/OpenCurrentMap" to="." method="_request_command" binds=["map.open-current"]]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/FitMapRow/FitMap" to="." method="_request_command" binds=["map.fit"]]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/ToggleActionPointsRow/ToggleActionPoints" to="." method="_request_command" binds=["map.toggle-action-points"]]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/PaintSelectedTileRow/PaintSelectedTile" to="." method="_request_command" binds=["map.paint-selected-tile"]]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/StampSelectionRow/StampSelection" to="." method="_request_command" binds=["map.stamp-selection"]]
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/RevealMapRow/RevealMap" to="." method="_request_command" binds=["map.reveal-explorer"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/OpenCurrentMapRow/OpenCurrentMap" to="." method="_request_command" binds=["map.open-current"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/FitMapRow/FitMap" to="." method="_request_command" binds=["map.fit"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/ToggleActionPointsRow/ToggleActionPoints" to="." method="_request_command" binds=["map.toggle-action-points"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/PaintSelectedTileRow/PaintSelectedTile" to="." method="_request_command" binds=["map.paint-selected-tile"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/StampSelectionRow/StampSelection" to="." method="_request_command" binds=["map.stamp-selection"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/RevealMapRow/RevealMap" to="." method="_request_command" binds=["map.reveal-explorer"]]
 
-[connection signal="pressed" from="CommandPaletteBody/CommandResults/ViewFlowRow/ViewFlow" to="." method="_request_command" binds= ["navigate.view-flow"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/ViewFlowRow/ViewFlow" to="." method="_request_command" binds= ["navigate.view-flow"]]
+
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/HelpDocumentsRow/HelpDocuments" to="." method="_request_command" binds=["help.documents"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/HelpShortcutsRow/HelpShortcuts" to="." method="_request_command" binds=["help.shortcuts"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/HelpGlossaryRow/HelpGlossary" to="." method="_request_command" binds=["help.compatibility"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/HelpEvidenceRow/HelpEvidence" to="." method="_request_command" binds=["help.source-evidence"]]
+[connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/HelpAboutRow/HelpAbout" to="." method="_request_command" binds=["help.about"]]
