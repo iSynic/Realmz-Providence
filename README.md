@@ -167,7 +167,7 @@ Linux x64 and universal macOS bundles from the same committed source.
 
 ## Status and licensing
 
-**v0.6.0-beta.4** improves loading and import responsiveness, adds asset export, and makes the Battle layout adjustable.
+**v0.6.0-beta.5** starts faster, scales the interface to your display, ships offline Help, and keeps complete native records in imported scenarios.
 Please report problems with the exact
 version, scenario, tool and steps to reproduce. Include a screenshot or diagnostic
 when useful; do not include private project data unless you intend to share it.

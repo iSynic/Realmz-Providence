@@ -4,7 +4,7 @@ Notable changes to Providence. Each release on the
 [Releases](https://github.com/iSynic/Realmz-Providence/releases) page has the
 full notes and downloads.
 
-## Unreleased
+## 0.6.0-beta.5
 
 - Workbench pages are built the first time you open them, so the packaged
   editor starts in about 1.9 seconds instead of 4.6.
@@ -17,6 +17,9 @@ full notes and downloads.
   and paint collection actions no longer fail while another operation runs.
 - Imported scenarios publish as schema v7 packages that keep complete native
   records; newly authored scenarios stay on schema v6.
+- Readiness reports item slots in shops and treasures that no program opens or
+  awards as one summary per file, instead of thousands of separate warnings.
+  Shops and treasures a program does use still list every broken slot.
 - A rejected command is rolled back, and a change the native host never
   confirmed is reported as outcome-unknown instead of being assumed saved. If
   the host fails mid-request it stops without saving, and you reopen from your
@@ -28,6 +31,7 @@ full notes and downloads.
   kind of edit was saved.
 - Fixed a stray library folder created by empty launch arguments, and text that
   had been garbled as Windows-1252.
+- Downloads include `SOURCE-LICENSE.md`, which explains how to share them.
 
 ## 0.6.0-beta.4 (2026-10-14)
 

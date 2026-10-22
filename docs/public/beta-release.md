@@ -1,32 +1,38 @@
-# Published v0.6.0-beta.4 release notes
+# v0.6.0-beta.5 release notes
 
-These notes describe the published beta.4 assets. The current development tree
-includes later closeout work: imported scenarios publish as schema v7, and newly
-authored scenarios and application libraries as schema v6. Those changes have not yet replaced the downloadable
-beta assets. The [authoring manual](authoring-manual.md) describes the current
-development editor; the historical release changes below remain attributable
-to the published build.
-
-Providence v0.6.0-beta.4 updates the native Godot/Rust scenario editor.
+Providence v0.6.0-beta.5 updates the native Godot/Rust scenario editor.
 The final web release remains available as v0.5.9 and on `legacy/tauri`.
 
-Changes since beta.3:
+Changes since beta.4:
 
-- Preserve exact signed Classic tile words in schema-v6 imported scenario
-  packages, including AP markers and hidden/revealed secret encodings. Existing
-  schemas remain readable; newly authored scenarios retain schema v3.
-- Edit tile entry markers explicitly in the Action Point editor, with one
-  Apply/Undo transaction alongside chance and step edits. Land secrets lead
-  to the existing map-cell controls; dungeon direction/secret bits are preserved.
-- Filter AP catalogs and map markers independently by chance, marker presence,
-  native precedence and detected program checks. Keep dormant and unmarked
-  records, counts and reset controls visible without a persisted active flag.
-- Show applied activation context in map sidebars and View Flow while retaining
-  ordered instruction authoring and exact owning-field navigation.
-- Open APs, Player Maps, Random Rectangles and View Flow in separate native
-  windows, preserving drafts, map context and navigation guards.
-- Improve connected Smart Terrain previews, tolerance-driven widening, counts
-  and stable control sizing. Preserve complete source-owned scenario catalogs.
+- Start faster: workbench pages are built the first time you open them, so the
+  packaged editor opens in about 1.9 seconds instead of 4.6.
+- Interface scaling follows your display automatically, or keeps a size you
+  choose.
+- Read the offline Help that now ships with the editor.
+- Let MCP clients author in your open project through a shared native session,
+  attach to a project folder you grant them, and generate terrain.
+- Special Land fills in missing collision data from the reviewed Data Solids,
+  and paint collection actions no longer fail while another operation runs.
+- Imported scenarios publish as schema v7 packages that keep every complete
+  native record, including dormant and unplaced ones. Newly authored scenarios
+  and application libraries publish as schema v6.
+- Readiness reports item slots in shops and treasures that no program opens or
+  awards as one summary per file; shops and treasures a program does use still
+  list every broken slot.
+- Saving after an edit keeps everything that edit changed. A few edits (creating
+  a monster, editing its description, generating variants, repairing battle
+  monster references, updating a map cell and adding a quest label) could
+  previously leave related changes out of the save.
+- A rejected command is rolled back, a change the native host never confirmed
+  is reported as outcome-unknown, and a host that fails mid-request stops
+  without saving so you reopen from your last save.
+- Fixed a stray library folder created by empty launch arguments, and text that
+  had been garbled as Windows-1252.
+
+Known limitation: in an imported scenario, adding the first record of a kind the
+original scenario had no file for can be saved but not yet exported; export
+explains why and leaves the project unchanged.
 
 Included native workflows:
 
@@ -37,7 +43,7 @@ Included native workflows:
 - Items, shops, treasure, spells, races, castes, strings, startup and media tools.
 - Actionable validation, retained-source preservation and reviewed repairs.
 - Classic folder/StuffIt export and compiled Rebuilt scenario packages.
-- Formatted Divinity Manual with the Red Dragon shortcut, and the new splash.
+- Formatted Divinity Manual with the Red Dragon shortcut, and offline Help.
 
 Downloads include the native tools, licensed stock reference resources, music
 preview, exact build identities and notices. Windows and Linux builds are x64;
@@ -47,13 +53,16 @@ open Providence once, then approve it in **System Settings > Privacy & Security*
 with **Open Anyway**; Control-click **Open** no longer bypasses Gatekeeper.
 
 Native source is GPL-3.0-or-later. Realmz/Divinity resources retain their separate
-CC BY-NC-SA 4.0 and original notices. See the repository licensing documents.
+CC BY-NC-SA 4.0 and original notices. `SOURCE-LICENSE.md` in each download
+explains how to share it.
 
 This is a beta. Import/export checks do not certify campaign completion or
 remove inherited scenario authoring errors. Rebuilt playtest uses a separate
 compatible Rebuilt installation.
 
-The full reference-corpus gate and exact release identities are recorded in
-`compatibility-audit.json`, supplied with this release. Rebuilt checks use an
-explicit application-rules audit profile; they do not establish the intended
-custom-rule selection or campaign completion for each scenario.
+All 40 scenarios in the reference corpus passed the release gate: fresh import,
+save and reopen, byte-exact no-edit Classic export, and a validated Rebuilt
+archive. The results and exact build identities are in
+`docs/public/compatibility-audit.json`. Rebuilt checks use an explicit
+application-rules audit profile; they do not establish the intended custom-rule
+selection or campaign completion for each scenario.

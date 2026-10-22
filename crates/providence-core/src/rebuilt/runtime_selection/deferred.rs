@@ -3,7 +3,10 @@ use crate::model::{ProjectSnapshot, StableId};
 use crate::rebuilt::{
     RebuiltV3DeferredDisposition, RebuiltV3DeferredReference,
     combat_selection::RebuiltV3ReachableCombatSelection,
-    item_spell_selection::RebuiltV3RuntimeDefinitionKind,
+    item_spell_selection::{
+        RebuiltV3RuntimeDefinitionKind, RebuiltV3RuntimeDefinitionReference,
+        RebuiltV3RuntimeDefinitionRelation,
+    },
     owner_selection::RebuiltV3RuntimeCatalogKind,
     reachability::{
         RebuiltV3ReachabilityReference, RebuiltV3ReachabilityReport, RebuiltV3ReachabilityTarget,
@@ -190,6 +193,17 @@ fn collect_item_spells(
         .iter()
         .map(|spell| spell.id.clone())
         .collect::<std::collections::BTreeSet<_>>();
+    let named_by_programs = |kind| {
+        catalogs
+            .owners
+            .references
+            .iter()
+            .filter(|reference| reference.target_kind == kind)
+            .map(|reference| reference.target_native_id)
+            .collect::<BTreeSet<_>>()
+    };
+    let named_shops = named_by_programs(RebuiltV3RuntimeCatalogKind::Shop);
+    let named_treasures = named_by_programs(RebuiltV3RuntimeCatalogKind::Treasure);
     deferred_references.extend(
         catalogs
             .item_spells
@@ -210,10 +224,34 @@ fn collect_item_spells(
                     target_kind: format!("{:?}", reference.target_kind).to_ascii_lowercase(),
                     target_id: reference.classic_id.to_string(),
                     reason: "the referenced Classic runtime definition is unavailable".into(),
-                    disposition: RebuiltV3DeferredDisposition::Deferred,
+                    disposition: if dormant_owner(reference, &named_shops, &named_treasures) {
+                        RebuiltV3DeferredDisposition::Dormant
+                    } else {
+                        RebuiltV3DeferredDisposition::Deferred
+                    },
                 })
             }),
     );
+}
+
+// v7 keeps every native shop and treasure row, but Castle reads one only when a program
+// opens or awards it. Stock of a record no reachable program names is dormant.
+fn dormant_owner(
+    reference: &RebuiltV3RuntimeDefinitionReference,
+    named_shops: &BTreeSet<u32>,
+    named_treasures: &BTreeSet<u32>,
+) -> bool {
+    let (prefix, named) = match reference.relation {
+        RebuiltV3RuntimeDefinitionRelation::ShopStock => ("classic.shop.", named_shops),
+        RebuiltV3RuntimeDefinitionRelation::TreasureStock => ("classic.treasure.", named_treasures),
+        _ => return false,
+    };
+    reference
+        .source
+        .0
+        .strip_prefix(prefix)
+        .and_then(|id| id.parse::<u32>().ok())
+        .is_some_and(|id| !named.contains(&id))
 }
 
 fn collect_battle_references(

@@ -41,10 +41,18 @@ pub(super) fn runtime_conditions(
 /// the original occurrence list and its exact native targets.
 pub(super) fn deferred(references: &[RebuiltV3DeferredReference]) -> Vec<CompatibilityBlocker> {
     let mut groups = BTreeMap::new();
+    let mut dormant = BTreeMap::<DormantFile, Vec<&RebuiltV3DeferredReference>>::new();
     for reference in references {
         let code = match reference.disposition {
             RebuiltV3DeferredDisposition::Deferred => "rebuilt.deferred-reference",
             RebuiltV3DeferredDisposition::Quarantined => "rebuilt.quarantined-record",
+            RebuiltV3DeferredDisposition::Dormant => {
+                dormant
+                    .entry(DormantFile::of(reference))
+                    .or_default()
+                    .push(reference);
+                continue;
+            }
         };
         let key = (
             code,
@@ -60,44 +68,140 @@ pub(super) fn deferred(references: &[RebuiltV3DeferredReference]) -> Vec<Compati
     }
     groups
         .into_iter()
-        .map(|((code, source, field, kind, reason), targets)| {
-            let identity = format!(
+        .map(|(key, targets)| deferred_group(key, targets))
+        .chain(
+            dormant
+                .into_iter()
+                .map(|(file, references)| dormant_summary(file, &references)),
+        )
+        .collect()
+}
+
+type DeferredGroupKey<'a> = (
+    &'static str,
+    &'a crate::model::StableId,
+    &'a String,
+    &'a String,
+    &'a String,
+);
+
+fn deferred_group(
+    (code, source, field, kind, reason): DeferredGroupKey<'_>,
+    targets: Vec<String>,
+) -> CompatibilityBlocker {
+    let identity = format!(
+        "{:x}",
+        Sha256::digest(
+            serde_json::to_vec(&(code, source, field, kind, reason))
+                .expect("string group identity")
+        )
+    );
+    let examples = targets.iter().take(4).cloned().collect::<Vec<_>>();
+    CompatibilityBlocker {
+        code: code.into(),
+        entity: Some(source.clone()),
+        message: format!(
+            "{} · {}: {} unavailable {} references ({}). {}",
+            source.0,
+            field,
+            targets.len(),
+            kind,
+            examples.join(", "),
+            reason
+        ),
+        group: Some(CompatibilityFindingGroup {
+            identity,
+            field: field.clone(),
+            target_kind: kind.clone(),
+            occurrence_count: targets.len(),
+            examples,
+            members: targets
+                .into_iter()
+                .map(|target_id| CompatibilityFindingMember {
+                    field: field.clone(),
+                    target_id,
+                })
+                .collect(),
+        }),
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum DormantFile {
+    Shops,
+    Treasures,
+}
+
+impl DormantFile {
+    fn of(reference: &RebuiltV3DeferredReference) -> Self {
+        if reference.source.0.starts_with("classic.treasure.") {
+            Self::Treasures
+        } else {
+            Self::Shops
+        }
+    }
+}
+
+// One finding per source file keeps preserved residue visible without listing every
+// slot; each slot stays a group member, and a record a program names reports normally.
+fn dormant_summary(
+    file: DormantFile,
+    references: &[&RebuiltV3DeferredReference],
+) -> CompatibilityBlocker {
+    let (native_path, record, verb, field) = match file {
+        DormantFile::Shops => ("Data SD", "shop", "open", "stock"),
+        DormantFile::Treasures => ("Data TD", "treasure", "award", "itemIds"),
+    };
+    let owners = references
+        .iter()
+        .map(|reference| &reference.source)
+        .collect::<std::collections::BTreeSet<_>>()
+        .len();
+    let (records, hold) = if owners == 1 {
+        (record.to_string(), "holds")
+    } else {
+        (format!("{record}s"), "hold")
+    };
+    let slots = if references.len() == 1 {
+        "slot"
+    } else {
+        "slots"
+    };
+    let mut examples = Vec::<String>::new();
+    for reference in references {
+        if examples.len() < 4 && !examples.contains(&reference.target_id) {
+            examples.push(reference.target_id.clone());
+        }
+    }
+    let code = "rebuilt.dormant-reference";
+    CompatibilityBlocker {
+        code: code.into(),
+        entity: None,
+        message: format!(
+            "{native_path} · {owners} {records} that no reachable program {verb}s {hold} {} item {slots} naming no available Classic item ({}). The bytes are preserved unchanged; once a program {verb}s a {record}, its slots are reported individually.",
+            references.len(),
+            examples.join(", ")
+        ),
+        group: Some(CompatibilityFindingGroup {
+            identity: format!(
                 "{:x}",
                 Sha256::digest(
-                    serde_json::to_vec(&(code, source, field, kind, reason))
-                        .expect("string group identity")
+                    serde_json::to_vec(&(code, native_path)).expect("string group identity")
                 )
-            );
-            let examples = targets.iter().take(4).cloned().collect::<Vec<_>>();
-            CompatibilityBlocker {
-                code: code.into(),
-                entity: Some(source.clone()),
-                message: format!(
-                    "{} · {}: {} unavailable {} references ({}). {}",
-                    source.0,
-                    field,
-                    targets.len(),
-                    kind,
-                    examples.join(", "),
-                    reason
-                ),
-                group: Some(CompatibilityFindingGroup {
-                    identity,
-                    field: field.clone(),
-                    target_kind: kind.clone(),
-                    occurrence_count: targets.len(),
-                    examples,
-                    members: targets
-                        .into_iter()
-                        .map(|target_id| CompatibilityFindingMember {
-                            field: field.clone(),
-                            target_id,
-                        })
-                        .collect(),
-                }),
-            }
-        })
-        .collect()
+            ),
+            field: field.into(),
+            target_kind: "item".into(),
+            occurrence_count: references.len(),
+            examples,
+            members: references
+                .iter()
+                .map(|reference| CompatibilityFindingMember {
+                    field: format!("{} · {}", reference.source.0, reference.field),
+                    target_id: reference.target_id.clone(),
+                })
+                .collect(),
+        }),
+    }
 }
 
 pub(super) fn media(

@@ -1,6 +1,7 @@
 mod application;
 mod classic;
 mod documents;
+mod dormant_references;
 mod fixtures;
 mod media;
 mod media_fixtures;

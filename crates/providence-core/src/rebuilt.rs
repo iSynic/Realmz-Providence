@@ -82,6 +82,9 @@ pub use terrain::{
 pub enum RebuiltV3DeferredDisposition {
     Deferred,
     Quarantined,
+    /// Owned by a preserved shop or treasure that no reachable program names; Castle
+    /// never reads it unless a program opens that record.
+    Dormant,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

@@ -7,8 +7,8 @@ Newly authored scenarios and newly built application libraries publish as
 schema v6. Both carry each map's complete signed native tile words alongside
 compiled topology.
 
-The published beta.4 predates these changes and retains its documented split.
-Its existing downloads and archives are not relabelled by a development change.
+Beta.5 is the first release with this split. Beta.4 and earlier keep their
+documented schemas; their downloads and archives are not relabelled.
 An older scenario package is upgraded by a new canonical export, not by changing
 its manifest version. Explicit maintenance of an archived package retains its
 original contract unless a source-backed migration is performed.

@@ -1,5 +1,8 @@
 use super::*;
-use crate::{codecs::*, rebuilt::item_rule_fixture};
+use crate::{
+    codecs::*,
+    rebuilt::{RebuiltV3DeferredDisposition, item_rule_fixture},
+};
 
 #[test]
 fn imported_missing_text_keeps_the_caller_requested_id_and_source_diagnostic() {
@@ -86,4 +89,43 @@ fn imported_runtime_keeps_missing_extra_code_callers_and_explicit_deferred_diagn
             source
         );
     }
+}
+
+#[test]
+fn imported_stock_of_shops_no_program_opens_is_dormant() {
+    let mut snapshot = ProjectSnapshot::new_authored(StableId("dormant-shops".into()));
+    snapshot.origin = ProjectOrigin::Imported {
+        compatibility_annex: BlobId(format!("sha256:{}", "a".repeat(64))),
+    };
+    snapshot.item_rules = (1..=799).map(item_rule_fixture).collect();
+    snapshot.standard_spells = decode_standard_spells(&vec![0; STANDARD_SPELL_BYTES], None).spells;
+    let mut shops = vec![0; SHOP_RECORD_BYTES * 3];
+    for shop in [1, 2] {
+        shops[shop * SHOP_RECORD_BYTES..][..2].copy_from_slice(&8224_i16.to_be_bytes());
+    }
+    snapshot.shops = decode_shops(&shops).records;
+    let mut program = vec![0; EXTRA_ACTION_POINT_RECORD_BYTES];
+    program[8..10].copy_from_slice(&6_i16.to_be_bytes());
+    program[24..26].copy_from_slice(&1_i16.to_be_bytes());
+    snapshot.extra_action_points = decode_extra_action_points(&program).records;
+    snapshot.scenario_application = Some(crate::model::ScenarioApplicationContract {
+        hooks: crate::model::ScenarioApplicationHooks {
+            start_game: Some(StableId("extra-action-point:0".into())),
+            ..Default::default()
+        },
+    });
+    let selected = project_rebuilt_v3_runtime(&snapshot).unwrap();
+    let stock = selected
+        .deferred_references
+        .iter()
+        .filter(|reference| reference.field == "stock[0].itemId")
+        .map(|reference| (reference.source.0.as_str(), reference.disposition))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        stock,
+        [
+            ("classic.shop.1", RebuiltV3DeferredDisposition::Deferred),
+            ("classic.shop.2", RebuiltV3DeferredDisposition::Dormant),
+        ]
+    );
 }

@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "providence-application-library"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "png",
  "providence-core",
@@ -640,7 +640,7 @@ dependencies = [
 
 [[package]]
 name = "providence-cli"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "base64",
  "providence-core",
@@ -653,7 +653,7 @@ dependencies = [
 
 [[package]]
 name = "providence-core"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "adler2",
  "crc32fast",
@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "providence-mcp"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "providence-core",
  "providence-session-client",
@@ -679,7 +679,7 @@ dependencies = [
 
 [[package]]
 name = "providence-native-adapter"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "base64",
  "encoding_rs",
@@ -699,7 +699,7 @@ dependencies = [
 
 [[package]]
 name = "providence-publication"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "rustix",
  "tempfile",
@@ -708,7 +708,7 @@ dependencies = [
 
 [[package]]
 name = "providence-rebuilt-package"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "providence-core",
  "serde",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "providence-rebuilt-preview"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "serde",
  "serde_json",
@@ -729,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "providence-session-client"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "interprocess",
  "serde",
@@ -743,7 +743,7 @@ dependencies = [
 
 [[package]]
 name = "providence-storage"
-version = "0.6.0-beta.4"
+version = "0.6.0-beta.5"
 dependencies = [
  "flate2",
  "providence-core",
