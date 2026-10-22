@@ -9,5 +9,16 @@
   "openmptSource": {
     "url": "https://lib.openmpt.org/files/libopenmpt/src/libopenmpt-0.8.9+release.autotools.tar.gz",
     "sha256": "d7ce84fd05d686c4bcf66af40eae857afa371442db60eeda3f874bd6cf6fc318"
+  },
+  "mirrors": {
+    "d7ce84fd05d686c4bcf66af40eae857afa371442db60eeda3f874bd6cf6fc318": [
+      "https://github.com/iSynic/Realmz-Providence/releases/download/build-deps-libopenmpt-0.8.9/libopenmpt-0.8.9-release.autotools.tar.gz"
+    ],
+    "d20c7589b323013ce55d2198fd55f1a0586e66b98c7cede59dea7ee97460eb79": [
+      "https://github.com/iSynic/Realmz-Providence/releases/download/build-deps-libopenmpt-0.8.9/libopenmpt-0.8.9-release.bin.windows.zip"
+    ],
+    "8d3b3c14b92dd1fcbb31b2bf28ed917c1d3b529b0d9380562d5bdb6256d32bea": [
+      "https://github.com/iSynic/Realmz-Providence/releases/download/build-deps-libopenmpt-0.8.9/libopenmpt-0.8.9-release.msvc.zip"
+    ]
   }
 }

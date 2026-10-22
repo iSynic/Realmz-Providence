@@ -76,6 +76,12 @@ jobs:
       - name: macOS universal targets
         if: runner.os == 'macOS'
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      # Pinned downloads (Godot, templates, libopenmpt) are re-verified by hash on use, so
+      # caching them only skips the network, including outages of the upstream hosts.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/providence-cache
+          key: release-downloads-${{ matrix.platform }}-${{ hashFiles('tools/release/pins.json', 'tools/music-preview-runtime.json', 'tools/release/*.py') }}
       - name: Pinned Godot editor and export templates
         run: python tools/release/bootstrap.py --cache "${{ runner.temp }}/providence-cache"
       # The smoke tier's checks call Windows PowerShell scripts, so it runs on Windows. Its preview

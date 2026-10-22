@@ -92,6 +92,8 @@ func dispose() -> void:
 
 func reload(operation: ProvidenceEditorOperation = null) -> Dictionary:
 	if _bridge == null: return _failure("Open a project before loading items.")
+	# An unopened Items page has nothing to refresh; its workbench loads the catalog on first visit.
+	if _view == null: return {"ok": true}
 	if _view.has_unapplied_changes(): return _failure("Apply or discard the item draft before refreshing.")
 	return await _operations.run_workflow(_bridge, "Load Items", _reload, operation)
 

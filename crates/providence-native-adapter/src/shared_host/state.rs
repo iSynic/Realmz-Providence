@@ -5,7 +5,7 @@ use providence_core::session::EditorSession;
 use providence_storage::ProjectStore;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 #[path = "control_connections.rs"]
 mod control_connections;
 #[path = "controls.rs"]
@@ -106,10 +106,16 @@ impl State {
                 .values()
                 .any(|r| r.kind == "native" && (r.draft || !r.ready || !r.connected))
     }
-    pub fn has_connected_clients(&self) -> bool {
+    /// Attached connections whose presence keeps the host serving.
+    pub fn open_clients(&self) -> BTreeSet<u64> {
+        let open = |client: &ClientState| client.connected && client.kind != "native-control";
         self.clients
-            .values()
-            .any(|client| client.connected && client.kind != "native-control")
+            .iter()
+            .filter_map(|(id, client)| open(client).then_some(*id))
+            .collect()
+    }
+    pub fn has_connected_clients(&self) -> bool {
+        !self.open_clients().is_empty()
     }
     pub fn dispatch(
         &mut self,

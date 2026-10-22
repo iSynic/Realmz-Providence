@@ -2,7 +2,7 @@
 
 **A native scenario authoring toolkit for Realmz.**
 
-[Download the beta](https://github.com/iSynic/Realmz-Providence/releases/tag/v0.6.0-beta.4) Â· [All releases](https://github.com/iSynic/Realmz-Providence/releases) Â· [Build from source](docs/public/building.md) Â· [Licensing](SOURCE-LICENSE.md)
+[Download](https://github.com/iSynic/Realmz-Providence/releases) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
 
 ![Providence Land Editor](docs/screenshots/maps-land.png)
 
@@ -18,16 +18,28 @@ web release. `main` now contains the native editor.
 
 ## Download
 
-| Platform | Beta package |
+Download the newest package for your platform from
+[Releases](https://github.com/iSynic/Realmz-Providence/releases).
+
+| Platform | Release asset |
 | --- | --- |
-| Windows x64 | [ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-windows-x64.zip) |
-| macOS, Intel and Apple Silicon | [Universal app ZIP](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-macos-universal.zip) |
-| Linux x64 | [tar.gz](https://github.com/iSynic/Realmz-Providence/releases/download/v0.6.0-beta.4/Providence-v0.6.0-beta.4-linux-x64.tar.gz) |
+| Windows x64 | `Providence-<version>-windows-x64.zip` |
+| macOS, Intel and Apple Silicon | `Providence-<version>-macos-universal.zip` |
+| Linux x64 | `Providence-<version>-linux-x64.tar.gz` |
 
 Extract the complete archive and launch **Providence**. Keep the included native
-tools and support directories alongside the application. The macOS beta is
-signed ad hoc and is not notarized. If macOS blocks its first launch, use Finder's
-**Open** command and the system's application approval controls.
+tools and support directories alongside the application.
+
+The macOS beta is signed ad hoc and is not notarized, so Gatekeeper blocks its
+first launch. On macOS 15 and later, Control-clicking the app and choosing
+**Open** no longer bypasses this:
+
+1. Open Providence once and close the warning.
+2. Open **System Settings > Privacy & Security** and scroll to **Security**.
+3. Click **Open Anyway** beside the Providence message, confirm with your
+   password, then choose **Open**.
+
+On macOS 14 and earlier, Control-click Providence in Finder and choose **Open**.
 
 The Compatibility renderer requires OpenGL 3.3. Linux builds target x64 systems
 with glibc 2.35 or newer. A Rebuilt installation is optional for authoring and

@@ -61,6 +61,33 @@ fn failed_portable_checkpoint_reports_unknown_and_stops_before_the_next_request(
 }
 
 #[test]
+fn panicking_request_reports_unknown_and_closes_before_any_checkpoint() {
+    let temporary = tempdir().unwrap();
+    let snapshot = demo_snapshot();
+    let store = ProjectStore::create(temporary.path(), &snapshot).unwrap();
+    let mut session = EditorSession::new(snapshot.clone());
+    let mut output = Vec::new();
+    crate::transport::arm_panic_before_checkpoint();
+    let requests = message_request(1, 0) + &message_request(2, 1);
+    serve_io(
+        &mut session,
+        Some(&store),
+        Cursor::new(requests),
+        &mut output,
+    )
+    .unwrap();
+    let response: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(response["id"], 1);
+    assert_eq!(response["outcomeUnknown"], true);
+    let error = response["error"].as_str().unwrap();
+    assert!(error.starts_with("session-poisoned:"), "{error}");
+    assert_eq!(session.revision(), Revision(1));
+    let (_, reopened) = ProjectStore::open_session(temporary.path()).unwrap();
+    assert_eq!(reopened.revision(), Revision(0));
+    assert_eq!(reopened.snapshot(), &snapshot);
+}
+
+#[test]
 fn known_rejection_keeps_the_transport_open_without_claiming_uncertainty() {
     let mut session = EditorSession::new(demo_snapshot());
     let mut output = Vec::new();

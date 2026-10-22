@@ -13,8 +13,13 @@ rebuilt; they are not an alternate source of authored truth.
 transport, asynchronous jobs and application-library resolution. Routine
 commands carry an expected revision and return bounded changes. A rejected
 command leaves the project unchanged; a reply that fails after changing a session
-reports an unknown outcome and requires a reopen. A stale or uncertain response
-must not silently overwrite a draft or retry an authoring operation.
+reports an unknown outcome and requires a reopen. A request that panics reports
+an unknown outcome as well. Because every client of a shared host mutates the same
+session, a panic poisons that host: it stops advertising itself, releases the
+project writer without saving, and refuses all further requests with
+`session-poisoned` so clients reopen from the last acknowledged checkpoint. A
+stale or uncertain response must not silently overwrite a draft or retry an
+authoring operation.
 
 `providence-rebuilt-package` validates and materializes the versioned package
 contract. `providence-application-library` builds and normalizes stock support.

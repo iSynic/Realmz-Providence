@@ -45,7 +45,7 @@ text = "Esc"
 [node name="CommandSearch" type="LineEdit" parent="CommandPaletteBody"]
 unique_name_in_owner = true
 layout_mode = 2
-placeholder_text = "Type a command or entityâ€¦"
+placeholder_text = "Type a command or entity…"
 clear_button_enabled = true
 
 [node name="CommandScopes" type="HBoxContainer" parent="CommandPaletteBody"]
@@ -90,7 +90,7 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 size_flags_horizontal = 3
 alignment = 0
-text = "View Flow: selected record  Â·  Navigate"
+text = "View Flow: selected record  ·  Navigate"
 [node name="OpenCurrentMapRow" type="HBoxContainer" parent="CommandPaletteBody/ResultsScroll/CommandResults"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -100,7 +100,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Open current Land Map  Â·  World / Maps"
+text = "Open current Land Map  ·  World / Maps"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/OpenCurrentMapRow"]
 layout_mode = 2
@@ -115,7 +115,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Fit Canvas  Â·  View / Map"
+text = "Map: Fit Canvas  ·  View / Map"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/FitMapRow"]
 layout_mode = 2
@@ -130,7 +130,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Toggle Action Point Overlays  Â·  View / Map"
+text = "Map: Toggle Action Point Overlays  ·  View / Map"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/ToggleActionPointsRow"]
 layout_mode = 2
@@ -145,7 +145,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
-text = "Map: Paint with Selected Tile  Â·  Land Editor"
+text = "Map: Paint with Selected Tile  ·  Land Editor"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/PaintSelectedTileRow"]
 layout_mode = 2
@@ -161,7 +161,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
 disabled = true
-text = "Map: Stamp Selection  Â·  Land Editor"
+text = "Map: Stamp Selection  ·  Land Editor"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/StampSelectionRow"]
 layout_mode = 2
@@ -177,7 +177,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 alignment = 0
 disabled = true
-text = "Reveal Map in Project Explorer  Â·  Navigate"
+text = "Reveal Map in Project Explorer  ·  Navigate"
 
 [node name="Shortcut" type="Label" parent="CommandPaletteBody/ResultsScroll/CommandResults/RevealMapRow"]
 layout_mode = 2
@@ -237,7 +237,7 @@ text = "About Providence  ·  Help"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.619608, 0.694118, 0.760784, 1)
-text = "6 results Â· disabled commands explain why"
+text = "6 results · disabled commands explain why"
 
 [connection signal="text_changed" from="CommandPaletteBody/CommandSearch" to="." method="_on_search_changed"]
 [connection signal="pressed" from="CommandPaletteBody/ResultsScroll/CommandResults/OpenCurrentMapRow/OpenCurrentMap" to="." method="_request_command" binds=["map.open-current"]]

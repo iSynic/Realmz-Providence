@@ -30,7 +30,8 @@ FILES = [".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "R
          "tools/verify-mcp-repairs.py", "tools/verify-mcp-local-paint.py", "tools/verify-mcp-collaboration.py",
          "tools/verify-terrain-generation.py"]
 PRIVATE_TOOLS = {"capture_special_paint.gd", "validate_character_navigation_native.gd", "validate_rule_source_native.gd",
-                 "validate_treasure_player_beta.gd", "validate_treasure_pool_native.gd"}
+                 "validate_treasure_player_beta.gd", "validate_treasure_pool_native.gd",
+                 "capture_diagnostics_gate.gd", "validate_diagnostics_workflow.gd"}
 IGNORE_PARTS = {".git", ".godot", "__pycache__", "target", "artifacts"}
 
 
@@ -61,7 +62,11 @@ def export(root, destination):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
         inventory.append({"path": relative.as_posix(), "sha256": hashlib.sha256(target.read_bytes()).hexdigest()})
-    (destination / ".gitignore").write_text("/target/\n/godot/.godot/\n/godot/override.cfg\n/godot/bin/\n__pycache__/\n*.log\n.DS_Store\n")
+    # Checks write under artifacts/ and packaging generates offline Help; release packaging requires a clean tree.
+    (destination / ".gitignore").write_text(
+        "/target/\n/artifacts/\n/godot/.godot/\n/godot/data/providence-help/\n/godot/override.cfg\n/godot/bin/\n"
+        "__pycache__/\n*.log\n.DS_Store\n",
+        newline="\n")
     (destination.parent / "source-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
     print(f"Public source snapshot: {len(inventory)} files")
 

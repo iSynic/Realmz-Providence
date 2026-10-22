@@ -5,6 +5,7 @@ mod export_jobs;
 mod holds;
 mod host_startup;
 mod import_policy;
+mod poison;
 mod proxy;
 mod receipts;
 mod recovery;
@@ -14,7 +15,10 @@ mod state;
 mod support;
 #[cfg(test)]
 mod tests;
-use crate::{Request, Response, startup, transport::ConnectionJobs};
+use crate::{
+    Request, Response, startup,
+    transport::{self, ConnectionJobs},
+};
 use providence_session_client::{
     Client, endpoint,
     listener::{self, *},
@@ -63,12 +67,10 @@ fn host(
 ) -> Result<(), String> {
     let support_before = support::identities(options)?;
     let descriptor = endpoint::descriptor_path(Path::new(project))?;
-    let mut startup = open_project(project, options)?;
+    let startup = open_project(project, options)?;
     let endpoint_owner = endpoint::create()?;
     let endpoint = &endpoint_owner.endpoint;
     let listener = listener::listen(endpoint)?;
-    let mut jobs = std::collections::BTreeMap::new();
-    let mut retired = retired_jobs::RetiredJobs::default();
     let mut state = state::State::new(&endpoint.token, options);
     state.pin_support(support_before)?;
     state.load_holds(descriptor.with_extension("editing-holds.json"))?;
@@ -77,9 +79,20 @@ fn host(
     host_startup::report(report, None)?;
     let (sender, receiver) = mpsc::sync_channel(64);
     std::thread::spawn(move || accept(listener, sender));
+    serve(&receiver, startup, state, &descriptor)
+}
+
+fn serve(
+    events: &mpsc::Receiver<Event>,
+    mut startup: startup::Startup,
+    mut state: state::State,
+    descriptor: &Path,
+) -> Result<(), String> {
+    let mut jobs = std::collections::BTreeMap::new();
+    let mut retired = retired_jobs::RetiredJobs::default();
     let mut connected = false;
     loop {
-        let event = match receiver.recv_timeout(Duration::from_secs(10)) {
+        let event = match events.recv_timeout(Duration::from_secs(10)) {
             Ok(event) => event,
             Err(mpsc::RecvTimeoutError::Timeout) if !connected => break,
             Err(mpsc::RecvTimeoutError::Timeout) => continue,
@@ -87,8 +100,21 @@ fn host(
         };
         match event {
             Event::Request(client, request, reply) => {
-                let response =
-                    dispatch_client(&mut startup, &mut state, &mut jobs, client, request);
+                let id = request.id;
+                let dispatched = transport::guard_panic(id, || {
+                    dispatch_client(&mut startup, &mut state, &mut jobs, client, request)
+                });
+                let response = match dispatched {
+                    Ok(response) => response,
+                    Err(panicked) => {
+                        // Withdraw before answering so the requester's reopen cannot attach
+                        // here. The writer lock still excludes other hosts, so it is ours.
+                        let _ = std::fs::remove_file(descriptor);
+                        let _ = reply.send(panicked);
+                        let open = state.open_clients();
+                        return poison::drain(events, open, (startup, state, jobs));
+                    }
+                };
                 connected |= !state.clients.is_empty();
                 let uncertain = response.outcome_unknown == Some(true);
                 let _ = reply.send(response);
@@ -105,7 +131,7 @@ fn host(
             }
         }
     }
-    let _ = std::fs::remove_file(&descriptor);
+    let _ = std::fs::remove_file(descriptor);
     Ok(())
 }
 

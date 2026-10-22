@@ -33,19 +33,32 @@ def download(cache, name, url, expected, algorithm="sha256"):
     cache.mkdir(parents=True, exist_ok=True)
     destination = cache / name
     if not destination.exists():
-        pending = destination.with_suffix(destination.suffix + ".pending")
-        try:
-            with urllib.request.urlopen(url, timeout=120) as source, pending.open("wb") as target:
-                while block := source.read(1024 * 1024):
-                    target.write(block)
-            if digest(pending, algorithm) != expected:
-                raise ValueError(f"Download checksum mismatch: {name}")
-            pending.replace(destination)
-        finally:
-            pending.unlink(missing_ok=True)
+        # Mirrors are keyed by the pinned digest and must match it too, so they only add availability.
+        sources = [url, *PINS.get("mirrors", {}).get(expected, [])]
+        for index, source_url in enumerate(sources):
+            try:
+                fetch(source_url, destination, expected, algorithm)
+                break
+            except (OSError, ValueError) as error:
+                if index == len(sources) - 1:
+                    raise
+                print(f"Download of {name} from {source_url} failed ({error}); trying a mirror", flush=True)
     if digest(destination, algorithm) != expected:
         raise ValueError(f"Cached checksum mismatch: {name}")
     return destination
+
+
+def fetch(url, destination, expected, algorithm):
+    pending = destination.with_suffix(destination.suffix + ".pending")
+    try:
+        with urllib.request.urlopen(url, timeout=120) as source, pending.open("wb") as target:
+            while block := source.read(1024 * 1024):
+                target.write(block)
+        if digest(pending, algorithm) != expected:
+            raise ValueError(f"Download checksum mismatch: {destination.name}")
+        pending.replace(destination)
+    finally:
+        pending.unlink(missing_ok=True)
 
 
 def external_directory(path):

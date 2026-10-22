@@ -1,5 +1,7 @@
 /target/
+/artifacts/
 /godot/.godot/
+/godot/data/providence-help/
 /godot/override.cfg
 /godot/bin/
 __pycache__/

@@ -1,6 +1,17 @@
 extends RefCounted
 
 
+# Godot's Windows process launch drops empty arguments, shifting the next
+# option into the previous option's value; the adapter would then open or
+# create a store at a path named after that option. Refuse the launch instead.
+static func launch(executable: String, arguments: PackedStringArray) -> Dictionary:
+	var empty := arguments.find("")
+	if empty >= 0:
+		return {"error": "Native adapter argument %s has an empty value." % (arguments[empty - 1] if empty > 0 else "0")}
+	var process := OS.execute_with_pipe(executable, arguments, true)
+	return process if not process.is_empty() else {"error": "Could not start the Providence native adapter."}
+
+
 static func validate(response: Dictionary, process: Dictionary, required_protocol: int) -> Dictionary:
 	if not response.get("ok", false):
 		var rejected := response.duplicate(true)

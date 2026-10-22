@@ -140,6 +140,21 @@ fn personal_library_configuration_reopens_and_reports_unconfigured_state() {
 }
 
 #[test]
+fn personal_library_option_never_consumes_the_next_option_as_its_root() {
+    // A Windows launch drops an empty value, leaving the next option in its slot.
+    let dropped = [
+        "--personal-library-root",
+        "--application-rules-root",
+        "rules",
+    ];
+    let error = crate::open_library_arguments(&mut dropped.iter().map(|value| (*value).to_owned()))
+        .err()
+        .unwrap();
+    assert_eq!(error, "--personal-library-root requires a directory");
+    assert!(!std::path::Path::new("--application-rules-root").exists());
+}
+
+#[test]
 fn personal_library_transport_keeps_scenario_revision_and_snapshot_unchanged() {
     let temp = tempfile::Builder::new()
         .prefix("providence-personal-transport-")

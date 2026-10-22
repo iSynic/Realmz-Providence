@@ -71,7 +71,7 @@ func _filter_rows(query: String) -> void:
 		row.visible = normalized.is_empty() or button.text.to_lower().contains(normalized)
 		if row.visible:
 			visible_count += 1
-	%CommandPaletteStatus.text = "%d result%s Â· disabled commands explain why" % [visible_count, "" if visible_count == 1 else "s"]
+	%CommandPaletteStatus.text = "%d result%s · disabled commands explain why" % [visible_count, "" if visible_count == 1 else "s"]
 
 
 func _request_command(command: String) -> void:

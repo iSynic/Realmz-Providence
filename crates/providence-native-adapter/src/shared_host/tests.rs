@@ -11,6 +11,7 @@ mod control_connections;
 mod export_jobs;
 mod imports;
 mod paint_resources;
+mod poisoning;
 mod rejections;
 mod replacement;
 mod step_context;

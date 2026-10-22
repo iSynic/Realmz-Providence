@@ -100,15 +100,19 @@ pub(crate) fn serve_io_with_libraries(
                 continue;
             }
         };
-        let response = process_request(
-            session,
-            store,
-            catalogs,
-            monster_library.as_deref_mut(),
-            &mut jobs,
-            request,
-            startup_timing,
-        );
+        let id = request.id;
+        let response = guard_panic(id, || {
+            process_request(
+                session,
+                store,
+                catalogs,
+                monster_library.as_deref_mut(),
+                &mut jobs,
+                request,
+                startup_timing,
+            )
+        })
+        .unwrap_or_else(|poisoned| poisoned);
         let requires_reopen = response.outcome_unknown == Some(true);
         write_response(&mut writer, response)?;
         if requires_reopen {
@@ -178,6 +182,43 @@ pub(crate) fn process_request(
     response
 }
 
+#[cfg(panic = "abort")]
+compile_error!("the adapter's request panic boundary requires panic = \"unwind\"");
+
+/// Converts a panic in one request into a typed outcome-unknown reply. Unwinding skips the
+/// session's rollback, so the caller must never dispatch to, read, or checkpoint the state the
+/// closure borrowed again; it may only be dropped.
+pub(crate) fn guard_panic(
+    id: u64,
+    handle: impl FnOnce() -> Response,
+) -> Result<Response, Response> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(handle)).map_err(|payload| {
+        let cause = payload
+            .downcast_ref::<&str>()
+            .map(|cause| cause.to_string())
+            .or_else(|| payload.downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "non-text panic payload".into());
+        eprintln!("request {id} panicked and poisoned its session: {cause}");
+        unknown_outcome(
+            id,
+            format!(
+                "session-poisoned: the request panicked, so its outcome is unknown and this session will not be saved again; reopen the project before retrying: {cause}"
+            ),
+        )
+    })
+}
+
+#[cfg(test)]
+thread_local! {
+    static PANIC_BEFORE_CHECKPOINT: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Panics in the next project checkpoint, after its command advanced the session.
+#[cfg(test)]
+pub(crate) fn arm_panic_before_checkpoint() {
+    PANIC_BEFORE_CHECKPOINT.set(true);
+}
+
 fn library_advanced(library: Option<&OpenMonsterLibrary>, previous: Option<Revision>) -> bool {
     library.is_some_and(|library| previous != Some(library.session.revision()))
 }
@@ -205,6 +246,10 @@ fn checkpoint_project(
     timing: &mut CommandTiming,
 ) {
     let Some(store) = store else { return };
+    #[cfg(test)]
+    if PANIC_BEFORE_CHECKPOINT.replace(false) {
+        panic!("injected panic before checkpoint");
+    }
     let started = Instant::now();
     match store.checkpoint_session(session, command) {
         Ok(outcome) => {

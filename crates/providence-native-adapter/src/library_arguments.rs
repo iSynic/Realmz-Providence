@@ -23,8 +23,11 @@ pub(crate) fn open_library_arguments(
         ) {
             return Err(format!("unknown serve-project option '{option}'"));
         }
+        // A value that is itself an option means the caller's value was lost
+        // (Windows launchers drop empty arguments); never treat it as a path.
         let root = arguments
             .next()
+            .filter(|value| !value.starts_with("--"))
             .ok_or_else(|| format!("{option} requires a directory"))?;
         open_requested_library(&mut libraries, &option, &root)?;
     }

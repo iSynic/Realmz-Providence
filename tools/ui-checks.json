@@ -86,7 +86,7 @@
     {"id": "map-paint-smart-input", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "smart_input"]},
     {"id": "map-paint-smart-combinations", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "smart_combinations"]},
     {"id": "map-paint-magic", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "magic"]},
-    {"id": "map-paint-brush-cancel", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "brush_cancel"]},
+    {"id": "map-paint-brush-cancel", "group": "scenes", "solo": "Its 150 ms wall-clock Cancel budget is exceeded under CPU load", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "brush_cancel"]},
     {"id": "map-paint-brush-states", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "brush_states"]},
     {"id": "map-paint-mapping", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "mapping"]},
     {"id": "map-paint-chrome", "group": "scenes", "command": ["{powershell}", "-NoProfile", "-File", "{tools}/verify-map-paint.ps1", "-Godot", "{godot}", "-Check", "chrome"]},

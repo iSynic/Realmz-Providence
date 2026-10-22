@@ -42,7 +42,9 @@ Included native workflows:
 Downloads include the native tools, licensed stock reference resources, music
 preview, exact build identities and notices. Windows and Linux builds are x64;
 the macOS app is universal for Intel and Apple Silicon and is not notarized.
-Extract the complete archive before launching Providence.
+Extract the complete archive before launching Providence. On macOS 15 and later,
+open Providence once, then approve it in **System Settings > Privacy & Security**
+with **Open Anyway**; Control-click **Open** no longer bypasses Gatekeeper.
 
 Native source is GPL-3.0-or-later. Realmz/Divinity resources retain their separate
 CC BY-NC-SA 4.0 and original notices. See the repository licensing documents.

@@ -24,10 +24,10 @@ They retain the session guards and existing exact signed-word mutation contract.
 {
   "mcpServers": {
     "providence": {
-      "command": "D:\\Providence\\providence-mcp.exe",
+      "command": "C:\\Providence\\providence-mcp.exe",
       "args": [
-        "--project-root", "D:\\ProvidenceProjects",
-        "--output-root", "D:\\ProvidenceExports"
+        "--project-root", "C:\\ProvidenceProjects",
+        "--output-root", "C:\\ProvidenceExports"
       ]
     }
   }

@@ -220,9 +220,9 @@ func _apply_connection_options(prepared: Dictionary) -> void:
 func _connect_prepared(executable: String, arguments: PackedStringArray) -> Dictionary:
 	# Paths and settings are resolved on the UI thread. This candidate alone owns
 	# its process and stream until joined; the current editor session stays intact.
-	_process = OS.execute_with_pipe(executable, arguments, true)
-	if _process.is_empty():
-		return {"ok": false, "error": "Could not start the Providence native adapter."}
+	var launched := preload("res://src/native_connection_startup.gd").launch(executable, arguments)
+	if launched.has("error"): return {"ok": false, "error": launched.error}
+	_process = launched
 	_stdio = _process.get("stdio") as FileAccess
 	if _stdio == null:
 		return {"ok": false, "error": "Native adapter did not provide a standard-I/O pipe."}
@@ -255,9 +255,9 @@ func _start(arguments: PackedStringArray) -> Dictionary:
 	var executable := _adapter_path()
 	if executable.is_empty():
 		return {"ok": false, "error": "Providence native adapter was not found. Build the Rust workspace first."}
-	_process = OS.execute_with_pipe(executable, arguments, true)
-	if _process.is_empty():
-		return {"ok": false, "error": "Could not start the Providence native adapter."}
+	var launched := preload("res://src/native_connection_startup.gd").launch(executable, arguments)
+	if launched.has("error"): return {"ok": false, "error": launched.error}
+	_process = launched
 	_stdio = _process.get("stdio") as FileAccess
 	if _stdio == null:
 		return {"ok": false, "error": "Native adapter did not provide a standard-I/O pipe."}
