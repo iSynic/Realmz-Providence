@@ -86,7 +86,7 @@ def support(runtime, binaries, cache):
     shutil.copytree(ROOT / "godot/bundled/monster-library", runtime / "monster-library")
     shutil.copytree(ROOT / "support/rebuilt", runtime / "rebuilt-support")
     shutil.copytree(ROOT / "support/mcp", runtime / "mcp")
-    for name in ["LICENSE", "LICENSE-REALMZ.txt", "NOTICE", "THIRD_PARTY_NOTICES.md"]:
+    for name in ["LICENSE", "LICENSE-REALMZ.txt", "NOTICE", "SOURCE-LICENSE.md", "THIRD_PARTY_NOTICES.md"]:
         shutil.copy2(ROOT / name, runtime / name)
     shutil.copytree(ROOT / "vendor", runtime / "third-party", ignore=shutil.ignore_patterns("src", "Cargo.toml", "Cargo.lock"))
     shutil.copy2(ROOT / "artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt", runtime / "FONT-NOTICE.txt")

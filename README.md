@@ -2,7 +2,7 @@
 
 **A native scenario authoring toolkit for Realmz.**
 
-[Download](https://github.com/iSynic/Realmz-Providence/releases) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
+[Download](https://github.com/iSynic/Realmz-Providence/releases) · [Changelog](CHANGELOG.md) · [Roadmap](ROADMAP.md) · [Build from source](docs/public/building.md) · [Licensing](SOURCE-LICENSE.md)
 
 ![Providence Land Editor](docs/screenshots/maps-land.png)
 

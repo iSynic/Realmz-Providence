@@ -97,7 +97,7 @@ def build():
                         'searchText': (title + '\n' + summary + '\n' + text).lower(),
                         'sections': sections(text, links), 'images': gallery})
     licenses = next(row for row in entries if row['id'] == 'licenses')
-    for name in ['SOURCE-LICENSE.md', 'LICENSE', 'LICENSE-REALMZ.txt', 'CONVERTER-LICENSE.md', 'COPYING.converter', 'NOTICE', 'THIRD_PARTY_NOTICES.md']:
+    for name in ['SOURCE-LICENSE.md', 'LICENSE', 'LICENSE-REALMZ.txt', 'NOTICE', 'THIRD_PARTY_NOTICES.md']:
         text = (ROOT / name).read_text(encoding='utf-8')
         licenses['sections'].append({'title': name, 'anchor': slug(name), 'body': escape(text)})
         sources[name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()

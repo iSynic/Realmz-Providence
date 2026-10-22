@@ -1,0 +1,14 @@
+name: Idea
+description: Suggest something that would make authoring easier.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you'd like Providence to do
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: What it would help you make or fix

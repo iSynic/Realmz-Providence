@@ -7,9 +7,10 @@ import shutil
 
 DIRECTORIES = ["crates", "contracts", "vendor", "godot/src", "godot/theme", "godot/branding",
                "godot/data", "godot/bundled", "godot/tools", "support/rebuilt", "docs/screenshots", "docs/public",
-               "tools/release", "support/mcp"]
+               "tools/release", "support/mcp", "LICENSES"]
 FILES = [".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "LICENSE", "LICENSE-REALMZ.txt",
-         "NOTICE", "SOURCE-LICENSE.md", "CONVERTER-LICENSE.md", "COPYING.converter", "THIRD_PARTY_NOTICES.md",
+         "NOTICE", "SOURCE-LICENSE.md", "THIRD_PARTY_NOTICES.md", "REUSE.toml", "CHANGELOG.md", "ROADMAP.md",
+         ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml", ".github/ISSUE_TEMPLATE/config.yml",
          "godot/project.godot", "godot/export_presets.cfg", "artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt",
          "tools/music-preview-runtime.json", ".github/workflows/native-release.yml", ".github/dependabot.yml", "deny.toml",
          # The CI smoke tier: its runner, manifest and the scripts its checks call.

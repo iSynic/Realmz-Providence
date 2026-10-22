@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Providence doesn't work as expected.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Providence version
+      description: Shown in Help > About Providence, for example 0.6.0-beta.4.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: scenario
+    attributes:
+      label: Scenario
+      description: The scenario or project you were working on, if any.
+  - type: input
+    id: tool
+    attributes:
+      label: Tool or workbench
+      description: For example Land, Action Points, Items or Publish.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot or diagnostic
+      description: Attach one if it helps. Leave out private project data unless you mean to share it.

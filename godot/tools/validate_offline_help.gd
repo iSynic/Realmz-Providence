@@ -150,7 +150,7 @@ func _commands() -> void:
 	await _save("about-1600.png")
 	_reader.select_topic("licenses")
 	await _settle()
-	assert(article.anchors.has("copyingconverter") and article.anchors.has("godot"))
+	assert(article.anchors.has("source-licensemd") and article.anchors.has("godot"))
 	_reader.select_topic("evidence")
 	await _settle()
 	await _save("evidence-1600.png")

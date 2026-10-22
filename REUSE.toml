@@ -1,0 +1,61 @@
+version = 1
+SPDX-PackageName = "Providence"
+SPDX-PackageDownloadLocation = "https://github.com/iSynic/Realmz-Providence"
+
+# Covers the public source snapshot. When several annotations match a file, the last one applies.
+# SOURCE-LICENSE.md explains these groups; THIRD_PARTY_NOTICES.md records each adapted source.
+
+[[annotations]]
+path = "**"
+precedence = "override"
+SPDX-FileCopyrightText = "Providence contributors"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Realmz and Divinity resources: stock data, the Rebuilt support archive, the Divinity Manual
+# and the Theldrow-derived application icon.
+[[annotations]]
+path = [
+    "godot/bundled/**",
+    "support/rebuilt/**",
+    "godot/data/divinity_help/**",
+    "godot/branding/**",
+    "artwork/application-icon/**",
+]
+precedence = "override"
+SPDX-FileCopyrightText = "1994 Tim Phillips and Realmz contributors"
+SPDX-License-Identifier = "CC-BY-NC-SA-4.0"
+
+# Screenshots of the editor showing Realmz art, and test data extracted from Realmz scenarios,
+# stock artwork or the Realmz Castle source.
+[[annotations]]
+path = [
+    "docs/screenshots/**",
+    "docs/public/**.png",
+    "crates/providence-core/src/action_settings_effects/fixtures/bywater-row2.json",
+    "crates/providence-core/src/terrain_joining/fixtures/trouble-custom2.json",
+    "crates/providence-core/src/smart_terrain/fixtures/authored-water-joins.json",
+    "crates/providence-core/src/terrain_joining/mapping_samples.json",
+    "crates/providence-core/src/terrain_joining/profiles.json",
+    "crates/providence-core/src/action_authoring/fixtures/classic-*.txt",
+]
+precedence = "override"
+SPDX-FileCopyrightText = ["Providence contributors", "1994 Tim Phillips and Realmz contributors"]
+SPDX-License-Identifier = "GPL-3.0-or-later AND CC-BY-NC-SA-4.0"
+
+[[annotations]]
+path = "crates/providence-core/src/codecs/classic_mace.rs"
+precedence = "override"
+SPDX-FileCopyrightText = ["Providence contributors", "2023 Martin Michelsen"]
+SPDX-License-Identifier = "GPL-3.0-or-later AND MIT"
+
+[[annotations]]
+path = "crates/providence-native-adapter/src/classic_stuffit/names.rs"
+precedence = "override"
+SPDX-FileCopyrightText = ["Providence contributors", "2018 Elliot Nunn"]
+SPDX-License-Identifier = "GPL-3.0-or-later AND MIT"
+
+[[annotations]]
+path = "vendor/stuffit/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2025 Ben Letchford"
+SPDX-License-Identifier = "MIT OR Apache-2.0"
