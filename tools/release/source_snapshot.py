@@ -12,7 +12,7 @@ FILES = [".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "R
          "NOTICE", "SOURCE-LICENSE.md", "THIRD_PARTY_NOTICES.md", "REUSE.toml", "CHANGELOG.md", "ROADMAP.md",
          ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml", ".github/ISSUE_TEMPLATE/config.yml",
          "godot/project.godot", "godot/export_presets.cfg", "artwork/application-icon/Theldrow-REALMZ-NONCOMMERCIAL.txt",
-         "tools/music-preview-runtime.json", ".github/workflows/native-release.yml", ".github/dependabot.yml", "deny.toml",
+         "tools/music-preview-runtime.json", ".github/workflows/native-release.yml", "deny.toml",
          # The CI smoke tier: its runner, manifest and the scripts its checks call.
          "tools/run-ui-checks.py", "tools/ui-checks.json", "tools/verification-process.ps1",
          "tools/verify-display-scaling.ps1", "tools/verify-map-paint.ps1", "tools/verify-mcp.ps1",
