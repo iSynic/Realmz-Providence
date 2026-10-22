@@ -20,7 +20,7 @@ base64.workspace = true
 tempfile.workspace = true
 png = "0.18.1"
 stuffit = { path = "../../vendor/stuffit", default-features = false }
-encoding_rs = "=0.8.35"
+encoding_rs = "=0.8.42"
 
 [dev-dependencies]
 
