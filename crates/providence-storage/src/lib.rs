@@ -128,6 +128,9 @@ pub struct SearchHit {
 pub struct ProjectStore {
     root: PathBuf,
     checkpoint: std::sync::Arc<std::sync::Mutex<Option<checkpoint_reuse::VerifiedCheckpoint>>>,
+    checkpoint_base: std::sync::Arc<std::sync::Mutex<Option<project_checkpoint::CheckpointBase>>>,
+    verified_blob_lengths:
+        std::sync::Arc<std::sync::Mutex<std::collections::BTreeMap<BlobId, u64>>>,
     writer: Option<std::sync::Arc<ProjectWriterLock>>,
 }
 
@@ -136,6 +139,8 @@ impl ProjectStore {
         Self {
             root,
             checkpoint: Default::default(),
+            checkpoint_base: Default::default(),
+            verified_blob_lengths: Default::default(),
             writer: None,
         }
     }

@@ -21,6 +21,7 @@ use rusqlite::params;
 use serde_json::json;
 
 mod blob_retention;
+mod checkpoint_equivalence;
 mod classic_rule_selection;
 mod history;
 mod history_preparation;

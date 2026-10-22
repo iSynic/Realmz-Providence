@@ -21,6 +21,11 @@ full notes and downloads.
   confirmed is reported as outcome-unknown instead of being assumed saved. If
   the host fails mid-request it stops without saving, and you reopen from your
   last save.
+- Saving after an edit now keeps everything that edit changed. Before, a few
+  edits (creating a monster, editing its description, generating variants,
+  repairing battle monster references, updating a map cell and adding a quest
+  label) could leave related changes out of the save until the next different
+  kind of edit was saved.
 - Fixed a stray library folder created by empty launch arguments, and text that
   had been garbled as Windows-1252.
 

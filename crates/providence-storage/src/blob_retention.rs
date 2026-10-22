@@ -41,6 +41,7 @@ impl ProjectStore {
         state_blob: &BlobId,
     ) -> Result<(), StoreError> {
         let retained = self.retained_project_blob_ids(session, current_root, state_blob)?;
+        self.forget_verified_blob_lengths();
         let directory = self.root.join("blobs").join(BLOB_ALGORITHM);
         if !directory.is_dir() {
             return Ok(());
