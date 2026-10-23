@@ -29,10 +29,9 @@ Changes since beta.4:
   without saving so you reopen from your last save.
 - Fixed a stray library folder created by empty launch arguments, and text that
   had been garbled as Windows-1252.
-
-Known limitation: in an imported scenario, adding the first record of a kind the
-original scenario had no file for can be saved but not yet exported; export
-explains why and leaves the project unchanged.
+- In an imported scenario you can add the first record of a kind the original
+  scenario had no file for, such as its first player map or XAP. Export builds
+  that file the same way Classic export does and says so in the result.
 
 Included native workflows:
 

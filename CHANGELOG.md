@@ -4,15 +4,12 @@ Notable changes to Providence. Each release on the
 [Releases](https://github.com/iSynic/Realmz-Providence/releases) page has the
 full notes and downloads.
 
-## Unreleased
+## 0.6.0-beta.5
 
 - In an imported scenario you can now add the first record of a kind the
   original scenario had no file for, such as its first player map or XAP.
   Classic and Rebuilt export build that file the same way Classic export
   always has, and the export result says which files were built.
-
-## 0.6.0-beta.5
-
 - Workbench pages are built the first time you open them, so the packaged
   editor starts in about 1.9 seconds instead of 4.6.
 - Interface scaling follows your display automatically, or a size you choose
