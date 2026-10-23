@@ -28,8 +28,10 @@ fn application_media_library_is_reusable_complete_and_never_enters_project_truth
     assert_eq!(session.revision(), Revision(0));
     assert!(session.snapshot().assets.is_empty());
     assert!(session.snapshot().classic_sources.is_empty());
+    assert!(providence_storage::pack_reference_library(&library_root).unwrap() > 0);
 
-    let (_, catalog) = ReferenceLibraryStore::open(&library_root).unwrap();
+    let (packed, catalog) = ReferenceLibraryStore::open(&library_root).unwrap();
+    assert!(packed.is_packed());
     let mut arguments = vec![
         "--application-library-root".to_string(),
         library_root.display().to_string(),

@@ -69,6 +69,9 @@ def derive_library(runtime, binaries):
     response = json.loads(result.stdout)
     if not response.get("ok") or not response["result"].get("appearanceComplete"):
         raise ValueError(f"Application library derivation failed: {response}")
+    # Ship the blobs as one read-only archive; the CLI revalidates the catalog through it.
+    output([binaries / executable("providence-cli"), "pack-application-library",
+            runtime / "reference-libraries/realmz-classic"])
     context = json.loads((ROOT / "support/rebuilt/context.json").read_text())
     context.update(applicationPackage="../../rebuilt-support/application.realmz2",
                    applicationMediaCatalogPath="../../rebuilt-support/media.json",

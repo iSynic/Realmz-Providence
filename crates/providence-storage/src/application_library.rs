@@ -4,29 +4,50 @@ use crate::blob_store::put_content_addressed_blob;
 use crate::blob_store::read_content_addressed_blob;
 use crate::blob_store::sha256;
 use crate::errors::StoreError;
+use crate::packed_blobs::PackedBlobs;
 use providence_core::model::BlobId;
 use providence_core::rebuilt::APPLICATION_MEDIA_CATALOG_FORMAT_VERSION;
 use providence_core::rebuilt::ApplicationMediaCatalog;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
+/// Maintainer libraries keep loose blobs; shipped libraries read them from `blobs.zip`.
 #[derive(Debug, Clone)]
 pub struct ReferenceLibraryStore {
     root: PathBuf,
+    packed: Option<Arc<PackedBlobs>>,
 }
 
 impl ReferenceLibraryStore {
     pub fn create(root: impl Into<PathBuf>) -> Result<Self, StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self {
+            root: root.into(),
+            packed: None,
+        };
+        if store.root.join(crate::PACKED_BLOBS_FILE).exists() {
+            return Err(StoreError::InvalidPackedBlobs(
+                "a packed library is read-only".into(),
+            ));
+        }
         fs::create_dir_all(&store.root)?;
         Ok(store)
     }
 
     pub fn open(root: impl Into<PathBuf>) -> Result<(Self, ApplicationMediaCatalog), StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self::at(root.into())?;
         let catalog = store.load_catalog()?;
         Ok((store, catalog))
+    }
+
+    fn at(root: PathBuf) -> Result<Self, StoreError> {
+        let packed = PackedBlobs::open(&root)?;
+        Ok(Self { root, packed })
+    }
+
+    pub fn is_packed(&self) -> bool {
+        self.packed.is_some()
     }
 
     /// Native browsing checks catalog ownership immediately. Every payload read
@@ -34,7 +55,7 @@ impl ReferenceLibraryStore {
     pub fn open_structural(
         root: impl Into<PathBuf>,
     ) -> Result<(Self, ApplicationMediaCatalog), StoreError> {
-        let store = Self { root: root.into() };
+        let store = Self::at(root.into())?;
         let catalog =
             serde_json::from_slice::<ApplicationMediaCatalog>(&fs::read(store.catalog_path())?)?;
         store.validate_catalog_structure(&catalog)?;
@@ -50,11 +71,19 @@ impl ReferenceLibraryStore {
     }
 
     pub fn put_blob(&self, bytes: &[u8]) -> Result<BlobId, StoreError> {
+        if self.packed.is_some() {
+            return Err(StoreError::InvalidPackedBlobs(
+                "a packed library is read-only".into(),
+            ));
+        }
         put_content_addressed_blob(&self.root, bytes)
     }
 
     pub fn read_blob(&self, id: &BlobId) -> Result<Vec<u8>, StoreError> {
-        read_content_addressed_blob(&self.root, id)
+        match &self.packed {
+            Some(packed) => packed.read(&self.root, id),
+            None => read_content_addressed_blob(&self.root, id),
+        }
     }
 
     pub fn save_catalog(&self, catalog: &ApplicationMediaCatalog) -> Result<String, StoreError> {

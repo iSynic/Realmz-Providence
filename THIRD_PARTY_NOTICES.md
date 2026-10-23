@@ -4,8 +4,9 @@
 
 Native bundles include Godot's full engine and third-party copyright/license
 inventory in `third-party/godot-notices.json`. The locked Rust dependency
-licenses and source locations are retained under `third-party/rust` and
-`third-party/rust-dependencies.json`. Their original licenses remain in force.
+license and notice files are reproduced in full in
+`third-party/rust-licenses.txt`, and `third-party/rust-dependencies.json` lists
+each crate's license and source. Their original licenses remain in force.
 
 The official Rust MCP SDK (`rmcp` 3.5.1) is Apache-2.0 licensed. Its published
 crate omits the workspace license file; `support/mcp/sdk` retains that file from

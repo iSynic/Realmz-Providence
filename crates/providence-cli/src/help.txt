@@ -20,6 +20,8 @@ Commands:
                      Refuse Classic fixed-record changes outside declared ownership
   inspect-application-library <library-directory>
                      Validate one machine-local Classic application-media store
+  pack-application-library <library-directory>
+                     Move a validated store's blobs into one read-only blobs.zip
   inspect-reference-catalog <catalog-directory>
                      Validate one machine-local Divinity reference catalog
   inspect-rebuilt-package-file <package.realmz2 path>

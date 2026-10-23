@@ -3,6 +3,7 @@ use crate::byte_inspection::inspect_classic_resource_fork_diff;
 use crate::catalog_libraries::inspect_application_library;
 use crate::catalog_libraries::inspect_monster_scrapbook;
 use crate::catalog_libraries::inspect_reference_catalog;
+use crate::catalog_libraries::pack_application_library_command;
 use crate::cicn_inspection::inspect_cicn_resources;
 use crate::combat_inspection::inspect_battle_catalog;
 use crate::combat_inspection::inspect_monster_catalog;
@@ -79,6 +80,7 @@ const COMMANDS: &[(&str, CommandHandler)] = &[
         "inspect-application-library",
         inspect_application_library_command,
     ),
+    ("pack-application-library", pack_application_library_command),
     (
         "inspect-reference-catalog",
         inspect_reference_catalog_command,

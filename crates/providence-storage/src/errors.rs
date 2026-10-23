@@ -42,6 +42,7 @@ pub enum StoreError {
     InvalidStoredRevision(i64),
     InvalidApplicationMediaCatalog(String),
     InvalidReferenceCatalog(String),
+    InvalidPackedBlobs(String),
     InvalidMonsterLibrary(String),
     InvalidPortableSnapshot(String),
     InvalidLocalSession(String),
@@ -86,6 +87,9 @@ impl std::fmt::Display for StoreError {
             }
             Self::InvalidReferenceCatalog(reason) => {
                 write!(formatter, "invalid reference catalog: {reason}")
+            }
+            Self::InvalidPackedBlobs(reason) => {
+                write!(formatter, "invalid packed library blobs: {reason}")
             }
             Self::InvalidMonsterLibrary(reason) => {
                 write!(formatter, "invalid portable Monster Library: {reason}")

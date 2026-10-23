@@ -31,6 +31,24 @@ pub(crate) fn inspect_application_library(directory: &str) -> ExitCode {
     }
 }
 
+pub(crate) fn pack_application_library_command(
+    arguments: &mut dyn Iterator<Item = String>,
+) -> ExitCode {
+    let Some(directory) = arguments.next() else {
+        return crate::output::usage_error("pack-application-library requires <library-directory>");
+    };
+    match providence_storage::pack_reference_library(std::path::Path::new(&directory)) {
+        Ok(blobs) => {
+            println!("{}", serde_json::json!({ "packedBlobs": blobs }));
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("could not pack application media library: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
 pub(crate) fn inspect_reference_catalog(directory: &str) -> ExitCode {
     match ReferenceCatalogStore::open(directory) {
         Ok((_, catalog)) => {
