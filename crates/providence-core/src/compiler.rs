@@ -82,6 +82,44 @@ pub fn compile_classic_slice_with_application_and_asset_payloads(
     compile_classic_slice_manifest(snapshot, sources, asset_payloads)
 }
 
+/// Native family files whose records the model holds but the imported scenario never shipped.
+pub fn missing_native_family_paths(snapshot: &ProjectSnapshot) -> Vec<String> {
+    let retained = snapshot
+        .classic_sources
+        .iter()
+        .map(|source| source.native_path.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    crate::rebuilt::populated_native_family_paths(snapshot)
+        .into_iter()
+        .filter(|path| !retained.contains(path.as_str()))
+        .collect()
+}
+
+/// Builds each missing native family file from its authored records with the record-family
+/// stages Classic export runs. Retained files are not touched.
+pub fn compile_missing_native_family_files(
+    snapshot: &ProjectSnapshot,
+    sources: ClassicCompatibilitySources<'_>,
+) -> Result<BTreeMap<String, Vec<u8>>, ClassicSliceCompileError> {
+    let missing = missing_native_family_paths(snapshot);
+    if missing.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let mut manifest = NativeManifest::default();
+    world_files::compile(snapshot, sources, &mut manifest)?;
+    text_files::compile(snapshot, sources, &mut manifest)?;
+    encounter_files::compile(snapshot, sources, &mut manifest)?;
+    combat_files::compile(snapshot, sources, &mut manifest)?;
+    economy_files::compile(snapshot, sources, &mut manifest)?;
+    missing
+        .into_iter()
+        .map(|path| match manifest.get(&path) {
+            Some(entry) => Ok((path, entry.bytes.clone())),
+            None => Err(ClassicSliceCompileError::UnbuiltNativeFamily(path)),
+        })
+        .collect()
+}
+
 pub fn certify_classic_no_edit_manifest_with_asset_payloads(
     snapshot: &ProjectSnapshot,
     sources: ClassicCompatibilitySources<'_>,

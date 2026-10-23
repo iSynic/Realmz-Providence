@@ -134,7 +134,7 @@ pub(super) fn validate_custom_landlooks(
     Ok(())
 }
 
-pub(super) fn compatibility<'a>(
+pub(crate) fn compatibility<'a>(
     snapshot: &'a ProjectSnapshot,
     source_bytes: &'a BTreeMap<String, Vec<u8>>,
     scenario_startup: Option<NamedCompatibilitySource<'a>>,

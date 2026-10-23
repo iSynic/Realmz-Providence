@@ -53,6 +53,7 @@ pub enum ClassicSliceCompileError {
         resource_type: String,
         resource_id: i32,
     },
+    UnbuiltNativeFamily(String),
 }
 
 #[derive(Debug)]
@@ -199,6 +200,10 @@ impl std::fmt::Display for ClassicSliceCompileError {
             } => write!(
                 formatter,
                 "Classic resource removal {resource_type} {resource_id} does not fit native type/id geometry"
+            ),
+            Self::UnbuiltNativeFamily(path) => write!(
+                formatter,
+                "{path} has authored records but Classic export produces no {path} for them"
             ),
         }
     }

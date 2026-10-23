@@ -132,6 +132,7 @@ fn inspection_projection(
         "capabilities": manifest.capabilities,
         "readinessStatus": readiness.status,
         "warningCount": readiness.warnings.len(),
+        "builtNativeFiles": package.built_native_files.iter().map(|file| file.report()).collect::<Vec<_>>(),
         "finalization": finalized.as_ref().map(|package| package.report.clone()),
     }))
 }
@@ -264,6 +265,7 @@ fn publish_package(
         "readinessStatus": readiness.status,
         "warningCount": readiness.warnings.len(),
         "warnings": readiness.warnings.iter().map(|finding| &finding.message).collect::<Vec<_>>(),
+        "builtNativeFiles": package.built_native_files.iter().map(|file| file.report()).collect::<Vec<_>>(),
         "finalization": finalized.as_ref().map(|package| package.report.clone()),
     }))
 }

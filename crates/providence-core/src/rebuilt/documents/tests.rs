@@ -606,7 +606,9 @@ fn v7_first_native_family_fails_before_mutating_the_compiled_artifact() {
     .unwrap_err()
     .to_string();
     assert!(error.contains("Data ED3"), "{error}");
-    assert!(error.contains("First-family native authoring is not implemented"));
-    assert!(error.contains("Save this project"));
+    assert!(
+        error.contains("no native source bytes for v7 publication"),
+        "{error}"
+    );
     assert_eq!(artifact, before);
 }

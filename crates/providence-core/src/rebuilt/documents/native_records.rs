@@ -125,10 +125,14 @@ fn selected_records(
     let selected = if let Some(selection) = selection {
         crate::rebuilt::native_records::rules::validate_selection(&records, selection)
             .map_err(RebuiltV3DocumentSetError::Serialization)?;
-        Some(
-            crate::rebuilt::project_rebuilt_v7_rule_selection(snapshot, selection)
-                .map_err(RebuiltV3DocumentSetError::Serialization)?,
-        )
+        let captured = captured_view(snapshot, &selection.effective_snapshot)
+            .map_err(RebuiltV3DocumentSetError::Serialization)?;
+        let mut facts = crate::rebuilt::project_rebuilt_v7_rule_selection(&captured, selection)
+            .map_err(RebuiltV3DocumentSetError::Serialization)?;
+        // The package binds the inventory it ships; built families are never rule inputs.
+        facts.captured_source_set_sha256 = crate::model::classic_source_set_sha256(snapshot)
+            .map_err(RebuiltV3DocumentSetError::Serialization)?;
+        Some(facts)
     } else {
         if snapshot.classic_rule_selection.is_some() {
             return Err(RebuiltV3DocumentSetError::Serialization(
@@ -139,6 +143,35 @@ fn selected_records(
     };
     records.rule_selection = selected;
     Ok(records)
+}
+
+// A rule selection binds the files the scenario actually shipped. Publication may add only the
+// families it built from authored records; the binding is checked against the captured list.
+fn captured_view<'a>(
+    published: &'a ProjectSnapshot,
+    captured: &ProjectSnapshot,
+) -> Result<std::borrow::Cow<'a, ProjectSnapshot>, String> {
+    if published.classic_sources == captured.classic_sources {
+        return Ok(std::borrow::Cow::Borrowed(published));
+    }
+    let built = crate::compiler::missing_native_family_paths(captured);
+    let added = published
+        .classic_sources
+        .iter()
+        .filter(|source| !captured.classic_sources.contains(source));
+    if !captured
+        .classic_sources
+        .iter()
+        .all(|source| published.classic_sources.contains(source))
+        || added
+            .into_iter()
+            .any(|source| !built.contains(&source.native_path))
+    {
+        return Err("published Classic sources differ from the captured rule selection".into());
+    }
+    let mut view = published.clone();
+    view.classic_sources = captured.classic_sources.clone();
+    Ok(std::borrow::Cow::Owned(view))
 }
 
 fn restore_option_labels(

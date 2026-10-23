@@ -39,6 +39,13 @@ pub fn certify_classic_owned_edit_manifest_with_asset_payloads(
         expected_sources,
         startup_path.as_deref(),
     )?;
+    allocate_record_families(
+        snapshot,
+        sources,
+        &manifest,
+        &mut expected,
+        &mut transitions,
+    )?;
     spell_authoring::allocate_binary(snapshot, &manifest, &mut expected, &mut transitions)?;
     rule_authoring::allocate_tables(
         snapshot,
@@ -61,6 +68,35 @@ pub fn certify_classic_owned_edit_manifest_with_asset_payloads(
     certification.exact_file_count -= resource_edits.len();
     certification.resource_edits = resource_edits;
     Ok(certification)
+}
+
+// A record family the scenario never shipped is allocated only when Classic output equals what
+// its authored records alone encode; every other file keeps the ordinary ownership gate.
+fn allocate_record_families(
+    snapshot: &ProjectSnapshot,
+    sources: ClassicCompatibilitySources<'_>,
+    manifest: &NativeManifest,
+    baseline: &mut BTreeMap<String, Vec<u8>>,
+    transitions: &mut Vec<ClassicOwnedFileTransition>,
+) -> Result<(), ClassicOwnedEditCertificationError> {
+    let built = super::compile_missing_native_family_files(snapshot, sources)
+        .map_err(ClassicOwnedEditCertificationError::Compile)?;
+    for (path, bytes) in built {
+        if baseline.contains_key(&path) {
+            continue;
+        }
+        if manifest.get(&path).is_none_or(|entry| entry.bytes != bytes) {
+            return Err(ClassicOwnedEditCertificationError::OutsideDeclaredOwnership(vec![path]));
+        }
+        transitions.push(ClassicOwnedFileTransition {
+            from_path: None,
+            to_path: path.clone(),
+            before_bytes: 0,
+            after_bytes: bytes.len(),
+        });
+        baseline.insert(path, bytes);
+    }
+    Ok(())
 }
 
 pub(super) fn certify_classic_manifest_owned_edits(

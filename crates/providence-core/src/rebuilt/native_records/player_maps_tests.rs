@@ -158,6 +158,6 @@ fn player_maps_require_every_complete_source_row_even_outside_runtime_addresses(
     assert!(
         project_rebuilt_v7_effective_records(&snapshot, &BTreeMap::new())
             .unwrap_err()
-            .contains("First-family")
+            .contains("no native source bytes for v7 publication")
     );
 }

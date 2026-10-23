@@ -5,6 +5,7 @@ mod application_terrain;
 mod artwork_conflict;
 mod asset_export;
 mod asset_import;
+mod built_native_files;
 mod catalogs;
 mod classic_compilation;
 mod classic_dungeon_import;

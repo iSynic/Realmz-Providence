@@ -231,6 +231,8 @@ func present_published(result: Dictionary) -> void:
 		warning_text = "\n[color=#e5b567]Published with %d warning%s.[/color]\n%s" % [
 			warnings.size(), "" if warnings.size() == 1 else "s", "\n".join(warning_lines)]
 		_set_recovery("Review Warning", "route:linter.issues")
+	for built: Variant in result.get("builtNativeFiles", []):
+		if built is Dictionary: warning_text += "\n" + str(built.get("message", ""))
 	diagnostics.text = "[color=#7dcaa2]Published %s successfully.[/color]%s\n%d files · revision %d\n%s" % [
 		_target_label(), warning_text, count, int(result.get("revision", _checked_revision)), _target_output()]
 	summary.text = "Published %s successfully." % _target_label()

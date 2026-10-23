@@ -6,6 +6,7 @@ pub(crate) use operation::ClassicManifestOperation;
 use providence_core::{rebuilt::ApplicationMediaCatalog, session::EditorSession};
 use providence_storage::ProjectStore;
 use serde_json::Value;
+pub(crate) use sources::compatibility as compatibility_sources;
 
 #[cfg(test)]
 pub(crate) fn compile_project_classic_slice(

@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::model::{ProjectOrigin, ProjectSnapshot};
 mod native_presence;
+pub(crate) use native_presence::populated_paths as populated_native_family_paths;
 mod native_records;
 pub use native_records::{
     finalize_rebuilt_v7_document_set, finalize_rebuilt_v7_document_set_with_rule_sources,

@@ -65,6 +65,7 @@ pub(crate) fn write_classic_slice_with_application(
         "manifestSha256": digest,
         "files": files,
         "warnings": crate::classic_timed_warnings::warnings(session.snapshot()),
+        "builtNativeFiles": crate::built_native_files::in_classic_manifest(session.snapshot(), &manifest),
     });
     crate::classic_export_trim::attach(&mut result, trim);
     Ok(result)

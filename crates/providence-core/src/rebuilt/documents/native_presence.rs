@@ -38,6 +38,24 @@ pub(super) fn validate(
     Ok(())
 }
 
+/// Native family files whose records the model holds; v7 publication needs every one.
+pub(crate) fn populated_paths(snapshot: &ProjectSnapshot) -> BTreeSet<String> {
+    program_rows(snapshot)
+        .into_iter()
+        .chain(catalog_rows(snapshot))
+        .filter(|(_, ids)| !ids.is_empty())
+        .map(|(path, _)| path.to_owned())
+        .chain(
+            snapshot
+                .monster_sets
+                .iter()
+                .filter(|set| !set.monsters.is_empty())
+                .map(|set| set.native_path.clone()),
+        )
+        .chain((!snapshot.world.player_maps.is_empty()).then(|| "Data MD2".to_owned()))
+        .collect()
+}
+
 fn program_rows(snapshot: &ProjectSnapshot) -> Vec<(&'static str, Vec<u64>)> {
     let ap_ids = |kind| {
         snapshot
@@ -149,7 +167,7 @@ fn require_rows(
             Ok(())
         } else {
             Err(format!(
-                "{path} has model records but no effective native source representation. First-family native authoring is not implemented for imported v7 export. Save this project to retain your edits; use a separate fresh authored project or explicitly import an existing native family in a separate project for comparison."
+                "{path} has model records but no native source bytes for v7 publication; families the scenario never shipped must be built from their authored records before finalizing."
             ))
         };
     };

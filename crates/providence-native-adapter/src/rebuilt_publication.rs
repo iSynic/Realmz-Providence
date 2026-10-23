@@ -26,23 +26,7 @@ pub(crate) fn compile_stored_rebuilt_package(
     let snapshot = selection.map_or(session.snapshot(), |selection| {
         &selection.effective_snapshot
     });
-    let selected_assets = if let Some(application_media) = application_media {
-        let runtime = project_rebuilt_v3_runtime(snapshot).map_err(|error| error.to_string())?;
-        project_rebuilt_v3_reachable_media_with_application(
-            snapshot,
-            application_media,
-            &runtime.scenario,
-            &runtime.item_spells.items,
-            &runtime.item_spells.spells,
-            &runtime.combat.monsters,
-            &runtime.rogue_encounters,
-            !runtime.combat.battles.is_empty(),
-        )
-        .map_err(|error| error.to_string())?
-        .assets
-    } else {
-        project_rebuilt_v3_asset_index(snapshot).map_err(|error| error.to_string())?
-    };
+    let selected_assets = selected_asset_index(snapshot, application_media)?;
     let mut media = read_rebuilt_media_index(store, &selected_assets)?;
     let media_inputs = media
         .iter()
@@ -66,7 +50,7 @@ pub(crate) fn compile_stored_rebuilt_package(
         compile_rebuilt_document_set(snapshot, identity, &media_inputs)
     }
     .map_err(|error| error.to_string())?;
-    crate::rebuilt_source_publication::finalize_sources(
+    let built_native_files = crate::rebuilt_source_publication::finalize_sources(
         session.snapshot(),
         store,
         identity,
@@ -74,7 +58,33 @@ pub(crate) fn compile_stored_rebuilt_package(
         &mut media,
         selection,
     )?;
-    Ok(StoredRebuiltPackage { artifact, media })
+    Ok(StoredRebuiltPackage {
+        artifact,
+        media,
+        built_native_files,
+    })
+}
+
+fn selected_asset_index(
+    snapshot: &providence_core::model::ProjectSnapshot,
+    application_media: Option<&ApplicationMediaCatalog>,
+) -> Result<providence_core::rebuilt::RebuiltV3AssetIndex, String> {
+    let Some(application_media) = application_media else {
+        return project_rebuilt_v3_asset_index(snapshot).map_err(|error| error.to_string());
+    };
+    let runtime = project_rebuilt_v3_runtime(snapshot).map_err(|error| error.to_string())?;
+    project_rebuilt_v3_reachable_media_with_application(
+        snapshot,
+        application_media,
+        &runtime.scenario,
+        &runtime.item_spells.items,
+        &runtime.item_spells.spells,
+        &runtime.combat.monsters,
+        &runtime.rogue_encounters,
+        !runtime.combat.battles.is_empty(),
+    )
+    .map(|selection| selection.assets)
+    .map_err(|error| error.to_string())
 }
 
 pub(crate) fn write_rebuilt_archive_file(
@@ -264,4 +274,5 @@ pub(crate) fn read_rebuilt_media_index(
 pub(crate) struct StoredRebuiltPackage {
     pub(crate) artifact: RebuiltV3DocumentSetArtifact,
     pub(crate) media: Vec<(String, Vec<u8>)>,
+    pub(crate) built_native_files: Vec<crate::built_native_files::BuiltNativeFile>,
 }

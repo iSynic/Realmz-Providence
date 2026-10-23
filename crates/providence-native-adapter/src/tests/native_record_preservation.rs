@@ -203,7 +203,7 @@ fn native_xap_fragment_survives_edit_save_reopen_and_v7_export_inspection() {
 }
 
 #[test]
-fn first_family_edit_can_be_saved_but_imported_v7_export_is_rejected() {
+fn imported_v7_export_builds_a_family_the_scenario_never_shipped() {
     let root = tempfile::tempdir().unwrap();
     let (store, mut authored, _) = source_fixture(root.path(), false);
     assert!(authored.snapshot().extra_action_points.is_empty());
@@ -213,30 +213,48 @@ fn first_family_edit_can_be_saved_but_imported_v7_export_is_rejected() {
         "extra-action-point.create",
         json!({"expectedRevision":2,"nativeId":0}),
     );
-    let snapshot = authored.snapshot().clone();
-    assert_eq!(snapshot.extra_action_points.len(), 1);
-    assert!(
-        !snapshot
-            .classic_sources
-            .iter()
-            .any(|s| s.native_path == "Data ED3")
-    );
     dispatch_result_with_store(&mut authored, Some(&store), "project.save", json!({})).unwrap();
-    assert_eq!(store.load_snapshot().unwrap(), snapshot);
-    let path = root.path().join("blocked.realmz2");
-    let error = dispatch_result_with_store(
+    let snapshot = authored.snapshot().clone();
+    // Classic export's encounter stage encodes an absent Data ED3 exactly this way.
+    let classic_xap = encode_extra_action_points(&snapshot.extra_action_points, None).unwrap();
+    let path = root.path().join("built.realmz2");
+    let receipt = dispatch_result_with_store(
         &mut authored,
         Some(&store),
         "project.compile-rebuilt-package",
         json!({"path":path,"minimumEngineVersion":"0.1.0"}),
     )
-    .unwrap_err();
-    assert!(error.contains("Data ED3"), "{error}");
-    assert!(
-        error.contains("First-family native authoring is not implemented"),
-        "{error}"
+    .unwrap();
+    let built = receipt["builtNativeFiles"].as_array().unwrap();
+    assert_eq!(built.len(), 1, "{receipt}");
+    assert_eq!(built[0]["nativePath"], "Data ED3");
+    assert_eq!(
+        built[0]["message"],
+        "Built Data ED3 from authored records; the original scenario had no Data ED3."
     );
-    assert!(!path.exists());
+    let inspected = inspect_rebuilt_v3_archive(Cursor::new(fs::read(&path).unwrap())).unwrap();
+    assert_eq!(inspected.manifest.schema_version, 7);
+    let records = inspected.content.classic_records.unwrap();
+    let source = records
+        .sources
+        .iter()
+        .find(|s| s.native_path == "Data ED3")
+        .unwrap();
+    assert!(source.edits.is_empty());
+    assert_eq!(source.byte_length, classic_xap.len() as u64);
+    assert_eq!(
+        source.sha256,
+        format!("{:x}", <sha2::Sha256 as sha2::Digest>::digest(&classic_xap))
+    );
+    assert_eq!(built[0]["sha256"], source.sha256);
     assert_eq!(authored.snapshot(), &snapshot);
+    assert!(
+        !store
+            .load_snapshot()
+            .unwrap()
+            .classic_sources
+            .iter()
+            .any(|s| s.native_path == "Data ED3")
+    );
     drop(store);
 }

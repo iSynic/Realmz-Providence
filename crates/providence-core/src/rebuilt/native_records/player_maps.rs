@@ -32,7 +32,7 @@ pub(super) fn validate_model(
         return if ids.is_empty() {
             Ok(())
         } else {
-            Err("Data MD2 has model records but no effective native source representation. First-family native authoring is not implemented for imported v7 export. Save this project to retain your edits; explicitly import the native family in a separate project for comparison.".into())
+            Err("Data MD2 has model records but no native source bytes for v7 publication; families the scenario never shipped must be built from their authored records before finalizing.".into())
         };
     };
     if let Some(id) =

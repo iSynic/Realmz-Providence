@@ -2,7 +2,8 @@
 use std::collections::BTreeMap;
 
 use providence_core::{
-    model::{ClassicSourceBlob, ProjectOrigin, ProjectSnapshot},
+    compiler::compile_missing_native_family_files,
+    model::{BlobId, ClassicSourceBlob, ProjectOrigin, ProjectSnapshot},
     rebuilt::{
         RebuiltV3AssetIndex, RebuiltV3CompilerIdentity, RebuiltV3DocumentSetArtifact,
         RebuiltV3FileInput, ResolvedClassicRules,
@@ -12,6 +13,8 @@ use providence_core::{
 };
 use providence_storage::ProjectStore;
 
+use crate::built_native_files::BuiltNativeFile;
+
 pub(super) fn finalize_sources(
     snapshot: &ProjectSnapshot,
     store: &ProjectStore,
@@ -19,8 +22,10 @@ pub(super) fn finalize_sources(
     artifact: &mut RebuiltV3DocumentSetArtifact,
     media: &mut Vec<(String, Vec<u8>)>,
     selection: Option<&ResolvedClassicRules>,
-) -> Result<(), String> {
-    let source_bytes = read_sources(&snapshot.classic_sources, store)?;
+) -> Result<Vec<BuiltNativeFile>, String> {
+    let mut source_bytes = read_sources(&snapshot.classic_sources, store)?;
+    let (published, built) = with_built_families(snapshot, &mut source_bytes)?;
+    let snapshot = published.as_ref();
     if !snapshot.classic_sources.is_empty() {
         attach_sources(snapshot, &source_bytes, artifact, media)?;
         let inputs = document_inputs(artifact, media);
@@ -45,7 +50,37 @@ pub(super) fn finalize_sources(
         )
         .map_err(|error| error.to_string())?;
     }
-    Ok(())
+    Ok(built)
+}
+
+// An imported family the author populated without an original file is built by Classic export's
+// encoders and published like a retained file; the project's own source list is unchanged.
+fn with_built_families<'a>(
+    snapshot: &'a ProjectSnapshot,
+    source_bytes: &mut BTreeMap<String, Vec<u8>>,
+) -> Result<(std::borrow::Cow<'a, ProjectSnapshot>, Vec<BuiltNativeFile>), String> {
+    let mut published = std::borrow::Cow::Borrowed(snapshot);
+    if !matches!(snapshot.origin, ProjectOrigin::Imported { .. }) {
+        return Ok((published, Vec::new()));
+    }
+    let sources =
+        crate::classic_compilation::compatibility_sources(snapshot, source_bytes, None, None);
+    let generated = compile_missing_native_family_files(snapshot, sources)
+        .map_err(|error| error.to_string())?;
+    let mut built = Vec::with_capacity(generated.len());
+    for (path, bytes) in generated {
+        let file = BuiltNativeFile::new(path.clone(), &bytes);
+        let sources = &mut published.to_mut().classic_sources;
+        sources.push(ClassicSourceBlob {
+            native_path: path.clone(),
+            blob: BlobId(format!("sha256:{}", file.sha256)),
+            byte_length: file.byte_length,
+        });
+        sources.sort_by(|left, right| left.native_path.cmp(&right.native_path));
+        built.push(file);
+        source_bytes.insert(path, bytes);
+    }
+    Ok((published, built))
 }
 
 fn read_prepared_rules(
