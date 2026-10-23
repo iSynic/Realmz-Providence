@@ -4,14 +4,11 @@ Notable changes to Providence. Each release on the
 [Releases](https://github.com/iSynic/Realmz-Providence/releases) page has the
 full notes and downloads.
 
-## Unreleased
+## 0.6.0-beta.5
 
 - Downloads unzip as about 75 files instead of nearly 3,500. The stock media
   library now ships as one archive and the Rust dependency licenses as one
   file.
-
-## 0.6.0-beta.5
-
 - In an imported scenario you can now add the first record of a kind the
   original scenario had no file for, such as its first player map or XAP.
   Classic and Rebuilt export build that file the same way Classic export
