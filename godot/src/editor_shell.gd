@@ -72,6 +72,7 @@ var _collaboration: Node
 var _document_changes := preload("res://src/document_changes.gd").new()
 var _commands: Node
 var _layout := preload("res://src/layout_coordinator.gd").new()
+var _native_dialogs := preload("res://src/native_file_dialog_watch.gd").new()
 
 
 func _ready() -> void:
@@ -122,6 +123,7 @@ func _exit_tree() -> void:
 
 
 func _compose_shell() -> void:
+	_native_dialogs.watch(get_tree())
 	_session_view = preload("res://src/session_projection.gd").new()
 	add_child(_session_view)
 	_commands = preload("res://src/application_commands.gd").new()

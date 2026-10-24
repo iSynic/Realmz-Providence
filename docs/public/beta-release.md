@@ -7,6 +7,8 @@ Changes since beta.4:
 
 - Unzip faster: the download is now about 75 files instead of nearly
   3,500.
+- Close Providence while a file or folder dialog is still open, even one hidden
+  behind the editor window, without it hanging.
 - Start faster: workbench pages are built the first time you open them, so the
   packaged editor opens in about 1.9 seconds instead of 4.6.
 - Interface scaling follows your display automatically, or keeps a size you

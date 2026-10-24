@@ -6,6 +6,8 @@ full notes and downloads.
 
 ## 0.6.0-beta.5
 
+- Closing Providence while a file or folder dialog is still open, even one
+  hidden behind the editor window, no longer leaves Providence hanging.
 - Downloads unzip as about 75 files instead of nearly 3,500. The stock media
   library now ships as one archive and the Rust dependency licenses as one
   file.
